@@ -293,7 +293,9 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     const [newComment, setNewComment] = useState('');
     const [commentType, setCommentType] = useState<'question' | 'feedback' | null>(null);
     const [commentsLoading, setCommentsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<Tab>('social');
+    const [activeTab, setActiveTab] = useState<Tab>(
+        route?.params?.allowInvite === true ? 'social' : 'requirements'
+    );
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
     const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -1590,7 +1592,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                             onPress={() => setActiveTab('social')}
                         >
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Social</Text>
+                                <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
                                 {(() => {
                                     const exactCount = liveViewers.filter(v => v.uid !== firebaseUid).length;
                                     const fallback = Math.max(0, (viewerCount || 1) - 1);

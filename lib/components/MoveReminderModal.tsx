@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Modal,
     View,
@@ -8,6 +8,7 @@ import {
     SafeAreaView,
     ScrollView,
     ActivityIndicator,
+    TextInput,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { TimeArrowPicker } from './TimeArrowPicker';
@@ -24,17 +25,7 @@ const BG = '#0d1825';
 const CARD = '#111d2e';
 const BORDER = 'rgba(255,107,0,0.2)';
 
-const INTERVAL_OPTIONS: { label: string; value: 1 | 2 }[] = [
-    { label: '1 hr', value: 1 },
-    { label: '2 hr', value: 2 },
-];
-
-const MINUTES_BEFORE_OPTIONS: { label: string; value: 5 | 10 | 15 | 30 }[] = [
-    { label: '5 min', value: 5 },
-    { label: '10 min', value: 10 },
-    { label: '15 min', value: 15 },
-    { label: '30 min', value: 30 },
-];
+type IntervalMode = '1hr' | '2hr' | 'custom';
 
 interface Props {
     visible: boolean;
@@ -42,7 +33,6 @@ interface Props {
     onClose: () => void;
     onSaved: (reminder: MoveReminder) => void;
 }
-
 
 function to24h(hour: number, minute: number, amPm: 'AM' | 'PM'): string {
     let h24 = hour % 12;
@@ -60,23 +50,25 @@ function from24h(time24: string): { hour: number; minute: number; amPm: 'AM' | '
 export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
     const [reminderId, setReminderId] = useState<string | undefined>(undefined);
 
     const [enabled, setEnabled] = useState(DEFAULT_MOVE_REMINDER.enabled);
-    const [intervalHours, setIntervalHours] = useState<1 | 2>(DEFAULT_MOVE_REMINDER.intervalHours);
-    const [minutesBefore, setMinutesBefore] = useState<5 | 10 | 15 | 30>(DEFAULT_MOVE_REMINDER.minutesBefore);
+    const [intervalMode, setIntervalMode] = useState<IntervalMode>('1hr');
+    const [customIntervalMins, setCustomIntervalMins] = useState('60');
+    const [workoutDurationMin, setWorkoutDurationMin] = useState(DEFAULT_MOVE_REMINDER.workoutDurationMin);
 
-    // Start time
     const defStart = from24h(DEFAULT_MOVE_REMINDER.startTime);
     const [startHour, setStartHour] = useState(defStart.hour);
     const [startMinute, setStartMinute] = useState(defStart.minute);
     const [startAmPm, setStartAmPm] = useState<'AM' | 'PM'>(defStart.amPm);
 
-    // End time
     const defEnd = from24h(DEFAULT_MOVE_REMINDER.endTime);
     const [endHour, setEndHour] = useState(defEnd.hour);
     const [endMinute, setEndMinute] = useState(defEnd.minute);
     const [endAmPm, setEndAmPm] = useState<'AM' | 'PM'>(defEnd.amPm);
+
+    const sliderWidthRef = useRef(0);
 
     useEffect(() => {
         if (!visible) return;
@@ -85,8 +77,11 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
             if (r) {
                 setReminderId(r.id);
                 setEnabled(r.enabled);
-                setIntervalHours(r.intervalHours);
-                setMinutesBefore(r.minutesBefore);
+                const mins = r.intervalMinutes ?? 60;
+                if (mins === 60) setIntervalMode('1hr');
+                else if (mins === 120) setIntervalMode('2hr');
+                else { setIntervalMode('custom'); setCustomIntervalMins(String(mins)); }
+                setWorkoutDurationMin(r.workoutDurationMin ?? 1);
                 const s = from24h(r.startTime);
                 setStartHour(s.hour);
                 setStartMinute(s.minute);
@@ -103,6 +98,15 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
     const startTime = to24h(startHour, startMinute, startAmPm);
     const endTime = to24h(endHour, endMinute, endAmPm);
 
+    const intervalMins = intervalMode === '1hr' ? 60 : intervalMode === '2hr' ? 120 : (parseInt(customIntervalMins) || 60);
+
+    const slowSquats = 10 * workoutDurationMin;
+    const slowSteps = Math.round(slowSquats * 1.1);
+    const avgSquats = 15 * workoutDurationMin;
+    const avgSteps = Math.round(avgSquats * 1.25);
+    const fastSquats = 25 * workoutDurationMin;
+    const fastSteps = Math.round(fastSquats * 1.25);
+
     const handleSave = async () => {
         setSaving(true);
         const reminder: MoveReminder = {
@@ -112,24 +116,24 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
             title: 'Reminder to Move',
             startTime,
             endTime,
-            intervalHours,
-            minutesBefore,
-            generatedTimes: previewTimes,
+            intervalMinutes: intervalMins,
+            workoutDurationMin,
+            generatedTimes: generateMoveTimes(startTime, endTime, intervalMins),
             recurring: true,
         };
         try {
-            const saved = await MoveReminderService.save(userId, reminder);
-            setReminderId(saved.id);
+            const savedReminder = await MoveReminderService.save(userId, reminder);
+            setReminderId(savedReminder.id);
             reminderWatcherService.invalidateMoveCache();
-            onSaved(saved);
-            onClose();
+            onSaved(savedReminder);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
         } catch (e) {
             console.warn('[MoveReminderModal] save failed:', e);
         } finally {
             setSaving(false);
         }
     };
-
 
     return (
         <Modal visible={visible} transparent animationType="slide">
@@ -164,7 +168,6 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
 
                             {/* Start + End time side by side */}
                             <View style={s.timeDualRow}>
-                                {/* Start */}
                                 <View style={s.timeHalf}>
                                     <Text style={s.sectionLabel}>Start Time</Text>
                                     <View style={s.card}>
@@ -179,11 +182,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
                                         />
                                     </View>
                                 </View>
-
-                                {/* Divider arrow */}
                                 <Text style={s.dualArrow}>→</Text>
-
-                                {/* End */}
                                 <View style={s.timeHalf}>
                                     <Text style={s.sectionLabel}>End Time</Text>
                                     <View style={s.card}>
@@ -203,35 +202,95 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
                             {/* Interval */}
                             <Text style={[s.sectionLabel, { marginTop: 18 }]}>Interval Between Reminders</Text>
                             <View style={s.chipRow}>
-                                {INTERVAL_OPTIONS.map(opt => (
+                                {(['1hr', '2hr', 'custom'] as IntervalMode[]).map(mode => (
                                     <TouchableOpacity
-                                        key={opt.value}
-                                        style={[s.chip, intervalHours === opt.value && s.chipActive]}
-                                        onPress={() => setIntervalHours(opt.value)}
+                                        key={mode}
+                                        style={[s.chip, intervalMode === mode && s.chipActive]}
+                                        onPress={() => setIntervalMode(mode)}
                                         activeOpacity={0.75}
                                     >
-                                        <Text style={[s.chipText, intervalHours === opt.value && s.chipTextActive]}>
-                                            {opt.label}
+                                        <Text style={[s.chipText, intervalMode === mode && s.chipTextActive]}>
+                                            {mode === '1hr' ? '1 hr' : mode === '2hr' ? '2 hr' : 'Custom'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            {intervalMode === 'custom' && (
+                                <View style={{ marginTop: 10 }}>
+                                    <Text style={[s.sectionLabel, { marginBottom: 6 }]}>Minutes between reminders</Text>
+                                    <TextInput
+                                        style={s.numericInput}
+                                        keyboardType="numeric"
+                                        value={customIntervalMins}
+                                        onChangeText={setCustomIntervalMins}
+                                        placeholder="60"
+                                        placeholderTextColor="#3a5a7a"
+                                        maxLength={4}
+                                    />
+                                </View>
+                            )}
+
+                            {/* Active Workout Time */}
+                            <Text style={[s.sectionLabel, { marginTop: 22 }]}>Active Workout Time</Text>
+                            <Text style={s.durationDisplay}>
+                                Duration: <Text style={{ color: ACCENT }}>{workoutDurationMin}</Text> min
+                            </Text>
+
+                            {/* Slider */}
+                            <View
+                                style={s.sliderTrack}
+                                onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width; }}
+                                onStartShouldSetResponder={() => true}
+                                onResponderGrant={(e) => {
+                                    const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
+                                    setWorkoutDurationMin(Math.max(1, Math.min(30, Math.round(ratio * 29) + 1)));
+                                }}
+                                onResponderMove={(e) => {
+                                    const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
+                                    setWorkoutDurationMin(Math.max(1, Math.min(30, Math.round(ratio * 29) + 1)));
+                                }}
+                            >
+                                <View style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 29) * 100}%` as any }]} />
+                                <View style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 29) * 100}%` as any }]} />
+                            </View>
+
+                            {/* Quick-select chips */}
+                            <View style={[s.chipRow, { marginTop: 10 }]}>
+                                {[1, 5, 10, 15].map(val => (
+                                    <TouchableOpacity
+                                        key={val}
+                                        style={[s.chip, workoutDurationMin === val && s.chipActive]}
+                                        onPress={() => setWorkoutDurationMin(val)}
+                                        activeOpacity={0.75}
+                                    >
+                                        <Text style={[s.chipText, workoutDurationMin === val && s.chipTextActive]}>
+                                            {val} min
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
 
-                            {/* Minutes before */}
-                            <Text style={[s.sectionLabel, { marginTop: 18 }]}>Minutes Before Reminder</Text>
-                            <View style={s.chipRow}>
-                                {MINUTES_BEFORE_OPTIONS.map(opt => (
-                                    <TouchableOpacity
-                                        key={opt.value}
-                                        style={[s.chip, minutesBefore === opt.value && s.chipActive]}
-                                        onPress={() => setMinutesBefore(opt.value)}
-                                        activeOpacity={0.75}
-                                    >
-                                        <Text style={[s.chipText, minutesBefore === opt.value && s.chipTextActive]}>
-                                            {opt.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                            {/* Squat Science card */}
+                            <View style={s.squatCard}>
+                                <Text style={s.squatTitle}>IF YOU DO SQUATS FOR {workoutDurationMin} MIN</Text>
+                                <View style={s.squatRow}>
+                                    <Text style={[s.squatStat, { color: '#4ade80' }]}>
+                                        🐢 Slow: {slowSquats} squats → {slowSteps} steps
+                                    </Text>
+                                </View>
+                                <View style={s.squatRow}>
+                                    <Text style={[s.squatStat, { color: '#facc15' }]}>
+                                        🏃 Avg: {avgSquats} squats → {avgSteps} steps
+                                    </Text>
+                                </View>
+                                <View style={s.squatRow}>
+                                    <Text style={[s.squatStat, { color: '#f87171' }]}>
+                                        ⚡ Fast: {fastSquats} squats → {fastSteps} steps
+                                    </Text>
+                                </View>
+                                <Text style={s.squatFooter}>
+                                    10 squats every {intervalMins} min = metabolic benefits equal to a 10,000-step walk 💪
+                                </Text>
                             </View>
 
                             {/* Save */}
@@ -243,7 +302,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
                             >
                                 {saving
                                     ? <ActivityIndicator color="#fff" size="small" />
-                                    : <Text style={s.saveBtnText}>Save Reminder to Move</Text>
+                                    : <Text style={s.saveBtnText}>{saved ? 'Saved! ✓' : 'Save Reminder to Move'}</Text>
                                 }
                             </TouchableOpacity>
                         </ScrollView>
@@ -360,6 +419,76 @@ const s = StyleSheet.create({
     },
     chipTextActive: {
         color: '#fff',
+    },
+    numericInput: {
+        backgroundColor: CARD,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: BORDER,
+        color: '#fff',
+        fontSize: 15,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        width: 120,
+    },
+    durationDisplay: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    sliderTrack: {
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        position: 'relative',
+        marginVertical: 8,
+    },
+    sliderFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: ACCENT,
+    },
+    sliderThumb: {
+        position: 'absolute',
+        top: -7,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: ACCENT,
+        marginLeft: -10,
+    },
+    squatCard: {
+        backgroundColor: CARD,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: BORDER,
+        padding: 14,
+        marginTop: 20,
+        marginBottom: 4,
+    },
+    squatTitle: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        marginBottom: 10,
+    },
+    squatRow: {
+        marginBottom: 6,
+    },
+    squatStat: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    squatFooter: {
+        color: 'rgba(255,255,255,0.45)',
+        fontSize: 11,
+        marginTop: 10,
+        lineHeight: 16,
     },
     saveBtn: {
         marginTop: 24,

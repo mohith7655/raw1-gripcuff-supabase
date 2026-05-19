@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Image,
 } from 'react-native';
-import { X, Zap, CalendarDays, PlayCircle } from 'lucide-react-native';
+import { X, PlayCircle } from 'lucide-react-native';
 
 const ACCENT = '#FF6B00';
 
@@ -66,31 +66,22 @@ export function InviteTypeSelectorModal({
                     </View>
                 </View>
 
-                {/* Option: Start Now */}
-                <TouchableOpacity style={s.optionCard} onPress={onStartNow} activeOpacity={0.82}>
-                    <View style={[s.iconCircle, { backgroundColor: 'rgba(249,115,22,0.15)' }]}>
-                        <Zap color={ACCENT} size={26} fill={ACCENT} />
-                    </View>
-                    <View style={s.optionText}>
-                        <Text style={s.optionTitle}>⚡  Start Now</Text>
-                        <Text style={s.optionSub}>Invite a friend to join your current workout instantly</Text>
-                    </View>
-                    <View style={s.arrowDot} />
-                </TouchableOpacity>
-
-                {/* Option: Schedule */}
-                <TouchableOpacity style={s.optionCard} onPress={onSchedule} activeOpacity={0.82}>
-                    <View style={[s.iconCircle, { backgroundColor: 'rgba(99,102,241,0.15)' }]}>
-                        <CalendarDays color="#818CF8" size={26} />
-                    </View>
-                    <View style={s.optionText}>
-                        <Text style={s.optionTitle}>📅  Schedule for Later</Text>
-                        <Text style={s.optionSub}>Pick a date & time, then choose who to invite</Text>
-                    </View>
-                    <View style={[s.arrowDot, { backgroundColor: '#818CF8' }]} />
-                </TouchableOpacity>
-
-                <View style={{ height: 8 }} />
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                    <TouchableOpacity
+                        style={[s.compactBtn, { backgroundColor: 'rgba(249,115,22,0.15)', borderColor: 'rgba(249,115,22,0.4)' }]}
+                        onPress={onStartNow}
+                        activeOpacity={0.82}
+                    >
+                        <Text style={s.compactBtnText}>⚡  Start Now</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[s.compactBtn, { backgroundColor: 'rgba(99,102,241,0.15)', borderColor: 'rgba(99,102,241,0.4)' }]}
+                        onPress={onSchedule}
+                        activeOpacity={0.82}
+                    >
+                        <Text style={s.compactBtnText}>📅  Schedule Later</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </Modal>
     );
@@ -211,5 +202,18 @@ const s = StyleSheet.create({
         borderRadius: 4,
         backgroundColor: ACCENT,
         flexShrink: 0,
+    },
+    compactBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 14,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    compactBtnText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '700',
     },
 });

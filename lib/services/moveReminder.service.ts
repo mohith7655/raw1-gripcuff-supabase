@@ -16,8 +16,8 @@ export interface MoveReminder {
     title: string;
     startTime: string;         // HH:MM 24-hour local
     endTime: string;           // HH:MM 24-hour local
-    intervalHours: 1 | 2;
-    minutesBefore: 5 | 10 | 15 | 30;
+    intervalMinutes: number;
+    workoutDurationMin: number;
     generatedTimes: string[];  // HH:MM 24-hour local
     recurring: boolean;
     createdAt?: any;
@@ -29,8 +29,8 @@ export const DEFAULT_MOVE_REMINDER: Omit<MoveReminder, 'userId'> = {
     title: 'Reminder to Move',
     startTime: '08:00',
     endTime: '20:00',
-    intervalHours: 2,
-    minutesBefore: 10,
+    intervalMinutes: 60,
+    workoutDurationMin: 1,
     generatedTimes: [],
     recurring: true,
 };
@@ -38,14 +38,14 @@ export const DEFAULT_MOVE_REMINDER: Omit<MoveReminder, 'userId'> = {
 export function generateMoveTimes(
     startTime: string,
     endTime: string,
-    intervalHours: 1 | 2,
+    intervalMinutes: number,
     minutesBefore = 0
 ): string[] {
     const [startH, startM] = startTime.split(':').map(Number);
     const [endH, endM] = endTime.split(':').map(Number);
     const startTotal = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
-    const intervalMins = intervalHours * 60;
+    const intervalMins = intervalMinutes;
 
     if (endTotal <= startTotal) return [];
 
@@ -89,7 +89,7 @@ export const MoveReminderService = {
 
     async save(uid: string, reminder: MoveReminder): Promise<MoveReminder> {
         const { id, ...data } = reminder;
-        const times = generateMoveTimes(data.startTime, data.endTime, data.intervalHours, data.minutesBefore);
+        const times = generateMoveTimes(data.startTime, data.endTime, data.intervalMinutes);
         const payload = {
             ...data,
             userId: uid,

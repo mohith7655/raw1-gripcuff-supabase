@@ -8,6 +8,7 @@ import {
   Easing,
   ActivityIndicator,
   Image,
+  PanResponder,
 } from 'react-native';
 import { ChevronRight, Zap } from 'lucide-react-native';
 import { collection, onSnapshot, query, orderBy, limit, getDoc, doc } from 'firebase/firestore';
@@ -53,12 +54,13 @@ function formatScore(score: number): string {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function DayDot({ active, isToday, isFuture, label, minutes }: {
+function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   active: boolean;
   isToday: boolean;
   isFuture?: boolean;
   label: string;
   minutes: number;
+  dateKey: string;
 }) {
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -77,14 +79,17 @@ function DayDot({ active, isToday, isFuture, label, minutes }: {
   const scale = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
   const opacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
 
-  // weekMinutes already holds Math.max(watchedMinutes, legacyMinutes). Use it as displayMinutes.
   const displayMinutes = active ? Math.max(1, Number(minutes) || 0) : Number(minutes) || 0;
   const minLabel = displayMinutes >= 60
     ? `${Math.floor(displayMinutes / 60)}h`
     : displayMinutes > 0 ? `${displayMinutes}m` : '';
 
+  const [, mm, dd] = dateKey.split('-');
+  const dateLabel = `${parseInt(mm)}/${parseInt(dd)}`;
+
   return (
     <View style={s.dayCol}>
+      <Text style={s.dayDate}>{dateLabel}</Text>
       <Animated.View
         style={[
           s.dayDot,
@@ -160,6 +165,15 @@ function ChallengesBar({ completed }: { completed: number }) {
   );
 }
 
+function getISOWeekNumber(isoDate: string): number {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  const thu = new Date(date);
+  thu.setUTCDate(date.getUTCDate() + 3 - ((date.getUTCDay() + 6) % 7));
+  const jan4 = new Date(Date.UTC(thu.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((thu.getTime() - jan4.getTime()) / 86400000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+}
+
 function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: string; timezone: string }) {
   const flameAnim = useRef(new Animated.Value(1)).current;
   const streak = data?.currentStreak ?? 0;
@@ -168,7 +182,16 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
   const [weekOffset, setWeekOffset] = useState(0);
   const [fetchedActivity, setFetchedActivity] = useState<Record<string, boolean>>({});
   const [fetchedMinutes, setFetchedMinutes] = useState<Record<string, number>>({});
-  const touchStartX = useRef(0);
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 8 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx < -50) setWeekOffset(w => w + 1);
+        if (gs.dx > 50)  setWeekOffset(w => w - 1);
+      },
+    })
+  ).current;
 
   // For current week use the already-loaded data prop; for other weeks fetch separately
   const weekDates = useMemo(() => buildWeekDates(timezone, weekOffset), [timezone, weekOffset]);
@@ -179,14 +202,7 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
 
   const weekLabel = useMemo(() => {
     if (weekOffset === 0) return 'This Week';
-    if (weekOffset === -1) return 'Last Week';
-    const fmt = (iso: string) => {
-      // Parse YYYY-MM-DD and use UTC noon to avoid device-timezone DST shifts.
-      const [y, m, d] = iso.split('-').map(Number);
-      return new Date(Date.UTC(y, m - 1, d, 12))
-        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
-    return `${fmt(weekDates[0])} – ${fmt(weekDates[6])}`;
+    return `Week ${getISOWeekNumber(weekDates[0])}`;
   }, [weekOffset, weekDates]);
 
   // Fetch activity docs for non-current weeks
@@ -231,15 +247,6 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
     return () => loop.stop();
   }, []);
 
-  const handleTouchStart = (e: any) => {
-    touchStartX.current = e.nativeEvent.touches[0].pageX;
-  };
-  const handleTouchEnd = (e: any) => {
-    const diff = touchStartX.current - e.nativeEvent.changedTouches[0].pageX;
-    if (diff > 50)  setWeekOffset(w => Math.max(w - 1, -52));
-    if (diff < -50) setWeekOffset(w => Math.min(w + 1, 0));
-  };
-
   return (
     <View>
       {/* Top row: flame + streak number + motivation + best */}
@@ -258,49 +265,47 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
         </View>
       </View>
 
-      {/* Week navigation */}
-      <View style={s.weekNavRow}>
-        <TouchableOpacity
-          onPress={() => setWeekOffset(w => Math.max(w - 1, -52))}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={s.weekNavArrow}>‹</Text>
-        </TouchableOpacity>
-        <Text style={s.weekLabel}>{weekLabel}</Text>
-        <TouchableOpacity
-          onPress={() => setWeekOffset(w => Math.min(w + 1, 0))}
-          disabled={weekOffset === 0}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={[s.weekNavArrow, weekOffset === 0 && s.weekNavArrowDisabled]}>›</Text>
-        </TouchableOpacity>
-      </View>
+      <View {...panResponder.panHandlers}>
+        {/* Week navigation */}
+        <View style={s.weekNavRow}>
+          <TouchableOpacity
+            onPress={() => setWeekOffset(w => w - 1)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={s.weekNavArrow}>‹</Text>
+          </TouchableOpacity>
+          <Text style={s.weekLabel}>{weekLabel}</Text>
+          <TouchableOpacity
+            onPress={() => setWeekOffset(w => w + 1)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={s.weekNavArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Full-width 7-day dots (swipeable) */}
-      <View
-        style={s.dotsRow}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {weekDates.map((dateKey, i) => {
-          const isFuture = dateKey > todayKey;
-          return (
-            <DayDot
-              key={dateKey}
-              label={DAY_LABELS[i]}
-              active={!isFuture && !!weekActivity[dateKey]}
-              isToday={dateKey === todayKey}
-              isFuture={isFuture}
-              minutes={weekMinutes[dateKey] ?? 0}
-            />
-          );
-        })}
-      </View>
+        {/* Full-width 7-day dots */}
+        <View style={s.dotsRow}>
+          {weekDates.map((dateKey, i) => {
+            const isFuture = weekOffset === 0 && dateKey > todayKey;
+            return (
+              <DayDot
+                key={dateKey}
+                dateKey={dateKey}
+                label={DAY_LABELS[i]}
+                active={!isFuture && !!weekActivity[dateKey]}
+                isToday={dateKey === todayKey}
+                isFuture={isFuture}
+                minutes={weekMinutes[dateKey] ?? 0}
+              />
+            );
+          })}
+        </View>
 
-      {/* Daily Challenges progress — current week only */}
-      {weekOffset === 0 && (
-        <ChallengesBar completed={data?.weeklyChallengesCompleted ?? 0} />
-      )}
+        {/* Daily Challenges progress — current week only */}
+        {weekOffset === 0 && (
+          <ChallengesBar completed={data?.weeklyChallengesCompleted ?? 0} />
+        )}
+      </View>
     </View>
   );
 }
@@ -545,6 +550,11 @@ const s = StyleSheet.create({
   },
   dayDotMinActive: {
     color: '#fff',
+  },
+  dayDate: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 9,
+    fontWeight: '500',
   },
   dayLabel: {
     color: '#3a5470',

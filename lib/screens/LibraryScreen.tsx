@@ -775,7 +775,7 @@ const VideoContent = ({
 
         {/* Pre-made Workouts Section */}
         <View style={styles.favSectionHeader}>
-          <Text style={styles.favSectionTitle}>Pre-made Workouts</Text>
+          <Text style={styles.favSectionTitle}>Workouts</Text>
           <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'workouts' })}>
             <Text style={styles.favViewAll}>View All</Text>
           </TouchableOpacity>
