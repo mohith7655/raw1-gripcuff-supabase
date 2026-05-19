@@ -135,7 +135,7 @@ export const BookingBottomSheet: React.FC<BookingBottomSheetProps> = ({
     userCredits,
     onBookingComplete,
 }) => {
-    const { firebaseUser } = useAuth();
+    const { firebaseUid } = useAuth();
     const dates = getNext7Days();
 
     const [selectedCoach, setSelectedCoach] = useState<string | null>(null);
@@ -170,7 +170,7 @@ export const BookingBottomSheet: React.FC<BookingBottomSheetProps> = ({
             return;
         }
 
-        if (!firebaseUser) return;
+        if (!firebaseUid) return;
 
         try {
             setSubmitting(true);
@@ -179,7 +179,7 @@ export const BookingBottomSheet: React.FC<BookingBottomSheetProps> = ({
             const bookingDate = dates[selectedDate].date;
 
             await BookingService.createBooking({
-                userId: firebaseUser.uid,
+                userId: firebaseUid,
                 coach: coach!.name,
                 date: bookingDate,
                 timeSlot: selectedTime,
@@ -188,7 +188,7 @@ export const BookingBottomSheet: React.FC<BookingBottomSheetProps> = ({
                 creditsUsed: 1,
             });
 
-            await BookingService.decrementCredits(firebaseUser.uid);
+            await BookingService.decrementCredits(firebaseUid);
 
             resetForm();
             onClose();

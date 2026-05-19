@@ -76,6 +76,13 @@ export class AuthIdentityMapService {
     return data as IdentityMapRow;
   }
 
+  // Returns the stored Firebase UID for a Supabase user — for Firestore compatibility only.
+  // Returns null for users who never had a Firebase account (new signups post-migration).
+  static async getLegacyFirebaseUid(supabaseUserId: string): Promise<string | null> {
+    const row = await AuthIdentityMapService.lookup(supabaseUserId);
+    return row?.firebase_uid ?? null;
+  }
+
   // Read-only lookup — useful for debugging without side effects.
   static async lookup(supabaseUserId: string): Promise<IdentityMapRow | null> {
     log('lookup', { supabaseUserId });

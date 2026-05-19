@@ -110,8 +110,7 @@ const writeAccessDoc = (uid: string, type: 'gripcuff' | 'subscription', meta: Gr
   );
 
 export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
-  const { identity, requireFirebaseUid } = useAuth();
-  const firebaseUid = identity.firebaseUid;
+  const { firebaseUid, supabaseUserId } = useAuth();
 
   const [currentUid, setCurrentUid] = useState<string | null>(null);
   const [accessType, setAccessType] = useState<AccessType>(null);
@@ -151,8 +150,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const sync = async () => {
-      const supabaseUserId = identity.supabaseUserId ?? null;
-      const uid = identity.firebaseUid ?? null;
+      const uid = firebaseUid ?? null;
       console.log({ supabaseUserId, firebaseUid: uid });
 
       snapshotUnsubRef.current?.();
@@ -218,17 +216,17 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       snapshotUnsubRef.current?.();
     };
-  }, [applyAccess, identity.firebaseUid, identity.supabaseUserId]);
+  }, [applyAccess, firebaseUid, supabaseUserId]);
 
   const hasAccess = accessType === 'gripcuff' || accessType === 'subscription';
 
   const grantAccess = useCallback(
     async (type: 'gripcuff' | 'subscription', meta: GrantMeta = {}) => {
-      const uid = requireFirebaseUid('AccessContext.grantAccess');
-      await writeAccessDoc(uid, type, meta);
+      if (!firebaseUid) throw new Error('[AccessContext.grantAccess] Firebase UID missing.');
+      await writeAccessDoc(firebaseUid, type, meta);
       applyAccess(type);
     },
-    [requireFirebaseUid, applyAccess]
+    [firebaseUid, applyAccess]
   );
 
   const clearActivationMessage = useCallback(() => setActivationMessage(null), []);

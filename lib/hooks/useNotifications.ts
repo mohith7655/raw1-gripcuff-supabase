@@ -117,7 +117,7 @@ function navigateByType(
 }
 
 export function useNotifications(navigationRef: React.MutableRefObject<NavigationRef>) {
-  const { firebaseUser } = useAuth();
+  const { firebaseUid } = useAuth();
   const foregroundUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const setupWebPush = useCallback(
@@ -222,9 +222,9 @@ export function useNotifications(navigationRef: React.MutableRefObject<Navigatio
   );
 
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
+    if (!firebaseUid) return;
 
-    setupWebPush(firebaseUser.uid).catch((error) => {
+    setupWebPush(firebaseUid).catch((error) => {
       console.error('[FCM] Setup failed:', error);
     });
 
@@ -232,7 +232,7 @@ export function useNotifications(navigationRef: React.MutableRefObject<Navigatio
       foregroundUnsubscribeRef.current?.();
       foregroundUnsubscribeRef.current = null;
     };
-  }, [firebaseUser?.uid, setupWebPush]);
+  }, [firebaseUid, setupWebPush]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;

@@ -30,8 +30,7 @@ export const ChatRoomScreen = () => {
     const route = useRoute();
     const { friendUid, friendName, friendAvatar } = route.params as RouteParams;
 
-    const { identity, requireFirebaseUid } = useAuth();
-    const firebaseUid = identity.firebaseUid;
+    const { firebaseUid } = useAuth();
     const chatId = getChatId(firebaseUid ?? 'unknown', friendUid);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -66,7 +65,8 @@ export const ChatRoomScreen = () => {
 
     const handleSend = async () => {
         if (!text.trim() || sending) return;
-        const uid = requireFirebaseUid('ChatRoomScreen.handleSend');
+        if (!firebaseUid) return;
+        const uid = firebaseUid;
         const msg = text.trim();
         setText('');
         setSending(true);

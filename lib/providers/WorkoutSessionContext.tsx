@@ -34,10 +34,8 @@ interface WorkoutSessionContextType {
 const WorkoutSessionContext = createContext<WorkoutSessionContextType | undefined>(undefined);
 
 export function WorkoutSessionProvider({ children }: { children: React.ReactNode }) {
-    const { user, identity, requireFirebaseUid } = useAuth();
+    const { user, firebaseUid, email } = useAuth();
     const { profile } = useUser();
-    const firebaseUid = identity.firebaseUid;
-    const firebaseAuthUser = identity.firebaseUser;
 
     const [pendingInvites, setPendingInvites] = useState<WorkoutSession[]>([]);
     const [pendingOutgoing, setPendingOutgoing] = useState<WorkoutSession[]>([]);
@@ -179,23 +177,20 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     }, [firebaseUid, loadAll]);
 
     const createSession = async (guestUid: string, guestName: string, guestAvatarUrl: string | undefined, videoId: string, videoTitle: string, scheduledAt: Date, betCredits: number, extras?: CreateSessionExtras) => {
-        const uid = requireFirebaseUid('WorkoutSessionContext.createSession');
-        const firebaseUser = firebaseAuthUser;
+        if (!firebaseUid) {
+            console.error('=== BOOKING FAILED === Not authenticated');
+            throw new Error('Please log in again. Not authenticated');
+        }
+        const uid = firebaseUid;
 
         console.log('=== BOOKING DEBUG START ===');
-        console.log('1. currentUser:', firebaseUid);
-        console.log('2. currentUser name:', firebaseUser?.displayName);
+        console.log('1. currentUser:', uid);
         console.log('3. friendData:', JSON.stringify({ guestUid, guestName, guestAvatarUrl }));
         console.log('4. selectedTime:', scheduledAt);
         console.log('5. selectedWorkout:', videoTitle, 'ID:', videoId);
         console.log('6. db connected:', !!db);
 
-        if (!firebaseUser) {
-            console.error('=== BOOKING FAILED === Not authenticated');
-            throw new Error('Please log in again. Not authenticated');
-        }
-
-        const hostNameFinal = firebaseUser.displayName || profile?.fullName || profile?.username || firebaseUser.email?.split('@')[0] || 'User';
+        const hostNameFinal = profile?.fullName || profile?.username || email?.split('@')[0] || 'User';
         const guestNameFinal = guestName || 'Friend';
 
         const fields = {

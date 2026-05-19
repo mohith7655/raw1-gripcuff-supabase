@@ -278,10 +278,7 @@ function MainApp() {
   const [bootLoading, setBootLoading] = useState(true);
   const navigationRef = useNavigationContainerRef();
   const { loading: accessLoading } = useAccess();
-  const { identity, loading: authLoading } = useAuth();
-  const firebaseUid = identity.firebaseUid;
-  const supabaseUserId = identity.supabaseUserId;
-  const firebaseUser = identity.firebaseUser;
+  const { firebaseUid, supabaseUserId, email, user, loading: authLoading } = useAuth();
 
   // Registers for FCM push notifications and handles notification-click navigation.
   // Must be called here — inside all providers but outside NavigationContainer.
@@ -306,13 +303,12 @@ function MainApp() {
   }, [firebaseUid]);
 
   useEffect(() => {
-    const firebaseUid = identity.firebaseUid ?? null;
     console.log({ supabaseUserId, firebaseUid });
-  }, [supabaseUserId, identity.firebaseUid]);
+  }, [supabaseUserId, firebaseUid]);
 
   useEffect(() => {
     const runBootSync = async () => {
-      if (firebaseUser && firebaseUid) {
+      if (firebaseUid) {
         let userProfile: Record<string, any> = {};
 
         // 1. Load profile and resolve onboarding — must not be blocked by anything else
@@ -332,7 +328,7 @@ function MainApp() {
           const localFlag = typeof localStorage !== 'undefined'
             ? !!localStorage.getItem('onboarding_complete_' + firebaseUid)
             : false;
-          setNeedsOnboarding(!localFlag && !firebaseUser.displayName);
+          setNeedsOnboarding(!localFlag && !user?.fullName);
         }
 
         // 2. Timezone sync — always write device timezone so stale stored values never win.

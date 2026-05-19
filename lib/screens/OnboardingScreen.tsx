@@ -217,7 +217,7 @@ const pickerStyles = StyleSheet.create({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export function OnboardingScreen({ navigation }: any) {
-    const { identity } = useAuth();
+    const { firebaseUid } = useAuth();
     const [step, setStep] = useState(1);
 
     // Step 1 — username
@@ -245,7 +245,7 @@ export function OnboardingScreen({ navigation }: any) {
     const [saving, setSaving] = useState(false);
     const [initializing, setInitializing] = useState(true);
 
-    const uid = identity.firebaseUid;
+    const uid = firebaseUid;
 
     // Load existing profile data and jump to first incomplete step
     useEffect(() => {

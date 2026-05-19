@@ -54,7 +54,7 @@ function playReminderSound() {
 
 export function useWorkoutReminders() {
     const [banner, setBanner] = useState<ReminderBannerState>(EMPTY);
-    const { firebaseUser } = useAuth();
+    const { firebaseUid } = useAuth();
 
     // Native: listen for foreground expo-notifications
     useEffect(() => {
@@ -84,7 +84,7 @@ export function useWorkoutReminders() {
     // Web: exact-time timeouts + 30-second poll fallback
     useEffect(() => {
         if (Platform.OS !== 'web') return;
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid) return;
 
         const exactTimers: ReturnType<typeof setTimeout>[] = [];
@@ -192,7 +192,7 @@ export function useWorkoutReminders() {
             window.clearInterval(interval);
             exactTimers.forEach(t => clearTimeout(t));
         };
-    }, [firebaseUser?.uid]);
+    }, [firebaseUid]);
 
     const dismiss = useCallback(() => {
         setBanner(prev => ({ ...prev, visible: false }));

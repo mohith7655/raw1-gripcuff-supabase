@@ -37,14 +37,14 @@ const BASE_SPOTS = ['gym', 'home', 'park'];
 
 export const ProfileScreen = () => {
     const navigation = useNavigation<any>();
-    const { firebaseUser, logout } = useAuth();
+    const { firebaseUid, email, logout } = useAuth();
     const { profile, updateProfile, clearProfile } = useUser();
     const { friends } = useFriend();
     const { accessType, gripcuffStatus, showPaywall } = useAccess();
 
-    const displayName = profile?.fullName || firebaseUser?.displayName || '';
-    const displayEmail = profile?.email || firebaseUser?.email || '';
-    const displayUsername = profile?.username || firebaseUser?.email?.split('@')[0] || '';
+    const displayName = profile?.fullName || '';
+    const displayEmail = profile?.email || email || '';
+    const displayUsername = profile?.username || email?.split('@')[0] || '';
 
     const [fullName, setFullName] = useState(displayName);
     const [username, setUsername] = useState('');
@@ -66,7 +66,7 @@ export const ProfileScreen = () => {
     // Bypasses the UserContext race condition — profile may still be null
     // when this screen mounts (fetchProfile fires in background at app start).
     useEffect(() => {
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid) return;
         getDoc(doc(db, 'users', uid)).then((snap) => {
             const data = snap.data();
@@ -92,12 +92,12 @@ export const ProfileScreen = () => {
                 setLocations({ [firstSpot]: loc });
             }
         }).catch((e) => console.error('ProfileScreen: failed to read profile from Firestore', e));
-    }, [firebaseUser?.uid]);
+    }, [firebaseUid]);
 
     // ── Photo helpers ──────────────────────────────────────────────
 
     const pickAndUpload = async () => {
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid) return;
 
         if (Platform.OS === 'web') {
@@ -170,7 +170,7 @@ export const ProfileScreen = () => {
     };
 
     const removePhoto = async () => {
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid) return;
         Alert.alert('Remove Photo', 'Are you sure you want to remove your profile picture?', [
             { text: 'Cancel', style: 'cancel' },
@@ -198,7 +198,7 @@ export const ProfileScreen = () => {
     // ── Save changes ───────────────────────────────────────────────
 
     const handleSave = async () => {
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid) return;
         try {
             setSaving(true);
@@ -252,10 +252,10 @@ export const ProfileScreen = () => {
     // Streak data for profile section
     const [streakData, setStreakData] = useState<StreakData | null>(null);
     useEffect(() => {
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid) return;
         StreakService.getStreakData(uid).then(setStreakData).catch(() => {});
-    }, [firebaseUser?.uid]);
+    }, [firebaseUid]);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>

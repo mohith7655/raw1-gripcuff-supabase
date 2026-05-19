@@ -190,7 +190,7 @@ function RecommendationSection({
 
 export const HomeScreen = () => {
   const navigation = useNavigation<any>();
-  const { firebaseUser, logout, user: authUser } = useAuth();
+  const { firebaseUid, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
   const { setSubTab, setIsGripCuffActive } = useLibrary();
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
@@ -200,8 +200,8 @@ export const HomeScreen = () => {
   // Watch history for resume section
   const [watchHistory, setWatchHistory] = useState<any[]>([]);
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
-    const ref = collection(db, 'users', firebaseUser.uid, 'watchHistory');
+    if (!firebaseUid) return;
+    const ref = collection(db, 'users', firebaseUid, 'watchHistory');
     const unsub = onSnapshot(ref, (snap) => {
       const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       // Sort by lastWatchedAt descending, take 3
@@ -215,11 +215,11 @@ export const HomeScreen = () => {
       console.warn('Watch history fetch error:', err);
     });
     return () => unsub();
-  }, [firebaseUser?.uid]);
+  }, [firebaseUid]);
 
 
   // Personalized recommendations
-  const { sections: recSections, loading: recLoading } = useRecommendations(firebaseUser?.uid);
+  const { sections: recSections, loading: recLoading } = useRecommendations(firebaseUid);
 
   // Unread chat messages count + conversations
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -317,14 +317,14 @@ export const HomeScreen = () => {
 
   // Refresh on screen focus (handles tab switches and back-navigation)
   useFocusEffect(useCallback(() => {
-    if (!firebaseUser?.uid) return;
-    refreshStreak(firebaseUser.uid);
-  }, [firebaseUser?.uid, refreshStreak]));
+    if (!firebaseUid) return;
+    refreshStreak(firebaseUid);
+  }, [firebaseUid, refreshStreak]));
 
   // Refresh when app returns to foreground (handles PWA wake from background / tab switch)
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
-    const uid = firebaseUser.uid;
+    if (!firebaseUid) return;
+    const uid = firebaseUid;
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         console.log('[Streak] AppState active — refreshing streak');
@@ -332,13 +332,13 @@ export const HomeScreen = () => {
       }
     });
     return () => sub.remove();
-  }, [firebaseUser?.uid, refreshStreak]);
+  }, [firebaseUid, refreshStreak]);
 
   // Midnight rollover: re-fetch streak when the user's LOCAL date changes.
   // Midnight rollover — device timezone wins over any stored value.
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
-    const uid = firebaseUser.uid;
+    if (!firebaseUid) return;
+    const uid = firebaseUid;
     const tz = getResolvedTimezone(streakData ?? undefined);
 
     const scheduleNextMidnight = (): ReturnType<typeof setTimeout> => {
@@ -353,13 +353,13 @@ export const HomeScreen = () => {
 
     const timer = scheduleNextMidnight();
     return () => clearTimeout(timer);
-  }, [firebaseUser?.uid, streakData?.timezone, refreshStreak]);
+  }, [firebaseUid, streakData?.timezone, refreshStreak]);
 
 
   // ── Realtime listener: light up today's circle the instant the activity doc is written ──
   // This fires as soon as VideoPlayer's setDoc commits, without waiting for refreshStreak.
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
+    if (!firebaseUid) return;
     const tz = getResolvedTimezone(streakData ?? undefined);
     const todayKey = getDateKey(tz);
 
@@ -372,7 +372,7 @@ export const HomeScreen = () => {
       weekdayIndex: wdayIdx,
     });
     console.log('[Streak] Subscribing to activity doc:', todayKey, 'tz:', tz);
-    const actRef = doc(db, 'users', firebaseUser.uid, 'activity', todayKey);
+    const actRef = doc(db, 'users', firebaseUid, 'activity', todayKey);
     const unsub = onSnapshot(actRef, (snap) => {
       const d = snap.exists() ? snap.data() : null;
       const isActive = !!(d?.challengeCompleted || d?.workoutCompleted || d?.liveSessionCompleted);
@@ -392,7 +392,7 @@ export const HomeScreen = () => {
         isActive,
       });
       console.log('[Activity Check]', {
-        path: 'users/' + firebaseUser.uid + '/activity/' + todayKey,
+        path: 'users/' + firebaseUid + '/activity/' + todayKey,
         exists: snap.exists(),
         data: d,
         isActive,
@@ -424,7 +424,7 @@ export const HomeScreen = () => {
     });
 
     return () => unsub();
-  }, [firebaseUser?.uid, streakData?.timezone]);
+  }, [firebaseUid, streakData?.timezone]);
 
   // ── Timezone UI correction ──
   // TimezoneService.getForUser already self-heals stale stored values and auto-updates Firestore
@@ -432,7 +432,7 @@ export const HomeScreen = () => {
   // timezone before the cache was populated (e.g. first load with stale stored "America/Chicago").
   // It re-runs streak under the corrected timezone so circles and date keys are immediately right.
   useEffect(() => {
-    if (!streakData?.timezone || !firebaseUser?.uid) return;
+    if (!streakData?.timezone || !firebaseUid) return;
     const deviceTz = getResolvedTimezone();
     if (deviceTz === streakData.timezone) return;
 
@@ -440,23 +440,23 @@ export const HomeScreen = () => {
       + ' device=' + deviceTz + ' — re-resolving streak');
 
     // Invalidate cache so next getForUser re-reads Firestore (which was already corrected by the service)
-    TimezoneService.invalidateCache(firebaseUser.uid);
+    TimezoneService.invalidateCache(firebaseUid);
 
     // Apply corrected timezone to local state immediately so activity listener subscribes to right key
     setStreakData(prev => prev ? { ...prev, timezone: deviceTz } : prev);
 
     // Re-fetch streak under corrected timezone
-    refreshStreak(firebaseUser.uid);
-  }, [streakData?.timezone, firebaseUser?.uid]);
+    refreshStreak(firebaseUid);
+  }, [streakData?.timezone, firebaseUid]);
 
   // ── Auto-continue streak on app open ──────────────────────────────────────
   // If yesterday was completed and today hasn't been recorded yet, immediately
   // write today's activity doc and show today as full orange — no workout needed.
   // The user opened the app; that's engagement enough to keep the streak alive.
   useEffect(() => {
-    if (!firebaseUser?.uid || !streakData) return;
+    if (!firebaseUid || !streakData) return;
 
-    const uid = firebaseUser.uid;
+    const uid = firebaseUid;
     const tz = getResolvedTimezone(streakData);
     const todayKey = getDateKey(tz);
     const yesterdayKey = getYesterdayKey(tz);
@@ -494,7 +494,7 @@ export const HomeScreen = () => {
     recordDailyActivity(uid, { type: 'workout', user: streakData })
       .then(result => console.log('[Streak] Auto-continue saved — streak:', result.newStreak))
       .catch(e => console.warn('[Streak] Auto-continue write failed:', e?.message ?? e));
-  }, [firebaseUser?.uid, streakData?.lastWorkoutDate, streakData?.currentStreak]);
+  }, [firebaseUid, streakData?.lastWorkoutDate, streakData?.currentStreak]);
 
   // Booking modal state
   const [bookingVisible, setBookingVisible] = useState(false);
@@ -505,7 +505,7 @@ export const HomeScreen = () => {
   const theme = appMode === 'coaching' ? CoachingTheme : AppTheme;
   const isCoaching = appMode === 'coaching';
 
-  const displayName = profile?.fullName || firebaseUser?.displayName || firebaseUser?.email?.split('@')[0] || 'Guest';
+  const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
 
   // Animation for toggle indicator
   const toggleAnim = useRef(new Animated.Value(0)).current;
@@ -649,12 +649,12 @@ export const HomeScreen = () => {
               {/* Unified streak + leaderboard */}
               <UnifiedProgressLeaderboard
                 streakData={streakData}
-                currentUserId={firebaseUser?.uid}
+                currentUserId={firebaseUid}
                 onViewAll={() => navigation.navigate('LeaderboardScreen')}
               />
 
               {/* Daily Reminder Scheduler */}
-              <DailyReminderCard userId={firebaseUser?.uid} />
+              <DailyReminderCard userId={firebaseUid} />
 
               {/* Quick Stats */}
               <View style={styles.compactStatsCard}>
@@ -886,7 +886,7 @@ export const HomeScreen = () => {
               {/* Live Now — active stranger calls */}
               {(() => {
                 const visibleSessions = liveSessions.filter(
-                  s => s.hostUid !== firebaseUser?.uid && s.guestUid !== firebaseUser?.uid
+                  s => s.hostUid !== firebaseUid && s.guestUid !== firebaseUid
                 );
                 if (visibleSessions.length === 0) return null;
                 return (
@@ -944,10 +944,10 @@ export const HomeScreen = () => {
                                 }}
                                 activeOpacity={0.7}
                                 onPress={async () => {
-                                  if (!firebaseUser || !profile) return;
-                                  const name = profile.fullName || profile.username || firebaseUser.email?.split('@')[0] || 'Someone';
+                                  if (!firebaseUid || !profile) return;
+                                  const name = profile.fullName || profile.username || email?.split('@')[0] || 'Someone';
                                   const requestId = await LiveSessionService.requestToJoin(session.id, {
-                                    uid: firebaseUser.uid,
+                                    uid: firebaseUid,
                                     name,
                                     avatarUrl: profile.profileImageUrl ?? null,
                                   });
@@ -982,10 +982,10 @@ export const HomeScreen = () => {
                       </TouchableOpacity>
                     </View>
                     {upcomingItems.slice(0, 3).map((session) => {
-                      const isInvite = session.status === 'pending' && session.hostUid !== firebaseUser?.uid;
-                      const isOutgoing = session.status === 'pending' && session.hostUid === firebaseUser?.uid;
+                      const isInvite = session.status === 'pending' && session.hostUid !== firebaseUid;
+                      const isOutgoing = session.status === 'pending' && session.hostUid === firebaseUid;
                       const isAccepted = session.status === 'accepted';
-                      const isHost = session.hostUid === firebaseUser?.uid;
+                      const isHost = session.hostUid === firebaseUid;
                       const partnerName = isHost ? session.guestName : session.hostName;
                       const scheduledDate = session.scheduledAt?.toDate?.();
                       const dateStr = scheduledDate

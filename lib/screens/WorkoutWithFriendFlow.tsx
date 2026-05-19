@@ -55,7 +55,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
     const { allVideos, gripCuffVideos } = useLibrary();
     const { createSession, upcomingSessions, pendingInvites } = useWorkoutSession();
     const { sendInvite, loading: inviteLoading } = useInvite();
-    const { firebaseUser } = useAuth();
+    const { firebaseUid } = useAuth();
     const { profile } = useUser();
     const userCredits = profile?.credits ?? 5;
 
@@ -451,7 +451,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             </View>
                         ) : (
                             upcomingSessions.slice(0, 5).map((session) => {
-                                const isHost = session.hostUid === firebaseUser?.uid;
+                                const isHost = session.hostUid === firebaseUid;
                                 const partnerName = isHost ? session.guestName : session.hostName;
                                 const partnerAvatar = isHost ? session.guestAvatarUrl : session.hostAvatarUrl;
 

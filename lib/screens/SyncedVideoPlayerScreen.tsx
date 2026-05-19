@@ -42,7 +42,7 @@ export const SyncedVideoPlayerScreen = () => {
     const navigation = useNavigation<any>();
     const { sessionId, videoId, videoTitle, friendName } = route.params;
 
-    const { firebaseUser } = useAuth();
+    const { firebaseUid } = useAuth();
     const { allVideos, gripCuffVideos, trainerVideos } = useLibrary();
 
     const [role, setRole] = useState<'host' | 'guest'>('guest');
@@ -97,7 +97,7 @@ export const SyncedVideoPlayerScreen = () => {
     const completionFiredRef = useRef(false);
 
     const handleSessionComplete = async (finalCurrentTime: number, finalDuration: number) => {
-        const uid = firebaseUser?.uid;
+        const uid = firebaseUid;
         if (!uid || completionFiredRef.current) return;
 
         const pct = finalDuration > 0 ? finalCurrentTime / finalDuration : 0;
@@ -287,7 +287,7 @@ export const SyncedVideoPlayerScreen = () => {
 
     // ── Session + Agora init ──
     useEffect(() => {
-        if (!firebaseUser || !sessionId) return;
+        if (!firebaseUid || !sessionId) return;
 
         let cancelled = false;
         let unsubscribeSync: () => void;
@@ -325,7 +325,7 @@ export const SyncedVideoPlayerScreen = () => {
                 if (!snapshot.exists()) return;
                 const data = snapshot.data();
 
-                const currentRole = data.hostUid === firebaseUser.uid ? 'host' : 'guest';
+                const currentRole = data.hostUid === firebaseUid ? 'host' : 'guest';
                 setRole(currentRole);
 
                 if (!data.ready || !data.ready[currentRole]) {
@@ -335,7 +335,7 @@ export const SyncedVideoPlayerScreen = () => {
                 if (data.sync) {
                     const { isPlaying: remoteIsPlaying, position, lastUpdatedBy, lastUpdatedAt } = data.sync;
 
-                    if (lastUpdatedBy !== firebaseUser.uid) {
+                    if (lastUpdatedBy !== firebaseUid) {
                         setControlledBy(data.hostUid === lastUpdatedBy ? data.hostName : data.guestName);
 
                         if (videoRef.current) {
@@ -376,7 +376,7 @@ export const SyncedVideoPlayerScreen = () => {
             if (unsubFunctions?.unsubscribeSync) unsubFunctions.unsubscribeSync();
             AgoraVoice.leaveChannel();
         };
-    }, [sessionId, firebaseUser?.uid]);
+    }, [sessionId, firebaseUid]);
 
     // ── Play local camera once joined ──
     useEffect(() => {
@@ -397,23 +397,23 @@ export const SyncedVideoPlayerScreen = () => {
 
     // ── Periodic position heartbeat — keeps both players aligned while playing ──
     useEffect(() => {
-        if (!firebaseUser || !sessionId) return;
+        if (!firebaseUid || !sessionId) return;
         const interval = setInterval(() => {
             if (isPlayingRef.current) {
                 writeSyncState(true, currentTimeRef.current);
             }
         }, 5000);
         return () => clearInterval(interval);
-    }, [sessionId, firebaseUser?.uid]);
+    }, [sessionId, firebaseUid]);
 
     // ── Sync write helpers ──
     const writeSyncState = async (playing: boolean, positionSeconds: number) => {
-        if (!sessionId || !firebaseUser) return;
+        if (!sessionId || !firebaseUid) return;
         const sessionRef = doc(db, 'workoutSessions', sessionId);
         await updateDoc(sessionRef, {
             'sync.isPlaying': playing,
             'sync.position': positionSeconds,
-            'sync.lastUpdatedBy': firebaseUser.uid,
+            'sync.lastUpdatedBy': firebaseUid,
             'sync.lastUpdatedAt': Date.now(),
         });
     };

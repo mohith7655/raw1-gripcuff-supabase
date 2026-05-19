@@ -41,12 +41,12 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-    const { firebaseUser } = useAuth();
+    const { firebaseUid } = useAuth();
     const [favorites, setFavorites] = useState<FavoriteVideo[]>([]);
     // Array of { id, pinnedAt } — most recently pinned first
     const [pinnedEntries, setPinnedEntries] = useState<PinnedEntry[]>([]);
 
-    const storageKey = firebaseUser ? `pinnedFavs_${firebaseUser.uid}` : null;
+    const storageKey = firebaseUid ? `pinnedFavs_${firebaseUid}` : null;
 
     // Derived set of IDs for O(1) lookups — stable reference when contents are the same
     const favoriteIds = useMemo(
@@ -87,12 +87,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Real-time Firestore listener — single source of truth
     useEffect(() => {
-        if (!firebaseUser) {
+        if (!firebaseUid) {
             setFavorites([]);
             return;
         }
 
-        const colRef = collection(db, 'users', firebaseUser.uid, 'favourites');
+        const colRef = collection(db, 'users', firebaseUid, 'favourites');
         const unsubscribe = onSnapshot(
             colRef,
             (snapshot) => {
@@ -119,7 +119,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         );
 
         return () => unsubscribe();
-    }, [firebaseUser]);
+    }, [firebaseUid]);
 
     const isFavorite = useCallback(
         (id: string) => favoriteIds.has(id),
@@ -133,12 +133,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     const toggleFavorite = useCallback(
         async (video: FavoriteVideo) => {
-            if (!firebaseUser) {
+            if (!firebaseUid) {
                 Alert.alert('Login required', 'Please log in to save favourites.');
                 return;
             }
 
-            const uid = firebaseUser.uid;
+            const uid = firebaseUid;
             const docRef = doc(db, 'users', uid, 'favourites', video.id);
             const alreadyFav = favoriteIds.has(video.id);
 
@@ -169,7 +169,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
                 Alert.alert('Error', 'Could not update favourite. Please try again.');
             }
         },
-        [firebaseUser, favoriteIds, savePinned],
+        [firebaseUid, favoriteIds, savePinned],
     );
 
     // Pinned items first (ordered most-recently-pinned), then the rest

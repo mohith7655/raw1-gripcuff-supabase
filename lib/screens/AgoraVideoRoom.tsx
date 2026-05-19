@@ -59,12 +59,11 @@ export const AgoraVideoRoom: React.FC = () => {
     const [permissionError, setPermissionError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(true);
 
-    const { firebaseUser } = useAuth();
-    // Use Firebase Auth UID for presence — never the Agora numeric UID
+    const { firebaseUid, email } = useAuth();
     const { count: viewerCount } = useLiveViewerCount(
         channelName,
-        firebaseUser?.uid ?? null,
-        firebaseUser?.displayName ?? firebaseUser?.email?.split('@')[0],
+        firebaseUid,
+        email?.split('@')[0] ?? null,
     );
 
     const {

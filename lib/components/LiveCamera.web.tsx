@@ -37,8 +37,8 @@ if (Platform.OS === 'web') {
 }
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Eye } from 'lucide-react-native';
 import { AGORA_APP_ID } from '../core/config/api_keys';
-import { auth } from '../core/config/firebase';
 import { useLiveViewerCount } from '../hooks/useLiveViewerCount';
+import { useAuth } from '../providers/AuthContext';
 
 /* ─── Types ─── */
 type PermState = 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable';
@@ -71,11 +71,8 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
     const localVideoRef = useRef<ICameraVideoTrack | null>(null);
     const localAudioRef = useRef<IMicrophoneAudioTrack | null>(null);
 
-    // Use Firebase Auth UID for presence — never the Agora numeric UID
-    const firebaseUid = auth?.currentUser?.uid ?? null;
-    const firebaseDisplayName = auth?.currentUser?.displayName
-        ?? auth?.currentUser?.email?.split('@')[0]
-        ?? null;
+    const { firebaseUid, email } = useAuth();
+    const firebaseDisplayName = email?.split('@')[0] ?? null;
     const { count: viewerCount } = useLiveViewerCount(channelName, firebaseUid, firebaseDisplayName);
 
     /* ── Draggable PiP ── */

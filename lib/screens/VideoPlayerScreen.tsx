@@ -265,9 +265,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
     const { hasAccess, showPaywall } = useAccess();
     const { profile } = useUser();
-    const { identity } = useAuth();
-    const firebaseUid = identity.firebaseUid;
-    const currentUser = identity.firebaseUser;
+    const { firebaseUid, email } = useAuth();
 
     const [showInviteTypeModal, setShowInviteTypeModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
@@ -337,10 +335,10 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     }, [firebaseUid]);
 
     const handleJoinScheduled = async (targetUser: { uid: string; displayName: string }) => {
-        if (!currentUser || !firebaseUid) return;
+        if (!firebaseUid) return;
         const vid = requestedVideoId ?? videoId;
         const myName =
-            profile?.fullName ?? profile?.username ?? currentUser.displayName ?? 'Me';
+            profile?.fullName ?? profile?.username ?? 'Me';
         const sessionId = `premade_${targetUser.uid}_${vid}`;
         try {
             await setDoc(
@@ -577,8 +575,8 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     // Live viewer presence via Firestore — only active for pre-made workout videos.
     // Pass null for videoId/userId when not applicable to skip writes but stay hook-safe.
     const viewerDisplayName =
-        profile?.fullName ?? profile?.username ?? currentUser?.displayName ?? currentUser?.email?.split('@')[0] ?? 'Viewer';
-    const watcherProfile = allowInvite && currentUser ? {
+        profile?.fullName ?? profile?.username ?? email?.split('@')[0] ?? 'Viewer';
+    const watcherProfile = allowInvite && firebaseUid ? {
         displayName: viewerDisplayName,
         username: profile?.username ?? viewerDisplayName,
         profilePhoto: profile?.profileImageUrl ?? null,
@@ -703,7 +701,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
 
     const postComment = async () => {
         if (!newComment.trim() || !commentType) return;
-        if (!currentUser || !firebaseUid) {
+        if (!firebaseUid) {
             Alert.alert('Login required', 'Please login to post');
             return;
         }
@@ -711,8 +709,8 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
         try {
             await addDoc(collection(db, 'videoComments', videoId, 'comments'), {
                 userId: firebaseUid,
-                username: currentUser.displayName ?? currentUser.email?.split('@')[0] ?? 'User',
-                userAvatar: (currentUser.displayName ?? currentUser.email ?? 'U')[0].toUpperCase(),
+                username: profile?.fullName ?? email?.split('@')[0] ?? 'User',
+                userAvatar: (profile?.fullName ?? email ?? 'U')[0].toUpperCase(),
                 text: newComment.trim(),
                 type: commentType,
                 createdAt: serverTimestamp(),
@@ -727,7 +725,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     };
 
     const toggleLike = async (commentId: string, likedBy: string[], likes: number) => {
-        if (!currentUser || !firebaseUid) return;
+        if (!firebaseUid) return;
 
         const commentRef = doc(db, 'videoComments', videoId, 'comments', commentId);
         const alreadyLiked = likedBy?.includes(firebaseUid);
@@ -1156,7 +1154,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
             <View style={commentStyles.inputRow}>
                 <View style={commentStyles.myAvatar}>
                     <Text style={commentStyles.myAvatarText}>
-                        {(currentUser?.displayName ?? 'U')[0].toUpperCase()}
+                        {(profile?.fullName ?? 'U')[0].toUpperCase()}
                     </Text>
                 </View>
 

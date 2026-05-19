@@ -29,7 +29,7 @@ export interface UseIntervalAlertsReturn {
 }
 
 export function useIntervalAlerts(): UseIntervalAlertsReturn {
-    const { requireFirebaseUid } = useAuth();
+    const { firebaseUid } = useAuth();
     const inAppTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const countRef = useRef(0);
 
@@ -66,7 +66,8 @@ export function useIntervalAlerts(): UseIntervalAlertsReturn {
 
         // Schedule background FCM notifications via Cloud Function
         try {
-            const uid = requireFirebaseUid('useIntervalAlerts.start');
+            const uid = firebaseUid;
+            if (!uid) throw new Error('Firebase UID unavailable for interval alerts');
 
             const fns = getFunctions(app);
             const sendFn = httpsCallable<

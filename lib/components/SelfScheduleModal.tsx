@@ -85,7 +85,7 @@ export function SelfScheduleModal({
     thumbnail,
     onClose,
 }: Props) {
-    const { requireFirebaseUid } = useAuth();
+    const { firebaseUid } = useAuth();
     const mountedRef = useRef(true);
     const slideAnim = useRef(new Animated.Value(0)).current;
     // SW is the full screen width; subtract both sides of paddingHorizontal:20 from screen style
@@ -219,7 +219,8 @@ export function SelfScheduleModal({
     const handleSave = async () => {
         setStep('saving');
         try {
-            const uid = requireFirebaseUid('SelfScheduleModal.handleSave');
+            if (!firebaseUid) throw new Error('[SelfScheduleModal] Not authenticated');
+            const uid = firebaseUid;
 
             // Request native notification permission on non-web
             if (Platform.OS !== 'web') {

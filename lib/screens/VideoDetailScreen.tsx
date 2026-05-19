@@ -205,9 +205,7 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export function VideoDetailScreen({ route, navigation }: any) {
-    const { identity } = useAuth();
-    const firebaseUid = identity.firebaseUid;
-    const currentUser = identity.firebaseUser;
+    const { firebaseUid, email } = useAuth();
     const { profile } = useUser();
 
     const { videoId, videoTitle, youtubeId, videoUrl } = route.params ?? {};
@@ -223,11 +221,10 @@ export function VideoDetailScreen({ route, navigation }: any) {
     const currentName =
         profile?.fullName ??
         profile?.username ??
-        currentUser?.displayName ??
-        currentUser?.email?.split('@')[0] ??
+        email?.split('@')[0] ??
         'Me';
     const currentAvatar: string | null =
-        (profile as any)?.profileImageUrl ?? currentUser?.photoURL ?? null;
+        (profile as any)?.profileImageUrl ?? null;
 
     // ── 1. Fetch friend UIDs once ─────────────────────────────────────────────
     useEffect(() => {
