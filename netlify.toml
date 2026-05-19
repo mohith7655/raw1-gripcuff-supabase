@@ -1,0 +1,56 @@
+# netlify.toml
+# Tells Netlify (cloud + local CLI) where functions live and how to
+# proxy the Expo web dev server so /.netlify/functions/* resolves correctly.
+
+[build]
+  publish = "dist"
+  # After the Expo web export, explicitly copy public/ assets to dist/ so that
+  # firebase-messaging-sw.js and manifest.json land at the root of the CDN and
+  # are not caught by the SPA catch-all rewrite in _redirects.
+  command = "npx expo export --platform web && cp -r public/. dist/"
+
+  [build.environment]
+    NODE_VERSION = "20"
+
+[functions]
+  # Where serverless functions live
+  directory = "netlify/functions"
+  # Bundle each function independently (required for TypeScript + npm imports)
+  node_bundler = "esbuild"
+
+# ── Service worker headers ───────────────────────────────────────────────────
+# Chrome requires the SW to be served as text/javascript (not text/html).
+# If Netlify's SPA rewrite returns index.html for /firebase-messaging-sw.js,
+# Chrome rejects it with "bad Content-Type" and registration fails silently.
+#
+# Cache-Control: no-cache forces Chrome to always check for a new SW version.
+# Without this, a broken SW can be stuck in the browser cache indefinitely.
+#
+# Service-Worker-Allowed: / explicitly grants the SW the root scope even though
+# the script lives at the root — some Chrome versions are stricter without it.
+
+[[headers]]
+  for = "/firebase-messaging-sw.js"
+  [headers.values]
+    Content-Type          = "text/javascript; charset=utf-8"
+    Cache-Control         = "no-store"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type  = "application/manifest+json"
+    Cache-Control = "no-cache"
+
+# ── Local development ────────────────────────────────────────────────────────
+# `netlify dev` starts this command and proxies it so that both the Expo
+# web app and /.netlify/functions/* are available on one port (default 8888).
+[dev]
+  command = "npx expo start --web"
+  # Port Expo's web server listens on (Metro default)
+  targetPort = 8081
+  # Port netlify dev exposes everything on — open http://localhost:8888
+  port = 8888
+  # Load env vars from this file (in addition to the Netlify dashboard)
+  envFile = ".env.local"
+  autoLaunch = false

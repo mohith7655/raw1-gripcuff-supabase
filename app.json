@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Raw1-app",
+    "slug": "raw1-gripcuff",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      [
+        "react-native-google-cast",
+        {
+          "androidReceiverAppId": "CC1AD845",
+          "iosReceiverAppId": "CC1AD845",
+          "iOSExpandedControls": true
+        }
+      ],
+      "expo-notifications",
+      "expo-asset",
+      "expo-video",
+      "expo-audio"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.Raw1app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSContactsUsageDescription": "To invite friends to workout with you",
+        "NSCameraUsageDescription": "Raw1 needs camera access for live workout video sessions",
+        "NSMicrophoneUsageDescription": "Raw1 needs microphone access for live workout audio",
+        "NSLocalNetworkUsageDescription": "Raw1 uses the local network to discover Cast and AirPlay devices on your Wi-Fi",
+        "NSBonjourServices": [
+          "_googlecast._tcp",
+          "_CC1AD845._googlecast._tcp"
+        ]
+      }
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.Raw1app",
+      "permissions": [
+        "READ_CONTACTS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_NETWORK_STATE",
+        "CHANGE_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "display": "standalone"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d0d926da-b47d-4ece-a27d-ff28ee58ea1d"
+      }
+    },
+    "owner": "mohit-dev-raw1s-organization"
+  }
+}

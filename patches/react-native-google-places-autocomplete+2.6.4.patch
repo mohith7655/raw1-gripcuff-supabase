@@ -1,0 +1,59 @@
+diff --git a/node_modules/react-native-google-places-autocomplete/GooglePlacesAutocomplete.js b/node_modules/react-native-google-places-autocomplete/GooglePlacesAutocomplete.js
+index 9fedd7e..3b77ec1 100644
+--- a/node_modules/react-native-google-places-autocomplete/GooglePlacesAutocomplete.js
++++ b/node_modules/react-native-google-places-autocomplete/GooglePlacesAutocomplete.js
+@@ -158,7 +158,8 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
+   const prevQueryStringRef = useRef(JSON.stringify(query));
+ 
+   // Store latest _request function - ensures debounced function always calls current version with latest closures
+-  const requestRef = useRef(_request);
++  // Initialized to null to avoid TDZ error (_request is declared further down in the component)
++  const requestRef = useRef(null);
+   const queryString = useMemo(() => JSON.stringify(query), [query]);
+ 
+   const [stateText, setStateText] = useState('');
+@@ -463,7 +464,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
+     ],
+   );
+ 
+-  const _request = (text) => {
++  var _request = (text) => {
+     _abortRequests();
+ 
+     if (!url) {
+@@ -650,7 +651,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
+     }
+   };
+ 
+-  const _disableRowLoaders = useCallback(() => {
++  var _disableRowLoaders = useCallback(() => {
+     for (let i = 0; i < resultsRef.current.length; i++) {
+       if (resultsRef.current[i].isLoading === true) {
+         resultsRef.current[i].isLoading = false;
+@@ -818,7 +819,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
+     return false;
+   };
+ 
+-  const _onBlur = (e) => {
++  var _onBlur = (e) => {
+     if (e && isNewFocusInAutocompleteResultList(e)) return;
+ 
+     hideListView();
+@@ -834,7 +835,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
+   // RENDER FUNCTIONS
+   // ==========================================================================
+ 
+-  const _renderDescription = (rowData) => {
++  var _renderDescription = (rowData) => {
+     if (props.renderDescription) {
+       return props.renderDescription(rowData);
+     }
+@@ -882,7 +883,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
+     );
+   };
+ 
+-  const _renderRow = (rowData = {}, index) => {
++  var _renderRow = (rowData = {}, index) => {
+     return (
+       <ScrollView
+         contentContainerStyle={

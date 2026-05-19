@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<!--
+  Raw1 Custom Cast Receiver
+  ─────────────────────────
+  This page runs on the Chromecast device (not on the phone). It:
+    1. Acts as a standard CAF (Cast Application Framework) media receiver
+       for plain HTTP / HLS video URLs from Firebase Storage.
+    2. Listens on a custom namespace for Agora credentials and, when
+       received, loads the Agora Web SDK and displays the remote
+       participant's video fullscreen.
+
+  Deployment
+  ──────────
+  Host this file on Firebase Hosting (or any HTTPS static host) and note
+  the URL, e.g. https://raw1.us/cast-receiver/index.html
+
+  Registration
+  ────────────
+  1. Go to https://cast.google.com/publish  (sign in with your Google account)
+  2. Add a new application → Custom Receiver
+  3. Enter the URL where this file is hosted
+  4. Copy the issued App ID → set EXPO_PUBLIC_CAST_APP_ID in your .env file
+  5. Register your Chromecast device as a test device (serial number from
+     Google Home → device settings) while your app ID is unpublished.
+
+  Custom namespace
+  ────────────────
+  Sender (mobile) sends:
+    namespace : urn:x-cast:com.raw1.agora
+    message   : JSON string — see CastAgoraMessage type below
+
+  ────────────────────────────────────────────────────────────────────────
+  NOTE: Agora App ID is sent from the mobile app; it is not hard-coded here
+  so that the same receiver works across Raw1 environments.
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Raw1 Cast Receiver</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── CAF media element (used for VOD) ───────────────────────── */
+    #media-player {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    /* ── Agora remote video container ───────────────────────────── */
+    #agora-container {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+
+    #agora-remote-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── Status overlay ─────────────────────────────────────────── */
+    #status-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 12px;
+      background: #0a1628;
+    }
+
+    #status-overlay.visible {
+      display: flex;
+    }
+
+    #status-icon {
+      font-size: 64px;
+    }
+
+    #status-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    #status-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    /* ── Branding pill (bottom-right) ───────────────────────────── */
+    #branding {
+      position: absolute;
+      bottom: 24px;
+      right: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.5px;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    #branding.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- CAF inserts its media element here for VOD playback -->
+  <cast-media-player id="media-player"></cast-media-player>
+
+  <!-- Agora video fills the screen for live calls -->
+  <div id="agora-container">
+    <div id="agora-remote-video"></div>
+  </div>
+
+  <!-- Waiting / error states -->
+  <div id="status-overlay">
+    <div id="status-icon">📺</div>
+    <div id="status-title" id="status-title">Raw1</div>
+    <div id="status-subtitle">Waiting for content…</div>
+  </div>
+
+  <!-- Bottom-right branding -->
+  <div id="branding">RAW1</div>
+
+  <!-- ── Google Cast Receiver SDK ────────────────────────────────── -->
+  <script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+
+  <!-- ── Agora Web SDK (loaded lazily when JOIN_CHANNEL is received) ─ -->
+  <!-- We do NOT load it here upfront so VOD sessions don't pay the cost -->
+
+  <script>
+    'use strict';
+
+    // ── Constants ──────────────────────────────────────────────────────
+    const AGORA_NAMESPACE = 'urn:x-cast:com.raw1.agora';
+    const AGORA_SDK_URL   = 'https://download.agora.io/sdk/release/AgoraRTC_N-4.21.0.js';
+
+    // ── CAF context & player manager ──────────────────────────────────
+    const context       = cast.framework.CastReceiverContext.getInstance();
+    const playerManager = context.getPlayerManager();
+
+    // ── UI helpers ────────────────────────────────────────────────────
+    const agoraContainer   = document.getElementById('agora-container');
+    const statusOverlay    = document.getElementById('status-overlay');
+    const statusTitle      = document.getElementById('status-title');
+    const statusSubtitle   = document.getElementById('status-subtitle');
+    const brandingEl       = document.getElementById('branding');
+
+    function showStatus(icon, title, subtitle) {
+      document.getElementById('status-icon').textContent = icon;
+      statusTitle.textContent   = title;
+      statusSubtitle.textContent = subtitle;
+      statusOverlay.classList.add('visible');
+    }
+
+    function hideStatus() {
+      statusOverlay.classList.remove('visible');
+    }
+
+    function showBranding() {
+      brandingEl.classList.add('visible');
+    }
+
+    // ── Agora state ───────────────────────────────────────────────────
+    let agoraClient  = null;
+    let agoraLoading = false;
+
+    async function loadAgoraSdk() {
+      if (window.AgoraRTC) return window.AgoraRTC;
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = AGORA_SDK_URL;
+        s.onload  = () => resolve(window.AgoraRTC);
+        s.onerror = () => reject(new Error('Failed to load Agora SDK'));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function joinAgoraChannel({ channelName, token, appId, uid }) {
+      if (agoraLoading) return;
+      agoraLoading = true;
+
+      showStatus('📡', 'Connecting…', `Joining live session: ${channelName}`);
+
+      try {
+        const AgoraRTC = await loadAgoraSdk();
+
+        AgoraRTC.setLogLevel(3); // WARN
+
+        if (agoraClient) {
+          await agoraClient.leave();
+        }
+
+        // Join as audience (viewer only — we do not publish)
+        agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+
+        agoraClient.on('user-published', async (remoteUser, mediaType) => {
+          await agoraClient.subscribe(remoteUser, mediaType);
+
+          if (mediaType === 'video') {
+            hideStatus();
+            agoraContainer.style.display = 'block';
+            document.getElementById('media-player').style.display = 'none';
+
+            // Clear previous track
+            const container = document.getElementById('agora-remote-video');
+            container.innerHTML = '';
+            remoteUser.videoTrack.play(container);
+            showBranding();
+          }
+
+          if (mediaType === 'audio') {
+            remoteUser.audioTrack.play();
+          }
+        });
+
+        agoraClient.on('user-unpublished', (remoteUser, mediaType) => {
+          if (mediaType === 'video') {
+            showStatus('⏸', 'Video paused', 'Waiting for the host to resume…');
+          }
+        });
+
+        agoraClient.on('user-left', () => {
+          showStatus('📵', 'Call ended', 'The host has left the session.');
+          agoraContainer.style.display = 'none';
+        });
+
+        // uid 0 means Agora assigns a random UID to this receiver
+        await agoraClient.join(appId, channelName, token || null, uid || 0);
+
+        // If no remote user publishes within 10 s show a waiting message
+        setTimeout(() => {
+          if (agoraContainer.style.display !== 'block') {
+            showStatus('⏳', 'Waiting for host…', `Channel: ${channelName}`);
+          }
+        }, 10000);
+
+      } catch (err) {
+        console.error('[Raw1 Receiver] Agora join failed:', err);
+        showStatus('⚠️', 'Connection error', err.message || 'Could not join the live session.');
+      } finally {
+        agoraLoading = false;
+      }
+    }
+
+    async function leaveAgoraChannel() {
+      if (agoraClient) {
+        try { await agoraClient.leave(); } catch {}
+        agoraClient = null;
+      }
+      agoraContainer.style.display = 'none';
+      document.getElementById('media-player').style.display = '';
+    }
+
+    // ── Custom namespace listener ──────────────────────────────────────
+    // The mobile app sends Agora credentials via this namespace.
+    context.addCustomMessageListener(AGORA_NAMESPACE, async (event) => {
+      let msg;
+      try {
+        msg = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch {
+        console.warn('[Raw1 Receiver] Bad message on agora namespace:', event.data);
+        return;
+      }
+
+      switch (msg.type) {
+        case 'JOIN_CHANNEL':
+          await joinAgoraChannel(msg);
+          break;
+        case 'LEAVE_CHANNEL':
+          await leaveAgoraChannel();
+          break;
+        default:
+          console.warn('[Raw1 Receiver] Unknown agora message type:', msg.type);
+      }
+    });
+
+    // ── Support query-param boot (fallback when sendMessage is unavailable) ─
+    (function bootFromQueryParams() {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('channel')) {
+        joinAgoraChannel({
+          channelName : p.get('channel'),
+          token       : p.get('token')   || null,
+          appId       : p.get('appId')   || '',
+          uid         : parseInt(p.get('uid') || '0', 10),
+        });
+      }
+    })();
+
+    // ── VOD: intercept media load to clean up any running Agora session ──
+    playerManager.setMessageInterceptor(
+      cast.framework.messages.MessageType.LOAD,
+      async (request) => {
+        await leaveAgoraChannel();
+        showBranding();
+        return request;
+      }
+    );
+
+    // ── Idle state ────────────────────────────────────────────────────
+    context.addEventListener(
+      cast.framework.system.EventType.READY,
+      () => showStatus('📺', 'Raw1', 'Ready to receive content')
+    );
+
+    // ── Launch ────────────────────────────────────────────────────────
+    context.start({
+      touchScreenOptimizedApp: false,
+      disableIdleTimeout: false,
+    });
+  </script>
+</body>
+</html>

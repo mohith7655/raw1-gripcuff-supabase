@@ -1,0 +1,70 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# Claude Code memory — local only, never commit
+.claude/
+
+# Root .env — contains secrets
+.env
+
+# Log / output files
+*.log
+output.txt
+tsc_errors.txt
+tsc_errors_utf8.txt
+tsc_output.txt
+typescript_errors.log
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files — .env.local contains secrets, never commit it.
+# .env.local.example is a safe template and IS committed.
+.env*.local
+!.env.local.example
+
+# Netlify — functions must be tracked so they deploy correctly
+!netlify/
+!netlify/functions/
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+.vercel
+
+# Local Netlify folder
+.netlify
+
+# Backend secrets — NEVER commit these
+server/.env
+server/node_modules/

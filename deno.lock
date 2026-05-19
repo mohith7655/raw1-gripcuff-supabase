@@ -1,0 +1,49 @@
+{
+  "version": "5",
+  "remote": {
+    "https://edge.netlify.com/": "fd941d61d88673d5f28aab283fb86fcc50f08a3bc80ee5470498fcfa88c65cfb",
+    "https://edge.netlify.com/bootstrap/config.ts": "6a2ce0e544e15e8f8883a5c18da5948e37fd0f2619f68cb31f3af53c51817025",
+    "https://edge.netlify.com/bootstrap/context.ts": "e97240232121e2f369f6546ce961490f34d961ea1ea54be3ff09633e3f08373f",
+    "https://edge.netlify.com/bootstrap/cookie.ts": "8b0baae708989ca183c6f3b4ab3d029e6abcbc2e43f93edeb0ff447b3bbc3a05",
+    "https://edge.netlify.com/bootstrap/edge_function.ts": "b8253e86aa83c67341f5cfedeba5049d77fbf84dcab7eceff7566b7728ae9b39",
+    "https://edge.netlify.com/bootstrap/globals/types.ts": "eaa6148ded3121d8dee62dd91c86e7fe76601df0f3ca8d7962243a30f4c8935f"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@react-native-async-storage/async-storage@^2.2.0",
+        "npm:@react-native-community/cli@^20.1.1",
+        "npm:@react-navigation/bottom-tabs@^7.14.0",
+        "npm:@react-navigation/native-stack@^7.13.0",
+        "npm:@react-navigation/native@^7.1.28",
+        "npm:@types/react@19.1",
+        "npm:agora-rtc-sdk-ng@^4.24.2",
+        "npm:agora-token@^2.0.5",
+        "npm:axios@^1.13.5",
+        "npm:babel-plugin-module-resolver@^5.0.3",
+        "npm:babel-preset-expo@^54.0.10",
+        "npm:expo-av@~16.0.8",
+        "npm:expo-contacts@~15.0.11",
+        "npm:expo-image-picker@~17.0.10",
+        "npm:expo-linear-gradient@^15.0.8",
+        "npm:expo-screen-orientation@~9.0.8",
+        "npm:expo-speech@~14.0.8",
+        "npm:expo-status-bar@~3.0.9",
+        "npm:expo@~54.0.33",
+        "npm:firebase@^12.9.0",
+        "npm:lucide-react-native@0.575",
+        "npm:openai@^6.25.0",
+        "npm:react-dom@19.1.0",
+        "npm:react-native-agora@^4.6.2",
+        "npm:react-native-modal@^14.0.0-rc.1",
+        "npm:react-native-safe-area-context@5.6",
+        "npm:react-native-screens@4.16",
+        "npm:react-native-svg@15.12.1",
+        "npm:react-native-web@0.21",
+        "npm:react-native@0.81.5",
+        "npm:react@19.1.0",
+        "npm:typescript@~5.9.2"
+      ]
+    }
+  }
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 760">
+  <defs>
+    <style>
+      .base { fill: #eef2f6; stroke: #2d3a60; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+      .region { fill: #dfe5ec; stroke: #2d3a60; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+    </style>
+  </defs>
+
+  <!-- Base silhouette -->
+  <ellipse class="base" cx="180" cy="72" rx="34" ry="38"/>
+  <path class="base" d="M156 108 L204 108 L212 140 L148 140 Z"/>
+  <path class="base" d="M108 156 Q180 118 252 156 L236 340 Q180 392 124 340 Z"/>
+  <path class="base" d="M88 166 Q64 214 60 286 Q56 330 72 368 Q90 386 108 370 Q106 316 120 254 Q130 208 136 176 Z"/>
+  <path class="base" d="M272 166 Q296 214 300 286 Q304 330 288 368 Q270 386 252 370 Q254 316 240 254 Q230 208 224 176 Z"/>
+  <path class="base" d="M130 342 Q152 356 168 410 Q176 508 152 628 Q140 696 112 724 Q98 732 94 722 Q102 696 110 636 Q124 520 122 438 Q120 380 114 356 Z"/>
+  <path class="base" d="M230 342 Q208 356 192 410 Q184 508 208 628 Q220 696 248 724 Q262 732 266 722 Q258 696 250 636 Q236 520 238 438 Q240 380 246 356 Z"/>
+
+  <!-- Front regions -->
+  <ellipse id="deltoid_left" class="region" cx="126" cy="184" rx="26" ry="34"/>
+  <ellipse id="deltoid_right" class="region" cx="234" cy="184" rx="26" ry="34"/>
+
+  <ellipse id="chest_left" class="region" cx="154" cy="218" rx="34" ry="30"/>
+  <ellipse id="chest_right" class="region" cx="206" cy="218" rx="34" ry="30"/>
+
+  <ellipse id="biceps_left" class="region" cx="104" cy="246" rx="20" ry="44"/>
+  <ellipse id="biceps_right" class="region" cx="256" cy="246" rx="20" ry="44"/>
+
+  <ellipse id="forearm_left" class="region" cx="92" cy="320" rx="16" ry="52"/>
+  <ellipse id="forearm_right" class="region" cx="268" cy="320" rx="16" ry="52"/>
+
+  <rect id="abs" class="region" x="156" y="262" width="48" height="122" rx="18" ry="18"/>
+  <ellipse id="obliques_left" class="region" cx="136" cy="320" rx="16" ry="54"/>
+  <ellipse id="obliques_right" class="region" cx="224" cy="320" rx="16" ry="54"/>
+
+  <ellipse id="quads_left" class="region" cx="150" cy="500" rx="26" ry="92"/>
+  <ellipse id="quads_right" class="region" cx="210" cy="500" rx="26" ry="92"/>
+
+  <ellipse id="calves_left" class="region" cx="142" cy="652" rx="22" ry="72"/>
+  <ellipse id="calves_right" class="region" cx="218" cy="652" rx="22" ry="72"/>
+</svg>
