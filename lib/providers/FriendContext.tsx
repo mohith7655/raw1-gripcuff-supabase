@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FriendService } from '../services/friend.service';
 import { FriendRequest } from '../models/Friend';
 import { User } from '../models/User';
@@ -16,7 +16,7 @@ interface FriendContextType {
     acceptRequest: (requestId: string, fromUid: string, toUid: string) => Promise<void>;
     declineRequest: (requestId: string) => Promise<void>;
     removeFriend: (friendUid: string) => Promise<void>;
-    searchUsers: (query: string) => Promise<void>;
+    searchUsers: (query: string) => void;
     clearSearch: () => void;
     refreshFriends: () => Promise<void>;
     clearError: () => void;
@@ -34,6 +34,7 @@ export function FriendProvider({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState<string | null>(null);
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [searching, setSearching] = useState(false);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const loadAll = useCallback(async (uid: string) => {
         try {
@@ -55,15 +56,22 @@ export function FriendProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    // Re-fetch whenever the signed-in user changes
+    // Re-fetch + realtime subscription whenever the signed-in user changes
     useEffect(() => {
-        if (user?.uid) {
-            loadAll(user.uid);
-        } else {
+        if (!user?.uid) {
             setFriends([]);
             setIncomingRequests([]);
             setOutgoingRequests([]);
+            return;
         }
+
+        loadAll(user.uid);
+
+        const unsub = FriendService.subscribeToRequests(user.uid, () => {
+            loadAll(user.uid);
+        });
+
+        return unsub;
     }, [user?.uid, loadAll]);
 
     const sendRequest = async (toUid: string) => {
@@ -126,30 +134,30 @@ export function FriendProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const searchUsers = async (query: string) => {
-        console.log('[FriendContext] searchUsers triggered with:', query, '| user.uid:', user?.uid);
-        if (!user?.uid) {
-            console.log('[FriendContext] ABORT: user.uid is missing');
-            return;
-        }
+    const searchUsers = useCallback((query: string) => {
+        if (!user?.uid) return;
+
         if (!query.trim()) {
-            console.log('[FriendContext] ABORT: empty query');
             setSearchResults([]);
             return;
         }
-        try {
-            console.log('[FriendContext] Calling FriendService.searchUsers...');
-            setSearching(true);
-            const results = await FriendService.searchUsers(query, user.uid);
-            console.log('[FriendContext] FriendService returned results:', results.length);
-            setSearchResults(results);
-        } catch (err) {
-            console.warn('[FriendContext] searchUsers error:', err);
-            setSearchResults([]);
-        } finally {
-            setSearching(false);
-        }
-    };
+
+        // Debounce: cancel any in-flight timer before starting a new one
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+        setSearching(true);
+        searchTimerRef.current = setTimeout(async () => {
+            try {
+                const results = await FriendService.searchUsers(query, user.uid);
+                setSearchResults(results);
+            } catch (err) {
+                console.warn('[FriendContext] searchUsers error:', err);
+                setSearchResults([]);
+            } finally {
+                setSearching(false);
+            }
+        }, 400);
+    }, [user?.uid]);
 
     const clearSearch = () => setSearchResults([]);
 

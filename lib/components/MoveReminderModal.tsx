@@ -11,6 +11,7 @@ import {
     TextInput,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import { IntensityComparisonCard } from './IntensityComparisonCard';
 import { TimeArrowPicker } from './TimeArrowPicker';
 import {
     MoveReminder,
@@ -81,7 +82,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
                 if (mins === 60) setIntervalMode('1hr');
                 else if (mins === 120) setIntervalMode('2hr');
                 else { setIntervalMode('custom'); setCustomIntervalMins(String(mins)); }
-                setWorkoutDurationMin(r.workoutDurationMin ?? 1);
+                setWorkoutDurationMin(Math.min(5, r.workoutDurationMin ?? 1));
                 const s = from24h(r.startTime);
                 setStartHour(s.hour);
                 setStartMinute(s.minute);
@@ -99,13 +100,6 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
     const endTime = to24h(endHour, endMinute, endAmPm);
 
     const intervalMins = intervalMode === '1hr' ? 60 : intervalMode === '2hr' ? 120 : (parseInt(customIntervalMins) || 60);
-
-    const slowSquats = 10 * workoutDurationMin;
-    const slowSteps = Math.round(slowSquats * 1.1);
-    const avgSquats = 15 * workoutDurationMin;
-    const avgSteps = Math.round(avgSquats * 1.25);
-    const fastSquats = 25 * workoutDurationMin;
-    const fastSteps = Math.round(fastSquats * 1.25);
 
     const handleSave = async () => {
         setSaving(true);
@@ -236,62 +230,35 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved }: Props) 
                                 Duration: <Text style={{ color: ACCENT }}>{workoutDurationMin}</Text> min
                             </Text>
 
-                            {/* Slider */}
+                            {/* Slider — 1 to 5 min */}
                             <View
                                 style={s.sliderTrack}
                                 onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width; }}
                                 onStartShouldSetResponder={() => true}
                                 onResponderGrant={(e) => {
                                     const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
-                                    setWorkoutDurationMin(Math.max(1, Math.min(30, Math.round(ratio * 29) + 1)));
+                                    setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
                                 }}
                                 onResponderMove={(e) => {
                                     const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
-                                    setWorkoutDurationMin(Math.max(1, Math.min(30, Math.round(ratio * 29) + 1)));
+                                    setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
                                 }}
                             >
-                                <View style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 29) * 100}%` as any }]} />
-                                <View style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 29) * 100}%` as any }]} />
+                                <View style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
+                                <View style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
+                            </View>
+                            <View style={s.sliderLabels}>
+                                <Text style={s.sliderLabelText}>1 min</Text>
+                                <Text style={s.sliderLabelText}>5 min</Text>
                             </View>
 
-                            {/* Quick-select chips */}
-                            <View style={[s.chipRow, { marginTop: 10 }]}>
-                                {[1, 5, 10, 15].map(val => (
-                                    <TouchableOpacity
-                                        key={val}
-                                        style={[s.chip, workoutDurationMin === val && s.chipActive]}
-                                        onPress={() => setWorkoutDurationMin(val)}
-                                        activeOpacity={0.75}
-                                    >
-                                        <Text style={[s.chipText, workoutDurationMin === val && s.chipTextActive]}>
-                                            {val} min
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {/* Squat Science card */}
-                            <View style={s.squatCard}>
-                                <Text style={s.squatTitle}>IF YOU DO SQUATS FOR {workoutDurationMin} MIN</Text>
-                                <View style={s.squatRow}>
-                                    <Text style={[s.squatStat, { color: '#4ade80' }]}>
-                                        🐢 Slow: {slowSquats} squats → {slowSteps} steps
-                                    </Text>
-                                </View>
-                                <View style={s.squatRow}>
-                                    <Text style={[s.squatStat, { color: '#facc15' }]}>
-                                        🏃 Avg: {avgSquats} squats → {avgSteps} steps
-                                    </Text>
-                                </View>
-                                <View style={s.squatRow}>
-                                    <Text style={[s.squatStat, { color: '#f87171' }]}>
-                                        ⚡ Fast: {fastSquats} squats → {fastSteps} steps
-                                    </Text>
-                                </View>
-                                <Text style={s.squatFooter}>
-                                    10 squats every {intervalMins} min = metabolic benefits equal to a 10,000-step walk 💪
-                                </Text>
-                            </View>
+                            {/* Movement Intensity Comparison */}
+                            <IntensityComparisonCard
+                                workoutDurationMin={workoutDurationMin}
+                                intervalMins={intervalMins}
+                                startTime={startTime}
+                                endTime={endTime}
+                            />
 
                             {/* Save */}
                             <TouchableOpacity
@@ -461,34 +428,16 @@ const s = StyleSheet.create({
         backgroundColor: ACCENT,
         marginLeft: -10,
     },
-    squatCard: {
-        backgroundColor: CARD,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: BORDER,
-        padding: 14,
-        marginTop: 20,
-        marginBottom: 4,
+    sliderLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 6,
+        marginBottom: 2,
     },
-    squatTitle: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: '800',
-        letterSpacing: 0.5,
-        marginBottom: 10,
-    },
-    squatRow: {
-        marginBottom: 6,
-    },
-    squatStat: {
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    squatFooter: {
-        color: 'rgba(255,255,255,0.45)',
+    sliderLabelText: {
+        color: '#2a4060',
         fontSize: 11,
-        marginTop: 10,
-        lineHeight: 16,
+        fontWeight: '600',
     },
     saveBtn: {
         marginTop: 24,

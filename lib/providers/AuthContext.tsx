@@ -86,6 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       log(`supabase: onAuthStateChange`, { event: _event, userId: nextSession?.user?.id ?? null });
+      // TOKEN_REFRESHED fires every ~1 hour and does not change the user —
+      // updating only the session object prevents a full profile reload cascade.
+      if (_event === 'TOKEN_REFRESHED') {
+        setSession(nextSession);
+        return;
+      }
       await applySession(nextSession);
     });
 

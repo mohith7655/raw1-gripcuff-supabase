@@ -47,6 +47,7 @@ import { addWorkoutMinutes } from '../services/leaderboard.service';
 import { useVideoEngagement } from '../hooks/useVideoEngagement';
 import { useVideoGlobalCounts, formatCount } from '../services/videoEngagement.service';
 import { getSimilarPrograms, RecommendedProgram } from '../services/recommendation.service';
+import { useFocusEffect } from '@react-navigation/native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -246,7 +247,7 @@ const WebYouTubePlayer = ({ videoId }: { videoId: string }) => {
     );
 };
 
-export default function VideoPlayerScreen({ route, navigation }: any) {
+function VideoPlayerScreen({ route, navigation }: any) {
     const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
     const { hasAccess, showPaywall } = useAccess();
     const { profile } = useUser();
@@ -272,6 +273,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     const maxWatchedMsRef = useRef(0);
     const elapsedSecondsRef = useRef(0);
     const completionFiredRef = useRef(false);
+    const durationMsRef = useRef(0);          // populated by onDurationChange
     const handleVideoEndRef = useRef<() => Promise<void>>(async () => {});
     const isChallengeVideo = route?.params?.isChallengeVideo ?? false;
     const [comments, setComments] = useState<any[]>([]);
@@ -350,6 +352,18 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
         if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
         elapsedSecondsRef.current = Math.floor(posMs / 1000);
 
+        // 80% threshold check — fire completion as soon as enough has been watched
+        // (guards against users who skip/close before the video fully ends)
+        const durMs = durationMsRef.current;
+        if (
+            !completionFiredRef.current &&
+            durMs > 0 &&
+            maxWatchedMsRef.current / durMs >= 0.8
+        ) {
+            console.log('[Completion] 80% threshold reached — recording');
+            handleVideoEndRef.current().catch(() => {});
+        }
+
         if (!hasAccess) {
             const currentBucket = Math.floor(posMs / 5000);
             if (currentBucket > 0 && currentBucket > lastPaywallBucketRef.current) {
@@ -358,7 +372,6 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                 showPaywall();
             }
         } else {
-            // If access is granted mid-session, stop recurring paywall checks.
             lastPaywallBucketRef.current = 0;
         }
     }, [hasAccess, showPaywall]);
@@ -381,13 +394,16 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
         }
     }, [socialInviteState.phase]);
 
-    const triggerCompletionCheck = () => {
+    const triggerCompletionCheckRef = useRef<() => void>(() => {});
+
+    const triggerCompletionCheck = useCallback(() => {
         if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
         completionTimerRef.current = setTimeout(() => {
             setShowCompletionModal(true);
             sharedPlayerRef.current?.pauseVideo();
         }, 2000);
-    };
+    }, []);
+    triggerCompletionCheckRef.current = triggerCompletionCheck;
 
     const handleVideoEnd = async () => {
         const uid = supabaseUserId;
@@ -405,12 +421,11 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
         }
 
         const elapsed = elapsedSecondsRef.current;
-        console.log('[Completion] Video ended, elapsed:', elapsed, 'sec');
 
-        const minElapsedSecs = isChallengeVideo ? 0 : 30;
+        // 5 seconds minimum (was 30s — too strict for testing and short clips)
+        const minElapsedSecs = isChallengeVideo ? 0 : 5;
         if (elapsed < minElapsedSecs) {
-            console.log('[Completion] Under', minElapsedSecs, 's threshold for',
-                isChallengeVideo ? 'challenge' : 'regular', 'video (got', elapsed, 's) — not recording');
+            console.log('[Completion] Under', minElapsedSecs, 's minimum (got', elapsed, 's) — not recording');
             return;
         }
 
@@ -432,7 +447,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                 sourceType,
                 category,
                 watchMinutes: watchedMinutes,
-                user: profile ?? undefined,
+                user: profile ? { timezone: (profile as any).timezone } : undefined,
             });
             console.log('[Completion] recorded — todayKey:', result.todayKey,
                 'streak:', result.newStreak, 'credits:', result.creditsAwarded,
@@ -463,13 +478,37 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
 
     // Lights-out: dim the panel when the video is actively playing
     const panelDimAnim = useRef(new Animated.Value(1)).current;
-    const setLightsOut = (playing: boolean) => {
+    const setLightsOut = useCallback((playing: boolean) => {
         Animated.timing(panelDimAnim, {
             toValue: playing ? 0.15 : 1,
             duration: 400,
             useNativeDriver: Platform.OS !== 'web',
         }).start();
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
+    // Pause video when navigating away, resume when returning
+    useFocusEffect(useCallback(() => {
+        sharedPlayerRef.current?.resumeVideo();
+        return () => {
+            sharedPlayerRef.current?.pauseVideo();
+            if (completionTimerRef.current) {
+                clearTimeout(completionTimerRef.current);
+                completionTimerRef.current = null;
+            }
+        };
+    }, []));
+
+    const handleVideoEndCallback = useCallback(() => {
+        handleVideoEndRef.current();
+        triggerCompletionCheckRef.current();
+    }, []);
+
+    const handleDurationChange = useCallback((durMs: number) => {
+        durationMsRef.current = durMs;
+    }, []);
 
     const requestedVideoId = route?.params?.videoId;
     const fallbackTitle = route?.params?.title ?? 'z.mohisharma';
@@ -511,9 +550,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     const youtubeId = routeYoutubeId || sourceVideo?.youtubeId || '';
     const isYT = !!youtubeId && youtubeId.length === 11 && !youtubeId.includes('http');
 
-    console.log('youtubeId received:', youtubeId);
-    console.log('Platform:', Platform.OS);
-    console.log('isYT:', isYT);
+    // Render-time logs removed — use useEffect below for one-shot debug logging
 
     const title = sourceVideo?.title ?? fallbackTitle;
     const videoId = (requestedVideoId ?? title ?? 'default-video')
@@ -1215,19 +1252,20 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                         ref={sharedPlayerRef}
                         title={title}
                         videoUri={sourceVideo.videoUrl}
-                        onBack={() => navigation.goBack()}
+                        onBack={handleBack}
                         actionLabel="Done"
                         onActionPress={triggerCompletionCheck}
                         onPlayStateChange={setLightsOut}
                         onSeekForward={triggerCompletionCheck}
-                        onVideoEnd={() => { handleVideoEndRef.current(); triggerCompletionCheck(); }}
+                        onVideoEnd={handleVideoEndCallback}
                         onCurrentPositionChange={handlePositionChange}
+                        onDurationChange={handleDurationChange}
                         inviteCta={allowInvite ? {
                             title: 'Invite a Friend',
                             subtitle: <Text>Instantly workout with a friend <Text style={{ color: '#F97316' }}>right now.</Text></Text>,
                             onPress: () => setShowInviteTypeModal(true),
                             viewerCount: (() => {
-                                const count = Math.max(0, (viewerCount || 1) - 1); // fallback if liveViewers isn't updated
+                                const count = Math.max(0, (viewerCount || 1) - 1);
                                 const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
                                 const finalCount = liveViewers.length > 0 ? exactCount : count;
                                 return finalCount > 0 ? finalCount : undefined;
@@ -1916,4 +1954,6 @@ const reqStyles = StyleSheet.create({
         alignItems: 'center',
     },
 });
+
+export default React.memo(VideoPlayerScreen);
 

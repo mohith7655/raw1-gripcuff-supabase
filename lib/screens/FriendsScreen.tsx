@@ -80,7 +80,7 @@ function FriendsTab({ showFind, setShowFind }: { showFind: boolean; setShowFind:
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [profiles, setProfiles] = useState<Record<string, User>>({});
 
-    // Fetch profiles for request senders/recipients
+    // Fetch profiles for request senders/recipients via Supabase
     useEffect(() => {
         const uids = [
             ...incomingRequests.map((r) => r.fromUid),
@@ -88,21 +88,22 @@ function FriendsTab({ showFind, setShowFind }: { showFind: boolean; setShowFind:
         ];
         const unique = [...new Set(uids)];
         if (unique.length === 0) return;
-        Promise.all(
-            unique.map(async (uid) => {
-                try {
-                    const { doc: fsDoc, getDoc } = await import('firebase/firestore');
-                    const { db } = await import('../core/config/firebase');
-                    const snap = await getDoc(fsDoc(db, 'users', uid));
-                    if (snap.exists()) return { ...(snap.data() as User), uid } as User;
-                } catch { /* ignore */ }
-                return null;
-            })
-        ).then((results) => {
+
+        import('../core/config/supabase').then(({ supabase }) =>
+            supabase.from('users').select('*').in('id', unique)
+        ).then(({ data }) => {
             const map: Record<string, User> = {};
-            results.forEach((u) => { if (u) map[u.uid] = u; });
+            (data ?? []).forEach((row: any) => {
+                map[row.id] = {
+                    uid: row.id,
+                    email: row.email || '',
+                    fullName: row.full_name || 'User',
+                    username: row.username || '',
+                    profileImageUrl: row.avatar_url || undefined,
+                } as User;
+            });
             setProfiles(map);
-        });
+        }).catch(() => {});
     }, [incomingRequests, outgoingRequests]);
 
     const handleRemove = (friend: User) => {
@@ -266,9 +267,8 @@ function FriendsTab({ showFind, setShowFind }: { showFind: boolean; setShowFind:
 function FindSection() {
     const [inputValue, setInputValue] = useState('');
     const [localResults, setLocalResults] = useState<User[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
-    const { searchUsers, clearSearch } = useFriend();
+    const { searchUsers, clearSearch, searching: isSearching } = useFriend();
     const { user } = useAuth();
 
     // Status cache: uid -> RelationshipStatus
@@ -276,20 +276,12 @@ function FindSection() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const { sendRequest, acceptRequest, incomingRequests } = useFriend();
 
-    const handleSearch = async () => {
+    const handleSearch = () => {
         if (!inputValue.trim()) return;
-        console.log('handleSearch called with:', inputValue.trim());
-        setIsSearching(true);
         setLocalResults([]);
         setStatusMap({});
         setHasSearched(true);
-        try {
-            await searchUsers(inputValue.trim());
-        } catch (e) {
-            console.warn('FindTab search error:', e);
-        } finally {
-            setIsSearching(false);
-        }
+        searchUsers(inputValue.trim());
     };
 
     // Pull results from context after searchUsers updates them
@@ -315,12 +307,15 @@ function FindSection() {
 
     const handleClearInput = (text: string) => {
         setInputValue(text);
-        // If user clears the input, reset results
         if (!text.trim()) {
             clearSearch();
             setLocalResults([]);
             setStatusMap({});
             setHasSearched(false);
+        } else {
+            // Trigger debounced search on every keystroke
+            setHasSearched(true);
+            searchUsers(text);
         }
     };
 

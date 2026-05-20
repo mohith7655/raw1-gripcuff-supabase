@@ -58,33 +58,10 @@ import { TodaysChallengeCard } from '../components/TodaysChallengeCard';
 import { StreakService, StreakData } from '../services/streak.service';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
-import { msUntilMidnight, logStreakDebug, getDateKey, getWeekdayIndex, getYesterdayKey } from '../utils/streakDate';
-import { TimezoneService } from '../services/timezone.service';
+import { msUntilMidnight, getDateKey, buildWeekDates, getLastNDayKeys } from '../utils/streakDate';
 import { getResolvedTimezone } from '../utils/timezone';
-import { recordDailyActivity } from '../services/dailyActivity.service';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
-
-function logCurrentDay(data: import('../services/streak.service').StreakData, label: string) {
-  const tz = getResolvedTimezone(data);
-  const todayKey = getDateKey(tz);
-  const wdayIdx = getWeekdayIndex(tz); // 0=Sun..6=Sat
-  console.group('[Streak Debug] ' + label);
-  console.log('[Current Day]', {
-    deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    resolvedTimezone: tz,
-    todayKey,
-    weekday: DAY_NAMES[wdayIdx],
-    weekdayIndex: wdayIdx,
-    lastWorkoutDate: data.lastWorkoutDate,
-    currentStreak: data.currentStreak,
-  });
-  console.log('[Streak Render]', {
-    weeklyActivity: data.weeklyActivity,
-    todayCompleted: data.weeklyActivity[todayKey] === true,
-  });
-  console.groupEnd();
-}
 
 // ── Recommendation card row ────────────────────────────────────────────────────
 function RecommendationSection({
@@ -186,7 +163,7 @@ function RecommendationSection({
   );
 }
 
-export const HomeScreen = () => {
+const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
@@ -259,142 +236,134 @@ export const HomeScreen = () => {
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const totalNotificationsBadge = pendingInvites.length + incomingRequests.length + unreadChatCount;
 
-  // Fetch profiles for incoming friend request senders
-  const [requestProfiles, setRequestProfiles] = useState<Record<string, any>>({});
-  useEffect(() => {
-    const uids = incomingRequests.map((r) => r.fromUid);
-    if (uids.length === 0) { setRequestProfiles({}); return; }
-    setRequestProfiles({});
-  }, [incomingRequests]);
-
-  // Streak data — refreshed every time the screen comes into focus.
-  // backfillStreak repairs users who have workout minutes but no streak doc yet.
+  // ── Streak data ─────────────────────────────────────────────────────────
+  // Derived directly from `profile` (UserContext), which already has a
+  // realtime Supabase subscription. When Supabase writes current_streak /
+  // weekly_activity, UserContext re-fetches the profile and this effect
+  // rebuilds streakData — no separate StreakService fetch needed.
   const [streakData, setStreakData] = useState<StreakData | null>(null);
 
-  const refreshStreak = useCallback((uid: string) => {
-    StreakService.backfillStreak(uid)
-      .catch((e) => console.error('[Streak] backfill error:', e?.message ?? e))
-      .finally(() => {
-        StreakService.checkAndBreakStreak(uid).catch(() => {});
-        StreakService.getStreakData(uid).then((data) => {
-          logCurrentDay(data, 'refreshStreak');
-          setStreakData(data);
-        }).catch(() => {});
-      });
+  // Serialize weeklyActivity to a string so React sees a primitive dep,
+  // not an object reference that is brand-new every render.
+  const weeklyActivityJson = JSON.stringify(profile?.weeklyActivity ?? null);
+
+  useEffect(() => {
+    if (!profile) return;
+    const tz = getResolvedTimezone();
+    const weeklyActivityRaw: Record<string, boolean> =
+      (profile.weeklyActivity && typeof profile.weeklyActivity === 'object')
+        ? profile.weeklyActivity as Record<string, boolean>
+        : {};
+
+    const calendarWeek = buildWeekDates(tz, 0);
+    const rollingDays = getLastNDayKeys(tz, 7);
+    const allDays = Array.from(new Set([...calendarWeek, ...rollingDays]));
+    const weeklyActivity: Record<string, boolean> = {};
+    const weeklyMinutes: Record<string, number> = {};
+    allDays.forEach(d => {
+      weeklyActivity[d] = !!weeklyActivityRaw[d];
+      weeklyMinutes[d] = weeklyActivityRaw[d] ? 10 : 0;
+    });
+
+    const currentStreak = profile.currentStreak ?? 0;
+    const completedWorkouts = profile.completedWorkouts ?? 0;
+    const totalLiveSessions = profile.totalLiveSessions ?? 0;
+
+    const nextData: StreakData = {
+      currentStreak,
+      bestStreak: profile.bestStreak ?? 0,
+      lastWorkoutDate: profile.lastWorkoutDate ?? null,
+      weeklyActivity,
+      weeklyMinutes,
+      weeklyChallengesCompleted: 0,
+      timezone: tz,
+      totalWorkouts: completedWorkouts,
+      totalLiveSessions,
+      credits: profile.credits ?? 0,
+      badges: [],
+      leaderboardScore: currentStreak * 5 + completedWorkouts * 3 + totalLiveSessions * 8,
+    };
+
+    // Only update state when values actually changed (prevents downstream cascades)
+    setStreakData(prev => {
+      if (
+        prev?.currentStreak === nextData.currentStreak &&
+        prev?.bestStreak === nextData.bestStreak &&
+        prev?.lastWorkoutDate === nextData.lastWorkoutDate &&
+        prev?.credits === nextData.credits &&
+        prev?.totalWorkouts === nextData.totalWorkouts &&
+        JSON.stringify(prev?.weeklyActivity) === JSON.stringify(nextData.weeklyActivity)
+      ) {
+        return prev; // bail out — nothing changed
+      }
+      return nextData;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    profile?.currentStreak,
+    profile?.bestStreak,
+    profile?.lastWorkoutDate,
+    weeklyActivityJson,       // serialized — stable primitive
+    profile?.completedWorkouts,
+    profile?.watchedMinutes,
+    profile?.credits,
+  ]);
+
+  useEffect(() => {
+    console.log('[Home] mounted');
+    return () => { console.log('[Home] unmounted'); };
   }, []);
 
-  // Refresh on screen focus (handles tab switches and back-navigation)
+  // ── Throttle guard: prevents simultaneous profile fetches ────────────────
+  const isRefreshingRef = useRef(false);
+  const { fetchProfile } = useUser();
+
+  const doRefresh = useCallback((uid: string) => {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    fetchProfile(uid)
+      .catch(() => {})
+      .finally(() => { isRefreshingRef.current = false; });
+    StreakService.checkAndBreakStreak(uid).catch(() => {});
+  }, [fetchProfile]); // fetchProfile is now stable (useCallback in UserContext)
+
+  // ── ONE useFocusEffect — fires when tab is focused ───────────────────────
   useFocusEffect(useCallback(() => {
     if (!supabaseUserId) return;
-    refreshStreak(supabaseUserId);
-  }, [supabaseUserId, refreshStreak]));
+    doRefresh(supabaseUserId);
+  }, [supabaseUserId, doRefresh]));
 
-  // Refresh when app returns to foreground (handles PWA wake from background / tab switch)
+  // ── ONE AppState listener — fires on foreground resume ───────────────────
   useEffect(() => {
     if (!supabaseUserId) return;
     const uid = supabaseUserId;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        console.log('[Streak] AppState active — refreshing streak');
-        refreshStreak(uid);
-      }
+      if (state === 'active') doRefresh(uid);
     });
     return () => sub.remove();
-  }, [supabaseUserId, refreshStreak]);
+  }, [supabaseUserId, doRefresh]);
 
-  // Midnight rollover: re-fetch streak when the user's LOCAL date changes.
-  // Midnight rollover — device timezone wins over any stored value.
+  // ── ONE midnight timer — captures timezone once, never recreated ─────────
+  // Stable ref holds current timezone so the timer effect itself has no
+  // object deps that change on every render.
+  const timezoneRef = useRef(getResolvedTimezone());
   useEffect(() => {
     if (!supabaseUserId) return;
     const uid = supabaseUserId;
-    const tz = getResolvedTimezone(streakData ?? undefined);
+    const tz = timezoneRef.current;
 
-    const scheduleNextMidnight = (): ReturnType<typeof setTimeout> => {
-      const ms = msUntilMidnight(tz, 500); // 500ms buffer past midnight in user tz
-      console.log('[Streak] Midnight timer (tz:', tz, ') — firing in', Math.round(ms / 1000), 's');
-      return setTimeout(() => {
-        logStreakDebug({ timezone: tz, label: 'midnight rollover' });
-        refreshStreak(uid);
-        scheduleNextMidnight(); // reschedule for the following midnight
+    let timer: ReturnType<typeof setTimeout>;
+    const scheduleNextMidnight = () => {
+      const ms = msUntilMidnight(tz, 500);
+      timer = setTimeout(() => {
+        console.log('[Streak] midnight rollover — refreshing profile');
+        doRefresh(uid);
+        scheduleNextMidnight();
       }, ms);
     };
-
-    const timer = scheduleNextMidnight();
+    scheduleNextMidnight();
     return () => clearTimeout(timer);
-  }, [supabaseUserId, streakData?.timezone, refreshStreak]);
-
-
-  // ── Activity listener stub (Firebase removed) ──
-
-  // ── Timezone UI correction ──
-  // TimezoneService.getForUser already self-heals stale stored values and auto-updates Firestore
-  // on the first call. This effect handles the edge case where getStreakData ran with a wrong
-  // timezone before the cache was populated (e.g. first load with stale stored "America/Chicago").
-  // It re-runs streak under the corrected timezone so circles and date keys are immediately right.
-  useEffect(() => {
-    if (!streakData?.timezone || !supabaseUserId) return;
-    const deviceTz = getResolvedTimezone();
-    if (deviceTz === streakData.timezone) return;
-
-    console.log('[Timezone] UI mismatch detected: streakData.timezone=' + streakData.timezone
-      + ' device=' + deviceTz + ' — re-resolving streak');
-
-    // Invalidate cache so next getForUser re-reads Firestore (which was already corrected by the service)
-    TimezoneService.invalidateCache(supabaseUserId);
-
-    // Apply corrected timezone to local state immediately so activity listener subscribes to right key
-    setStreakData(prev => prev ? { ...prev, timezone: deviceTz } : prev);
-
-    // Re-fetch streak under corrected timezone
-    refreshStreak(supabaseUserId);
-  }, [streakData?.timezone, supabaseUserId]);
-
-  // ── Auto-continue streak on app open ──────────────────────────────────────
-  // If yesterday was completed and today hasn't been recorded yet, immediately
-  // write today's activity doc and show today as full orange — no workout needed.
-  // The user opened the app; that's engagement enough to keep the streak alive.
-  useEffect(() => {
-    if (!supabaseUserId || !streakData) return;
-
-    const uid = supabaseUserId;
-    const tz = getResolvedTimezone(streakData);
-    const todayKey = getDateKey(tz);
-    const yesterdayKey = getYesterdayKey(tz);
-    const lastWorkoutDate = streakData.lastWorkoutDate;
-    const currentStreak = streakData.currentStreak ?? 0;
-    const todayCompleted = !!streakData.weeklyActivity[todayKey];
-
-    const streakIsAlive = currentStreak > 0 && (
-      lastWorkoutDate === todayKey || lastWorkoutDate === yesterdayKey
-    );
-
-    console.log('[Streak UI]', {
-      todayKey,
-      yesterdayKey,
-      lastWorkoutDate,
-      streakIsAlive,
-      todayCompleted,
-    });
-
-    if (!streakIsAlive || todayCompleted) return;
-
-    console.log('[Streak] Auto-continuing streak for today:', todayKey, '— writing activity doc');
-
-    // Optimistic update: show today as full orange right now
-    setStreakData(prev => {
-      if (!prev || prev.weeklyActivity[todayKey] === true) return prev;
-      return {
-        ...prev,
-        weeklyActivity: { ...prev.weeklyActivity, [todayKey]: true },
-        lastWorkoutDate: todayKey,
-      };
-    });
-
-    // Persist to Firestore in background — idempotent, safe to call on every app open
-    recordDailyActivity(uid, { type: 'workout', user: streakData })
-      .then(result => console.log('[Streak] Auto-continue saved — streak:', result.newStreak))
-      .catch(e => console.warn('[Streak] Auto-continue write failed:', e?.message ?? e));
-  }, [supabaseUserId, streakData?.lastWorkoutDate, streakData?.currentStreak]);
+  }, [supabaseUserId, doRefresh]); // doRefresh is stable, supabaseUserId only changes on login
 
   // Booking modal state
   const [bookingVisible, setBookingVisible] = useState(false);
@@ -549,12 +518,12 @@ export const HomeScreen = () => {
               {/* Unified streak + leaderboard */}
               <UnifiedProgressLeaderboard
                 streakData={streakData}
-                currentUserId={supabaseUserId}
+                currentUserId={supabaseUserId ?? undefined}
                 onViewAll={() => navigation.navigate('LeaderboardScreen')}
               />
 
               {/* Daily Reminder Scheduler */}
-              <DailyReminderCard userId={supabaseUserId} />
+              <DailyReminderCard userId={supabaseUserId ?? undefined} />
 
               {/* Quick Stats */}
               <View style={styles.compactStatsCard}>
@@ -870,7 +839,7 @@ export const HomeScreen = () => {
               {(() => {
                 const now = Date.now();
                 const oneHourAgo = now - 60 * 60 * 1000;
-                const acceptedSessions = upcomingSessions.filter(s => s.status === 'accepted' && s.scheduledAt.toMillis() > oneHourAgo);
+                const acceptedSessions = upcomingSessions.filter(s => s.status === 'accepted' && (s.scheduledAt instanceof Date ? s.scheduledAt.getTime() : (s.scheduledAt as any)?.toMillis?.() ?? 0) > oneHourAgo);
                 const upcomingItems = [...pendingInvites, ...pendingOutgoing, ...acceptedSessions];
                 if (upcomingItems.length === 0) return null;
                 return (
@@ -887,7 +856,9 @@ export const HomeScreen = () => {
                       const isAccepted = session.status === 'accepted';
                       const isHost = session.hostUid === supabaseUserId;
                       const partnerName = isHost ? session.guestName : session.hostName;
-                      const scheduledDate = session.scheduledAt?.toDate?.();
+                      const scheduledDate = session.scheduledAt instanceof Date
+                        ? session.scheduledAt
+                        : (session.scheduledAt as any)?.toDate?.() ?? null;
                       const dateStr = scheduledDate
                         ? scheduledDate.toDateString() === new Date().toDateString()
                           ? 'Today'
@@ -1103,7 +1074,7 @@ export const HomeScreen = () => {
                     .sort((a: any, b: any) => {
                       const aConvo = chatConversations.find((c) => c.id === getChatId(authUser!.uid, a.uid));
                       const bConvo = chatConversations.find((c) => c.id === getChatId(authUser!.uid, b.uid));
-                      return (bConvo?.lastMessageAt?.toMillis() ?? 0) - (aConvo?.lastMessageAt?.toMillis() ?? 0);
+                      return ((bConvo?.lastMessageAt instanceof Date ? bConvo.lastMessageAt.getTime() : (bConvo?.lastMessageAt as any)?.toMillis?.() ?? 0)) - ((aConvo?.lastMessageAt instanceof Date ? aConvo.lastMessageAt.getTime() : (aConvo?.lastMessageAt as any)?.toMillis?.() ?? 0));
                     })
                     .slice(0, 2)
                     .map((friend: any) => {
@@ -1276,6 +1247,8 @@ export const HomeScreen = () => {
     </SafeAreaView>
   );
 };
+
+export const HomeScreen = React.memo(HomeScreenInner);
 
 const styles = StyleSheet.create({
   safeArea: {
