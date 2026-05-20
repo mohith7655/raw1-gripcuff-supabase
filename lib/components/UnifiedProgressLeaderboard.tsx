@@ -70,14 +70,26 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   minutes: number;
   dateKey: string;
 }) {
-  // Only active when there is real recorded activity — never force today to be active.
-  const isActive = !isFuture && active;
-
+  // Derive active from raw numeric minutes — never from formatted strings or the
+  // weeklyActivity boolean alone (that flag is only set on workout completion,
+  // not on partial watch-time, so decimal values like 1.3m would render gray).
   const rawMinutes = Number(minutes) || 0;
+  const isActive = !isFuture && (active || rawMinutes > 0);
   const minLabel = formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');
   const dateLabel = `${parseInt(mm)}/${parseInt(dd)}`;
+
+  if (isToday || rawMinutes > 0) {
+    console.log('[Circle]', {
+      dateKey,
+      raw: minutes,
+      coerced: rawMinutes,
+      isActive,
+      formattedMinutes: minLabel,
+      type: typeof minutes,
+    });
+  }
 
   return (
     <View style={s.dayCol}>
@@ -485,9 +497,9 @@ const s = StyleSheet.create({
     flex: 1,
   },
   dayDot: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',

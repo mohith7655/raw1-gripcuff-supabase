@@ -151,13 +151,18 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                 }
             } else if (s === 'error' || error) {
                 const msg = error?.message || 'Failed to load video';
-                // Filter out HTML5/browser fallback noise that spams logs on web
-                const isMediaElementNoise = Platform.OS === 'web' && (
+                const isAudioError = Platform.OS === 'web' && msg.includes('AUDIO_RENDERER_ERROR');
+                // Suppress generic HTML5 media element noise (not audio-specific)
+                const isMediaElementNoise = Platform.OS === 'web' && !isAudioError && (
                     msg.includes('MEDIA_ELEMENT_ERROR') ||
                     msg.includes('HTMLMediaElement') ||
                     msg.includes('AbortError')
                 );
-                if (!isMediaElementNoise) {
+                if (isAudioError) {
+                    // Audio suspended by OS (Teams, screen share, etc.) — show friendly prompt
+                    setIsBuffering(false);
+                    setPlaybackError('audio_interrupted');
+                } else if (!isMediaElementNoise) {
                     console.log('[Video Error]', { uri: videoUri, error: msg, platform: Platform.OS });
                     setIsBuffering(false);
                     setPlaybackError(msg);
@@ -534,10 +539,26 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                         <>
                             {playbackError ? (
                                 <View style={styles.errorOverlay}>
-                                    {(playbackError.toLowerCase().includes('format') ||
-                                      playbackError.toLowerCase().includes('notsupported') ||
-                                      playbackError.toLowerCase().includes('not supported') ||
-                                      playbackError.toLowerCase().includes('source')) ? (
+                                    {playbackError === 'audio_interrupted' ? (
+                                        <>
+                                            <Text style={styles.errorText}>🔇 Audio paused</Text>
+                                            <Text style={styles.errorSubtext}>
+                                                Audio was interrupted by another app. Tap Resume to continue.
+                                            </Text>
+                                            <TouchableOpacity
+                                                style={styles.retryBtn}
+                                                onPress={() => {
+                                                    setPlaybackError(null);
+                                                    player.play();
+                                                }}
+                                            >
+                                                <Text style={styles.retryBtnText}>Resume</Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    ) : (playbackError.toLowerCase().includes('format') ||
+                                          playbackError.toLowerCase().includes('notsupported') ||
+                                          playbackError.toLowerCase().includes('not supported') ||
+                                          playbackError.toLowerCase().includes('source')) ? (
                                         <>
                                             <Text style={styles.errorText}>Video format unsupported</Text>
                                             <Text style={styles.errorSubtext}>
@@ -548,18 +569,18 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                         <>
                                             <Text style={styles.errorText}>⚠️ Failed to load video</Text>
                                             <Text style={styles.errorSubtext}>{playbackError}</Text>
+                                            <TouchableOpacity
+                                                style={styles.retryBtn}
+                                                onPress={() => {
+                                                    setPlaybackError(null);
+                                                    setIsBuffering(true);
+                                                    player.replace({ uri: videoUri });
+                                                }}
+                                            >
+                                                <Text style={styles.retryBtnText}>Retry</Text>
+                                            </TouchableOpacity>
                                         </>
                                     )}
-                                    <TouchableOpacity
-                                        style={styles.retryBtn}
-                                        onPress={() => {
-                                            setPlaybackError(null);
-                                            setIsBuffering(true);
-                                            player.replace({ uri: videoUri });
-                                        }}
-                                    >
-                                        <Text style={styles.retryBtnText}>Retry</Text>
-                                    </TouchableOpacity>
                                 </View>
                             ) : (
                                 <>

@@ -211,9 +211,11 @@ export function StreakCard({ data, onPress }: Props) {
                 <View style={styles.centerBlock}>
                     {weekKeys.map((key, i) => {
                         const isToday = key === todayKey;
-                        const active = !!weeklyActivity[key];
-                        // Glowing "you're on a streak, keep it going" state:
-                        // today hasn't been completed yet, but the streak is still alive.
+                        // Active if workout-completion flag is set OR if there are real
+                        // watched seconds — decimal values like 1.3m must count as active.
+                        const rawMinutes = Number(data?.weeklyMinutes?.[key] ?? 0);
+                        const active = !!weeklyActivity[key] || rawMinutes > 0;
+                        // Glowing "keep it going" state: streak alive but today not yet active.
                         const isCurrentStreakDay = isToday && streakIsAlive && !active;
                         return (
                             <DayDot
@@ -222,7 +224,7 @@ export function StreakCard({ data, onPress }: Props) {
                                 active={active}
                                 isToday={isToday}
                                 isCurrentStreakDay={isCurrentStreakDay}
-                                minutes={data?.weeklyMinutes?.[key]}
+                                minutes={rawMinutes}
                             />
                         );
                     })}
@@ -241,7 +243,7 @@ export function StreakCard({ data, onPress }: Props) {
     );
 }
 
-const DOT_SIZE = 36;
+const DOT_SIZE = 40;
 
 const styles = StyleSheet.create({
     card: {
