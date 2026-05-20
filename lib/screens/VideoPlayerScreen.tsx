@@ -44,6 +44,7 @@ import { StreakService } from '../services/streak.service';
 import { recordUniversalWorkoutCompletion, WorkoutSourceType } from '../services/workoutCompletion.service';
 import { RewardUnlockModal } from '../components/rewards/RewardUnlockModal';
 import { addWorkoutMinutes } from '../services/leaderboard.service';
+import { WatchTrackingService } from '../services/watchTracking.service';
 import { useVideoEngagement } from '../hooks/useVideoEngagement';
 import { useVideoGlobalCounts, formatCount } from '../services/videoEngagement.service';
 import { getSimilarPrograms, RecommendedProgram } from '../services/recommendation.service';
@@ -314,6 +315,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
             if (videoMinutes > 0) {
                 addWorkoutMinutes(uid, videoMinutes).catch(() => {});
             }
+            // Flush any remaining tracked seconds that haven't been persisted yet
+            WatchTrackingService.stopSession();
+            WatchTrackingService.flushNow().catch(() => {});
         };
     }, []);
 
@@ -487,13 +491,30 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Watch tracking: start/stop per play state, stable uid ref so callback is stable
+    const supabaseUserIdRef = useRef(supabaseUserId);
+    supabaseUserIdRef.current = supabaseUserId;
+    const handlePlayStateChange = useCallback((playing: boolean) => {
+        setLightsOut(playing);
+        const uid = supabaseUserIdRef.current;
+        if (!uid) return;
+        if (playing) {
+            WatchTrackingService.startSession(uid);
+        } else {
+            WatchTrackingService.stopSession();
+        }
+    }, [setLightsOut]);
+
     const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
-    // Pause video when navigating away, resume when returning
+    // Pause video when navigating away, resume when returning.
+    // Also stop watch tracking on blur and flush any pending seconds.
     useFocusEffect(useCallback(() => {
         sharedPlayerRef.current?.resumeVideo();
         return () => {
             sharedPlayerRef.current?.pauseVideo();
+            WatchTrackingService.stopSession();
+            WatchTrackingService.flushNow().catch(() => {});
             if (completionTimerRef.current) {
                 clearTimeout(completionTimerRef.current);
                 completionTimerRef.current = null;
@@ -1255,7 +1276,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onBack={handleBack}
                         actionLabel="Done"
                         onActionPress={triggerCompletionCheck}
-                        onPlayStateChange={setLightsOut}
+                        onPlayStateChange={handlePlayStateChange}
                         onSeekForward={triggerCompletionCheck}
                         onVideoEnd={handleVideoEndCallback}
                         onCurrentPositionChange={handlePositionChange}

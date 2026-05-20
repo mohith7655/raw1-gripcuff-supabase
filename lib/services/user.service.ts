@@ -34,6 +34,17 @@ const toAppUser = (row: any, uid: string): User => {
     credits: Number(row?.credits ?? 0),
     createdAt: row?.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row?.updated_at ? new Date(row.updated_at) : new Date(),
+    currentStreak: Number(row?.current_streak ?? 0),
+    bestStreak: Number(row?.best_streak ?? 0),
+    lastWorkoutDate: row?.last_workout_date || null,
+    weeklyActivity: typeof row?.weekly_activity === 'string' ? JSON.parse(row.weekly_activity) : (row?.weekly_activity || {}),
+    completedWorkouts: Number(row?.completed_workouts ?? 0),
+    watchedMinutes: Number(row?.watched_minutes ?? 0),
+    watchedSeconds: Number(row?.watched_seconds ?? 0),
+    todayWatchSeconds: Number(row?.today_watch_seconds ?? 0),
+    totalWatchSessions: Number(row?.total_watch_sessions ?? 0),
+    lastVideoWatchAt: row?.last_video_watch_at || null,
+    totalLiveSessions: Number(row?.total_live_sessions ?? 0),
   };
 };
 
@@ -70,6 +81,12 @@ export class UserService {
       avatar_url: profile.profileImageUrl || null,
       streak: 0,
       watched_minutes: 0,
+      current_streak: 0,
+      best_streak: 0,
+      last_workout_date: null,
+      weekly_activity: {},
+      completed_workouts: 0,
+      total_live_sessions: 0,
     };
 
     const { error } = await supabase.from('users').upsert(payload, { onConflict: 'id' });
@@ -99,6 +116,13 @@ export class UserService {
       payload.home_location_data = data.locations?.home ?? null;
       payload.park_location_data = data.locations?.park ?? null;
     }
+    if (data.currentStreak !== undefined) payload.current_streak = data.currentStreak;
+    if (data.bestStreak !== undefined) payload.best_streak = data.bestStreak;
+    if (data.lastWorkoutDate !== undefined) payload.last_workout_date = data.lastWorkoutDate;
+    if (data.weeklyActivity !== undefined) payload.weekly_activity = data.weeklyActivity;
+    if (data.completedWorkouts !== undefined) payload.completed_workouts = data.completedWorkouts;
+    if (data.watchedMinutes !== undefined) payload.watched_minutes = data.watchedMinutes;
+    if (data.totalLiveSessions !== undefined) payload.total_live_sessions = data.totalLiveSessions;
 
     console.log('[UserService] updateProfile mapped payload', payload);
 

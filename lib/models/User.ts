@@ -28,6 +28,17 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
+  currentStreak?: number;
+  bestStreak?: number;
+  lastWorkoutDate?: string | null;
+  weeklyActivity?: Record<string, boolean>;
+  completedWorkouts?: number;
+  watchedMinutes?: number;
+  watchedSeconds?: number;
+  todayWatchSeconds?: number;
+  totalWatchSessions?: number;
+  lastVideoWatchAt?: string | null;
+  totalLiveSessions?: number;
 }
 
 export type CreateUserInput = Omit<User, 'uid' | 'createdAt' | 'updatedAt'>;
