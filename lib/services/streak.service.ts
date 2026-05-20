@@ -272,7 +272,7 @@ export const StreakService = {
         const weeklyMinutes: Record<string, number> = {};
         allDays.forEach(d => {
             weeklyActivity[d] = !!weeklyActivityRaw[d];
-            weeklyMinutes[d] = minutesByDay[d] ?? (weeklyActivityRaw[d] ? 10 : 0);
+            weeklyMinutes[d] = minutesByDay[d] ?? 0;
         });
 
         const currentStreak = Number(row.current_streak ?? 0);

@@ -267,11 +267,11 @@ const HomeScreenInner = () => {
     allDays.forEach(d => {
       weeklyActivity[d] = !!weeklyActivityRaw[d];
       // Today: always derive from today_watch_seconds — never floor, never hardcode.
-      // Past days: activity flag present = placeholder 10m (no per-day seconds in schema yet).
+      // Past days: no per-day seconds in schema yet — show 0 (orange dot, no minutes text).
       if (d === todayKey) {
         weeklyMinutes[d] = todayWatchSeconds / 60;
       } else {
-        weeklyMinutes[d] = weeklyActivityRaw[d] ? 10 : 0;
+        weeklyMinutes[d] = 0;
       }
     });
 

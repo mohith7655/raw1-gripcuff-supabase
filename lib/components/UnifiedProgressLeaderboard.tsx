@@ -70,9 +70,10 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   minutes: number;
   dateKey: string;
 }) {
-  const isActive = !isFuture && (active || isToday);
+  // Only active when there is real recorded activity — never force today to be active.
+  const isActive = !isFuture && active;
 
-  const rawMinutes = isActive ? Math.max(1, Number(minutes) || 0) : Number(minutes) || 0;
+  const rawMinutes = Number(minutes) || 0;
   const minLabel = formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');
