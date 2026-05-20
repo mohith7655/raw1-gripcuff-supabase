@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../core/config/supabase';
 import { UserService } from '../services/user.service';
 import { User } from '../models/User';
@@ -30,6 +30,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   // keyed by Supabase user ID, not Firebase UID.
   const { supabaseUserId } = useAuth();
 
+  // Track in-flight fetch and last fetch time to prevent concurrent/rapid duplicate calls
+  const fetchingRef = useRef(false);
+  const lastFetchRef = useRef(0);
+  const lastRealtimeFetchRef = useRef(0);
+
   useEffect(() => {
     if (!supabaseUserId) {
       setProfile(null);
@@ -39,14 +44,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const uid = supabaseUserId;
     let cancelled = false;
 
-    console.log('[UserContext] loading profile for supabaseUserId:', uid);
     setLoading(true);
-
     UserService.getProfile(uid)
       .then((data) => {
         if (!cancelled) {
-          console.log('[UserContext] profile loaded', { uid });
           setProfile(data);
+          lastFetchRef.current = Date.now();
         }
       })
       .catch((err) => {
@@ -62,20 +65,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'users', filter: `id=eq.${uid}` },
         async () => {
+          if (cancelled) return;
+          const now = Date.now();
+          // Debounce: ignore realtime bursts within 5 seconds
+          if (now - lastRealtimeFetchRef.current < 5000) {
+            console.log('[UserContext] realtime refresh skipped — cooldown');
+            return;
+          }
+          lastRealtimeFetchRef.current = now;
           try {
             const latest = await UserService.getProfile(uid);
             if (!cancelled) {
-              console.log('[UserContext] realtime profile refresh', { uid });
+              console.log('[UserContext] realtime profile refresh');
               setProfile(latest);
+              lastFetchRef.current = Date.now();
             }
           } catch (err) {
             console.warn('[UserContext] realtime profile refresh failed:', err);
           }
         },
       )
-      .subscribe((status) => {
-        console.log('[UserContext] realtime status:', status);
-      });
+      .subscribe();
 
     return () => {
       cancelled = true;
@@ -83,22 +93,34 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
   }, [supabaseUserId]);
 
-  const fetchProfile = async (uid: string) => {
+  // Stable background refresh — never shows the loading spinner (spinner is for initial load only).
+  // Guards: concurrent-call ref + 3-second cooldown between calls.
+  const fetchProfile = useCallback(async (uid: string) => {
+    const now = Date.now();
+    if (fetchingRef.current) {
+      console.log('[UserContext] fetchProfile skipped — already fetching');
+      return;
+    }
+    if (now - lastFetchRef.current < 3000) {
+      console.log('[UserContext] fetchProfile skipped — cooldown');
+      return;
+    }
+    fetchingRef.current = true;
+    lastFetchRef.current = now;
     try {
-      setLoading(true);
       setError(null);
       const data = await UserService.getProfile(uid);
       setProfile(data);
     } catch (err) {
       const errorMessage = (err as Error).message;
       setError(errorMessage);
-      throw err;
+      console.warn('[UserContext] fetchProfile failed:', errorMessage);
     } finally {
-      setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, []); // no deps — uid is passed as argument
 
-  const updateProfile = async (uid: string, data: Partial<User>) => {
+  const updateProfile = useCallback(async (uid: string, data: Partial<User>) => {
     try {
       setLoading(true);
       setError(null);
@@ -112,14 +134,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // no deps — uid/data are passed as arguments
 
-  const clearProfile = () => {
+  const clearProfile = useCallback(() => {
     setProfile(null);
     setError(null);
-  };
+  }, []);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return (
     <UserContext.Provider

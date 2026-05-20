@@ -309,23 +309,39 @@ const HomeScreenInner = () => {
     profile?.credits,
   ]);
 
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+  console.log(`[Home] render #${renderCountRef.current}`);
+
   useEffect(() => {
     console.log('[Home] mounted');
     return () => { console.log('[Home] unmounted'); };
   }, []);
 
-  // ── Throttle guard: prevents simultaneous profile fetches ────────────────
+  // ── Refresh guard: prevents concurrent + rapid-fire profile fetches ─────
+  // fetchProfile itself has a 3 s cooldown; this adds a HomeScreen-level
+  // concurrent guard so we don't even queue calls on top of each other.
   const isRefreshingRef = useRef(false);
+  const lastRefreshRef = useRef(0);
   const { fetchProfile } = useUser();
 
   const doRefresh = useCallback((uid: string) => {
-    if (isRefreshingRef.current) return;
+    const now = Date.now();
+    if (isRefreshingRef.current) {
+      console.log('[Home] doRefresh skipped — in-flight');
+      return;
+    }
+    if (now - lastRefreshRef.current < 5000) {
+      console.log('[Home] doRefresh skipped — cooldown');
+      return;
+    }
     isRefreshingRef.current = true;
+    lastRefreshRef.current = now;
     fetchProfile(uid)
       .catch(() => {})
       .finally(() => { isRefreshingRef.current = false; });
     StreakService.checkAndBreakStreak(uid).catch(() => {});
-  }, [fetchProfile]); // fetchProfile is now stable (useCallback in UserContext)
+  }, [fetchProfile]); // fetchProfile is stable (useCallback with no deps)
 
   // ── ONE useFocusEffect — fires when tab is focused ───────────────────────
   useFocusEffect(useCallback(() => {
