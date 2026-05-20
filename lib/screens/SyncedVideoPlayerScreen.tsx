@@ -9,7 +9,9 @@ import {
     Animated,
     PanResponder,
     Dimensions,
+    ActivityIndicator,
 } from 'react-native';
+import { PREMADE_WORKOUT_VIDEO_URL, EXERCISE_SQUAT_VIDEO_URL } from '../constants/videoUrls';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Play, Pause, RotateCcw, RotateCw, ArrowLeft, Mic, MicOff, Camera, CameraOff, RefreshCw } from 'lucide-react-native';
@@ -20,6 +22,7 @@ import { AgoraVoice } from '../services/agora/AgoraVoice';
 import { getLocalVideoTrack, getAgoraDebugInfo, getAgoraClient, getLocalAudioTrack } from '../services/agora/AgoraVideoHelper';
 import { LiveSessionService, JoinRequest } from '../services/liveSession.service';
 import { recordUniversalWorkoutCompletion } from '../services/workoutCompletion.service';
+import { WatchTrackingService } from '../services/watchTracking.service';
 
 const SILENCE_TIMEOUT_MS = 1500;
 
@@ -54,6 +57,9 @@ export const SyncedVideoPlayerScreen = () => {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [, setControlledBy] = useState<string | null>(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [isBuffering, setIsBuffering] = useState(false);
+    const [playbackError, setPlaybackError] = useState<string | null>(null);
 
     // Agora state
     const [isMuted, setIsMuted] = useState(false);
@@ -88,13 +94,15 @@ export const SyncedVideoPlayerScreen = () => {
 
     // Completion tracking — prevent double-counting per session
     const completionFiredRef = useRef(false);
+    // Watch tracking — track whether startSession was called this mount
+    const watchSessionStartedRef = useRef(false);
 
     const handleSessionComplete = async (finalCurrentTime: number, finalDuration: number) => {
         const uid = supabaseUserId;
         if (!uid || completionFiredRef.current) return;
 
         const pct = finalDuration > 0 ? finalCurrentTime / finalDuration : 0;
-        if (pct < 0.85) return; // must watch >= 85% of video
+        if (pct < 0.80) return; // must watch >= 80% of video
 
         completionFiredRef.current = true;
         const watchMinutes = Math.max(1, Math.round(finalCurrentTime / 60));
@@ -281,6 +289,8 @@ export const SyncedVideoPlayerScreen = () => {
     // ── Player source + events ──
     useEffect(() => {
         if (sourceVideo?.videoUrl) {
+            setPlaybackError(null);
+            setIsBuffering(true);
             player.replace({ uri: sourceVideo.videoUrl });
         }
     }, [sourceVideo?.videoUrl]);
@@ -289,9 +299,39 @@ export const SyncedVideoPlayerScreen = () => {
     handleSessionCompleteRef.current = handleSessionComplete;
 
     useEffect(() => {
-        const statusSub = player.addListener('statusChange', ({ status: s }: any) => {
-            if (s === 'readyToPlay') {
+        const statusSub = player.addListener('statusChange', ({ status: s, error }: any) => {
+            console.log(`[Video Telemetry] Status changed: ${s}`);
+            if (s === 'loading') {
+                console.log('[Video Telemetry] onLoadStart triggered');
+                setIsLoaded(false);
+                setIsBuffering(true);
+            } else if (s === 'readyToPlay') {
+                console.log('[Video Telemetry] onFirstFrameRender / readyToPlay triggered');
+                setIsLoaded(true);
+                setIsBuffering(false);
+                setPlaybackError(null);
                 setDuration(player.duration);
+            } else if (s === 'error' || error) {
+                console.error('[Video Telemetry] onError triggered:', error);
+                setIsBuffering(false);
+                setPlaybackError(error?.message || 'Failed to load video');
+            }
+        });
+        const playingSub = player.addListener('playingChange', ({ isPlaying: playing }: any) => {
+            setIsPlaying(playing);
+            // Watch tracking
+            const uid = supabaseUserId;
+            if (uid) {
+                if (playing) {
+                    if (!watchSessionStartedRef.current) {
+                        watchSessionStartedRef.current = true;
+                        WatchTrackingService.startSession(uid);
+                    } else {
+                        WatchTrackingService.resumeWatchSession();
+                    }
+                } else {
+                    WatchTrackingService.pauseWatchSession();
+                }
             }
         });
         const timeSub = player.addListener('timeUpdate', ({ currentTime: ct }: any) => {
@@ -303,10 +343,15 @@ export const SyncedVideoPlayerScreen = () => {
         });
         return () => {
             statusSub.remove();
+            playingSub.remove();
             timeSub.remove();
             endSub.remove();
+            // Flush any remaining watch seconds before the player is replaced
+            WatchTrackingService.stopSession();
+            WatchTrackingService.flushNow().catch(() => {});
+            watchSessionStartedRef.current = false;
         };
-    }, [player]);
+    }, [player, sourceVideo?.videoUrl]);
 
     // ── Session + Agora init ──
     useEffect(() => {
@@ -486,12 +531,39 @@ export const SyncedVideoPlayerScreen = () => {
                 {/* ── 1. Video player ── */}
                 <TouchableWithoutFeedback onPress={showControls}>
                     <View style={styles.videoContainer}>
-                        <VideoView
-                            player={player}
-                            style={styles.video}
-                            contentFit="contain"
-                            nativeControls={false}
-                        />
+                        {playbackError ? (
+                            <View style={styles.errorOverlay}>
+                                <Text style={styles.videoErrorText}>⚠️ Failed to load video</Text>
+                                <Text style={styles.errorSubtext}>{playbackError}</Text>
+                                <TouchableOpacity
+                                    style={styles.retryBtn}
+                                    onPress={() => {
+                                        setPlaybackError(null);
+                                        setIsBuffering(true);
+                                        if (sourceVideo?.videoUrl) {
+                                            player.replace({ uri: sourceVideo.videoUrl });
+                                        }
+                                    }}
+                                >
+                                    <Text style={styles.retryBtnText}>Retry</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <>
+                                <VideoView
+                                    player={player}
+                                    style={styles.video}
+                                    contentFit="contain"
+                                    nativeControls={false}
+                                />
+                                {(!isLoaded || isBuffering) && (
+                                    <View style={styles.loadingOverlay}>
+                                        <ActivityIndicator size="large" color="#FF6B00" />
+                                        <Text style={styles.loadingText}>Buffering video...</Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
                         {/* ── Video player controls overlay ── */}
                         <Animated.View pointerEvents={controlsVisible ? 'auto' : 'none'} style={[styles.controlsOverlay, { opacity: controlsOpacity }]}>
                             <View style={styles.controlsRow}>
@@ -1112,5 +1184,50 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: 'bold',
         zIndex: 4,
+    },
+    errorOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+        zIndex: 100,
+    },
+    videoErrorText: {
+        color: '#ff4444',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    errorSubtext: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    retryBtn: {
+        backgroundColor: '#FF6B00',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    retryBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 99,
+    },
+    loadingText: {
+        color: 'white',
+        fontSize: 14,
+        marginTop: 12,
+        fontWeight: '600',
     },
 });

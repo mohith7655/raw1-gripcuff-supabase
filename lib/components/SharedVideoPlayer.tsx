@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
     Animated,
     PanResponder,
@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
     View,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -27,6 +28,7 @@ import { CastButton } from './cast/CastButton';
 import { CastStatusBanner } from './cast/CastStatusBanner';
 import { RemoteControlBar } from './cast/RemoteControlBar';
 import { useCast } from '../hooks/useCast';
+import { WatchTrackingService } from '../services/watchTracking.service';
 
 export type SharedVideoPlayerRef = {
     pauseVideo: () => void;
@@ -55,9 +57,12 @@ interface SharedVideoPlayerProps {
     onSeekForward?: (newPositionMs: number) => void;
     onVideoEnd?: () => void;
     onCurrentPositionChange?: (positionMs: number) => void;
+    onDurationChange?: (durationMs: number) => void;
+    /** Supabase user ID — when provided, watch time is tracked automatically. */
+    userId?: string;
 }
 
-export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPlayerProps>(function SharedVideoPlayer({
+const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlayerProps>(function SharedVideoPlayer({
     title,
     videoUri,
     onBack,
@@ -70,12 +75,25 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
     onSeekForward,
     onVideoEnd,
     onCurrentPositionChange,
+    onDurationChange,
+    userId,
 }: SharedVideoPlayerProps, ref: React.Ref<SharedVideoPlayerRef>) {
-    const player = useVideoPlayer({ uri: videoUri }, p => { p.play(); });
+    // Stable ref for userId so event listeners never capture a stale closure
+    const userIdRef = useRef(userId);
+    userIdRef.current = userId;
+    // Tracks whether startSession() was called for this video mount (so pause/resume
+    // don't re-fire the new-session counter)
+    const watchSessionStartedRef = useRef(false);
+    // Memoize the source object so useVideoPlayer receives a stable reference
+    // across rerenders — prevents the player from being recreated on every render.
+    const videoSource = useMemo(() => ({ uri: videoUri }), [videoUri]);
+    const player = useVideoPlayer(videoSource, p => { p.play(); });
     const onVideoEndRef = useRef(onVideoEnd);
     onVideoEndRef.current = onVideoEnd;
     const onCurrentPositionChangeRef = useRef(onCurrentPositionChange);
     onCurrentPositionChangeRef.current = onCurrentPositionChange;
+    const onDurationChangeRef = useRef(onDurationChange);
+    onDurationChangeRef.current = onDurationChange;
 
     const isSeekingRef = useRef(false);
     const seekBarWidth = useRef(1);
@@ -93,20 +111,78 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
     }));
 
     useEffect(() => {
+        console.log('[Video] mounted');
+        return () => {
+            console.log('[Video] unmounted');
+            // Stop tracking and persist any remaining seconds before destroy
+            WatchTrackingService.stopSession();
+            WatchTrackingService.flushNow().catch(() => {});
+        };
+    }, []);
+
+    useEffect(() => {
+        console.log('[Video] source changed:', videoUri);
         player.replace({ uri: videoUri });
         completionHandledRef.current = false;
+        setPlaybackError(null);
+        setIsBuffering(true);
+        // New video = new session; reset so startSession fires on next play
+        watchSessionStartedRef.current = false;
+        WatchTrackingService.stopSession();
     }, [videoUri]);
 
     useEffect(() => {
-        const statusSub = player.addListener('statusChange', ({ status: s }: any) => {
-            if (s === 'readyToPlay') {
+        const statusSub = player.addListener('statusChange', ({ status: s, error }: any) => {
+            if (s === 'loading') {
+                setIsLoaded(false);
+                setIsBuffering(true);
+                // Pause watch tracking while buffering — don't count dead time
+                WatchTrackingService.pauseWatchSession();
+            } else if (s === 'readyToPlay') {
                 setIsLoaded(true);
-                setStatus((prev: any) => ({ ...prev, durationMillis: player.duration * 1000 }));
+                setIsBuffering(false);
+                setPlaybackError(null);
+                const durMs = player.duration * 1000;
+                setStatus((prev: any) => ({ ...prev, durationMillis: durMs }));
+                onDurationChangeRef.current?.(durMs);
+                // Resume if the player is actively playing when it becomes ready
+                if (player.playing && userIdRef.current && watchSessionStartedRef.current) {
+                    WatchTrackingService.resumeWatchSession();
+                }
+            } else if (s === 'error' || error) {
+                const msg = error?.message || 'Failed to load video';
+                // Filter out HTML5/browser fallback noise that spams logs on web
+                const isMediaElementNoise = Platform.OS === 'web' && (
+                    msg.includes('MEDIA_ELEMENT_ERROR') ||
+                    msg.includes('HTMLMediaElement') ||
+                    msg.includes('AbortError')
+                );
+                if (!isMediaElementNoise) {
+                    console.log('[Video Error]', { uri: videoUri, error: msg, platform: Platform.OS });
+                    setIsBuffering(false);
+                    setPlaybackError(msg);
+                }
+                WatchTrackingService.pauseWatchSession();
             }
         });
         const playingSub = player.addListener('playingChange', ({ isPlaying: playing }: any) => {
             setIsPlaying(playing);
             setStatus((prev: any) => ({ ...prev, isPlaying: playing }));
+
+            // Watch tracking: start session on first play, pause/resume thereafter
+            const uid = userIdRef.current;
+            if (uid) {
+                if (playing) {
+                    if (!watchSessionStartedRef.current) {
+                        watchSessionStartedRef.current = true;
+                        WatchTrackingService.startSession(uid);
+                    } else {
+                        WatchTrackingService.resumeWatchSession();
+                    }
+                } else {
+                    WatchTrackingService.pauseWatchSession();
+                }
+            }
         });
         const timeSub = player.addListener('timeUpdate', ({ currentTime }: any) => {
             if (isSeekingRef.current) return;
@@ -137,11 +213,41 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
             }
         });
 
+        // Fallback poll: on web, timeUpdate events are unreliable so we read
+        // player.currentTime directly every 250 ms while playing.
+        let pollId: ReturnType<typeof setInterval> | null = null;
+        if (Platform.OS === 'web') {
+            pollId = setInterval(() => {
+                if (isSeekingRef.current) return;
+                const posMs = (player.currentTime ?? 0) * 1000;
+                const durMs = (player.duration ?? 0) * 1000;
+                if (posMs <= 0 && durMs <= 0) return;
+
+                if (posMs < 2000 && completionHandledRef.current) {
+                    completionHandledRef.current = false;
+                }
+
+                setStatus((prev: any) => ({
+                    ...prev,
+                    positionMillis: posMs,
+                    ...(durMs > 0 ? { durationMillis: durMs } : {}),
+                }));
+                setDisplayPositionMs(null);
+                onCurrentPositionChangeRef.current?.(posMs);
+
+                if (!completionHandledRef.current && durMs > 0 && posMs >= durMs - 1000 && !player.playing) {
+                    completionHandledRef.current = true;
+                    onVideoEndRef.current?.();
+                }
+            }, 250);
+        }
+
         return () => {
             statusSub.remove();
             playingSub.remove();
             timeSub.remove();
             endSub.remove();
+            if (pollId !== null) clearInterval(pollId);
         };
     }, [player]);
 
@@ -158,6 +264,8 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
     const [displayPositionMs, setDisplayPositionMs] = useState<number | null>(null);
     // AirPlay becomes true when iOS routes audio/video to an external display
     const [isAirPlayActive, setIsAirPlayActive] = useState(false);
+    const [playbackError, setPlaybackError] = useState<string | null>(null);
+    const [isBuffering, setIsBuffering] = useState(false);
 
     const {
         isCasting,
@@ -424,18 +532,57 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
                         </View>
                     ) : (
                         <>
-                            <VideoView
-                                player={player}
-                                style={styles.video}
-                                contentFit="contain"
-                                nativeControls={false}
-                                {...(Platform.OS === 'ios'
-                                    ? ({
-                                          allowsExternalPlayback: true,
-                                          usesExternalPlaybackWhileExiting: true,
-                                      } as any)
-                                    : {})}
-                            />
+                            {playbackError ? (
+                                <View style={styles.errorOverlay}>
+                                    {(playbackError.toLowerCase().includes('format') ||
+                                      playbackError.toLowerCase().includes('notsupported') ||
+                                      playbackError.toLowerCase().includes('not supported') ||
+                                      playbackError.toLowerCase().includes('source')) ? (
+                                        <>
+                                            <Text style={styles.errorText}>Video format unsupported</Text>
+                                            <Text style={styles.errorSubtext}>
+                                                Please re-encode video to H264/AAC MP4
+                                            </Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Text style={styles.errorText}>⚠️ Failed to load video</Text>
+                                            <Text style={styles.errorSubtext}>{playbackError}</Text>
+                                        </>
+                                    )}
+                                    <TouchableOpacity
+                                        style={styles.retryBtn}
+                                        onPress={() => {
+                                            setPlaybackError(null);
+                                            setIsBuffering(true);
+                                            player.replace({ uri: videoUri });
+                                        }}
+                                    >
+                                        <Text style={styles.retryBtnText}>Retry</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <>
+                                    <VideoView
+                                        player={player}
+                                        style={styles.video}
+                                        contentFit="contain"
+                                        nativeControls={false}
+                                        {...(Platform.OS === 'ios'
+                                            ? ({
+                                                  allowsExternalPlayback: true,
+                                                  usesExternalPlaybackWhileExiting: true,
+                                              } as any)
+                                            : {})}
+                                    />
+                                    {(!isLoaded || isBuffering) && (
+                                        <View style={styles.loadingOverlay}>
+                                            <ActivityIndicator size="large" color="#FF6B00" />
+                                            <Text style={styles.loadingText}>Buffering video...</Text>
+                                        </View>
+                                    )}
+                                </>
+                            )}
 
                             <Animated.View
                                 pointerEvents={controlsVisible ? 'auto' : 'none'}
@@ -537,6 +684,8 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
         </SafeAreaView>
     );
 });
+
+export const SharedVideoPlayer = React.memo(SharedVideoPlayerInner);
 
 const styles = StyleSheet.create({
     container: {
@@ -805,5 +954,50 @@ const styles = StyleSheet.create({
         height: 6,
         borderRadius: 3,
         backgroundColor: '#22c55e',
+    },
+    errorOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+        zIndex: 100,
+    },
+    errorText: {
+        color: '#ff4444',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    errorSubtext: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    retryBtn: {
+        backgroundColor: '#FF6B00',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    retryBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 99,
+    },
+    loadingText: {
+        color: 'white',
+        fontSize: 14,
+        marginTop: 12,
+        fontWeight: '600',
     },
 });
