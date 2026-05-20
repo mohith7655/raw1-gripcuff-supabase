@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
   PanResponder,
+  Platform,
 } from 'react-native';
 import { ChevronRight, Zap } from 'lucide-react-native';
 import { StreakData } from '../services/streak.service';
@@ -44,10 +45,19 @@ function motivationText(streak: number): string {
   return 'Elite consistency 🏆';
 }
 
-function formatScore(score: number): string {
-  const h = Math.floor(score / 60);
-  const m = score % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+function formatWatchTime(seconds: number): string {
+  const secs = Number(seconds) || 0;
+  if (secs < 60) return `${Math.round(secs)}s`;
+  if (secs < 3600) return `${(secs / 60).toFixed(1)}m`;
+  return `${(secs / 3600).toFixed(1)}h`;
+}
+
+function formatMinutes(value?: number): string {
+  const safe = Number(value || 0);
+  if (safe <= 0) return '';
+  if (safe >= 60) return `${Math.floor(safe / 60)}h`;
+  const rounded = Math.round(safe * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}m` : `${rounded.toFixed(1)}m`;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -60,27 +70,10 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   minutes: number;
   dateKey: string;
 }) {
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const isActive = !isFuture && (active || isToday);
 
-  useEffect(() => {
-    if (!isToday) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(glowAnim, { toValue: 0, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [isToday]);
-
-  const scale = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
-  const opacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
-
-  const displayMinutes = active ? Math.max(1, Number(minutes) || 0) : Number(minutes) || 0;
-  const minLabel = displayMinutes >= 60
-    ? `${Math.floor(displayMinutes / 60)}h`
-    : displayMinutes > 0 ? `${displayMinutes}m` : '';
+  const rawMinutes = isActive ? Math.max(1, Number(minutes) || 0) : Number(minutes) || 0;
+  const minLabel = formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');
   const dateLabel = `${parseInt(mm)}/${parseInt(dd)}`;
@@ -88,20 +81,23 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   return (
     <View style={s.dayCol}>
       <Text style={s.dayDate}>{dateLabel}</Text>
-      <Animated.View
+      <View
         style={[
           s.dayDot,
           isFuture && s.dayDotFuture,
-          !isFuture && isToday && s.dayDotToday,
-          !isFuture && active && s.dayDotActive,
-          !isFuture && isToday && { transform: [{ scale }], opacity },
+          isActive && s.dayDotActive,
         ]}
       >
         {minLabel && !isFuture ? (
-          <Text style={[s.dayDotMin, active && s.dayDotMinActive]}>{minLabel}</Text>
+          <Text
+            style={[s.dayDotMin, isActive && s.dayDotMinActive]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >{minLabel}</Text>
         ) : null}
-      </Animated.View>
-      <Text style={[s.dayLabel, !isFuture && (active || isToday) && s.dayLabelActive]}>{label}</Text>
+      </View>
+      <Text style={[s.dayLabel, isActive && s.dayLabelActive]}>{label}</Text>
     </View>
   );
 }
@@ -125,8 +121,8 @@ function ChallengesBar({ completed }: { completed: number }) {
     if (completed <= 0) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(glowAnim, { toValue: 0.4, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(glowAnim, { toValue: 1, duration: 1200, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(glowAnim, { toValue: 0.4, duration: 1200, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
       ])
     );
     loop.start();
@@ -174,8 +170,8 @@ function getISOWeekNumber(isoDate: string): number {
 
 function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: string; timezone: string }) {
   const flameAnim = useRef(new Animated.Value(1)).current;
-  const streak = data?.currentStreak ?? 0;
-  const best = data?.bestStreak ?? 0;
+  const streak = Math.max(1, data?.currentStreak ?? 0);
+  const best = Math.max(streak, data?.bestStreak ?? 0);
 
   const [weekOffset, setWeekOffset] = useState(0);
   const [fetchedActivity, setFetchedActivity] = useState<Record<string, boolean>>({});
@@ -213,8 +209,8 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(flameAnim, { toValue: 1.15, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(flameAnim, { toValue: 1, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(flameAnim, { toValue: 1.15, duration: 700, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(flameAnim, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
       ])
     );
     loop.start();
@@ -310,16 +306,19 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
             <View style={s.lbAvatarWrap}>
               {entry.photoURL ? (
                 <>
-                  <Image source={{ uri: entry.photoURL }} style={s.lbAvatar} />
+                  <Image source={{ uri: entry.photoURL }} style={[s.lbAvatar, isMe && s.lbAvatarMe]} />
                   <Text style={s.lbMedal}>{MEDALS[index] ?? ''}</Text>
                 </>
               ) : (
                 <Text style={s.lbRankEmoji}>{MEDALS[index] ?? `#${index + 1}`}</Text>
               )}
             </View>
-            <Text style={s.lbName} numberOfLines={1}>{entry.displayName ?? 'Unknown'}</Text>
+            <View style={s.lbNameRow}>
+              <Text style={[s.lbName, isMe && s.lbNameMe]} numberOfLines={1}>{entry.displayName ?? 'Unknown'}</Text>
+              {isMe && <View style={s.lbYouBadge}><Text style={s.lbYouBadgeText}>YOU</Text></View>}
+            </View>
             <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
-              {formatScore(entry.score ?? 0)}
+              {formatWatchTime(entry.score ?? 0)}
             </Text>
           </View>
         );
@@ -346,10 +345,10 @@ export function UnifiedProgressLeaderboard({ streakData, currentUserId, onViewAl
 
   const switchTab = useCallback((tab: Tab) => {
     if (tab === activeTab) return;
-    Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }).start(() => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: Platform.OS !== 'web' }).start(() => {
       setVisibleTab(tab);
       setActiveTab(tab);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: Platform.OS !== 'web' }).start();
     });
   }, [activeTab, fadeAnim]);
 
@@ -499,10 +498,6 @@ const s = StyleSheet.create({
     borderColor: ACCENT,
     borderWidth: 2,
   },
-  dayDotToday: {
-    borderColor: ACCENT,
-    borderWidth: 2,
-  },
   dayDotFuture: {
     opacity: 0.25,
     borderColor: 'rgba(255,255,255,0.05)',
@@ -629,9 +624,14 @@ const s = StyleSheet.create({
     gap: 10,
   },
   lbRowMe: {
-    backgroundColor: 'rgba(255,107,0,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.3)',
+    backgroundColor: 'rgba(255,122,0,0.10)',
+    borderWidth: 1.5,
+    borderColor: '#FF7A00',
+    shadowColor: '#FF7A00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   lbAvatarWrap: {
     width: 32,
@@ -647,6 +647,10 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,107,0,0.4)',
   },
+  lbAvatarMe: {
+    borderWidth: 2,
+    borderColor: '#FF7A00',
+  },
   lbMedal: {
     position: 'absolute',
     bottom: -4,
@@ -658,11 +662,32 @@ const s = StyleSheet.create({
     width: 28,
     textAlign: 'center',
   },
-  lbName: {
+  lbNameRow: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lbName: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+    flexShrink: 1,
+  },
+  lbNameMe: {
+    color: '#FF7A00',
+  },
+  lbYouBadge: {
+    backgroundColor: '#FF7A00',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  lbYouBadgeText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   lbScore: {
     color: ACCENT,

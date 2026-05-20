@@ -19,9 +19,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { useAuth } from '../providers/AuthContext';
 
+import { getWorkoutVideoUrl } from '../constants/videoUrls';
+
 const ORANGE = '#FF6B00';
-const BG_VIDEO_URL =
-  'https://firebasestorage.googleapis.com/v0/b/wazy-6c4a9.firebasestorage.app/o/Raw1-intro-app.mp4?alt=media&token=bc49d4aa-214e-4422-963b-f6d077d0d89c';
+const BG_VIDEO_URL = getWorkoutVideoUrl('welcome');
 
 type ModalType = 'login' | 'signup' | null;
 

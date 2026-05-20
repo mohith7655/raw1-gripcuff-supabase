@@ -47,6 +47,7 @@ export function useWorkoutWatchers(
 
     const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const joinedRef = useRef(false);
+    const reconnectingRef = useRef(false);
 
     // Shared "still mounted?" flag between the main effect and AppState effect.
     // Set to false in the main effect's cleanup so AppState handler can bail out.
@@ -160,6 +161,9 @@ export function useWorkoutWatchers(
 
             if (next === 'active') {
                 if (!p) return;
+                if (reconnectingRef.current) return;
+                reconnectingRef.current = true;
+                setTimeout(() => { reconnectingRef.current = false; }, 3000);
                 console.log('[WATCHERS] Foregrounded — re-joining');
 
                 const joinProfile: JoinProfile = {

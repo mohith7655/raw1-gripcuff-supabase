@@ -12,6 +12,14 @@ const WEEKLY_TOTAL = 7;
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+function formatMinutes(value?: number): string {
+    const safe = Number(value || 0);
+    if (safe <= 0) return '';
+    if (safe >= 60) return `${Math.floor(safe / 60)}h`;
+    const rounded = Math.round(safe * 10) / 10;
+    return Number.isInteger(rounded) ? `${rounded}m` : `${rounded.toFixed(1)}m`;
+}
+
 function motivationText(streak: number): string {
     if (streak <= 2) return 'Start your comeback';
     if (streak <= 6) return 'Building momentum';
@@ -42,11 +50,7 @@ function DayDot({
     label: string;
     minutes?: number;
 }) {
-    // weeklyMinutes already holds Math.max(watchedMinutes, legacyMinutes); use it directly.
-    const displayMinutes = active ? Math.max(1, minutes ?? 0) : 0;
-    const minLabel = displayMinutes >= 60
-        ? `${Math.floor(displayMinutes / 60)}h`
-        : displayMinutes > 0 ? `${displayMinutes}m` : '';
+    const minLabel = active ? formatMinutes(minutes ?? 0) : '';
 
     return (
         <View style={styles.dayCol}>
@@ -59,7 +63,14 @@ function DayDot({
                 ]}
             >
                 {minLabel ? (
-                    <Text style={styles.dayDotText}>{minLabel}</Text>
+                    <Text
+                        style={styles.dayDotText}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                    >
+                        {minLabel}
+                    </Text>
                 ) : null}
             </View>
             <Text style={[
@@ -230,6 +241,8 @@ export function StreakCard({ data, onPress }: Props) {
     );
 }
 
+const DOT_SIZE = 36;
+
 const styles = StyleSheet.create({
     card: {
         backgroundColor: CARD_BG,
@@ -239,56 +252,70 @@ const styles = StyleSheet.create({
         marginHorizontal: 16,
         marginBottom: 12,
         paddingVertical: 14,
-        paddingHorizontal: 16,
+        paddingHorizontal: 10,
     },
     mainRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 4,
     },
-    leftBlock: { alignItems: 'center', minWidth: 56 },
+    leftBlock: { alignItems: 'center', minWidth: 50 },
     flameEmoji: { fontSize: 22, lineHeight: 26 },
     streakNumber: { color: '#ffffff', fontSize: 24, fontWeight: '800', lineHeight: 28 },
     streakLabel: { color: ACCENT, fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
     motivationText: { color: '#4a6480', fontSize: 9, fontWeight: '500', marginTop: 2, textAlign: 'center' },
     centerBlock: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    dayCol: { alignItems: 'center', gap: 4 },
+    dayCol: { alignItems: 'center', gap: 5 },
     dayDot: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
+        width: DOT_SIZE,
+        height: DOT_SIZE,
+        borderRadius: DOT_SIZE / 2,
         backgroundColor: 'rgba(255,255,255,0.07)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
     },
-    // Completed day — solid orange fill
+    // Completed day — solid orange fill + glow
     dayDotActive: {
-        backgroundColor: ACCENT,
-        borderColor: ACCENT,
+        backgroundColor: '#FF7A00',
+        borderColor: '#FF7A00',
+        borderWidth: 2,
+        shadowColor: '#FF7A00',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
-    // Today, streak alive, not yet completed — static orange ring, dark center, no animation
+    // Today, streak alive, not yet completed — orange ring, dark center
     dayDotStreakActive: {
         backgroundColor: '#1A2238',
         borderColor: '#FF7A00',
         borderWidth: 2,
         shadowColor: '#FF7A00',
-        shadowOpacity: 0.18,
+        shadowOpacity: 0.25,
         shadowRadius: 8,
+        elevation: 3,
     },
     // Today, streak broken — faint orange border only
     dayDotToday: {
         borderColor: ACCENT,
         borderWidth: 2,
     },
-    dayLabel: { color: '#3a5470', fontSize: 9, fontWeight: '600' },
+    dayLabel: { color: '#3a5470', fontSize: 11, fontWeight: '600' },
     dayLabelActive: { color: ACCENT },
     dayLabelStreakActive: { color: ACCENT },
-    dayDotText: { color: '#ffffff', fontSize: 9, fontWeight: '700', lineHeight: 11 },
-    rightBlock: { alignItems: 'center', minWidth: 36 },
+    dayDotText: {
+        color: '#ffffff',
+        fontSize: 14,
+        fontWeight: '800',
+        lineHeight: 16,
+        textAlign: 'center',
+    },
+    rightBlock: { alignItems: 'center', minWidth: 28 },
     bestLabel: { color: '#3a5470', fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-    bestValue: { color: '#8aaccc', fontSize: 14, fontWeight: '700' },
+    bestValue: { color: '#8aaccc', fontSize: 13, fontWeight: '700' },
 
     // Challenges section
     challengesSection: { marginTop: 10 },

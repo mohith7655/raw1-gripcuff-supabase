@@ -6,7 +6,10 @@
  * - 1s tick increments pendingSeconds ONLY while _isWatching === true.
  * - Every 15s a batch flush writes to Supabase via the atomic RPC
  *   `increment_watch_time(p_user_id, p_seconds, p_new_session)`.
- * - Visibility / AppState events pause the tick and flush immediately.
+ * - Visibility changes use a 15s delayed pause — mobile browsers (Android Chrome/Edge)
+ *   fire document.hidden for transient UI interactions (address bar, swipe, overlays).
+ *   Pausing immediately would kill tracking after 1–2 real seconds.
+ * - AppState (native) pauses immediately — native backgrounding is authoritative.
  * - Flush is guarded by _flushInFlight so calls never stack.
  * - Seconds are restored on flush failure — data is never lost.
  *
@@ -36,9 +39,13 @@ let _sessionCountedForCurrentSession = false;
 
 let _tickId:  ReturnType<typeof setInterval> | null = null;
 let _flushId: ReturnType<typeof setInterval> | null = null;
+// Delayed-pause timer for web visibility changes (mobile browsers fire hidden spuriously).
+// 15s grace window: if the tab becomes visible again within 15s, the pause is cancelled.
+let _hiddenTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let _appStateSub: any = null;
 let _visibilityHandler: (() => void) | null = null;
 let _listenersAttached = false;
+let _onFlush: ((flushedSeconds: number) => void) | null = null;
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -71,6 +78,7 @@ async function _flush(isNewSession = false) {
         } else {
             if (countSession) _sessionCountedForCurrentSession = true;
             console.log(`[WatchTracking] flushed ${seconds}s OK`);
+            _onFlush?.(seconds); // optimistic UI patch
         }
     } catch (e: any) {
         _pendingSeconds += seconds;
@@ -108,14 +116,35 @@ function _handleAppState(nextState: AppStateStatus) {
     }
 }
 
+function _cancelHiddenTimeout() {
+    if (_hiddenTimeoutId !== null) {
+        clearTimeout(_hiddenTimeoutId);
+        _hiddenTimeoutId = null;
+        console.log('[WatchTracking] hidden timer cancelled');
+    }
+}
+
 function _handleVisibility() {
     if (typeof document === 'undefined') return;
     if (document.hidden) {
-        _stopTick();
-        _flush();
-        console.log('[WatchTracking] tab hidden — paused + flushed');
+        // Mobile browsers (Android Chrome/Edge) fire visibilitychange for transient
+        // events: address bar, swipe gestures, permission dialogs, Agora overlays.
+        // Wait 15s before actually pausing — if the tab comes back, cancel the pause.
+        if (_hiddenTimeoutId !== null) return; // timer already running
+        console.log('[WatchTracking] hidden timer started');
+        _hiddenTimeoutId = setTimeout(() => {
+            _hiddenTimeoutId = null;
+            _stopTick();
+            _flush();
+            console.log('[WatchTracking] delayed hidden pause');
+        }, 15_000);
     } else {
-        if (_isWatching) { _startTick(); console.log('[WatchTracking] tab visible — tick resumed'); }
+        // Tab is visible again — cancel any pending pause and resume the tick.
+        _cancelHiddenTimeout();
+        if (_isWatching) {
+            _startTick();
+            console.log('[WatchTracking] visibility restored');
+        }
     }
 }
 
@@ -192,6 +221,7 @@ export const WatchTrackingService = {
         _isWatching = false;
         _stopTick();
         _stopFlushLoop();
+        _cancelHiddenTimeout();
         _sessionCountedForCurrentSession = false;
         console.log('[WatchTracking] stopped');
     },
@@ -212,6 +242,7 @@ export const WatchTrackingService = {
         _isWatching = false;
         _stopTick();
         _stopFlushLoop();
+        _cancelHiddenTimeout();
         await _flush();
         if (Platform.OS === 'web') {
             if (_visibilityHandler && typeof document !== 'undefined') {
@@ -227,6 +258,15 @@ export const WatchTrackingService = {
         _pendingSeconds = 0;
         _sessionCountedForCurrentSession = false;
         console.log('[WatchTracking] torn down');
+    },
+
+    /**
+     * Register a callback invoked after every successful flush.
+     * UserContext uses this for optimistic UI updates.
+     * Pass null to unregister.
+     */
+    setOnFlush(fn: ((flushedSeconds: number) => void) | null): void {
+        _onFlush = fn;
     },
 
     /** Human-readable duration: 65s → "1m 5s", 3661s → "1h 1m" */

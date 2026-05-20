@@ -121,7 +121,7 @@ export class UserService {
     if (data.lastWorkoutDate !== undefined) payload.last_workout_date = data.lastWorkoutDate;
     if (data.weeklyActivity !== undefined) payload.weekly_activity = data.weeklyActivity;
     if (data.completedWorkouts !== undefined) payload.completed_workouts = data.completedWorkouts;
-    if (data.watchedMinutes !== undefined) payload.watched_minutes = data.watchedMinutes;
+    // watched_minutes is derived from watched_seconds — never set it directly
     if (data.totalLiveSessions !== undefined) payload.total_live_sessions = data.totalLiveSessions;
 
     console.log('[UserService] updateProfile mapped payload', payload);
@@ -131,7 +131,7 @@ export class UserService {
       return;
     }
 
-    const { error } = await supabase.from('users').update(payload).eq('id', uid);
+    const { error } = await supabase.from('users').upsert({ id: uid, ...payload }, { onConflict: 'id' });
     if (error) {
       console.error('[UserService] updateProfile failed:', error.message);
       throw new Error(error.message);

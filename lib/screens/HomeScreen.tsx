@@ -255,6 +255,10 @@ const HomeScreenInner = () => {
         ? profile.weeklyActivity as Record<string, boolean>
         : {};
 
+    const todayKey = getDateKey(tz);
+    // Numeric coercion — DB may return string or null for BIGINT columns
+    const todayWatchSeconds = Number(profile.todayWatchSeconds || 0);
+
     const calendarWeek = buildWeekDates(tz, 0);
     const rollingDays = getLastNDayKeys(tz, 7);
     const allDays = Array.from(new Set([...calendarWeek, ...rollingDays]));
@@ -262,7 +266,13 @@ const HomeScreenInner = () => {
     const weeklyMinutes: Record<string, number> = {};
     allDays.forEach(d => {
       weeklyActivity[d] = !!weeklyActivityRaw[d];
-      weeklyMinutes[d] = weeklyActivityRaw[d] ? 10 : 0;
+      // Today: always derive from today_watch_seconds — never floor, never hardcode.
+      // Past days: activity flag present = placeholder 10m (no per-day seconds in schema yet).
+      if (d === todayKey) {
+        weeklyMinutes[d] = todayWatchSeconds / 60;
+      } else {
+        weeklyMinutes[d] = weeklyActivityRaw[d] ? 10 : 0;
+      }
     });
 
     const currentStreak = profile.currentStreak ?? 0;
@@ -284,7 +294,8 @@ const HomeScreenInner = () => {
       leaderboardScore: currentStreak * 5 + completedWorkouts * 3 + totalLiveSessions * 8,
     };
 
-    // Only update state when values actually changed (prevents downstream cascades)
+    // Only update state when values actually changed (prevents downstream cascades).
+    // weeklyMinutes MUST be compared — todayWatchSeconds changes it without touching weeklyActivity.
     setStreakData(prev => {
       if (
         prev?.currentStreak === nextData.currentStreak &&
@@ -292,9 +303,10 @@ const HomeScreenInner = () => {
         prev?.lastWorkoutDate === nextData.lastWorkoutDate &&
         prev?.credits === nextData.credits &&
         prev?.totalWorkouts === nextData.totalWorkouts &&
-        JSON.stringify(prev?.weeklyActivity) === JSON.stringify(nextData.weeklyActivity)
+        JSON.stringify(prev?.weeklyActivity) === JSON.stringify(nextData.weeklyActivity) &&
+        prev?.weeklyMinutes?.[todayKey] === nextData.weeklyMinutes?.[todayKey]
       ) {
-        return prev; // bail out — nothing changed
+        return prev;
       }
       return nextData;
     });
@@ -305,7 +317,8 @@ const HomeScreenInner = () => {
     profile?.lastWorkoutDate,
     weeklyActivityJson,       // serialized — stable primitive
     profile?.completedWorkouts,
-    profile?.watchedMinutes,
+    profile?.watchedSeconds,
+    profile?.todayWatchSeconds,
     profile?.credits,
   ]);
 

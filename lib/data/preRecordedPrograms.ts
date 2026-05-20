@@ -30,8 +30,9 @@ export type PreRecordedProgram = {
     exercises: ProgramExercise[];
 };
 
-export const FIREBASE_WORKOUT_VIDEO_URL =
-    'https://firebasestorage.googleapis.com/v0/b/wazy-6c4a9.firebasestorage.app/o/Gripcuff%201%20st%20video.mp4?alt=media&token=e4f9796e-5898-4756-9e10-914c228f34d3';
+import { getWorkoutVideoUrl } from '../constants/videoUrls';
+
+export const PREMADE_WORKOUT_VIDEO_URL = getWorkoutVideoUrl('premade');
 
 // Each week has 3 workout sessions. days = weeks * 3
 function makeDayVideos(
@@ -54,7 +55,7 @@ function makeDayVideos(
 
 const withUrl = (v: Omit<ProgramVideo, 'videoUrl'>): ProgramVideo => ({
     ...v,
-    videoUrl: FIREBASE_WORKOUT_VIDEO_URL,
+    videoUrl: PREMADE_WORKOUT_VIDEO_URL,
 });
 
 const PROGRAMS_RAW: Record<ProgramCategoryKey, PreRecordedProgram[]> = {

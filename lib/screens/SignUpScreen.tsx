@@ -12,8 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { useAuth } from '../providers/AuthContext';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { getWorkoutVideoUrl } from '../constants/videoUrls';
 
-const BG_VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/wazy-6c4a9.firebasestorage.app/o/Gripcuff-signup-login.mp4?alt=media&token=1d4cf5d8-1d5b-4071-a9fd-ba325fa9ec2e';
+const BG_VIDEO_URL = getWorkoutVideoUrl('signup_login');
 
 export const SignUpScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');

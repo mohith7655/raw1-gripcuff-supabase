@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { VideoService } from '../services/video.service';
 import { Video, VideoType, SubTab } from '../models';
 
-const EXERCISE_LIBRARY_VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/wazy-6c4a9.firebasestorage.app/o/Exercise%20Tutorial%20-%20Squat.mp4?alt=media&token=48cf44d1-0a5f-4ff5-b1d4-62e19c46dfc6';
+import { getWorkoutVideoUrl } from '../constants/videoUrls';
+
+const EXERCISE_LIBRARY_VIDEO_URL = getWorkoutVideoUrl('exercise');
 
 interface LibraryContextType {
   allVideos: Video[];

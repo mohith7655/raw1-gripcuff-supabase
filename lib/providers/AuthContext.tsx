@@ -42,34 +42,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const signupInProgressRef = useRef(false);
+  // Guards against duplicate profile loads when INITIAL_SESSION + getSession() both fire for same uid
+  const lastLoadedUidRef = useRef<string | null>(null);
 
   const supabaseUserId = supabaseUser?.id ?? null;
   const email = supabaseUser?.email ?? null;
 
-  // ─── Load profile ──────────────────────────────────────────────────────────
-  const loadProfile = async (sbId: string): Promise<void> => {
+  // ─── Load profile (with auto-bootstrap for missing rows) ──────────────────
+  const loadProfile = async (sbId: string, authEmail?: string | null): Promise<void> => {
     try {
       const profile = await UserService.getProfile(sbId);
       setUser(profile);
       log('profile: loaded', { uid: profile.uid });
-    } catch {
-      logWarn('profile: load failed', { sbId });
-      setUser(null);
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg === 'User profile not found') {
+        log('[Auth Bootstrap] creating missing profile', { sbId });
+        const email = authEmail || '';
+        const handle = email.split('@')[0] || 'user';
+        const bootstrapUser: User = {
+          uid: sbId,
+          email,
+          fullName: handle,
+          username: handle,
+          completedVideos: 0,
+          totalVideos: 0,
+          credits: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        try {
+          await UserService.createProfile(sbId, bootstrapUser);
+          log('[Auth Bootstrap] profile exists', { sbId });
+          const created = await UserService.getProfile(sbId);
+          setUser(created);
+          log('[UserContext] bootstrap complete', { sbId });
+        } catch (createErr) {
+          logWarn('[Auth Bootstrap] bootstrap failed — using local fallback', { sbId });
+          setUser(bootstrapUser);
+        }
+      } else {
+        logWarn('profile: load failed', { sbId });
+        setUser(null);
+      }
     }
   };
 
   // ─── On auth session: apply state ─────────────────────────────────────────
-  const applySession = async (nextSession: Session | null): Promise<void> => {
+  const applySession = async (nextSession: Session | null, eventType?: string): Promise<void> => {
     setSession(nextSession);
     setSupabaseUser(nextSession?.user ?? null);
 
     const sbId = nextSession?.user?.id ?? null;
     if (!sbId) {
       setUser(null);
+      lastLoadedUidRef.current = null;
       return;
     }
 
-    await loadProfile(sbId);
+    // Same uid already loaded (e.g. INITIAL_SESSION races with getSession() on web) — skip.
+    if (lastLoadedUidRef.current === sbId) {
+      log('[Auth] duplicate auth event ignored', { event: eventType, uid: sbId });
+      return;
+    }
+    // Claim this uid immediately to block any concurrent applySession calls for same uid.
+    lastLoadedUidRef.current = sbId;
+
+    await loadProfile(sbId, nextSession?.user?.email);
   };
 
   // ─── Boot ──────────────────────────────────────────────────────────────────
@@ -86,13 +125,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       log(`supabase: onAuthStateChange`, { event: _event, userId: nextSession?.user?.id ?? null });
-      // TOKEN_REFRESHED fires every ~1 hour and does not change the user —
-      // updating only the session object prevents a full profile reload cascade.
+      // TOKEN_REFRESHED fires every ~1 hour — only sync the session token, no profile reload.
       if (_event === 'TOKEN_REFRESHED') {
         setSession(nextSession);
         return;
       }
-      await applySession(nextSession);
+      await applySession(nextSession, _event);
     });
 
     return () => subscription.unsubscribe();

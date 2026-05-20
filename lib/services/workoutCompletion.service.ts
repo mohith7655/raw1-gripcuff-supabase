@@ -1,6 +1,6 @@
 import { getResolvedTimezone } from '../utils/timezone';
 import { getDateKey } from '../utils/streakDate';
-import { recordDailyActivity } from './dailyActivity.service';
+import { StreakService } from './streak.service';
 
 export type WorkoutSourceType =
     | 'exercise_library'
@@ -31,6 +31,10 @@ export interface WorkoutCompletionResult {
     timezone: string;
 }
 
+/**
+ * Single entry-point for every workout completion event in the app.
+ * Persists to Supabase, increments streak, prevents same-day duplicates.
+ */
 export async function recordUniversalWorkoutCompletion(
     uid: string,
     options: WorkoutCompletionOptions,
@@ -47,26 +51,33 @@ export async function recordUniversalWorkoutCompletion(
 
     const timezone = getResolvedTimezone(user);
     const todayKey = getDateKey(timezone);
+    const activityType: 'workout' | 'liveSession' =
+        isLive || sourceType === 'live_session' || sourceType === 'friend_workout'
+            ? 'liveSession'
+            : 'workout';
 
-    console.log('[Workout Completion]', { sourceType, workoutId, todayKey, timezone });
+    console.log('[WorkoutCompletion] recording', { sourceType, workoutId, todayKey, timezone, watchMinutes });
 
-    const activityResult = await recordDailyActivity(uid, {
-        completedDailyChallenge: sourceType === 'daily_challenge',
-        challengeId: sourceType === 'daily_challenge' ? workoutId : undefined,
-        videoId: workoutId,
-        minutes: watchMinutes,
-        type: isLive ? 'liveSession' : 'workout',
-        user,
-    });
+    const result = await StreakService.markWorkoutComplete(
+        uid,
+        workoutId,
+        activityType,
+        Math.max(1, watchMinutes),
+        { sourceType, category, workoutTitle },
+    );
 
-    console.log('[Minutes Update]', { addedMinutes: Math.max(1, watchMinutes), sourceType, workoutId, todayKey });
+    if (result.streakUpdated) {
+        console.log('[WorkoutCompletion] ✅ streak updated —', result.newStreak, 'day(s)');
+    } else {
+        console.log('[WorkoutCompletion] ℹ️ duplicate prevented for today:', todayKey);
+    }
 
     return {
-        counted: true,
-        duplicatePrevented: false,
-        newStreak: activityResult.newStreak,
-        creditsAwarded: activityResult.creditsAwarded,
-        milestonesHit: activityResult.milestonesHit,
+        counted: result.streakUpdated,
+        duplicatePrevented: !result.streakUpdated,
+        newStreak: result.newStreak,
+        creditsAwarded: result.creditsAwarded,
+        milestonesHit: result.milestonesHit,
         todayKey,
         timezone,
     };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,8 @@ import {
     ActivityIndicator,
     Image,
     Platform,
+    Animated,
+    Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,16 +17,132 @@ import { useNavigation } from '@react-navigation/native';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
+import { User } from '../models/User';
 
 type Tab = 'self' | 'weekly' | 'monthly';
 
-const formatSeconds = (secs: number) => {
-    if (!secs) return '0s';
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
-    return h > 0 ? `${h}h ${m}m ${s}s` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
-};
+function formatWatchTime(seconds: number): string {
+    const secs = Number(seconds) || 0;
+    if (secs < 60) return `${Math.round(secs)}s`;
+    if (secs < 3600) return `${(secs / 60).toFixed(1)}m`;
+    return `${(secs / 3600).toFixed(1)}h`;
+}
+
+const LeaderboardRow = memo(function LeaderboardRow({
+    item,
+    index,
+    isMe,
+}: {
+    item: LeaderboardEntry;
+    index: number;
+    isMe: boolean;
+}) {
+    const glowAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (!isMe) return;
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(glowAnim, { toValue: 1, duration: 1400, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+                Animated.timing(glowAnim, { toValue: 0, duration: 1400, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [isMe]);
+
+    const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+    const rankColor = index < 3 ? rankColors[index] : '#445566';
+    const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
+    const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] });
+
+    return (
+        <Animated.View
+            style={[
+                styles.row,
+                isMe && styles.rowHighlight,
+                isMe && { opacity: glowOpacity },
+            ]}
+        >
+            <View style={styles.rankCol}>
+                {rankEmoji ? (
+                    <Text style={styles.rankEmoji}>{rankEmoji}</Text>
+                ) : (
+                    <Text style={[styles.rankNum, { color: rankColor }]}>{index + 1}</Text>
+                )}
+            </View>
+
+            <View style={[styles.avatarCircle, { backgroundColor: isMe ? '#FF6B00' : '#1e3a5f' }]}>
+                {item.photoURL ? (
+                    Platform.OS === 'web' ? (
+                        <img
+                            src={item.photoURL}
+                            style={({ width: 44, height: 44, borderRadius: 22, objectFit: 'cover' } as any)}
+                        />
+                    ) : (
+                        <Image source={{ uri: item.photoURL }} style={styles.avatarImg} />
+                    )
+                ) : (
+                    <Text style={styles.avatarLetter}>
+                        {(item.displayName || 'U')[0].toUpperCase()}
+                    </Text>
+                )}
+            </View>
+
+            <View style={styles.infoCol}>
+                <View style={styles.nameRow}>
+                    <Text style={[styles.nameText, isMe && styles.nameMeText]} numberOfLines={1}>
+                        {item.displayName || 'User'}
+                    </Text>
+                    {isMe && <View style={styles.youBadge}><Text style={styles.youBadgeText}>YOU</Text></View>}
+                </View>
+                <Text style={styles.subText}>
+                    💪 {item.workoutsCompleted || 0} workouts · 🔥 {item.currentStreak || 0} day streak
+                </Text>
+            </View>
+
+            <Text style={[styles.scoreText, { color: (item.score || 0) > 0 ? '#FF6B00' : '#445566' }]}>
+                {formatWatchTime(item.score || 0)}
+            </Text>
+        </Animated.View>
+    );
+});
+
+// Inject the current user into a fetched leaderboard if they're absent (cut off by limit or zero score).
+// Re-sorts with the same criteria as the Supabase query: streak DESC, score DESC.
+// Returns the original array untouched if the user is already present.
+function injectSelf(
+    entries: LeaderboardEntry[],
+    currentUid: string | null,
+    profile: User | null,
+): LeaderboardEntry[] {
+    if (!currentUid || !profile) return entries;
+
+    const alreadyExists = entries.some(r => r.uid === currentUid);
+    console.log('[Leaderboard] fetched rows:', entries.length);
+    console.log('[Leaderboard] self exists:', alreadyExists);
+
+    if (alreadyExists) return entries;
+
+    console.log('[Leaderboard] current user injected');
+    const selfEntry: LeaderboardEntry = {
+        uid: currentUid,
+        displayName: profile.fullName || profile.username || 'You',
+        photoURL: profile.profileImageUrl || '',
+        score: Number(profile.watchedSeconds ?? 0),
+        currentStreak: profile.currentStreak ?? 0,
+        workouts: profile.completedWorkouts ?? 0,
+        liveSessions: profile.totalLiveSessions ?? 0,
+        workoutsCompleted: profile.completedWorkouts ?? 0,
+    };
+
+    const merged = [...entries, selfEntry];
+    merged.sort((a, b) => {
+        if (b.currentStreak !== a.currentStreak) return (b.currentStreak ?? 0) - (a.currentStreak ?? 0);
+        return (b.score ?? 0) - (a.score ?? 0);
+    });
+    return merged;
+}
 
 export function LeaderboardScreen() {
     const { supabaseUserId } = useAuth();
@@ -32,6 +150,10 @@ export function LeaderboardScreen() {
     const currentUid = supabaseUserId ?? null;
 
     const { profile } = useUser();
+    // Keep a ref so subscription closures always see the latest profile
+    // without needing to recreate subscriptions on every profile update.
+    const profileRef = useRef(profile);
+    useEffect(() => { profileRef.current = profile; }, [profile]);
 
     const [selectedPeriod, setSelectedPeriod] = useState<Tab>('self');
     const [users, setUsers] = useState<LeaderboardEntry[]>([]);
@@ -44,16 +166,16 @@ export function LeaderboardScreen() {
         setUsers([]);
 
         if (selectedPeriod === 'weekly') {
-            const unsub = LeaderboardService.subscribeWeeklyLeaderboard((entries) => {
-                setUsers(entries);
+            const unsub = LeaderboardService.subscribeWeeklyLeaderboard(currentUid || '', (entries) => {
+                setUsers(injectSelf(entries, currentUid, profileRef.current));
                 setLoading(false);
             }, (e) => { console.error(e); setLoading(false); });
             return () => unsub();
         }
 
         if (selectedPeriod === 'monthly') {
-            const unsub = LeaderboardService.subscribeMonthlyLeaderboard((entries) => {
-                setUsers(entries);
+            const unsub = LeaderboardService.subscribeMonthlyLeaderboard(currentUid || '', (entries) => {
+                setUsers(injectSelf(entries, currentUid, profileRef.current));
                 setLoading(false);
             }, (e) => { console.error(e); setLoading(false); });
             return () => unsub();
@@ -62,14 +184,15 @@ export function LeaderboardScreen() {
         // self tab doesn't subscribe to leaderboard list
         setLoading(false);
         return;
-    }, [selectedPeriod]);
+    }, [selectedPeriod, currentUid]);
 
     // Preload top lists for insights (non-blocking)
     useEffect(() => {
-        const u1 = LeaderboardService.subscribeWeeklyLeaderboard((entries) => setWeeklyTop(entries), (e) => console.warn(e));
-        const u2 = LeaderboardService.subscribeMonthlyLeaderboard((entries) => setMonthlyTop(entries), (e) => console.warn(e));
+        if (!currentUid) return;
+        const u1 = LeaderboardService.subscribeWeeklyLeaderboard(currentUid, (entries) => setWeeklyTop(injectSelf(entries, currentUid, profileRef.current)), (e) => console.warn(e));
+        const u2 = LeaderboardService.subscribeMonthlyLeaderboard(currentUid, (entries) => setMonthlyTop(injectSelf(entries, currentUid, profileRef.current)), (e) => console.warn(e));
         return () => { u1(); u2(); };
-    }, []);
+    }, [currentUid]);
 
     const currentUserEntry = users.find(u => u.uid === currentUid) ?? null;
     const currentUserInList = users.some(u => u.uid === currentUid);
@@ -83,53 +206,9 @@ export function LeaderboardScreen() {
         return (profile as any).totalMinutes ? (profile as any).totalMinutes * 60 : 0;
     })();
 
-    const renderRow = (item: LeaderboardEntry, index: number, isCurrentUser: boolean) => {
-        const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
-        const rankColor = index < 3 ? rankColors[index] : '#445566';
-        const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
-
-        return (
-            <View style={[styles.row, isCurrentUser && styles.rowHighlight]}>
-                <View style={styles.rankCol}>
-                    {rankEmoji ? (
-                        <Text style={styles.rankEmoji}>{rankEmoji}</Text>
-                    ) : (
-                        <Text style={[styles.rankNum, { color: rankColor }]}>{index + 1}</Text>
-                    )}
-                </View>
-
-                <View style={[styles.avatarCircle, { backgroundColor: isCurrentUser ? '#FF6B00' : '#1e3a5f' }]}>
-                    {item.photoURL ? (
-                        Platform.OS === 'web' ? (
-                            <img
-                                src={item.photoURL}
-                                style={({ width: 44, height: 44, borderRadius: 22, objectFit: 'cover' } as any)}
-                            />
-                        ) : (
-                            <Image source={{ uri: item.photoURL }} style={styles.avatarImg} />
-                        )
-                    ) : (
-                        <Text style={styles.avatarLetter}>
-                            {(item.displayName || 'U')[0].toUpperCase()}
-                        </Text>
-                    )}
-                </View>
-
-                <View style={styles.infoCol}>
-                    <Text style={[styles.nameText, isCurrentUser && { color: '#FF6B00' }]} numberOfLines={1}>
-                        {item.displayName || 'User'}{isCurrentUser ? ' (You)' : ''}
-                    </Text>
-                    <Text style={styles.subText}>
-                        💪 {item.workoutsCompleted || 0} workouts · 🔥 {item.currentStreak || 0} day streak
-                    </Text>
-                </View>
-
-                <Text style={[styles.scoreText, { color: (item.score || 0) > 0 ? '#FF6B00' : '#445566' }]}> 
-                    {formatSeconds((item.score || 0) * 60)}
-                </Text>
-            </View>
-        );
-    };
+    const renderRow = (item: LeaderboardEntry, index: number, isCurrentUser: boolean) => (
+        <LeaderboardRow item={item} index={index} isMe={isCurrentUser} />
+    );
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -165,7 +244,8 @@ export function LeaderboardScreen() {
             ) : (
                 (loading ? (
                     <ActivityIndicator color="#FF6B00" style={{ marginTop: 40 }} />
-                ) : users.length === 0 ? (
+                ) : users.length === 0 && !profile ? (
+                    // Only truly empty when there is no profile at all (unauthenticated edge case)
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No users yet</Text>
                     </View>
@@ -192,23 +272,20 @@ export function LeaderboardScreen() {
 }
 
 function SelfStatsView({ profile, uid, weeklyTop, monthlyTop }: { profile: any; uid: string | null; weeklyTop: LeaderboardEntry[]; monthlyTop: LeaderboardEntry[] }) {
-    const [displaySecs, setDisplaySecs] = useState<number>(0);
+    // watched_seconds is the canonical source for total accumulated watch time
+    const lifetimeSecs = Number(profile?.watchedSeconds ?? 0);
 
-    useEffect(() => {
-        let total = 0;
-        if (profile) {
-            if (profile.totalWorkoutSeconds) total = profile.totalWorkoutSeconds;
-            else if (profile.totalWorkoutMinutes) total = profile.totalWorkoutMinutes * 60;
-            else if (profile.totalMinutes) total = profile.totalMinutes * 60;
-        }
-        setDisplaySecs(total);
-        const t = setInterval(() => setDisplaySecs(s => s + 1), 1000);
-        return () => clearInterval(t);
-    }, [profile]);
+    // Weekly: sum from weekly leaderboard entry for self, or today's seconds as proxy
+    const selfWeeklyEntry = weeklyTop.find(e => e.uid === uid);
+    const thisWeekSecs = selfWeeklyEntry
+        ? Number(selfWeeklyEntry.score ?? 0)
+        : Number(profile?.todayWatchSeconds ?? 0);
 
-    const thisWeek = profile?.weeklyWorkoutSeconds ?? (profile?.weeklyWorkoutMinutes ? profile.weeklyWorkoutMinutes * 60 : 0);
-    const thisMonth = profile?.monthlyWorkoutSeconds ?? (profile?.monthlyWorkoutMinutes ? profile.monthlyWorkoutMinutes * 60 : 0);
-    const lifetime = displaySecs;
+    // Monthly: sum from monthly leaderboard for self
+    const selfMonthlyEntry = monthlyTop.find(e => e.uid === uid);
+    const thisMonthSecs = selfMonthlyEntry
+        ? Number(selfMonthlyEntry.score ?? 0)
+        : lifetimeSecs;
 
     // compute approximate percentile from weeklyTop
     const weeklyRank = weeklyTop.findIndex(e => e.uid === uid);
@@ -219,8 +296,8 @@ function SelfStatsView({ profile, uid, weeklyTop, monthlyTop }: { profile: any; 
             <View style={styles.heroCard}>
                 <View style={styles.heroLeft}>
                     <Text style={styles.heroLabel}>🔥 Total Time Trained</Text>
-                    <Text style={styles.heroTime}>{formatSeconds(displaySecs)}</Text>
-                    <Text style={styles.heroSub}>Lifetime • Live</Text>
+                    <Text style={styles.heroTime}>{formatWatchTime(lifetimeSecs)}</Text>
+                    <Text style={styles.heroSub}>Lifetime Total</Text>
                 </View>
                 <View style={styles.heroRight}>
                     <View style={styles.ringPlaceholder} />
@@ -230,30 +307,30 @@ function SelfStatsView({ profile, uid, weeklyTop, monthlyTop }: { profile: any; 
             <View style={styles.statRow}>
                 <View style={styles.statCard}>
                     <Text style={styles.statLabel}>This Week</Text>
-                    <Text style={styles.statValue}>{formatSeconds(thisWeek)}</Text>
+                    <Text style={styles.statValue}>{formatWatchTime(thisWeekSecs)}</Text>
                 </View>
                 <View style={styles.statCard}>
                     <Text style={styles.statLabel}>This Month</Text>
-                    <Text style={styles.statValue}>{formatSeconds(thisMonth)}</Text>
+                    <Text style={styles.statValue}>{formatWatchTime(thisMonthSecs)}</Text>
                 </View>
                 <View style={styles.statCard}>
                     <Text style={styles.statLabel}>Workouts</Text>
-                    <Text style={styles.statValue}>{profile?.totalWorkouts ?? profile?.workouts ?? 0}</Text>
+                    <Text style={styles.statValue}>{profile?.completedWorkouts ?? profile?.totalWorkouts ?? 0}</Text>
                 </View>
             </View>
 
-            <View style={[styles.statRow, { marginTop: 12 }]}> 
+            <View style={[styles.statRow, { marginTop: 12 }]}>
                 <View style={styles.statCard}>
                     <Text style={styles.statLabel}>Current Streak</Text>
                     <Text style={styles.statValue}>{profile?.currentStreak ?? 0} days</Text>
                 </View>
                 <View style={styles.statCard}>
-                    <Text style={styles.statLabel}>Active Days</Text>
-                    <Text style={styles.statValue}>{profile?.activeDays ?? 0}</Text>
+                    <Text style={styles.statLabel}>Best Streak</Text>
+                    <Text style={styles.statValue}>{profile?.bestStreak ?? 0} days</Text>
                 </View>
                 <View style={styles.statCard}>
-                    <Text style={styles.statLabel}>Calories</Text>
-                    <Text style={styles.statValue}>{profile?.caloriesBurned ?? '—'}</Text>
+                    <Text style={styles.statLabel}>Today</Text>
+                    <Text style={styles.statValue}>{formatWatchTime(Number(profile?.todayWatchSeconds ?? 0))}</Text>
                 </View>
             </View>
 
@@ -302,9 +379,14 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     rowHighlight: {
-        borderWidth: 1,
-        borderColor: '#FF6B00',
-        backgroundColor: '#1a1200',
+        backgroundColor: '#1a1500',
+        borderWidth: 1.5,
+        borderColor: '#FF7A00',
+        shadowColor: '#FF7A00',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        elevation: 6,
     },
     rankCol: { width: 32, alignItems: 'center' },
     rankEmoji: { fontSize: 22 },
@@ -320,7 +402,21 @@ const styles = StyleSheet.create({
     avatarImg: { width: 44, height: 44, borderRadius: 22 },
     avatarLetter: { color: '#fff', fontSize: 18, fontWeight: '700' },
     infoCol: { flex: 1 },
-    nameText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    nameText: { color: '#fff', fontSize: 15, fontWeight: '600', flexShrink: 1 },
+    nameMeText: { color: '#FF7A00' },
+    youBadge: {
+        backgroundColor: '#FF7A00',
+        borderRadius: 4,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+    },
+    youBadgeText: {
+        color: '#fff',
+        fontSize: 9,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+    },
     subText: { color: '#8899aa', fontSize: 11, marginTop: 2 },
     scoreText: { fontSize: 13, fontWeight: '700', minWidth: 50, textAlign: 'right' },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -355,10 +451,10 @@ const styles = StyleSheet.create({
     },
     heroLeft: { flex: 1 },
     heroLabel: { color: '#FFB88A', fontSize: 12, fontWeight: '700', marginBottom: 6 },
-    heroTime: { color: '#fff', fontSize: 26, fontWeight: '800' },
+    heroTime: { color: '#FF7A00', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
     heroSub: { color: '#8899aa', fontSize: 12, marginTop: 6 },
     heroRight: { width: 86, height: 86, alignItems: 'center', justifyContent: 'center' },
-    ringPlaceholder: { width: 80, height: 80, borderRadius: 40, borderWidth: 6, borderColor: 'rgba(255,107,0,0.18)' },
+    ringPlaceholder: { width: 80, height: 80, borderRadius: 40, borderWidth: 8, borderColor: 'rgba(255,122,0,0.35)' },
 
     statRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
     statCard: { flex: 1, backgroundColor: '#07121a', padding: 12, borderRadius: 12, alignItems: 'center' },

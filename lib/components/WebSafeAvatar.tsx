@@ -43,7 +43,7 @@ export function WebSafeAvatar({
     }, [uri, loaded, error, timeoutMs]);
 
     const radius = size / 2;
-    const containerStyle = [{ width: size, height: size, borderRadius: radius }, style];
+    const containerStyle = [styles.container, { width: size, height: size, borderRadius: radius }, style];
 
     if (!uri || error) {
         return <View style={containerStyle}>{fallback}</View>;
@@ -67,6 +67,9 @@ export function WebSafeAvatar({
                         borderRadius: radius,
                         objectFit: 'cover',
                         display: loaded ? 'block' : 'none',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
                     }}
                     onLoad={() => setLoaded(true)}
                     onError={() => setError(true)}
@@ -94,6 +97,11 @@ export function WebSafeAvatar({
 }
 
 const styles = StyleSheet.create({
+    container: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
     loadingOverlay: {
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',

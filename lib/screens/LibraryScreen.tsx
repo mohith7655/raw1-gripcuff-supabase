@@ -473,8 +473,10 @@ export const LibraryScreen = () => {
   );
 };
 
+import { getWorkoutVideoUrl } from '../constants/videoUrls';
+
 // ── Category sections config ──
-const EXERCISE_LIBRARY_VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/wazy-6c4a9.firebasestorage.app/o/Exercise%20Tutorial%20-%20Squat.mp4?alt=media&token=48cf44d1-0a5f-4ff5-b1d4-62e19c46dfc6';
+const EXERCISE_LIBRARY_VIDEO_URL = getWorkoutVideoUrl('exercise');
 
 const RECOMMENDED_VIDEOS = [
   { id: 1, title: "Upper Body Hypertrophy", duration: "0:10", color: "#E8732A" },

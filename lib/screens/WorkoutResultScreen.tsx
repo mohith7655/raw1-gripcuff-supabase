@@ -15,6 +15,7 @@ import { useWorkout } from '../providers/WorkoutContext';
 import { useAuth } from '../providers/AuthContext';
 import { TTSService } from '../services/tts.service';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { recordUniversalWorkoutCompletion } from '../services/workoutCompletion.service';
 
 export const WorkoutResultScreen = () => {
   const navigation = useNavigation<any>();
@@ -101,6 +102,19 @@ export const WorkoutResultScreen = () => {
       {
         text: 'Save',
         onPress: () => {
+          // Record completion — duration in minutes from params, fallback 30
+          const uid = supabaseUserId;
+          if (uid) {
+            const durationMin: number = currentWorkout?.duration ?? route.params?.duration ?? 30;
+            recordUniversalWorkoutCompletion(uid, {
+              workoutId: `ai_workout_${Date.now()}`,
+              workoutTitle: 'AI Generated Workout',
+              sourceType: 'ai_trainer',
+              watchMinutes: durationMin,
+            })
+              .then(r => console.log('[WorkoutResult] completion recorded — streak:', r.newStreak))
+              .catch(e => console.warn('[WorkoutResult] completion failed:', e?.message ?? e));
+          }
           resetWorkout();
           navigation.reset({
             index: 0,
