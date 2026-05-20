@@ -1,16 +1,3 @@
-import {
-    collection,
-    doc,
-    updateDoc,
-    onSnapshot,
-    query,
-    where,
-    serverTimestamp,
-    Timestamp,
-    addDoc,
-} from 'firebase/firestore';
-import { db } from '../core/config/firebase';
-
 export interface LiveSession {
     id: string;
     hostUid: string;
@@ -22,7 +9,7 @@ export interface LiveSession {
     videoId: string;
     videoTitle: string;
     isLive: boolean;
-    liveStartedAt: Timestamp | null;
+    liveStartedAt: Date | null;
 }
 
 export interface JoinRequest {
@@ -32,89 +19,40 @@ export interface JoinRequest {
     requesterName: string;
     requesterAvatar: string | null;
     status: 'pending' | 'allowed' | 'denied';
-    createdAt: Timestamp;
+    createdAt: Date;
 }
 
-const SESSIONS_COL = 'workoutSessions';
-
 export class LiveSessionService {
-    static async markLive(sessionId: string): Promise<void> {
-        try {
-            await updateDoc(doc(db, SESSIONS_COL, sessionId), {
-                isLive: true,
-                liveStartedAt: serverTimestamp(),
-            });
-        } catch (e) {
-            console.warn('[LiveSessionService] markLive failed:', e);
-        }
-    }
+    static async markLive(sessionId: string): Promise<void> {}
 
-    static async markEnded(sessionId: string): Promise<void> {
-        try {
-            await updateDoc(doc(db, SESSIONS_COL, sessionId), {
-                isLive: false,
-            });
-        } catch (e) {
-            console.warn('[LiveSessionService] markEnded failed:', e);
-        }
-    }
+    static async markEnded(sessionId: string): Promise<void> {}
 
     static subscribeLiveSessions(
         callback: (sessions: LiveSession[]) => void
     ): () => void {
-        const q = query(
-            collection(db, SESSIONS_COL),
-            where('isLive', '==', true)
-        );
-        return onSnapshot(q, (snap) => {
-            const sessions = snap.docs.map(d => ({ id: d.id, ...d.data() } as LiveSession));
-            callback(sessions);
-        }, (err) => {
-            console.warn('[LiveSessionService] subscribeLiveSessions error:', err);
-        });
+        callback([]);
+        return () => {};
     }
 
     static async requestToJoin(
         sessionId: string,
         requester: { uid: string; name: string; avatarUrl: string | null }
     ): Promise<string> {
-        const ref = await addDoc(
-            collection(db, SESSIONS_COL, sessionId, 'joinRequests'),
-            {
-                sessionId,
-                requesterId: requester.uid,
-                requesterName: requester.name,
-                requesterAvatar: requester.avatarUrl,
-                status: 'pending',
-                createdAt: serverTimestamp(),
-            }
-        );
-        return ref.id;
+        return '';
     }
 
     static async respondToJoinRequest(
         sessionId: string,
         requestId: string,
         response: 'allowed' | 'denied'
-    ): Promise<void> {
-        await updateDoc(
-            doc(db, SESSIONS_COL, sessionId, 'joinRequests', requestId),
-            { status: response }
-        );
-    }
+    ): Promise<void> {}
 
     static subscribeToJoinRequests(
         sessionId: string,
         callback: (requests: JoinRequest[]) => void
     ): () => void {
-        const q = query(
-            collection(db, SESSIONS_COL, sessionId, 'joinRequests'),
-            where('status', '==', 'pending')
-        );
-        return onSnapshot(q, (snap) => {
-            const requests = snap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
-            callback(requests);
-        });
+        callback([]);
+        return () => {};
     }
 
     static subscribeMyJoinRequest(
@@ -122,13 +60,6 @@ export class LiveSessionService {
         requestId: string,
         callback: (status: string) => void
     ): () => void {
-        return onSnapshot(
-            doc(db, SESSIONS_COL, sessionId, 'joinRequests', requestId),
-            (snap) => {
-                if (snap.exists()) {
-                    callback((snap.data() as JoinRequest).status);
-                }
-            }
-        );
+        return () => {};
     }
 }

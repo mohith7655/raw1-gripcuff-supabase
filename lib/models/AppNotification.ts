@@ -1,5 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
-
 export type AppNotificationType =
   | 'workout_invite'
   | 'friend_request'
@@ -22,11 +20,10 @@ export interface AppNotification {
   fromUid: string;
   fromName: string;
   avatar?: string;
-  createdAt: Timestamp;
+  createdAt: Date;
   read: boolean;
   chatId?: string;
   messageId?: string;
   requestId?: string;
   sessionId?: string;
 }
-

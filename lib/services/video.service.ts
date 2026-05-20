@@ -1,15 +1,6 @@
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  getDoc,
-} from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../core/config/firebase';
 import { Video, VideoCategory } from '../models';
 
-// Mock videos for development (will be replaced by Firestore data)
+// Mock videos for development
 const MOCK_VIDEOS: Video[] = [
   // ── GripCuff Training Videos (10) ──
   {
@@ -198,63 +189,16 @@ const MOCK_VIDEOS: Video[] = [
 
 export class VideoService {
   static async getVideos(): Promise<Video[]> {
-    if (!isFirebaseConfigured) {
-      // Return mock data if Firebase not configured
-      return MOCK_VIDEOS;
-    }
-
-    try {
-      const collectionRef = collection(db, 'videos');
-      const snapshot = await getDocs(collectionRef);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Video));
-    } catch (error) {
-      console.warn('Failed to fetch videos from Firestore, using mock data:', error);
-      return MOCK_VIDEOS;
-    }
+    return MOCK_VIDEOS;
   }
 
   static async getVideosByCategory(category: VideoCategory): Promise<Video[]> {
     if (category === 'All') return this.getVideos();
-
-    if (!isFirebaseConfigured) {
-      return MOCK_VIDEOS.filter(v => v.category === category);
-    }
-
-    try {
-      const collectionRef = collection(db, 'videos');
-      const q = query(collectionRef, where('category', '==', category));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Video));
-    } catch (error) {
-      console.warn('Failed to fetch videos by category, using mock data:', error);
-      return MOCK_VIDEOS.filter(v => v.category === category);
-    }
+    return MOCK_VIDEOS.filter(v => v.category === category);
   }
 
   static async getVideoById(id: string): Promise<Video | null> {
-    if (!isFirebaseConfigured) {
-      return MOCK_VIDEOS.find(v => v.id === id) || null;
-    }
-
-    try {
-      const docRef = doc(db, 'videos', id);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) return null;
-      return {
-        id: docSnap.id,
-        ...docSnap.data(),
-      } as Video;
-    } catch (error) {
-      console.warn('Failed to fetch video by ID, using mock data:', error);
-      return MOCK_VIDEOS.find(v => v.id === id) || null;
-    }
+    return MOCK_VIDEOS.find(v => v.id === id) || null;
   }
 
   static async searchVideos(searchTerm: string): Promise<Video[]> {

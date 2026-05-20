@@ -1,3 +1,16 @@
+export interface UserLocationData {
+  address: string;
+  lat: number;
+  lng: number;
+  placeId?: string;
+}
+
+export interface UserLocations {
+  gym?: UserLocationData;
+  home?: UserLocationData;
+  park?: UserLocationData;
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -6,6 +19,9 @@ export interface User {
   profileImageUrl?: string;
   phone?: string;
   dateOfBirth?: string;
+  gender?: string;
+  age?: number;
+  locations?: UserLocations;
   completedVideos: number;
   totalVideos: number;
   credits: number;

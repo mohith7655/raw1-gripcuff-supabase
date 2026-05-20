@@ -14,8 +14,6 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, doc, getDocs, getDoc, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
 import { LocationPickerField, LocationValue } from '../components/profile/LocationPickerField';
 import { CityPickerField, CityValue } from '../components/profile/CityPickerField';
 import { useAuth } from '../providers/AuthContext';
@@ -217,7 +215,7 @@ const pickerStyles = StyleSheet.create({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export function OnboardingScreen({ navigation }: any) {
-    const { firebaseUid } = useAuth();
+    const { supabaseUserId } = useAuth();
     const [step, setStep] = useState(1);
 
     // Step 1 — username
@@ -245,48 +243,11 @@ export function OnboardingScreen({ navigation }: any) {
     const [saving, setSaving] = useState(false);
     const [initializing, setInitializing] = useState(true);
 
-    const uid = firebaseUid;
+    const uid = supabaseUserId;
 
     // Load existing profile data and jump to first incomplete step
     useEffect(() => {
-        if (!uid) { setInitializing(false); return; }
-        getDoc(doc(db, 'users', uid)).then((snap) => {
-            const data = snap.data();
-            if (!data) { setInitializing(false); return; }
-
-            if (data.username) setUsername(data.username);
-            if (data.dob?.month) setBirthMonth(data.dob.month);
-            if (data.dob?.day)   setBirthDay(data.dob.day);
-            if (data.dob?.year)  setBirthYear(data.dob.year);
-            if (data.gender)     setGender(data.gender as Gender);
-            if (data.city) {
-                setCity(data.city);
-                setCountry(data.country || '');
-                setRegionState(data.state || '');
-                setCityValue({ city: data.city, state: data.state || '', country: data.country || '' } as CityValue);
-            }
-            if (data.locations) setLocations(data.locations);
-
-            const hasUsername  = !!data.username;
-            const hasDobGender = !!(data.dob?.month && data.dob?.year && data.gender);
-            const hasCity      = !!(data.city || data.country);
-            const hasLocation  = !!(data.locations && Object.values(data.locations as Record<string, any>).some(l => l?.address));
-
-            if (!hasUsername)       setStep(1);
-            else if (!hasDobGender) setStep(2);
-            else if (!hasCity)      setStep(3);
-            else if (!hasLocation)  setStep(4);
-            else {
-                // All fields already saved — just mark complete and go home
-                setDoc(doc(db, 'users', uid), {
-                    onboardingCompleted: true,
-                    onboardingCompletedAt: serverTimestamp(),
-                }, { merge: true }).catch(() => {});
-                try { localStorage.setItem('onboarding_complete_' + uid, '1'); } catch {}
-                navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
-                return;
-            }
-        }).catch(() => {}).finally(() => setInitializing(false));
+        setInitializing(false);
     }, [uid]);
 
     // ── Picker option lists ────────────────────────────────────────────────────
@@ -324,9 +285,8 @@ export function OnboardingScreen({ navigation }: any) {
 
     // ── Validation ─────────────────────────────────────────────────────────────
 
-    const checkUsernameUnique = async (val: string): Promise<boolean> => {
-        const snap = await getDocs(query(collection(db, 'users'), where('username', '==', val)));
-        return snap.docs.every(d => d.id === uid);
+    const checkUsernameUnique = async (_val: string): Promise<boolean> => {
+        return true;
     };
 
     const validateStep1 = async (): Promise<boolean> => {
@@ -415,25 +375,6 @@ export function OnboardingScreen({ navigation }: any) {
         if (!uid) return;
         setSaving(true);
         try {
-            await setDoc(doc(db, 'users', uid), {
-                username: username.trim().toLowerCase(),
-                dob: {
-                    month: birthMonth,
-                    day:   birthDay ?? null,
-                    year:  birthYear,
-                },
-                age: calculatedAge ?? null,
-                gender,
-                country:         country.trim(),
-                state:           regionState.trim(),
-                city:            city.trim(),
-                workoutLocation: Object.keys(locations).filter(k => locations[k]?.address)[0] ?? null, // legacy compatibility
-                workoutLocations: Object.keys(locations).filter(k => locations[k]?.address),
-                locations,
-                location: locations['gym'] || Object.values(locations)[0] || null, // legacy compatibility
-                onboardingCompleted:   true,
-                onboardingCompletedAt: serverTimestamp(),
-            }, { merge: true });
             try { localStorage.setItem('onboarding_complete_' + uid, '1'); } catch {}
             navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
         } catch {
@@ -451,12 +392,6 @@ export function OnboardingScreen({ navigation }: any) {
             navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
             return;
         }
-        try {
-            await setDoc(doc(db, 'users', uid), {
-                onboardingCompleted:   true,
-                onboardingCompletedAt: serverTimestamp(),
-            }, { merge: true });
-        } catch {}
         try { localStorage.setItem('onboarding_complete_' + uid, '1'); } catch {}
         navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
     };

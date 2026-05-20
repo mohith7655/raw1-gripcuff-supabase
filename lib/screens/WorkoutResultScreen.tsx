@@ -19,7 +19,7 @@ import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 export const WorkoutResultScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { firebaseUid } = useAuth();
+  const { supabaseUserId } = useAuth();
   const { generateWorkout, exercises, loading, error, resetWorkout, currentWorkout } = useWorkout();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);

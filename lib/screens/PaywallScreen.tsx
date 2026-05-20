@@ -27,7 +27,7 @@ const STRIPE_CHECKOUT_URL =
 
 export const PaywallScreen = () => {
   const { paywallVisible, hidePaywall, grantAccess, hasAccess, activationMessage, clearActivationMessage } = useAccess();
-  const { firebaseUid } = useAuth();
+  const { supabaseUserId } = useAuth();
   const insets = useSafeAreaInsets();
   const { width: winWidth } = useWindowDimensions();
   const screenHeight = Dimensions.get('window').height;
@@ -102,7 +102,7 @@ export const PaywallScreen = () => {
       const response = await fetch(STRIPE_CHECKOUT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: firebaseUid }),
+        body: JSON.stringify({ userId: supabaseUserId }),
       });
 
       const data = await response.json();

@@ -1,6 +1,3 @@
-import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
-
 export type Badge = {
     id: string;
     label: string;
@@ -22,35 +19,10 @@ export const ALL_BADGES: Badge[] = [
 export const WORKOUT_MILESTONES = [1, 7, 14, 30, 50, 100];
 
 export const RewardsService = {
-    async awardCredits(uid: string, amount: number, reason: string): Promise<void> {
-        await updateDoc(doc(db, 'users', uid), {
-            credits: increment(amount),
-        });
-    },
+    async awardCredits(uid: string, amount: number, reason: string): Promise<void> {},
 
     async checkMilestones(uid: string): Promise<string[]> {
-        const snap = await getDoc(doc(db, 'users', uid));
-        const data = snap.data() ?? {};
-        const earned: string[] = data.badges ?? [];
-        const totalWorkouts: number = data.totalWorkouts ?? 0;
-        const totalLive: number = data.totalLiveSessions ?? 0;
-        const streak: number = data.currentStreak ?? 0;
-
-        const toUnlock: string[] = [];
-
-        if (totalWorkouts >= 1 && !earned.includes('first_workout')) toUnlock.push('first_workout');
-        if (streak >= 7 && !earned.includes('7_day_streak')) toUnlock.push('7_day_streak');
-        if (streak >= 14 && !earned.includes('14_day_streak')) toUnlock.push('14_day_streak');
-        if (streak >= 30 && !earned.includes('30_day_streak')) toUnlock.push('30_day_streak');
-        if (totalLive >= 1 && !earned.includes('first_live_session')) toUnlock.push('first_live_session');
-        if (totalWorkouts >= 100 && !earned.includes('100_workouts')) toUnlock.push('100_workouts');
-
-        if (toUnlock.length > 0) {
-            const merged = Array.from(new Set([...earned, ...toUnlock]));
-            await updateDoc(doc(db, 'users', uid), { badges: merged });
-        }
-
-        return toUnlock;
+        return [];
     },
 
     getNextMilestone(totalWorkouts: number): { label: string; workoutsLeft: number } | null {

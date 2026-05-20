@@ -11,8 +11,6 @@ import {
   PanResponder,
 } from 'react-native';
 import { ChevronRight, Zap } from 'lucide-react-native';
-import { collection, onSnapshot, query, orderBy, limit, getDoc, doc } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
 import { StreakData } from '../services/streak.service';
 import { LeaderboardEntry } from '../services/leaderboard.service';
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
@@ -205,36 +203,12 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
     return `Week ${getISOWeekNumber(weekDates[0])}`;
   }, [weekOffset, weekDates]);
 
-  // Fetch activity docs for non-current weeks
+  // Fetch activity docs for non-current weeks (no Firestore — return empty)
   useEffect(() => {
     if (weekOffset === 0 || !uid) return;
-    Promise.all(
-      weekDates.map(date =>
-        getDoc(doc(db, 'users', uid, 'activity', date))
-          .then(snap => ({
-            date,
-            completed: snap.exists() && !!(
-              snap.data()?.challengeCompleted ||
-              snap.data()?.workoutCompleted ||
-              snap.data()?.liveSessionCompleted
-            ),
-            minutes: snap.exists()
-              ? Math.max(
-                  (snap.data()?.watchedMinutes as number) ?? 0,
-                  (snap.data()?.minutes        as number) ?? 0,
-                )
-              : 0,
-          }))
-          .catch(() => ({ date, completed: false, minutes: 0 }))
-      )
-    ).then(results => {
-      const actMap: Record<string, boolean> = {};
-      const minMap: Record<string, number> = {};
-      results.forEach(r => { actMap[r.date] = r.completed; minMap[r.date] = r.minutes; });
-      setFetchedActivity(actMap);
-      setFetchedMinutes(minMap);
-    });
-  }, [uid, weekOffset]); // weekDates derives from weekOffset — no need to list both
+    setFetchedActivity({});
+    setFetchedMinutes({});
+  }, [uid, weekOffset]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -315,18 +289,8 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    const col = collection(db, 'leaderboards', period, 'users');
-    const q = query(col, orderBy('score', 'desc'), limit(3));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setEntries(snap.docs.map(d => ({ uid: d.id, ...d.data() } as LeaderboardEntry)));
-        setLoading(false);
-      },
-      () => setLoading(false)
-    );
-    return () => unsub();
+    setEntries([]);
+    setLoading(false);
   }, [period]);
 
   if (loading) {

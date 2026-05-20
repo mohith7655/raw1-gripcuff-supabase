@@ -71,9 +71,9 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
     const localVideoRef = useRef<ICameraVideoTrack | null>(null);
     const localAudioRef = useRef<IMicrophoneAudioTrack | null>(null);
 
-    const { firebaseUid, email } = useAuth();
-    const firebaseDisplayName = email?.split('@')[0] ?? null;
-    const { count: viewerCount } = useLiveViewerCount(channelName, firebaseUid, firebaseDisplayName);
+    const { supabaseUserId, email } = useAuth();
+    const displayName = email?.split('@')[0] ?? null;
+    const { count: viewerCount } = useLiveViewerCount(channelName, supabaseUserId, displayName);
 
     /* ── Draggable PiP ── */
     const pan = useRef(new Animated.ValueXY()).current;

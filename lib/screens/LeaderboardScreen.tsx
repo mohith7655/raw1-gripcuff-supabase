@@ -27,9 +27,9 @@ const formatSeconds = (secs: number) => {
 };
 
 export function LeaderboardScreen() {
-    const { firebaseUid } = useAuth();
+    const { supabaseUserId } = useAuth();
     const navigation = useNavigation<any>();
-    const currentUid = firebaseUid ?? null;
+    const currentUid = supabaseUserId ?? null;
 
     const { profile } = useUser();
 

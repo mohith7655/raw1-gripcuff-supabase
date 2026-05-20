@@ -11,8 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, CircleUserRound } from 'lucide-react-native';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 
 type RouteParams = {
@@ -30,19 +28,8 @@ export const ChatFriendProfileScreen = () => {
     const [userData, setUserData] = useState<any>(null);
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                setLoading(true);
-                const snap = await getDoc(doc(db, 'users', friendUid));
-                setUserData(snap.exists() ? snap.data() : null);
-            } catch (e) {
-                console.warn('Failed to load friend profile:', e);
-                setUserData(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
+        setUserData(null);
+        setLoading(false);
     }, [friendUid]);
 
     const displayName =
@@ -60,7 +47,7 @@ export const ChatFriendProfileScreen = () => {
             ? `${userData.dob.day ? `${userData.dob.day}/` : ''}${userData.dob.month}/${userData.dob.year}`
             : '-');
     const displayLocation =
-        userData?.location?.address ||
+        userData?.locations?.gym?.address || userData?.locations?.home?.address || userData?.locations?.park?.address ||
         [userData?.city, userData?.state, userData?.country].filter(Boolean).join(', ') ||
         '-';
     const avatar = userData?.profileImageUrl || friendAvatar;

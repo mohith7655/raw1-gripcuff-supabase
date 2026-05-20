@@ -30,8 +30,8 @@ export const ChatRoomScreen = () => {
     const route = useRoute();
     const { friendUid, friendName, friendAvatar } = route.params as RouteParams;
 
-    const { firebaseUid } = useAuth();
-    const chatId = getChatId(firebaseUid ?? 'unknown', friendUid);
+    const { supabaseUserId } = useAuth();
+    const chatId = getChatId(supabaseUserId ?? 'unknown', friendUid);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [text, setText] = useState('');
@@ -41,9 +41,9 @@ export const ChatRoomScreen = () => {
 
     // Ensure conversation doc exists
     useEffect(() => {
-        if (!firebaseUid) return;
-        ChatService.getOrCreateConversation(firebaseUid, friendUid).then(() => setReady(true));
-    }, [firebaseUid, friendUid]);
+        if (!supabaseUserId) return;
+        ChatService.getOrCreateConversation(supabaseUserId, friendUid).then(() => setReady(true));
+    }, [supabaseUserId, friendUid]);
 
     // Subscribe to messages
     useEffect(() => {
@@ -58,15 +58,15 @@ export const ChatRoomScreen = () => {
 
     // Mark as read when entering room
     useEffect(() => {
-        if (ready && firebaseUid) {
-            ChatService.markAsRead(chatId, firebaseUid);
+        if (ready && supabaseUserId) {
+            ChatService.markAsRead(chatId, supabaseUserId);
         }
-    }, [chatId, ready, firebaseUid]);
+    }, [chatId, ready, supabaseUserId]);
 
     const handleSend = async () => {
         if (!text.trim() || sending) return;
-        if (!firebaseUid) return;
-        const uid = firebaseUid;
+        if (!supabaseUserId) return;
+        const uid = supabaseUserId;
         const msg = text.trim();
         setText('');
         setSending(true);
@@ -87,7 +87,7 @@ export const ChatRoomScreen = () => {
     };
 
     const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
-        const isMe = item.senderId === firebaseUid;
+        const isMe = item.senderId === supabaseUserId;
         const prevMsg = messages[index - 1];
         const showTimestamp =
             !prevMsg ||

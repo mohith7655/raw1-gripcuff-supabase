@@ -18,7 +18,7 @@ type StateListener = (patch: Partial<CastState>) => void;
  *
  * Platform coverage:
  *  - Android + iOS : Google Cast SDK via react-native-google-cast
- *  - iOS (AirPlay) : transparent — expo-av allowsExternalPlayback handles it
+ *  - iOS (AirPlay) : transparent — expo-video allowsExternalPlayback handles it
  *  - Web           : all methods are no-ops
  */
 class CastManagerImpl {

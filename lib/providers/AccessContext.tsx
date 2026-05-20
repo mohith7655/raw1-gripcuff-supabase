@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
 import { useAuth } from './AuthContext';
 
 export type AccessType = null | 'gripcuff' | 'subscription';
@@ -96,21 +94,8 @@ const writeGripcuffStatus = async (status: GripcuffStatus) => {
   } catch {}
 };
 
-const writeAccessDoc = (uid: string, type: 'gripcuff' | 'subscription', meta: GrantMeta = {}) =>
-  setDoc(
-    doc(db, 'user_access', uid),
-    {
-      accessType: type,
-      orderNumber: meta.orderNumber ?? null,
-      subscriptionId: meta.subscriptionId ?? null,
-      activatedAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
-
 export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
-  const { firebaseUid, supabaseUserId } = useAuth();
+  const { supabaseUserId } = useAuth();
 
   const [currentUid, setCurrentUid] = useState<string | null>(null);
   const [accessType, setAccessType] = useState<AccessType>(null);
@@ -119,7 +104,6 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
   const [surveyVisible, setSurveyVisible] = useState(false);
   const [gripcuffStatus, setGripcuffStatus] = useState<GripcuffStatus>(null);
   const [activationMessage, setActivationMessage] = useState<string | null>(null);
-  const snapshotUnsubRef = useRef<(() => void) | null>(null);
 
   const pendingStripeRef = useRef<{ detected: boolean; sessionId: string | null }>({
     detected: false,
@@ -150,11 +134,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const sync = async () => {
-      const uid = firebaseUid ?? null;
-      console.log({ supabaseUserId, firebaseUid: uid });
-
-      snapshotUnsubRef.current?.();
-      snapshotUnsubRef.current = null;
+      const uid = supabaseUserId ?? null;
 
       if (!uid) {
         setCurrentUid(null);
@@ -173,75 +153,35 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
       if (pendingStripeRef.current.detected) {
         const { sessionId } = pendingStripeRef.current;
         pendingStripeRef.current = { detected: false, sessionId: null };
-        await writeAccessDoc(uid, 'subscription', { subscriptionId: sessionId ?? undefined });
         applyAccess('subscription');
-        setLoading(false);
         setActivationMessage('Welcome to Raw1! Subscription activated.');
       }
 
-      let firstFire = true;
-      snapshotUnsubRef.current = onSnapshot(
-        doc(db, 'user_access', uid),
-        async (snap) => {
-          const type: AccessType = snap.exists() ? ((snap.data()?.accessType as AccessType) ?? null) : null;
-          applyAccess(type);
-
-          if (snap.exists()) {
-            const fsGcStatus = (snap.data()?.gripcuffStatus as GripcuffStatus) ?? null;
-            if (fsGcStatus) {
-              setGripcuffStatus(fsGcStatus);
-              writeGripcuffStatus(fsGcStatus);
-            }
-          }
-
-          if (firstFire) {
-            firstFire = false;
-            setLoading(false);
-          }
-        },
-        () => {
-          if (firstFire) {
-            firstFire = false;
-            setLoading(false);
-          }
-        }
-      );
+      setLoading(false);
     };
 
     sync().catch((e) => {
       console.warn('[AccessContext] identity sync failed:', e);
       setLoading(false);
     });
-
-    return () => {
-      snapshotUnsubRef.current?.();
-    };
-  }, [applyAccess, firebaseUid, supabaseUserId]);
+  }, [applyAccess, supabaseUserId]);
 
   const hasAccess = accessType === 'gripcuff' || accessType === 'subscription';
 
   const grantAccess = useCallback(
     async (type: 'gripcuff' | 'subscription', meta: GrantMeta = {}) => {
-      if (!firebaseUid) throw new Error('[AccessContext.grantAccess] Firebase UID missing.');
-      await writeAccessDoc(firebaseUid, type, meta);
       applyAccess(type);
     },
-    [firebaseUid, applyAccess]
+    [applyAccess]
   );
 
   const clearActivationMessage = useCallback(() => setActivationMessage(null), []);
 
   const showPaywall = useCallback(async () => {
-    if (currentUid) {
-      try {
-        const userSnap = await getDoc(doc(db, 'users', currentUid));
-        if (!userSnap.data()?.onboardingCompleted) return;
-      } catch {}
-    }
     const savedGcStatus = await readGripcuffStatus();
     if (savedGcStatus) setPaywallVisible(true);
     else setSurveyVisible(true);
-  }, [currentUid]);
+  }, []);
 
   const hidePaywall = useCallback(() => setPaywallVisible(false), []);
   const hideSurvey = useCallback(() => setSurveyVisible(false), []);
@@ -250,13 +190,10 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
     async (status: GripcuffStatus) => {
       setGripcuffStatus(status);
       await writeGripcuffStatus(status);
-      if (currentUid && status) {
-        await setDoc(doc(db, 'user_access', currentUid), { gripcuffStatus: status }, { merge: true });
-      }
       setSurveyVisible(false);
       setPaywallVisible(true);
     },
-    [currentUid]
+    []
   );
 
   const checkAndShowPaywall = useCallback((): boolean => {
@@ -290,4 +227,3 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAccess = () => useContext(AccessContext);
-

@@ -1,6 +1,4 @@
 import { useRef, useCallback } from 'react';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../core/config/firebase';
 import { useAuth } from '../providers/AuthContext';
 
 export interface IntervalAlertConfig {
@@ -29,7 +27,7 @@ export interface UseIntervalAlertsReturn {
 }
 
 export function useIntervalAlerts(): UseIntervalAlertsReturn {
-    const { firebaseUid } = useAuth();
+    const { supabaseUserId } = useAuth();
     const inAppTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const countRef = useRef(0);
 
@@ -40,7 +38,6 @@ export function useIntervalAlerts(): UseIntervalAlertsReturn {
     ): Promise<string | null> => {
         if (!config.enabled) return null;
 
-        // Clear any previous in-app interval
         if (inAppTimerRef.current !== null) {
             clearInterval(inAppTimerRef.current);
         }
@@ -64,57 +61,13 @@ export function useIntervalAlerts(): UseIntervalAlertsReturn {
             }
         }, config.intervalMinutes * 60 * 1000);
 
-        // Schedule background FCM notifications via Cloud Function
-        try {
-            const uid = firebaseUid;
-            if (!uid) throw new Error('Firebase UID unavailable for interval alerts');
-
-            const fns = getFunctions(app);
-            const sendFn = httpsCallable<
-                {
-                    userId: string;
-                    workoutName: string;
-                    intervalMinutes: number;
-                    totalMinutes: number;
-                    message: string;
-                    startTime: number;
-                    scheduleId: string | null;
-                },
-                { trackingId: string; scheduled: number }
-            >(fns, 'sendIntervalNotifications');
-
-            const result = await sendFn({
-                userId: uid,
-                workoutName,
-                intervalMinutes: config.intervalMinutes,
-                totalMinutes: config.totalMinutes,
-                message: config.message,
-                startTime: Date.now(),
-                scheduleId: scheduleId ?? null,
-            });
-
-            return result.data.trackingId;
-        } catch (err) {
-            console.warn('[useIntervalAlerts] FCM scheduling failed:', err);
-            return null;
-        }
+        return null;
     }, []);
 
     const stop = useCallback(async (trackingId: string): Promise<void> => {
         if (inAppTimerRef.current !== null) {
             clearInterval(inAppTimerRef.current);
             inAppTimerRef.current = null;
-        }
-
-        try {
-            const fns = getFunctions(app);
-            const cancelFn = httpsCallable<{ trackingId: string }, void>(
-                fns,
-                'cancelIntervalNotifications',
-            );
-            await cancelFn({ trackingId });
-        } catch (err) {
-            console.warn('[useIntervalAlerts] FCM cancel failed:', err);
         }
     }, []);
 

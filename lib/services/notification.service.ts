@@ -1,12 +1,10 @@
-import { Timestamp } from 'firebase/firestore';
 import { supabase } from '../core/config/supabase';
 import { AppNotification, AppNotificationType } from '../models/AppNotification';
 
 const TAG = '[NotificationService]';
 
 // ─── Insert payload ───────────────────────────────────────────────────────────
-// Mirrors the Firestore notification document shape.
-// to_uid must be the Firebase UID (firebaseUid), matching the auth_identity_map convention.
+// to_uid is the Supabase user ID of the recipient.
 
 export type NotificationInsertPayload = {
   toUid: string;
@@ -55,9 +53,7 @@ function rowToNotification(row: Record<string, any>): AppNotification {
     fromUid: row.from_uid ?? '',
     fromName: row.from_name ?? 'Someone',
     avatar: row.avatar ?? undefined,
-    createdAt: row.created_at
-      ? Timestamp.fromDate(new Date(row.created_at))
-      : Timestamp.now(),
+    createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     read: !!row.read,
     chatId: row.chat_id ?? undefined,
     messageId: row.message_id ?? undefined,
@@ -165,20 +161,20 @@ export class NotificationService {
   // Returns an unsubscribe function.
 
   static subscribeToNewNotifications(
-    firebaseUid: string,
+    uid: string,
     onBootstrapped: (seenIds: string[]) => void,
     onNew: (notification: AppNotification) => void,
     onError?: (err: unknown) => void,
     onRehydrated?: (notifications: AppNotification[]) => void,
   ): () => void {
-    console.log(`${TAG} subscribing`, { firebaseUid });
+    console.log(`${TAG} subscribing`, { uid });
     let hasBeenSubscribed = false;
 
     // Phase 1: fetch existing unread IDs to seed seenRef.
     supabase
       .from('notifications')
       .select('id')
-      .eq('to_uid', firebaseUid)
+      .eq('to_uid', uid)
       .eq('read', false)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -190,20 +186,20 @@ export class NotificationService {
           return;
         }
         const ids = (data ?? []).map((r) => r.id as string);
-        console.log(`${TAG} bootstrap complete`, { count: ids.length, firebaseUid });
+        console.log(`${TAG} bootstrap complete`, { count: ids.length, uid });
         onBootstrapped(ids);
       });
 
     // Phase 2: realtime channel — INSERT events after subscription starts.
     const channel = supabase
-      .channel(`notifications-new:${firebaseUid}`)
+      .channel(`notifications-new:${uid}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `to_uid=eq.${firebaseUid}`,
+          filter: `to_uid=eq.${uid}`,
         },
         (payload) => {
           const row = payload.new as Record<string, any>;
@@ -219,17 +215,17 @@ export class NotificationService {
           return;
         }
 
-        console.log(`${TAG} subscription status`, { status, firebaseUid });
+        console.log(`${TAG} subscription status`, { status, uid });
 
         if (status === 'SUBSCRIBED') {
           if (hasBeenSubscribed && onRehydrated) {
             // Reconnect detected: fetch full unread rows oldest-first so the
             // provider can show banners for anything missed during the disconnect.
-            console.log(`${TAG} reconnect rehydration start`, { firebaseUid });
+            console.log(`${TAG} reconnect rehydration start`, { uid });
             supabase
               .from('notifications')
               .select('*')
-              .eq('to_uid', firebaseUid)
+              .eq('to_uid', uid)
               .eq('read', false)
               .order('created_at', { ascending: true })
               .limit(20)
@@ -239,7 +235,7 @@ export class NotificationService {
                   return;
                 }
                 const notifications = (rows ?? []).map(rowToNotification);
-                console.log(`${TAG} rehydration complete`, { count: notifications.length, firebaseUid });
+                console.log(`${TAG} rehydration complete`, { count: notifications.length, uid });
                 onRehydrated(notifications);
               });
           }
@@ -249,12 +245,12 @@ export class NotificationService {
           status === 'CLOSED' ||
           status === 'TIMED_OUT'
         ) {
-          console.log(`${TAG} channel ${status} — will rehydrate on reconnect`, { firebaseUid });
+          console.log(`${TAG} channel ${status} — will rehydrate on reconnect`, { uid });
         }
       });
 
     return () => {
-      console.log(`${TAG} unsubscribing`, { firebaseUid });
+      console.log(`${TAG} unsubscribing`, { uid });
       supabase.removeChannel(channel);
     };
   }

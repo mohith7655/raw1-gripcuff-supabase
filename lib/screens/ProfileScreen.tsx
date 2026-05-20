@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -16,18 +16,16 @@ import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, CircleUserRound, Camera, Trash2, Users, ChevronRight } from 'lucide-react-native';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
 import * as ImagePicker from 'expo-image-picker';
-import { getDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useFriend } from '../providers/FriendContext';
 import { useAccess } from '../providers/AccessContext';
 import { StorageService } from '../services/storage.service';
-import { db, storage } from '../core/config/firebase';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 import { LocationPickerField, LocationValue } from '../components/profile/LocationPickerField';
 import { LocationMapPreview } from '../components/profile/LocationMapPreview';
+import { UserLocationData } from '../models';
 import { StreakService, StreakData } from '../services/streak.service';
 import { TimezoneService } from '../services/timezone.service';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
@@ -37,7 +35,7 @@ const BASE_SPOTS = ['gym', 'home', 'park'];
 
 export const ProfileScreen = () => {
     const navigation = useNavigation<any>();
-    const { firebaseUid, email, logout } = useAuth();
+    const { supabaseUserId, email, logout } = useAuth();
     const { profile, updateProfile, clearProfile } = useUser();
     const { friends } = useFriend();
     const { accessType, gripcuffStatus, showPaywall } = useAccess();
@@ -62,42 +60,59 @@ export const ProfileScreen = () => {
         profile?.profileImageUrl ? `${profile.profileImageUrl}?t=${Date.now()}` : null
     );
 
-    // Read all profile fields directly from Firestore on mount.
-    // Bypasses the UserContext race condition — profile may still be null
-    // when this screen mounts (fetchProfile fires in background at app start).
     useEffect(() => {
-        const uid = firebaseUid;
-        if (!uid) return;
-        getDoc(doc(db, 'users', uid)).then((snap) => {
-            const data = snap.data();
-            if (!data) return;
-            setFullName(data.fullName || '');
-            setUsername(data.username || '');
-            setAge(data.age != null ? String(data.age) : '');
-            setPhone(data.phone || '');
-            setDob(data.dateOfBirth || '');
-            if (data.profileImageUrl) {
-                setPhotoUri(`${data.profileImageUrl}?t=${Date.now()}`);
+        if (!profile) return;
+        setFullName(profile.fullName || '');
+        setUsername(profile.username || '');
+        setAge(profile.age != null ? String(profile.age) : '');
+        setPhone(profile.phone || '');
+        setDob(profile.dateOfBirth || '');
+        if (profile.profileImageUrl) {
+            setPhotoUri(`${profile.profileImageUrl}?t=${Date.now()}`);
+        }
+        if (profile.gender) {
+            setGender(profile.gender);
+        }
+        if (profile.locations) {
+            const locState: Record<string, LocationValue> = {};
+            for (const [spot, locData] of Object.entries(profile.locations)) {
+                if (locData) locState[spot] = { address: locData.address, lat: locData.lat, lng: locData.lng };
             }
-            if (data.gender) {
-                setGender(data.gender);
+            setLocations(locState);
+        }
+    }, [profile]);
+
+    // Geocode addresses that have no coords (legacy rows with lat=0,lng=0)
+    const geocodedRef = useRef<Set<string>>(new Set());
+    useEffect(() => {
+        const toGeocode = Object.entries(locations).filter(
+            ([, v]) => v && v.lat === 0 && v.lng === 0 && v.address && !geocodedRef.current.has(v.address)
+        );
+        if (toGeocode.length === 0) return;
+        const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
+        if (!apiKey) return;
+        let cancelled = false;
+        (async () => {
+            for (const [spot, locVal] of toGeocode) {
+                geocodedRef.current.add(locVal!.address);
+                try {
+                    const resp = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locVal!.address)}&key=${apiKey}`);
+                    const json = await resp.json();
+                    if (cancelled) return;
+                    if (json.status === 'OK' && json.results?.[0]?.geometry?.location) {
+                        const { lat, lng } = json.results[0].geometry.location;
+                        setLocations(prev => ({ ...prev, [spot]: { ...prev[spot]!, lat, lng } }));
+                    }
+                } catch {}
             }
-            if (data.locations) {
-                setLocations(data.locations);
-            } else if (data.location?.address) {
-                const loc = data.location as LocationValue;
-                const firstSpot = (Array.isArray(data.workoutLocations) && data.workoutLocations.length > 0) 
-                    ? data.workoutLocations[0] 
-                    : 'gym';
-                setLocations({ [firstSpot]: loc });
-            }
-        }).catch((e) => console.error('ProfileScreen: failed to read profile from Firestore', e));
-    }, [firebaseUid]);
+        })();
+        return () => { cancelled = true; };
+    }, [locations]);
 
     // ── Photo helpers ──────────────────────────────────────────────
 
     const pickAndUpload = async () => {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         if (!uid) return;
 
         if (Platform.OS === 'web') {
@@ -108,25 +123,23 @@ export const ProfileScreen = () => {
             input.onchange = async (e: any) => {
                 const file: File | undefined = e.target?.files?.[0];
                 if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    Alert.alert('Invalid file', 'Please select an image file.');
+                    return;
+                }
                 setUploading(true);
                 setUploadProgress(0);
                 try {
-                    // Delete previous avatars first (best-effort)
-                    try {
-                        await StorageService.deleteProfilePicture(uid);
-                    } catch {}
-                    const storageRef = ref(storage, `avatars/${uid}/${Date.now()}.jpg`);
-                    await uploadBytes(storageRef, file, { contentType: file.type || 'image/jpeg' });
-                    const downloadUrl = await getDownloadURL(storageRef);
-                    const cacheBustedUrl = `${downloadUrl}&t=${Date.now()}`;
-                    await updateDoc(doc(db, 'users', uid), {
-                        profileImageUrl: cacheBustedUrl,
-                        updatedAt: serverTimestamp(),
+                    const objectUrl = URL.createObjectURL(file);
+                    const url = await StorageService.uploadProfilePicture(uid, objectUrl, (pct) => {
+                        setUploadProgress(pct);
                     });
-                    setPhotoUri(cacheBustedUrl);
-                    Alert.alert('Success', 'Profile picture updated!');
+                    URL.revokeObjectURL(objectUrl);
+                    console.log('profile avatar updated');
+                    setPhotoUri(`${url}?t=${Date.now()}`);
+                    await updateProfile(uid, { profileImageUrl: url });
                 } catch (e: any) {
-                    console.error('Web upload error:', e);
+                    console.error('avatar upload failed', e);
                     Alert.alert('Upload failed', e?.message ?? 'Could not upload photo.');
                 } finally {
                     setUploading(false);
@@ -157,12 +170,12 @@ export const ProfileScreen = () => {
             const url = await StorageService.uploadProfilePicture(uid, result.assets[0].uri, (pct) => {
                 setUploadProgress(pct);
             });
-            const cacheBustedUrl = `${url}?t=${Date.now()}`;
-            setPhotoUri(cacheBustedUrl);
-            await updateProfile(uid, { profileImageUrl: cacheBustedUrl });
+            console.log('profile avatar updated');
+            setPhotoUri(`${url}?t=${Date.now()}`);
+            await updateProfile(uid, { profileImageUrl: url });
         } catch (e: any) {
-            console.error('Profile picture upload error:', e);
-            Alert.alert('Upload failed', e?.message ?? 'Could not upload photo. Check Firebase Storage rules.');
+            console.error('avatar upload failed', e);
+            Alert.alert('Upload failed', e?.message ?? 'Could not upload photo.');
         } finally {
             setUploading(false);
             setUploadProgress(0);
@@ -170,7 +183,7 @@ export const ProfileScreen = () => {
     };
 
     const removePhoto = async () => {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         if (!uid) return;
         Alert.alert('Remove Photo', 'Are you sure you want to remove your profile picture?', [
             { text: 'Cancel', style: 'cancel' },
@@ -181,7 +194,7 @@ export const ProfileScreen = () => {
                     try {
                         setUploading(true);
                         await StorageService.deleteProfilePicture(uid); // silently ignores 'object-not-found'
-                        await updateProfile(uid, { profileImageUrl: null as any }); // null clears Firestore field
+                        await updateProfile(uid, { profileImageUrl: null as any }); // null clears avatar_url
                         setPhotoUri(null);
                         Alert.alert('Done', 'Profile picture removed.');
                     } catch (e: any) {
@@ -198,24 +211,27 @@ export const ProfileScreen = () => {
     // ── Save changes ───────────────────────────────────────────────
 
     const handleSave = async () => {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         if (!uid) return;
         try {
             setSaving(true);
+
+            const locationPayload: { gym?: UserLocationData; home?: UserLocationData; park?: UserLocationData } = {};
+            for (const spot of ['gym', 'home', 'park'] as const) {
+                const loc = locations[spot];
+                if (loc?.address) locationPayload[spot] = { address: loc.address, lat: loc.lat ?? 0, lng: loc.lng ?? 0 };
+            }
+
             await updateProfile(uid, {
                 fullName: fullName.trim(),
                 username: username.trim().toLowerCase(),
                 ...(age.trim() ? { age: parseInt(age.trim(), 10) } : {}),
                 phone: phone.trim(),
                 dateOfBirth: dob.trim(),
-                gender,
-                workoutLocation: Object.keys(locations).filter(k => locations[k]?.address)[0] ?? null, // legacy compatibility
-                workoutLocations: Object.keys(locations).filter(k => locations[k]?.address),
-                locations,
-                location: locations['gym'] || Object.values(locations)[0] || null, // legacy compatibility
+                gender: gender ?? undefined,
+                locations: locationPayload,
             });
             Alert.alert('Saved', 'Profile updated successfully!');
-            // Re-resolve timezone from the newly saved workout location
             TimezoneService.resolveAndSave(uid).catch(() => {});
             reminderWatcherService.reloadTimezone().catch(() => {});
         } catch {
@@ -252,10 +268,10 @@ export const ProfileScreen = () => {
     // Streak data for profile section
     const [streakData, setStreakData] = useState<StreakData | null>(null);
     useEffect(() => {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         if (!uid) return;
         StreakService.getStreakData(uid).then(setStreakData).catch(() => {});
-    }, [firebaseUid]);
+    }, [supabaseUserId]);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -558,14 +574,18 @@ export const ProfileScreen = () => {
                             onChange={(loc) => setLocations(prev => ({ ...prev, [activeLocationSpot]: loc as LocationValue }))} 
                         />
 
-                        {locations[activeLocationSpot]?.lat && locations[activeLocationSpot]?.address && (
-                            <LocationMapPreview
-                                lat={locations[activeLocationSpot].lat!}
-                                lng={locations[activeLocationSpot].lng!}
-                                address={locations[activeLocationSpot].address!}
-                                label={locations[activeLocationSpot].placeName ?? ''}
-                                isGym={activeLocationSpot === 'gym'}
-                            />
+                        {!!locations[activeLocationSpot]?.address && (
+                            locations[activeLocationSpot]!.lat ? (
+                                <LocationMapPreview
+                                    lat={locations[activeLocationSpot]!.lat}
+                                    lng={locations[activeLocationSpot]!.lng}
+                                    address={locations[activeLocationSpot]!.address}
+                                    label={locations[activeLocationSpot]!.placeName ?? ''}
+                                    isGym={activeLocationSpot === 'gym'}
+                                />
+                            ) : (
+                                <View style={styles.mapPlaceholder} />
+                            )
                         )}
                     </View>
 
@@ -897,6 +917,13 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
 
+    mapPlaceholder: {
+        marginTop: 12,
+        marginBottom: 8,
+        height: 180,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+    },
     // Location picker container — high zIndex so dropdown floats above buttons
     locationPickerContainer: {
         zIndex: 9999,

@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { Timer } from 'lucide-react-native';
-import { getDoc, setDoc, doc } from 'firebase/firestore';
-import { db } from '../../core/config/firebase';
 import { getProgramByVideoId, ProgramExercise } from '../../data/preRecordedPrograms';
 import { ExerciseTimerSheet } from '../ExerciseTimerSheet';
 import { TimerConfig } from '../../hooks/useWorkoutTimer';
@@ -43,24 +41,8 @@ export function ExerciseListTab({ videoId, programId, exercises: propExercises }
 
         const fetchOrGenerate = async () => {
             try {
-                const ref  = doc(db, 'programs', resolvedProgramId, 'days', videoId);
-                const snap = await getDoc(ref);
-                const data = snap.data();
-
-                if (!cancelled && data?.exercises?.length > 0) {
-                    const fromFirestore: ProgramExercise[] = (data.exercises as string[]).map(name => ({
-                        name,
-                        muscleGroup: '',
-                    }));
-                    setExercises(fromFirestore);
-                    return;
-                }
-
                 const program = getProgramByVideoId(videoId);
                 const local   = program?.exercises ?? [];
-                if (local.length > 0) {
-                    setDoc(ref, { exercises: local.map(e => e.name) }, { merge: true }).catch(() => {});
-                }
                 if (!cancelled) setExercises(local);
             } catch {
                 if (!cancelled) setExercises(getProgramByVideoId(videoId)?.exercises ?? []);

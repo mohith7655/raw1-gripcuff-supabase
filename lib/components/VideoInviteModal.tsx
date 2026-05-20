@@ -11,12 +11,10 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { Check, CircleUserRound, X, PlayCircle, Clock } from 'lucide-react-native';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useFriend } from '../providers/FriendContext';
 import { useInvite } from '../hooks/useInvite';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
-import { db } from '../core/config/firebase';
 import type { User } from '../models/User';
 
 const ACCENT = '#FF6B00';
@@ -92,37 +90,7 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
             });
         }, 1000);
 
-        // Firestore listener
-        sessionUnsubRef.current?.();
-        sessionUnsubRef.current = onSnapshot(
-            doc(db, 'workoutSessions', sessionId),
-            (snap) => {
-                if (!mountedRef.current) return;
-                const data = snap.data();
-                if (!data) return;
-                if (data.status === 'accepted') {
-                    clearInterval(countdownRef.current!);
-                    sessionUnsubRef.current?.();
-                    setScreen('accepted');
-                    // Navigate to synced player after brief celebration
-                    setTimeout(() => {
-                        if (!mountedRef.current) return;
-                        onClose();
-                        navigation.navigate('SyncedVideoPlayer', {
-                            sessionId,
-                            videoId,
-                            videoTitle,
-                            friendName: selected?.fullName ?? selected?.username ?? 'Friend',
-                        });
-                    }, 1200);
-                } else if (data.status === 'declined') {
-                    clearInterval(countdownRef.current!);
-                    sessionUnsubRef.current?.();
-                    setScreen('declined');
-                }
-            },
-            () => {} // ignore errors
-        );
+        // Firestore listener removed — status polling not available
 
         return () => {
             clearInterval(countdownRef.current!);

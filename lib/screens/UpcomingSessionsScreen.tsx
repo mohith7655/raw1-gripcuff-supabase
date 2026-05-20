@@ -3,11 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Calendar, Clock, Check, X, Dumbbell, UserRound, ArrowLeft, Play } from 'lucide-react-native';
-import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { AppTheme } from '../core/theme/app_theme';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
-import { db } from '../core/config/firebase';
 
 interface SelfScheduledEntry {
     id: string;
@@ -24,7 +22,7 @@ interface SelfScheduledEntry {
     category?: string | null;
     programName: string | null;
     thumbnail: string | null;
-    scheduledFor: Timestamp;
+    scheduledFor: Date;
     status: string;
 }
 
@@ -58,25 +56,9 @@ export const UpcomingSessionsScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigation]);
 
-    // Subscribe to self-scheduled workouts
+    // Self-scheduled workouts — no Firestore, start empty
     useEffect(() => {
-        if (!user?.uid) return;
-        const q = query(
-            collection(db, 'scheduledWorkouts'),
-            where('userId', '==', user.uid),
-            where('status', 'in', ['active', 'scheduled'])
-        );
-        const unsub = onSnapshot(
-            q,
-            (snap) => {
-                const raw = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as SelfScheduledEntry));
-                // Deduplicate by doc ID to guard against double-mount in Strict Mode
-                const deduped = Array.from(new Map(raw.map(e => [e.id, e])).values());
-                setSelfScheduled(deduped);
-            },
-            (err) => console.warn('[UpcomingSessionsScreen] self-scheduled snapshot error:', err)
-        );
-        return unsub;
+        setSelfScheduled([]);
     }, [user?.uid]);
 
     const onRefresh = async () => {
@@ -133,13 +115,8 @@ export const UpcomingSessionsScreen = () => {
                     style: 'destructive',
                     onPress: async () => {
                         setActionLoading(id);
-                        try {
-                            await updateDoc(doc(db, 'scheduledWorkouts', id), { status: 'cancelled' });
-                        } catch (e: any) {
-                            Alert.alert('Error', e?.message ?? 'Could not remove workout');
-                        } finally {
-                            setActionLoading(null);
-                        }
+                        setSelfScheduled(prev => prev.filter(e => e.id !== id));
+                        setActionLoading(null);
                     },
                 },
             ]
@@ -189,21 +166,24 @@ export const UpcomingSessionsScreen = () => {
         return { programLine, workoutLine, videoLine };
     };
 
+    const toMs = (d: Date): number => (d instanceof Date ? d.getTime() : new Date(d).getTime());
+    const toDate = (d: Date): Date => (d instanceof Date ? d : new Date(d));
+
     const now = Date.now();
     const cutoff = 60 * 60 * 1000; // 1 hour in ms
-    const upcoming = upcomingSessions.filter(s => s.scheduledAt.toMillis() > now - cutoff);
+    const upcoming = upcomingSessions.filter(s => toMs(s.scheduledAt) > now - cutoff);
 
     // Self-scheduled partitions (client-side, no orderBy needed)
     const upcomingSelf = selfScheduled
-        .filter(e => (e.scheduledFor as Timestamp)?.toMillis?.() >= now)
-        .sort((a, b) => a.scheduledFor.toMillis() - b.scheduledFor.toMillis());
+        .filter(e => toMs(e.scheduledFor) >= now)
+        .sort((a, b) => toMs(a.scheduledFor) - toMs(b.scheduledFor));
     const pastSelf = selfScheduled
-        .filter(e => (e.scheduledFor as Timestamp)?.toMillis?.() < now)
-        .sort((a, b) => b.scheduledFor.toMillis() - a.scheduledFor.toMillis());
+        .filter(e => toMs(e.scheduledFor) < now)
+        .sort((a, b) => toMs(b.scheduledFor) - toMs(a.scheduledFor));
 
     // Previous = completed sessions + accepted sessions older than 1h, deduplicated
     const oldAccepted = upcomingSessions
-        .filter(s => s.scheduledAt.toMillis() <= now - cutoff);
+        .filter(s => toMs(s.scheduledAt) <= now - cutoff);
     const allPrevious = [...completedSessions, ...oldAccepted];
     const previousMap = new Map(allPrevious.map(s => [s.id, s]));
     const previousSessions = Array.from(previousMap.values());
@@ -216,8 +196,8 @@ export const UpcomingSessionsScreen = () => {
         ...previousSessions.map(s => ({ kind: 'session' as const, data: s })),
         ...pastSelf.map(e => ({ kind: 'self' as const, data: e })),
     ].sort((a, b) => {
-        const tsA = a.kind === 'session' ? a.data.scheduledAt.toMillis() : a.data.scheduledFor.toMillis();
-        const tsB = b.kind === 'session' ? b.data.scheduledAt.toMillis() : b.data.scheduledFor.toMillis();
+        const tsA = a.kind === 'session' ? toMs(a.data.scheduledAt) : toMs(a.data.scheduledFor);
+        const tsB = b.kind === 'session' ? toMs(b.data.scheduledAt) : toMs(b.data.scheduledFor);
         return tsB - tsA;
     });
 
@@ -273,11 +253,11 @@ export const UpcomingSessionsScreen = () => {
                                 <View style={styles.detailsRow}>
                                     <View style={styles.detailHarp}>
                                         <Calendar color={AppTheme.textGrey} size={14} />
-                                        <Text style={styles.detailText}>{formatDateTime(session.scheduledAt.toDate()).dateStr}</Text>
+                                        <Text style={styles.detailText}>{formatDateTime(toDate(session.scheduledAt)).dateStr}</Text>
                                     </View>
                                     <View style={styles.detailHarp}>
                                         <Clock color={AppTheme.textGrey} size={14} />
-                                        <Text style={styles.detailText}>{formatDateTime(session.scheduledAt.toDate()).timeStr}</Text>
+                                        <Text style={styles.detailText}>{formatDateTime(toDate(session.scheduledAt)).timeStr}</Text>
                                     </View>
                                 </View>
 
@@ -343,11 +323,11 @@ export const UpcomingSessionsScreen = () => {
                                 <View style={styles.detailsRow}>
                                     <View style={styles.detailHarp}>
                                         <Calendar color={AppTheme.textGrey} size={14} />
-                                        <Text style={styles.detailText}>{formatDateTime(session.scheduledAt.toDate()).dateStr}</Text>
+                                        <Text style={styles.detailText}>{formatDateTime(toDate(session.scheduledAt)).dateStr}</Text>
                                     </View>
                                     <View style={styles.detailHarp}>
                                         <Clock color={AppTheme.textGrey} size={14} />
-                                        <Text style={styles.detailText}>{formatDateTime(session.scheduledAt.toDate()).timeStr}</Text>
+                                        <Text style={styles.detailText}>{formatDateTime(toDate(session.scheduledAt)).timeStr}</Text>
                                     </View>
                                 </View>
 
@@ -386,7 +366,7 @@ export const UpcomingSessionsScreen = () => {
                     <>
                         <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Upcoming Scheduled</Text>
                         {upcomingSelf.map(entry => {
-                            const { dateStr, timeStr } = formatDateTime(entry.scheduledFor.toDate());
+                            const { dateStr, timeStr } = formatDateTime(toDate(entry.scheduledFor));
                             const { programLine, workoutLine, videoLine } = getSelfScheduleTitles(entry);
                             return (
                                 <View key={entry.id} style={styles.card}>
@@ -444,8 +424,8 @@ export const UpcomingSessionsScreen = () => {
                         const isHost = session.hostUid === user?.uid;
                         const partnerName = isHost ? session.guestName : session.hostName;
                         const partnerAvatar = isHost ? session.guestAvatarUrl : session.hostAvatarUrl;
-                        const countdown = getCountdown(session.scheduledAt.toDate());
-                        const diffMs = session.scheduledAt.toDate().getTime() - new Date().getTime();
+                        const countdown = getCountdown(toDate(session.scheduledAt));
+                        const diffMs = toDate(session.scheduledAt).getTime() - new Date().getTime();
                         const isStartingNow = diffMs < 10 * 60 * 1000;
 
                         return (
@@ -473,11 +453,11 @@ export const UpcomingSessionsScreen = () => {
                                 <View style={styles.detailsRow}>
                                     <View style={styles.detailHarp}>
                                         <Calendar color={AppTheme.textGrey} size={14} />
-                                        <Text style={styles.detailText}>{formatDateTime(session.scheduledAt.toDate()).dateStr}</Text>
+                                        <Text style={styles.detailText}>{formatDateTime(toDate(session.scheduledAt)).dateStr}</Text>
                                     </View>
                                     <View style={styles.detailHarp}>
                                         <Clock color={AppTheme.textGrey} size={14} />
-                                        <Text style={styles.detailText}>{formatDateTime(session.scheduledAt.toDate()).timeStr}</Text>
+                                        <Text style={styles.detailText}>{formatDateTime(toDate(session.scheduledAt)).timeStr}</Text>
                                     </View>
                                 </View>
 
@@ -514,7 +494,7 @@ export const UpcomingSessionsScreen = () => {
                             // Self-scheduled past entry
                             if (item.kind === 'self') {
                                 const entry = item.data;
-                                const { dateStr, timeStr } = formatDateTime(entry.scheduledFor.toDate());
+                                const { dateStr, timeStr } = formatDateTime(toDate(entry.scheduledFor));
                                 const { programLine, workoutLine, videoLine } = getSelfScheduleTitles(entry);
                                 return (
                                     <View key={`self_${entry.id}`} style={styles.pastCard}>
@@ -566,11 +546,11 @@ export const UpcomingSessionsScreen = () => {
                                         <View style={styles.detailsRow}>
                                             <View style={styles.detailHarp}>
                                                 <Calendar color="#555" size={14} />
-                                                <Text style={styles.pastDetailText}>{formatDateTime(session.scheduledAt.toDate()).dateStr}</Text>
+                                                <Text style={styles.pastDetailText}>{formatDateTime(toDate(session.scheduledAt)).dateStr}</Text>
                                             </View>
                                             <View style={styles.detailHarp}>
                                                 <Clock color="#555" size={14} />
-                                                <Text style={styles.pastDetailText}>{formatDateTime(session.scheduledAt.toDate()).timeStr}</Text>
+                                                <Text style={styles.pastDetailText}>{formatDateTime(toDate(session.scheduledAt)).timeStr}</Text>
                                             </View>
                                         </View>
 
@@ -630,11 +610,11 @@ export const UpcomingSessionsScreen = () => {
                                     <View style={styles.detailsRow}>
                                         <View style={styles.detailHarp}>
                                             <Calendar color="#555" size={14} />
-                                            <Text style={styles.pastDetailText}>{formatDateTime(session.scheduledAt.toDate()).dateStr}</Text>
+                                            <Text style={styles.pastDetailText}>{formatDateTime(toDate(session.scheduledAt)).dateStr}</Text>
                                         </View>
                                         <View style={styles.detailHarp}>
                                             <Clock color="#555" size={14} />
-                                            <Text style={styles.pastDetailText}>{formatDateTime(session.scheduledAt.toDate()).timeStr}</Text>
+                                            <Text style={styles.pastDetailText}>{formatDateTime(toDate(session.scheduledAt)).timeStr}</Text>
                                         </View>
                                     </View>
 

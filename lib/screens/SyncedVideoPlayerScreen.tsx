@@ -13,16 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Play, Pause, RotateCcw, RotateCw, ArrowLeft, Mic, MicOff, Camera, CameraOff, RefreshCw } from 'lucide-react-native';
-import { Video as ExpoVideo, ResizeMode } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { useAuth } from '../providers/AuthContext';
 import { useLibrary } from '../providers/LibraryContext';
-import { db } from '../core/config/firebase';
-import {
-    doc,
-    onSnapshot,
-    updateDoc,
-} from 'firebase/firestore';
-
 import { AgoraVoice } from '../services/agora/AgoraVoice';
 import { getLocalVideoTrack, getAgoraDebugInfo, getAgoraClient, getLocalAudioTrack } from '../services/agora/AgoraVideoHelper';
 import { LiveSessionService, JoinRequest } from '../services/liveSession.service';
@@ -42,12 +35,12 @@ export const SyncedVideoPlayerScreen = () => {
     const navigation = useNavigation<any>();
     const { sessionId, videoId, videoTitle, friendName } = route.params;
 
-    const { firebaseUid } = useAuth();
+    const { supabaseUserId } = useAuth();
     const { allVideos, gripCuffVideos, trainerVideos } = useLibrary();
 
     const [role, setRole] = useState<'host' | 'guest'>('guest');
     const [cameraPermissionGranted, setCameraPermissionGranted] = useState<boolean | null>(null);
-    const videoRef = useRef<ExpoVideo>(null);
+    const player = useVideoPlayer(null);
 
     const sourceVideo = useMemo(() => {
         const fallbackUrl = gripCuffVideos.find(v => v.videoUrl)?.videoUrl;
@@ -97,7 +90,7 @@ export const SyncedVideoPlayerScreen = () => {
     const completionFiredRef = useRef(false);
 
     const handleSessionComplete = async (finalCurrentTime: number, finalDuration: number) => {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         if (!uid || completionFiredRef.current) return;
 
         const pct = finalDuration > 0 ? finalCurrentTime / finalDuration : 0;
@@ -138,14 +131,14 @@ export const SyncedVideoPlayerScreen = () => {
                 const newX = dragStartXRef.current + gestureState.dx;
                 const pct = Math.max(0, Math.min(1, newX / barWidthRef.current));
                 const newTime = pct * durationRef.current;
-                videoRef.current?.setPositionAsync(newTime * 1000);
+                player.currentTime = newTime;
                 setCurrentTime(newTime);
             },
             onPanResponderRelease: (_e, gestureState) => {
                 const newX = dragStartXRef.current + gestureState.dx;
                 const pct = Math.max(0, Math.min(1, newX / barWidthRef.current));
                 const newTime = pct * durationRef.current;
-                videoRef.current?.setPositionAsync(newTime * 1000);
+                player.currentTime = newTime;
                 setCurrentTime(newTime);
                 updateSyncState(isPlayingRef.current, newTime);
             },
@@ -285,16 +278,43 @@ export const SyncedVideoPlayerScreen = () => {
         };
     }, [agoraJoined]);
 
+    // ── Player source + events ──
+    useEffect(() => {
+        if (sourceVideo?.videoUrl) {
+            player.replace({ uri: sourceVideo.videoUrl });
+        }
+    }, [sourceVideo?.videoUrl]);
+
+    const handleSessionCompleteRef = useRef(handleSessionComplete);
+    handleSessionCompleteRef.current = handleSessionComplete;
+
+    useEffect(() => {
+        const statusSub = player.addListener('statusChange', ({ status: s }: any) => {
+            if (s === 'readyToPlay') {
+                setDuration(player.duration);
+            }
+        });
+        const timeSub = player.addListener('timeUpdate', ({ currentTime: ct }: any) => {
+            setCurrentTime(ct);
+            if (player.duration > 0) setDuration(player.duration);
+        });
+        const endSub = player.addListener('playToEnd', () => {
+            handleSessionCompleteRef.current(currentTimeRef.current, durationRef.current);
+        });
+        return () => {
+            statusSub.remove();
+            timeSub.remove();
+            endSub.remove();
+        };
+    }, [player]);
+
     // ── Session + Agora init ──
     useEffect(() => {
-        if (!firebaseUid || !sessionId) return;
+        if (!supabaseUserId || !sessionId) return;
 
         let cancelled = false;
-        let unsubscribeSync: () => void;
 
         const initSession = async () => {
-            const sessionRef = doc(db, 'workoutSessions', sessionId);
-
             const initAgora = async () => {
                 if (Platform.OS === 'web') {
                     try {
@@ -320,63 +340,15 @@ export const SyncedVideoPlayerScreen = () => {
             };
 
             initAgora();
-
-            unsubscribeSync = onSnapshot(sessionRef, (snapshot) => {
-                if (!snapshot.exists()) return;
-                const data = snapshot.data();
-
-                const currentRole = data.hostUid === firebaseUid ? 'host' : 'guest';
-                setRole(currentRole);
-
-                if (!data.ready || !data.ready[currentRole]) {
-                    updateDoc(sessionRef, { [`ready.${currentRole}`]: true });
-                }
-
-                if (data.sync) {
-                    const { isPlaying: remoteIsPlaying, position, lastUpdatedBy, lastUpdatedAt } = data.sync;
-
-                    if (lastUpdatedBy !== firebaseUid) {
-                        setControlledBy(data.hostUid === lastUpdatedBy ? data.hostName : data.guestName);
-
-                        if (videoRef.current) {
-                            const latencyMs = Math.max(0, Date.now() - (lastUpdatedAt || Date.now()));
-                            const compensatedPosition = remoteIsPlaying
-                                ? position + (latencyMs / 1000)
-                                : position;
-                            const targetMs = Math.max(0, compensatedPosition) * 1000;
-
-                            // Async IIFE so we can await seek before play
-                            (async () => {
-                                const drift = Math.abs(compensatedPosition - currentTimeRef.current);
-                                // Always seek on play/pause toggle; only seek on heartbeat if drifted > 1s
-                                if (remoteIsPlaying !== isPlayingRef.current || drift > 1) {
-                                    await videoRef.current!.setPositionAsync(targetMs);
-                                }
-                                if (remoteIsPlaying) {
-                                    await videoRef.current!.playAsync();
-                                    setIsPlaying(true);
-                                } else {
-                                    await videoRef.current!.pauseAsync();
-                                    setIsPlaying(false);
-                                }
-                            })();
-                        }
-                    }
-                }
-            });
-
-            return { unsubscribeSync };
         };
 
-        let unsubFunctions: any = {};
-        initSession().then(unsubs => { unsubFunctions = unsubs; });
+        initSession();
 
         return () => {
             cancelled = true;
-            if (unsubFunctions?.unsubscribeSync) unsubFunctions.unsubscribeSync();
             AgoraVoice.leaveChannel();
         };
-    }, [sessionId, firebaseUid]);
+    }, [sessionId, supabaseUserId]);
 
     // ── Play local camera once joined ──
     useEffect(() => {
@@ -395,53 +367,23 @@ export const SyncedVideoPlayerScreen = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // ── Periodic position heartbeat — keeps both players aligned while playing ──
-    useEffect(() => {
-        if (!firebaseUid || !sessionId) return;
-        const interval = setInterval(() => {
-            if (isPlayingRef.current) {
-                writeSyncState(true, currentTimeRef.current);
-            }
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [sessionId, firebaseUid]);
 
-    // ── Sync write helpers ──
-    const writeSyncState = async (playing: boolean, positionSeconds: number) => {
-        if (!sessionId || !firebaseUid) return;
-        const sessionRef = doc(db, 'workoutSessions', sessionId);
-        await updateDoc(sessionRef, {
-            'sync.isPlaying': playing,
-            'sync.position': positionSeconds,
-            'sync.lastUpdatedBy': firebaseUid,
-            'sync.lastUpdatedAt': Date.now(),
-        });
-    };
+    // ── Sync write helpers (no-op stubs — Firebase removed) ──
+    const updateSyncStateNow = (_playing: boolean, _positionSeconds: number) => {};
 
-    // Instant — for play/pause where delay is noticeable
-    const updateSyncStateNow = (playing: boolean, positionSeconds: number) => {
-        writeSyncState(playing, positionSeconds);
-    };
+    const updateSyncState = (_playing: boolean, _positionSeconds: number) => {};
 
-    // Debounced — for seek/drag to avoid excessive writes
-    const updateSyncState = (playing: boolean, positionSeconds: number) => {
-        if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-        syncDebounceRef.current = setTimeout(() => writeSyncState(playing, positionSeconds), 300);
-    };
-
-    const handlePlayPause = async () => {
-        if (!videoRef.current) return;
+    const handlePlayPause = () => {
         const next = !isPlaying;
         setIsPlaying(next);
-        if (next) { await videoRef.current.playAsync(); }
-        else { await videoRef.current.pauseAsync(); }
+        if (next) { player.play(); }
+        else { player.pause(); }
         updateSyncStateNow(next, currentTimeRef.current);
     };
 
-    const handleSeek = async (offsetSeconds: number) => {
-        if (!videoRef.current) return;
+    const handleSeek = (offsetSeconds: number) => {
         const newTime = Math.max(0, Math.min(currentTime + offsetSeconds, duration));
-        await videoRef.current.setPositionAsync(newTime * 1000);
+        player.currentTime = newTime;
         setCurrentTime(newTime);
         updateSyncState(isPlaying, newTime);
     };
@@ -522,7 +464,6 @@ export const SyncedVideoPlayerScreen = () => {
                 </View>
                 <View style={styles.headerActions}>
                     <TouchableOpacity style={styles.endSessionBtn} onPress={() => {
-                        updateDoc(doc(db, 'workoutSessions', sessionId), { status: 'completed' });
                         handleSessionComplete(currentTime, duration);
                         navigation.goBack();
                     }}>
@@ -545,27 +486,11 @@ export const SyncedVideoPlayerScreen = () => {
                 {/* ── 1. Video player ── */}
                 <TouchableWithoutFeedback onPress={showControls}>
                     <View style={styles.videoContainer}>
-                        <ExpoVideo
-                            ref={videoRef}
-                            source={{ uri: sourceVideo.videoUrl! }}
+                        <VideoView
+                            player={player}
                             style={styles.video}
-                            videoStyle={styles.videoInner as any}
-                            resizeMode={ResizeMode.CONTAIN}
-                            useNativeControls={false}
-                            onPlaybackStatusUpdate={(status) => {
-                                if (status.isLoaded) {
-                                    const dur = status.durationMillis ? status.durationMillis / 1000 : 0;
-                                    const pos = status.positionMillis / 1000;
-                                    setDuration(dur);
-                                    setCurrentTime(pos);
-                                    if (status.didJustFinish) {
-                                        if (role === 'host') {
-                                            updateDoc(doc(db, 'workoutSessions', sessionId), { status: 'completed' });
-                                        }
-                                        handleSessionComplete(pos, dur);
-                                    }
-                                }
-                            }}
+                            contentFit="contain"
+                            nativeControls={false}
                         />
                         {/* ── Video player controls overlay ── */}
                         <Animated.View pointerEvents={controlsVisible ? 'auto' : 'none'} style={[styles.controlsOverlay, { opacity: controlsOpacity }]}>

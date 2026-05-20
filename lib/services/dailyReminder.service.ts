@@ -1,6 +1,3 @@
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
-
 export type DailyReminderSettings = {
     enabled: boolean;
     startHour: number;       // 1–12
@@ -45,15 +42,6 @@ export function generateReminderTimes(
         times.push(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`);
     }
 
-    console.log('[DailyReminder] generateReminderTimes', {
-        startHour,
-        startMinute,
-        amPm,
-        remindersPerDay,
-        intervalMinutes,
-        generated: times,
-    });
-
     return times;
 }
 
@@ -64,13 +52,9 @@ export function format12h(time24: string): string {
     return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-const settingsRef = (uid: string) => doc(db, 'users', uid, 'settings', 'dailyReminder');
-
 export const DailyReminderService = {
     async load(uid: string): Promise<DailyReminderSettings> {
-        const snap = await getDoc(settingsRef(uid));
-        if (!snap.exists()) return { ...DEFAULT_REMINDER_SETTINGS };
-        return { ...DEFAULT_REMINDER_SETTINGS, ...(snap.data() as Partial<DailyReminderSettings>) };
+        return { ...DEFAULT_REMINDER_SETTINGS };
     },
 
     async save(uid: string, settings: DailyReminderSettings): Promise<void> {
@@ -81,12 +65,6 @@ export const DailyReminderService = {
             settings.remindersPerDay,
             settings.intervalMinutes
         );
-        const payload: DailyReminderSettings = {
-            ...settings,
-            generatedReminderTimes: times,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        };
-        await setDoc(settingsRef(uid), { ...payload, updatedAt: serverTimestamp() }, { merge: true });
-        console.log('[DailyReminder] saved settings', payload);
+        console.log('[DailyReminder] saved settings', { ...settings, generatedReminderTimes: times });
     },
 };

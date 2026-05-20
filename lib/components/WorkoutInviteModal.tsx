@@ -11,14 +11,11 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { doc, getDoc } from 'firebase/firestore';
 import { Calendar, Dumbbell, X } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../core/config/firebase';
 import { useNotificationCenter } from '../providers/NotificationProvider';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { WorkoutSession } from '../models/WorkoutSession';
-import { Timestamp } from 'firebase/firestore';
 
 const ACCENT = '#F97316';
 const NAVY   = '#0F172A';
@@ -173,18 +170,9 @@ export function WorkoutInviteModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentWorkoutInvite?.id ?? sessionFallback?.id]);
 
-    // Fetch WorkoutSession doc for extra details when coming from notification only
-    // (sessionFallback already carries all required data)
+    // WorkoutSession doc fetch removed (no Firestore)
     useEffect(() => {
-        const sid = currentWorkoutInvite?.sessionId;
-        if (!sid || sessionFallback) { setLoading(false); return; }
-        setLoading(true);
-        getDoc(doc(db, 'workoutSessions', sid))
-            .then((snap) => {
-                if (snap.exists()) setSession({ id: snap.id, ...snap.data() } as WorkoutSession);
-            })
-            .catch(() => {})
-            .finally(() => setLoading(false));
+        setLoading(false);
     }, [currentWorkoutInvite?.sessionId, sessionFallback]);
 
     // Shared exit animation, then run callback
@@ -247,7 +235,7 @@ export function WorkoutInviteModal() {
 
     let scheduledStr = '';
     if (rawScheduledAt) {
-        const date    = (rawScheduledAt as Timestamp).toDate?.() ?? new Date(rawScheduledAt as any);
+        const date    = rawScheduledAt instanceof Date ? rawScheduledAt : new Date(rawScheduledAt as any);
         const isToday = date.toDateString() === new Date().toDateString();
         const dateStr = isToday
             ? 'Today'

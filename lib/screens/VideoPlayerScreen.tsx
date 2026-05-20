@@ -16,20 +16,6 @@ import {
     Dimensions,
     Animated,
 } from 'react-native';
-import {
-    collection,
-    addDoc,
-    query,
-    orderBy,
-    onSnapshot,
-    updateDoc,
-    doc,
-    arrayUnion,
-    arrayRemove,
-    serverTimestamp,
-    setDoc,
-    Timestamp,
-} from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { VideoInviteModal } from '../components/VideoInviteModal';
 import { InviteTypeSelectorModal } from '../components/InviteTypeSelectorModal';
@@ -47,7 +33,6 @@ import { useVideoPlayerNotificationParams } from '../hooks/useVideoPlayerNotific
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
 import { useWorkoutWatchers } from '../hooks/useWorkoutWatchers';
 import { useWorkoutSocialHub } from '../hooks/useWorkoutSocialHub';
-import { db } from '../core/config/firebase';
 import { useLibrary } from '../providers/LibraryContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAccess } from '../providers/AccessContext';
@@ -265,14 +250,14 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
     const { hasAccess, showPaywall } = useAccess();
     const { profile } = useUser();
-    const { firebaseUid, email } = useAuth();
+    const { supabaseUserId, email } = useAuth();
 
     const [showInviteTypeModal, setShowInviteTypeModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showSelfScheduleModal, setShowSelfScheduleModal] = useState(false);
     const [showSocialModal, setShowSocialModal] = useState(false);
-    const { state: socialInviteState, sendInvite: sendSocialInvite, cancel: cancelSocialInvite, reset: resetSocialInvite } = useSocialInvite(firebaseUid ?? null);
+    const { state: socialInviteState, sendInvite: sendSocialInvite, cancel: cancelSocialInvite, reset: resetSocialInvite } = useSocialInvite(supabaseUserId ?? null);
     const [socialTargetName, setSocialTargetName] = useState('Someone');
     const [friendUids, setFriendUids] = useState<string[]>([]);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -319,7 +304,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     useEffect(() => {
         watchStartRef.current = Date.now();
         return () => {
-            const uid = firebaseUid;
+            const uid = supabaseUserId;
             if (!uid) return;
             const videoMinutes = maxWatchedMsRef.current > 0
                 ? Math.round(maxWatchedMsRef.current / 60000)
@@ -332,36 +317,19 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
 
     // One-time friend UID fetch so the scheduled section can show Friend badge / Join button
     useEffect(() => {
-        if (!firebaseUid) return;
-        FriendService.getFriendUids(firebaseUid).then(setFriendUids).catch(() => {});
-    }, [firebaseUid]);
+        if (!supabaseUserId) return;
+        FriendService.getFriendUids(supabaseUserId).then(setFriendUids).catch(() => {});
+    }, [supabaseUserId]);
 
     const handleJoinScheduled = async (targetUser: { uid: string; displayName: string }) => {
-        if (!firebaseUid) return;
+        if (!supabaseUserId) return;
         const vid = requestedVideoId ?? videoId;
         const myName =
             profile?.fullName ?? profile?.username ?? 'Me';
         const sessionId = `premade_${targetUser.uid}_${vid}`;
         try {
-            await setDoc(
-                doc(db, 'workoutSessions', sessionId),
-                {
-                    id: sessionId,
-                    hostUid: targetUser.uid,
-                    guestUid: firebaseUid,
-                    hostName: targetUser.displayName,
-                    guestName: myName,
-                    videoId: vid,
-                    videoTitle: title,
-                    status: 'accepted',
-                    scheduledAt: Timestamp.now(),
-                    createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now(),
-                },
-                { merge: true }
-            );
             await LiveSessionService.requestToJoin(sessionId, {
-                uid: firebaseUid,
+                uid: supabaseUserId,
                 name: myName,
                 avatarUrl: (profile as any)?.profileImageUrl ?? null,
             });
@@ -422,7 +390,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     };
 
     const handleVideoEnd = async () => {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         console.log('[Video] handleVideoEnd called', {
             uid,
             videoId,
@@ -478,27 +446,6 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
             return;
         }
 
-        // Step 3: Mark workout progress
-        try {
-            await setDoc(
-                doc(db, 'users', uid, 'workoutProgress', videoId),
-                { completed: true, completedAt: new Date(), dayId: videoId },
-                { merge: true }
-            );
-        } catch (e: any) {
-            console.error('[Completion] workoutProgress write failed:', e?.message ?? e);
-        }
-
-        // Step 4: Record completion in video analytics for recommendation engine
-        setDoc(
-            doc(db, 'users', uid, 'videoAnalytics', videoId),
-            {
-                completed: true,
-                watchDuration: Math.round(maxWatchedMsRef.current / 1000),
-                updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-        ).catch(() => {});
     };
 
     handleVideoEndRef.current = handleVideoEnd;
@@ -578,7 +525,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     // Pass null for videoId/userId when not applicable to skip writes but stay hook-safe.
     const viewerDisplayName =
         profile?.fullName ?? profile?.username ?? email?.split('@')[0] ?? 'Viewer';
-    const watcherProfile = allowInvite && firebaseUid ? {
+    const watcherProfile = allowInvite && supabaseUserId ? {
         displayName: viewerDisplayName,
         username: profile?.username ?? viewerDisplayName,
         profilePhoto: profile?.profileImageUrl ?? null,
@@ -587,17 +534,17 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     } : null;
     const { count: viewerCount, viewers: liveViewers } = useWorkoutWatchers(
         allowInvite && videoId !== 'default-video' ? videoId : null,
-        allowInvite ? (firebaseUid ?? null) : null,
+        allowInvite ? (supabaseUserId ?? null) : null,
         watcherProfile,
     );
     const socialHub = useWorkoutSocialHub({
         videoId: allowInvite && videoId !== 'default-video' ? (requestedVideoId ?? videoId) : null,
-        currentUid: allowInvite ? (firebaseUid ?? null) : null,
+        currentUid: allowInvite ? (supabaseUserId ?? null) : null,
         activeLiveCount: viewerCount,
     });
 
     const engagement = useVideoEngagement(
-        firebaseUid ?? null,
+        supabaseUserId ?? null,
         videoId !== 'default-video' ? videoId : null,
         {
             title,
@@ -616,69 +563,10 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
         [requestedVideoId, videoId],
     );
 
-    // Save to watch history when video opens
-    useEffect(() => {
-        if (!firebaseUid || !videoId || videoId === 'default-video') return;
-        const ytId = sourceVideo?.youtubeId;
-        const thumb = ytId
-            ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
-            : sourceVideo?.thumbnail ?? '';
-        const ref = doc(db, 'users', firebaseUid, 'watchHistory', videoId);
-        const workoutCategory = (sourceVideo as any)?.category ?? route?.params?.category ?? null;
-        const workoutProgram = activeProgram?.title ?? null;
-        setDoc(ref, {
-            videoId: requestedVideoId ?? videoId,
-            title,
-            videoUrl: sourceVideo?.videoUrl ?? routeVideoUrl ?? '',
-            thumbnail: thumb,
-            youtubeId: ytId || null,
-            allowInvite,
-            category: workoutCategory,
-            programName: workoutProgram,
-            type: 'video',
-            lastWatchedAt: serverTimestamp(),
-        }, { merge: true }).then(() => {
-            console.log('Watch history saved:', videoId);
-        }).catch(err => console.warn('Failed to save watch history:', err));
-
-        // Save as a completed session in workoutSessions so it shows in Previous Sessions
-        // (only for pre-made workouts accessed from the Workouts tab, not library)
-        if (allowInvite) {
-            const now = Timestamp.now();
-            const userName = currentUser?.displayName || currentUser?.email?.split('@')[0] || profile?.fullName || 'You';
-            const sessionDocId = `premade_${firebaseUid}_${videoId}`;
-            const sessionRef = doc(db, 'workoutSessions', sessionDocId);
-            setDoc(sessionRef, {
-                hostUid: firebaseUid,
-                guestUid: firebaseUid,
-                hostName: userName,
-                guestName: userName,
-                videoId,
-                videoTitle: title,
-                scheduledAt: now,
-                status: 'completed',
-                sessionType: 'premade',
-                createdAt: now,
-                updatedAt: now,
-            }, { merge: true }).then(() => {
-                console.log('Pre-made session saved to workoutSessions:', sessionDocId);
-            }).catch(err => console.warn('Failed to save pre-made session:', err));
-        }
-    }, [firebaseUid, videoId, title, allowInvite]);
 
     useEffect(() => {
-        const commentsQuery = query(
-            collection(db, 'videoComments', videoId, 'comments'),
-            orderBy('createdAt', 'desc')
-        );
-
-        const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
-            const data = snapshot.docs.map((comment) => ({ id: comment.id, ...comment.data() }));
-            setComments(data);
-            setCommentsLoading(false);
-        });
-
-        return () => unsubscribe();
+        setComments([]);
+        setCommentsLoading(false);
     }, [videoId]);
 
     // YouTube player state via postMessage (state 0 = ended, 1 = playing, 3 = buffering)
@@ -703,39 +591,16 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
 
     const postComment = async () => {
         if (!newComment.trim() || !commentType) return;
-        if (!firebaseUid) {
+        if (!supabaseUserId) {
             Alert.alert('Login required', 'Please login to post');
             return;
         }
-
-        try {
-            await addDoc(collection(db, 'videoComments', videoId, 'comments'), {
-                userId: firebaseUid,
-                username: profile?.fullName ?? email?.split('@')[0] ?? 'User',
-                userAvatar: (profile?.fullName ?? email ?? 'U')[0].toUpperCase(),
-                text: newComment.trim(),
-                type: commentType,
-                createdAt: serverTimestamp(),
-                likes: 0,
-                likedBy: [],
-            });
-            setNewComment('');
-            setCommentType(null);
-        } catch (error: any) {
-            Alert.alert('Error', error.message);
-        }
+        setNewComment('');
+        setCommentType(null);
     };
 
-    const toggleLike = async (commentId: string, likedBy: string[], likes: number) => {
-        if (!firebaseUid) return;
-
-        const commentRef = doc(db, 'videoComments', videoId, 'comments', commentId);
-        const alreadyLiked = likedBy?.includes(firebaseUid);
-
-        await updateDoc(commentRef, {
-            likes: alreadyLiked ? likes - 1 : likes + 1,
-            likedBy: alreadyLiked ? arrayRemove(firebaseUid) : arrayUnion(firebaseUid),
-        });
+    const toggleLike = async (_commentId: string, _likedBy: string[], _likes: number) => {
+        // no-op
     };
 
     const formatTimeAgo = (date: Date) => {
@@ -799,7 +664,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
     }, [reqData.muscles]);
 
     const renderSocialContent = () => {
-        const otherViewers = liveViewers.filter(v => v.uid !== firebaseUid);
+        const otherViewers = liveViewers.filter(v => v.uid !== supabaseUserId);
         const avatarPalette = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6'];
         const avatarColor = (name: string) => {
             let hash = 0;
@@ -876,7 +741,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                             const programLine = entry.programTitle || null;
                             const workoutLine = entry.combinedTitle || entry.workoutTitle || entry.videoTitle;
                             const videoLine = entry.videoTitle;
-                            const isMine = entry.userId === firebaseUid;
+                            const isMine = entry.userId === supabaseUserId;
                             const isFriend = !isMine && friendUids.includes(entry.userId);
                             return (
                                 <View key={entry.id} style={[socialStyles.row, i < socialHub.scheduled.length - 1 && socialStyles.rowBorder]}>
@@ -1281,13 +1146,13 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                                 >
                                     <Text
                                         style={{
-                                            color: comment.likedBy?.includes(firebaseUid)
+                                            color: comment.likedBy?.includes(supabaseUserId)
                                                 ? ACCENT
                                                 : '#607a94',
                                             fontSize: 13,
                                         }}
                                     >
-                                        {comment.likedBy?.includes(firebaseUid) ? '\u2764\uFE0F' : '\u{1F90D}'}
+                                        {comment.likedBy?.includes(supabaseUserId) ? '\u2764\uFE0F' : '\u{1F90D}'}
                                         {' '}
                                         {(comment.likes ?? 0) > 0 ? comment.likes : ''}
                                     </Text>
@@ -1363,7 +1228,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                             onPress: () => setShowInviteTypeModal(true),
                             viewerCount: (() => {
                                 const count = Math.max(0, (viewerCount || 1) - 1); // fallback if liveViewers isn't updated
-                                const exactCount = liveViewers.filter(v => v.uid !== firebaseUid).length;
+                                const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
                                 const finalCount = liveViewers.length > 0 ? exactCount : count;
                                 return finalCount > 0 ? finalCount : undefined;
                             })(),
@@ -1518,7 +1383,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                     Alert.alert('Friend Request Sent', `Request sent to ${user.displayName}`);
                 }}
                 viewers={liveViewers
-                    .filter(v => v.uid !== firebaseUid)
+                    .filter(v => v.uid !== supabaseUserId)
                     .map(v => ({
                         uid: v.uid,
                         displayName: v.displayName,
@@ -1528,7 +1393,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                     }))
                 }
                 videoId={requestedVideoId ?? videoId}
-                currentUid={firebaseUid ?? undefined}
+                currentUid={supabaseUserId ?? undefined}
                 friendUids={friendUids}
                 socialHub={socialHub}
                 onJoin={handleJoinScheduled}
@@ -1594,7 +1459,7 @@ export default function VideoPlayerScreen({ route, navigation }: any) {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
                                 {(() => {
-                                    const exactCount = liveViewers.filter(v => v.uid !== firebaseUid).length;
+                                    const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
                                     const fallback = Math.max(0, (viewerCount || 1) - 1);
                                     const n = liveViewers.length > 0 ? exactCount : fallback;
                                     return n > 0 ? (

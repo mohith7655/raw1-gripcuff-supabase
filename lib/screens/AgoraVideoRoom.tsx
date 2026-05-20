@@ -59,10 +59,10 @@ export const AgoraVideoRoom: React.FC = () => {
     const [permissionError, setPermissionError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(true);
 
-    const { firebaseUid, email } = useAuth();
+    const { supabaseUserId, email } = useAuth();
     const { count: viewerCount } = useLiveViewerCount(
         channelName,
-        firebaseUid,
+        supabaseUserId,
         email?.split('@')[0] ?? null,
     );
 

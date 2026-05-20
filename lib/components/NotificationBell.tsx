@@ -17,7 +17,6 @@ import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useFriend } from '../providers/FriendContext';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
-import { db } from '../core/config/firebase';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 
@@ -45,20 +44,7 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
   useEffect(() => {
     const uids = incomingRequests.map((r) => r.fromUid);
     if (uids.length === 0) { setRequestProfiles({}); return; }
-    Promise.all(
-      [...new Set(uids)].map(async (uid) => {
-        try {
-          const { doc: fsDoc, getDoc } = await import('firebase/firestore');
-          const snap = await getDoc(fsDoc(db, 'users', uid));
-          if (snap.exists()) return { ...(snap.data()), uid };
-        } catch { /* ignore */ }
-        return null;
-      })
-    ).then((results) => {
-      const map: Record<string, any> = {};
-      results.forEach((u) => { if (u) map[u.uid] = u; });
-      setRequestProfiles(map);
-    });
+    setRequestProfiles({});
   }, [incomingRequests]);
 
   const totalBadge = pendingInvites.length + incomingRequests.length + unreadChatCount;

@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../core/config/supabase';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { User } from '../models/User';
-import { AuthIdentityMapService } from '../services/authIdentityMap.service';
 
 const TAG = '[Auth]';
 const log = (msg: string, data?: object) =>
@@ -20,9 +19,6 @@ interface AuthContextType {
   user: User | null;
   supabaseUser: SupabaseUser | null;
   supabaseUserId: string | null;
-  /** Legacy Firebase UID from auth_identity_map — used only for Firestore compat.
-   *  Null for users created after Firebase Auth removal. */
-  firebaseUid: string | null;
   email: string | null;
   session: Session | null;
   loading: boolean;
@@ -42,9 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
-  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const signupInProgressRef = useRef(false);
 
   const supabaseUserId = supabaseUser?.id ?? null;
   const email = supabaseUser?.email ?? null;
@@ -61,22 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ─── Resolve legacy Firebase UID from identity map ─────────────────────────
-  const resolveLegacyFirebaseUid = async (sbId: string): Promise<void> => {
-    try {
-      const fbUid = await AuthIdentityMapService.getLegacyFirebaseUid(sbId);
-      setFirebaseUid(fbUid);
-      if (fbUid) {
-        log('legacy firebase uid resolved', { sbId, fbUid });
-      } else {
-        log('no legacy firebase uid — new user or post-migration account', { sbId });
-      }
-    } catch {
-      logWarn('legacy firebase uid lookup failed — setting null', { sbId });
-      setFirebaseUid(null);
-    }
-  };
-
   // ─── On auth session: apply state ─────────────────────────────────────────
   const applySession = async (nextSession: Session | null): Promise<void> => {
     setSession(nextSession);
@@ -85,14 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const sbId = nextSession?.user?.id ?? null;
     if (!sbId) {
       setUser(null);
-      setFirebaseUid(null);
       return;
     }
 
-    await Promise.all([
-      loadProfile(sbId),
-      resolveLegacyFirebaseUid(sbId),
-    ]);
+    await loadProfile(sbId);
   };
 
   // ─── Boot ──────────────────────────────────────────────────────────────────
@@ -160,7 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       setSupabaseUser(null);
-      setFirebaseUid(null);
       log('logout: complete');
     } catch (err) {
       logError('logout: failed', err);
@@ -185,7 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       supabaseUser,
       supabaseUserId,
-      firebaseUid,
       email,
       session,
       loading,
@@ -197,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       requireSupabaseUserId,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, supabaseUser, supabaseUserId, firebaseUid, email, session, loading, error],
+    [user, supabaseUser, supabaseUserId, email, session, loading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

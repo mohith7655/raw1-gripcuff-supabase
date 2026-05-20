@@ -1,5 +1,3 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
 import { WorkoutSessionService } from './workoutSession.service';
 import { NotificationService } from './notification.service';
 
@@ -15,8 +13,7 @@ export interface VideoInvitePayload {
 }
 
 /**
- * sendVideoInvite — unified implementation that creates a workout session
- * so the existing Cloud Function `onWorkoutInvite` will send push notifications.
+ * sendVideoInvite — creates a workout session so both users can join.
  * Falls back to creating a lightweight notification if session creation fails.
  */
 export async function sendVideoInvite(payload: VideoInvitePayload): Promise<string | void> {
@@ -46,25 +43,7 @@ export async function sendVideoInvite(payload: VideoInvitePayload): Promise<stri
     } catch (err) {
         console.error('[sendVideoInvite] Failed to create workout session, falling back to notification:', err);
 
-        // Best-effort fallback: write a notification doc so the invite appears in-app
         const fallbackBody = `${payload.fromName} invited you to watch "${payload.videoTitle}"`;
-        try {
-            await addDoc(collection(db, 'notifications'), {
-                toUid: payload.toUid,
-                fromUid: payload.fromUid,
-                fromName: payload.fromName,
-                fromAvatarUrl: payload.fromAvatarUrl ?? null,
-                type: 'video_invite',
-                videoId: payload.videoId,
-                videoTitle: payload.videoTitle,
-                message: fallbackBody,
-                read: false,
-                createdAt: serverTimestamp(),
-            });
-            console.log('[sendVideoInvite] fallback notification written');
-        } catch (e) {
-            console.error('[sendVideoInvite] fallback notification failed:', e);
-        }
 
         // Dual-write: Supabase is source of truth for notification reads/listeners.
         NotificationService.insert({

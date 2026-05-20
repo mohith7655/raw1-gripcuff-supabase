@@ -18,8 +18,6 @@ import {
 } from 'react-native';
 import { Bell, CalendarDays, Check, ChevronLeft, Clock, PlayCircle, X } from 'lucide-react-native';
 import { TimeArrowPicker } from './TimeArrowPicker';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
 import { WorkoutReminderService } from '../services/workoutReminder.service';
 import { useAuth } from '../providers/AuthContext';
 
@@ -85,7 +83,7 @@ export function SelfScheduleModal({
     thumbnail,
     onClose,
 }: Props) {
-    const { firebaseUid } = useAuth();
+    const { supabaseUserId } = useAuth();
     const mountedRef = useRef(true);
     const slideAnim = useRef(new Animated.Value(0)).current;
     // SW is the full screen width; subtract both sides of paddingHorizontal:20 from screen style
@@ -219,8 +217,8 @@ export function SelfScheduleModal({
     const handleSave = async () => {
         setStep('saving');
         try {
-            if (!firebaseUid) throw new Error('[SelfScheduleModal] Not authenticated');
-            const uid = firebaseUid;
+            if (!supabaseUserId) throw new Error('[SelfScheduleModal] Not authenticated');
+            const uid = supabaseUserId;
 
             // Request native notification permission on non-web
             if (Platform.OS !== 'web') {
@@ -257,8 +255,8 @@ export function SelfScheduleModal({
                     isPublic: true,
                     status: 'scheduled',
                     notificationIds: [],
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
                 };
                 console.log('[Reminder] reminder created', {
                     mode: 'one_time',
@@ -267,7 +265,7 @@ export function SelfScheduleModal({
                     scheduledAt: scheduledAt.toISOString(),
                     leadMinutes,
                 });
-                await addDoc(collection(db, 'scheduledWorkouts'), payload);
+                // Firestore write removed — schedule handled by WorkoutReminderService only
             } else {
                 // Recurring reminder: schedule with WorkoutReminderService
                 const intervalMinutes = recurringUnit === 'hours' ? recurringValue * 60 : recurringValue;

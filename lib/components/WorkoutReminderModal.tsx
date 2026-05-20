@@ -11,9 +11,6 @@ import {
   Vibration,
 } from 'react-native';
 import { X } from 'lucide-react-native';
-import { doc, updateDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { db } from '../core/config/firebase';
-
 const ACCENT = '#f97316';
 const { width } = Dimensions.get('window');
 
@@ -22,8 +19,8 @@ export interface ScheduledWorkoutData {
   workoutName: string;
   videoTitle?: string;
   thumbnail?: string | null;
-  scheduledFor?: Timestamp | Date;
-  scheduledAt?: Timestamp | Date;
+  scheduledFor?: Date;
+  scheduledAt?: Date;
   videoId?: string;
   recurrenceLabel?: string;
   source?: 'scheduledWorkout' | 'recurringReminder' | 'dailyReminder';
@@ -137,98 +134,25 @@ export function WorkoutReminderModal({
 
   const handleStartNow = async () => {
     if (!workout) return;
-    try {
-      if (!isRecurring && !isDailyReminder) {
-        await updateDoc(doc(db, 'scheduledWorkouts', workout.id), {
-          status: 'triggered',
-          startPopupShown: true,
-          reminderSent: true,
-          notificationSent: true,
-          triggeredAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
-    } catch (err) {
-      console.error('[WorkoutReminderModal] Failed to update status on start:', err);
-    }
     onStartNow?.(workout);
     onDismiss();
   };
 
   const handleSnooze = async () => {
     if (!workout) return;
-    // Daily reminders are purely in-memory — just dismiss, they re-fire tomorrow
-    if (isDailyReminder) { onDismiss(); return; }
-    try {
-      const snoozedTime = new Date(Date.now() + 5 * 60 * 1000);
-      if (isRecurring) {
-        await updateDoc(doc(db, 'reminders', workout.id), {
-          nextTriggerAt: Timestamp.fromDate(snoozedTime),
-          updatedAt: serverTimestamp(),
-        });
-        console.log('[Reminder] recurring snoozed', { id: workout.id, snoozedTo: snoozedTime.toISOString() });
-      } else {
-        // Push workout to snoozed time; clear both dedup flags so both triggers
-        // can re-evaluate at the new time. Set reminderScheduledFor = snoozedTime
-        // so early-reminder check stays accurate (no lead on a snoozed workout).
-        await updateDoc(doc(db, 'scheduledWorkouts', workout.id), {
-          scheduledAt: Timestamp.fromDate(snoozedTime),
-          scheduledFor: Timestamp.fromDate(snoozedTime),
-          reminderScheduledFor: Timestamp.fromDate(snoozedTime),
-          reminderSent: false,
-          startPopupShown: false,
-          status: 'scheduled',
-          notificationSent: false,
-          updatedAt: serverTimestamp(),
-        });
-        console.log('[Reminder] scheduled snoozed', { id: workout.id, snoozedTo: snoozedTime.toISOString() });
-      }
-    } catch (err) {
-      console.error('[WorkoutReminderModal] Failed to snooze:', err);
-    }
     onDismiss();
   };
 
   const handleDismiss = async () => {
     if (!canDismiss) return;
-    // Daily reminders are purely in-memory — just close
-    if (isDailyReminder) { onDismiss(); return; }
-    try {
-      if (isRecurring) {
-        await updateDoc(doc(db, 'reminders', workout?.id || ''), {
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        // For early reminder dismiss: just mark reminderSent so it doesn't re-fire,
-        // but keep status='scheduled' so the exact-start popup still fires at workout time.
-        // For start-time dismiss: mark fully triggered.
-        if (isStartTime) {
-          await updateDoc(doc(db, 'scheduledWorkouts', workout?.id || ''), {
-            status: 'dismissed',
-            startPopupShown: true,
-            reminderSent: true,
-            updatedAt: serverTimestamp(),
-          });
-        } else {
-          await updateDoc(doc(db, 'scheduledWorkouts', workout?.id || ''), {
-            reminderSent: true,
-            updatedAt: serverTimestamp(),
-          });
-        }
-      }
-    } catch (err) {
-      console.error('[WorkoutReminderModal] Failed to dismiss:', err);
-    }
     onDismiss();
   };
 
   const workoutName = workout?.videoTitle || workout?.workoutName || 'Workout';
   const scheduledAtDate =
-    (workout?.scheduledAt as any)?.toDate?.() ||
-    (workout?.scheduledAt instanceof Date ? workout.scheduledAt : null);
+    workout?.scheduledAt instanceof Date ? workout.scheduledAt : null;
   const scheduledForDate =
-    (workout?.scheduledFor as any)?.toDate?.() ||
-    (workout?.scheduledFor instanceof Date ? workout.scheduledFor : null);
+    workout?.scheduledFor instanceof Date ? workout.scheduledFor : null;
   const scheduledTime = scheduledAtDate ?? scheduledForDate ?? new Date();
   const timeStr = scheduledTime.toLocaleTimeString('en-US', {
     hour: '2-digit',

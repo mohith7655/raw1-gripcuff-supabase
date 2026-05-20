@@ -8,7 +8,6 @@ import {
     View,
 } from 'react-native';
 import { Calendar, Dumbbell, UserPlus, X } from 'lucide-react-native';
-import { Timestamp } from 'firebase/firestore';
 import { SocialOpenEntry, SocialScheduledEntry } from '../../hooks/useWorkoutSocialHub';
 
 const ACCENT = '#F97316';
@@ -49,8 +48,8 @@ function avatarColor(name: string): string {
     return palette[Math.abs(hash) % palette.length];
 }
 
-function formatScheduledTime(ts: Timestamp): string {
-    const d = ts.toDate();
+function formatScheduledTime(ts: Date): string {
+    const d = ts instanceof Date ? ts : new Date(ts as any);
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);

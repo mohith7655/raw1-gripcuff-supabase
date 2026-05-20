@@ -4,9 +4,6 @@ import { NavigationContainer, DarkTheme, useNavigationContainerRef } from '@reac
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, Video, Dumbbell, User, Users, Calendar } from 'lucide-react-native';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from './core/config/firebase';
-
 import { useNotifications } from './hooks/useNotifications';
 import * as Notifications from 'expo-notifications';
 import { WorkoutReminderModal } from './components/WorkoutReminderModal';
@@ -278,7 +275,7 @@ function MainApp() {
   const [bootLoading, setBootLoading] = useState(true);
   const navigationRef = useNavigationContainerRef();
   const { loading: accessLoading } = useAccess();
-  const { firebaseUid, supabaseUserId, email, user, loading: authLoading } = useAuth();
+  const { supabaseUserId, email, user, loading: authLoading } = useAuth();
 
   // Registers for FCM push notifications and handles notification-click navigation.
   // Must be called here — inside all providers but outside NavigationContainer.
@@ -294,60 +291,37 @@ function MainApp() {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        const uid = firebaseUid;
+        const uid = supabaseUserId;
         if (uid) WorkoutReminderService.cleanupExpired(uid);
         if (uid) WorkoutReminderService.restoreRecurringReminders(uid).catch(() => {});
       }
     });
     return () => sub.remove();
-  }, [firebaseUid]);
+  }, [supabaseUserId]);
 
-  useEffect(() => {
-    console.log({ supabaseUserId, firebaseUid });
-  }, [supabaseUserId, firebaseUid]);
 
   useEffect(() => {
     const runBootSync = async () => {
-      if (firebaseUid) {
-        let userProfile: Record<string, any> = {};
+      if (supabaseUserId) {
+        // Restore recurring reminders
+        WorkoutReminderService.restoreRecurringReminders(supabaseUserId).catch(() => {});
 
-        // 1. Load profile and resolve onboarding — must not be blocked by anything else
-        try {
-          const snap = await getDoc(doc(db, 'users', firebaseUid));
-        if (firebaseUid) {
-          WorkoutReminderService.restoreRecurringReminders(firebaseUid).catch(() => {});
-        }
-          userProfile = snap.data() ?? {};
-          const localFlag = typeof localStorage !== 'undefined'
-            ? !!localStorage.getItem('onboarding_complete_' + firebaseUid)
-            : false;
-          const onboardingDone = !!userProfile.onboardingCompleted || localFlag;
-          setNeedsOnboarding(!onboardingDone);
-        } catch {
-          // Firestore read failed — fall back to localStorage or displayName
-          const localFlag = typeof localStorage !== 'undefined'
-            ? !!localStorage.getItem('onboarding_complete_' + firebaseUid)
-            : false;
-          setNeedsOnboarding(!localFlag && !user?.fullName);
-        }
+        // Resolve onboarding from localStorage only
+        const localFlag = typeof localStorage !== 'undefined'
+          ? !!localStorage.getItem('onboarding_complete_' + supabaseUserId)
+          : false;
+        setNeedsOnboarding(!localFlag && !user?.fullName);
 
-        // 2. Timezone sync — always write device timezone so stale stored values never win.
-        const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (deviceTimezone) {
-          updateDoc(doc(db, 'users', firebaseUid), {
-            timezone: deviceTimezone,
-            updatedAt: serverTimestamp(),
-          }).catch(() => {});
-          TimezoneService.invalidateCache(firebaseUid);
-        }
+        // Timezone — no Firestore write, just invalidate cache
+        TimezoneService.invalidateCache(supabaseUserId);
 
-        // 3. Streak check — independent, never blocks auth flow
-        StreakService.checkAndBreakStreak(firebaseUid).catch(() => {});
+        // Streak check — independent, never blocks auth flow
+        StreakService.checkAndBreakStreak(supabaseUserId).catch(() => {});
 
-        // 4. Leaderboard sync — once per session only; guard prevents repeat overwrites on token refresh
+        // Leaderboard sync — stub, no-op
         if (!leaderboardSeeded.current) {
           leaderboardSeeded.current = true;
-          initializeCurrentUserOnLeaderboard(firebaseUid, userProfile).catch(e => {
+          initializeCurrentUserOnLeaderboard(supabaseUserId, {}).catch(e => {
             console.error('[Leaderboard] seed failed:', e?.message ?? e);
           });
         }
@@ -357,10 +331,10 @@ function MainApp() {
       setBootLoading(false);
     };
     runBootSync();
-  }, [firebaseUid]);
+  }, [supabaseUserId]);
 
   useEffect(() => {
-    if (!firebaseUid) {
+    if (!supabaseUserId) {
       // User logged out — stop the clock
       reminderWatcherService.stop();
       return;
@@ -371,17 +345,17 @@ function MainApp() {
     // It is only stopped above when the user logs out (uid becomes falsy).
     // Calling start() again with the same uid is safe: start() calls stop()
     // internally first, so it always restarts cleanly.
-    migrateLegacyReminders(firebaseUid).catch(() => {});
-    reminderWatcherService.start(firebaseUid, (alarm) => {
+    migrateLegacyReminders(supabaseUserId).catch(() => {});
+    reminderWatcherService.start(supabaseUserId, (alarm) => {
       setActiveAlarm(alarm);
       setAlarmModalVisible(true);
     });
-  }, [firebaseUid]);
+  }, [supabaseUserId]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return; // NEVER stop the clock — only restart if needed
-      const uid = firebaseUid;
+      const uid = supabaseUserId;
       if (!uid) return;
       // App returned to foreground. Restart only if the clock was stopped
       // (e.g. OS killed background intervals, or user just logged in).
@@ -394,7 +368,7 @@ function MainApp() {
       }
     });
     return () => sub.remove();
-  }, [firebaseUid]);
+  }, [supabaseUserId]);
 
   useEffect(() => {
     const getMissingProfileFields = (data: any): string[] => {
@@ -403,15 +377,12 @@ function MainApp() {
         (typeof data?.dateOfBirth === 'string' && data.dateOfBirth.trim()) ||
         (data?.dob && data.dob.month && data.dob.year)
       );
-      const hasWorkoutSpot =
-        (Array.isArray(data?.workoutLocations) && data.workoutLocations.length > 0) ||
-        (typeof data?.workoutLocation === 'string' && data.workoutLocation.trim().length > 0);
+      const hasWorkoutSpot = !!(data?.locations?.gym || data?.locations?.home || data?.locations?.park);
       const requiredChecks: Array<{ key: string; ok: boolean }> = [
         { key: 'username', ok: typeof data?.username === 'string' && data.username.trim().length > 0 },
         { key: 'dateOfBirth', ok: hasDob },
         { key: 'gender', ok: typeof data?.gender === 'string' && data.gender.trim().length > 0 },
-        { key: 'city', ok: typeof data?.city === 'string' && data.city.trim().length > 0 },
-        { key: 'workoutLocation', ok: hasWorkoutSpot },
+        { key: 'locations', ok: hasWorkoutSpot },
       ];
       requiredChecks.forEach((check) => {
         if (!check.ok) missing.push(check.key);
@@ -446,23 +417,10 @@ function MainApp() {
     };
 
     const runProfileReminderCheck = async () => {
-      const uid = firebaseUid;
-      if (!uid) return;
-      try {
-        const snap = await getDoc(doc(db, 'users', uid));
-        const data = snap.data() ?? {};
-        const isOnboardingDone = !!data?.onboardingCompleted;
-        if (!isOnboardingDone) return;
-        const missingFields = getMissingProfileFields(data);
-        if (missingFields.length > 0) {
-          promptForProfileCompletion();
-        }
-      } catch (e) {
-        console.warn('Profile reminder check failed:', e);
-      }
+      // No Firestore — profile reminder check skipped
     };
 
-    if (!firebaseUid) {
+    if (!supabaseUserId) {
       if (profileReminderIntervalRef.current) {
         clearInterval(profileReminderIntervalRef.current);
         profileReminderIntervalRef.current = null;
@@ -487,7 +445,7 @@ function MainApp() {
         profileReminderIntervalRef.current = null;
       }
     };
-  }, [firebaseUid, navigationRef]);
+  }, [supabaseUserId, navigationRef]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -537,7 +495,7 @@ function MainApp() {
     const sub = Notifications.addNotificationReceivedListener(async (notification) => {
       const data = notification.request.content.data as any;
       if (!data || data.type !== 'recurring_reminder') return;
-      const uid = firebaseUid;
+      const uid = supabaseUserId;
       if (!uid) return;
       try {
         await WorkoutReminderService.restoreRecurringReminders(uid);
@@ -549,7 +507,7 @@ function MainApp() {
     const respSub = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const data = response.notification.request.content.data as any;
       if (!data || data.type !== 'recurring_reminder') return;
-      const uid = firebaseUid;
+      const uid = supabaseUserId;
       if (!uid) return;
       try {
         await WorkoutReminderService.restoreRecurringReminders(uid);
@@ -560,7 +518,7 @@ function MainApp() {
       sub.remove();
       respSub.remove();
     };
-  }, [firebaseUid]);
+  }, [supabaseUserId]);
 
   if (authLoading || bootLoading || accessLoading) {
     return (
@@ -592,7 +550,7 @@ function MainApp() {
           },
         }}
       >
-        {firebaseUid ? (
+        {supabaseUserId ? (
           <StrangerInviteProvider>
             <AppStack initialRoute={needsOnboarding ? 'Onboarding' : 'HomeTabs'} />
             <WorkoutInviteModal />
@@ -602,8 +560,8 @@ function MainApp() {
         )}
       </NavigationContainer>
       {/* Survey + Paywall overlays — sit above all navigation */}
-      {!!firebaseUid && <GripcuffSurveyModal />}
-      {!!firebaseUid && <PaywallScreen />}
+      {!!supabaseUserId && <GripcuffSurveyModal />}
+      {!!supabaseUserId && <PaywallScreen />}
       {/* Fullscreen workout alarm modal — global foreground watcher */}
       <WorkoutReminderModal
         visible={alarmModalVisible}

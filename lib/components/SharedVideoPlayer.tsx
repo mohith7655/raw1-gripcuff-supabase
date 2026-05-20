@@ -10,7 +10,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Video as ExpoVideo, ResizeMode } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import {
     ArrowLeft,
     CalendarClock,
@@ -71,7 +71,12 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
     onVideoEnd,
     onCurrentPositionChange,
 }: SharedVideoPlayerProps, ref: React.Ref<SharedVideoPlayerRef>) {
-    const videoRef = useRef<ExpoVideo>(null);
+    const player = useVideoPlayer({ uri: videoUri }, p => { p.play(); });
+    const onVideoEndRef = useRef(onVideoEnd);
+    onVideoEndRef.current = onVideoEnd;
+    const onCurrentPositionChangeRef = useRef(onCurrentPositionChange);
+    onCurrentPositionChangeRef.current = onCurrentPositionChange;
+
     const isSeekingRef = useRef(false);
     const seekBarWidth = useRef(1);
     // Guards against firing onVideoEnd more than once per playthrough.
@@ -83,14 +88,63 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
     const positionAtScrubStartRef = useRef(0);
 
     useImperativeHandle(ref, () => ({
-        pauseVideo: () => { videoRef.current?.pauseAsync(); },
-        resumeVideo: () => { videoRef.current?.playAsync(); },
+        pauseVideo: () => { player.pause(); },
+        resumeVideo: () => { player.play(); },
     }));
 
-    // Reset completion guard whenever a new video is loaded
     useEffect(() => {
+        player.replace({ uri: videoUri });
         completionHandledRef.current = false;
     }, [videoUri]);
+
+    useEffect(() => {
+        const statusSub = player.addListener('statusChange', ({ status: s }: any) => {
+            if (s === 'readyToPlay') {
+                setIsLoaded(true);
+                setStatus((prev: any) => ({ ...prev, durationMillis: player.duration * 1000 }));
+            }
+        });
+        const playingSub = player.addListener('playingChange', ({ isPlaying: playing }: any) => {
+            setIsPlaying(playing);
+            setStatus((prev: any) => ({ ...prev, isPlaying: playing }));
+        });
+        const timeSub = player.addListener('timeUpdate', ({ currentTime }: any) => {
+            if (isSeekingRef.current) return;
+            const posMs = currentTime * 1000;
+            const durMs = player.duration * 1000;
+
+            if (posMs < 2000 && completionHandledRef.current) {
+                completionHandledRef.current = false;
+            }
+
+            setStatus((prev: any) => ({
+                ...prev,
+                positionMillis: posMs,
+                ...(durMs > 0 ? { durationMillis: durMs } : {}),
+            }));
+            setDisplayPositionMs(null);
+            onCurrentPositionChangeRef.current?.(posMs);
+
+            if (!completionHandledRef.current && durMs > 0 && posMs >= durMs - 1000 && !player.playing) {
+                completionHandledRef.current = true;
+                onVideoEndRef.current?.();
+            }
+        });
+        const endSub = player.addListener('playToEnd', () => {
+            if (!completionHandledRef.current) {
+                completionHandledRef.current = true;
+                onVideoEndRef.current?.();
+            }
+        });
+
+        return () => {
+            statusSub.remove();
+            playingSub.remove();
+            timeSub.remove();
+            endSub.remove();
+        };
+    }, [player]);
+
     const controlsOpacity = useRef(new Animated.Value(1)).current;
     const controlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isPlayingRef = useRef(true);
@@ -134,11 +188,11 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
         return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
     };
 
-    const safeSeek = async (ms: number) => {
-        if (!videoRef.current || !isLoaded) return;
+    const safeSeek = (ms: number) => {
+        if (!isLoaded) return;
         if (!isFinite(ms) || ms < 0) return;
         try {
-            await videoRef.current.setPositionAsync(Math.floor(ms));
+            player.currentTime = ms / 1000;
         } catch {
             // Ignore seek failures caused by transient playback state changes.
         }
@@ -206,34 +260,33 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
         };
     }, [isPlaying]);
 
-    const togglePlay = async () => {
+    const togglePlay = () => {
         if (isPlaying) {
-            await videoRef.current?.pauseAsync();
+            player.pause();
             setIsPlaying(false);
             return;
         }
-
-        await videoRef.current?.playAsync();
+        player.play();
         setIsPlaying(true);
     };
 
-    const skipBack = async () => {
+    const skipBack = () => {
         isSeekingRef.current = true;
         const nextPosition = Math.max(0, position - 10000);
         setDisplayPositionMs(nextPosition);
-        await safeSeek(nextPosition);
+        safeSeek(nextPosition);
         setTimeout(() => {
             isSeekingRef.current = false;
             setDisplayPositionMs(null);
         }, 300);
     };
 
-    const skipForward = async () => {
+    const skipForward = () => {
         isSeekingRef.current = true;
         const nextPosition = Math.min(duration, position + 10000);
         setDisplayPositionMs(nextPosition);
         onSeekForward?.(nextPosition);
-        await safeSeek(nextPosition);
+        safeSeek(nextPosition);
         setTimeout(() => {
             isSeekingRef.current = false;
             setDisplayPositionMs(null);
@@ -245,7 +298,7 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
         const ratio = durationRef.current > 0 ? boundedPosition / durationRef.current : 0;
         setSeekProgress(ratio);
         setDisplayPositionMs(boundedPosition);
-        videoRef.current?.setPositionAsync(Math.floor(boundedPosition));
+        player.currentTime = boundedPosition / 1000;
     };
 
     const finishSeeking = () => {
@@ -351,8 +404,7 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
                         deviceName="AirPlay"
                         forceVisible
                         onStopPress={() => {
-                            // Pausing stops AirPlay routing on iOS
-                            videoRef.current?.pauseAsync();
+                            player.pause();
                         }}
                     />
                 </View>
@@ -372,81 +424,17 @@ export const SharedVideoPlayer = forwardRef<SharedVideoPlayerRef, SharedVideoPla
                         </View>
                     ) : (
                         <>
-                            <ExpoVideo
-                                ref={videoRef}
-                                source={{ uri: videoUri }}
+                            <VideoView
+                                player={player}
                                 style={styles.video}
-                                videoStyle={styles.videoInner as any}
-                                resizeMode="contain"
-                                useNativeControls={false}
-                                shouldPlay={isPlaying}
-                                // AirPlay: allowsExternalPlayback is a valid iOS native prop but
-                                // is not typed in expo-av v16.  Cast to any to keep TS happy.
+                                contentFit="contain"
+                                nativeControls={false}
                                 {...(Platform.OS === 'ios'
                                     ? ({
                                           allowsExternalPlayback: true,
                                           usesExternalPlaybackWhileExiting: true,
                                       } as any)
                                     : {})}
-                                onLoad={() => {
-                                    setIsLoaded(true);
-                                    videoRef.current?.playAsync();
-                                }}
-                                onPlaybackStatusUpdate={(playbackStatus) => {
-                                    if (!playbackStatus.isLoaded) return;
-
-                                    const pos = playbackStatus.positionMillis ?? 0;
-                                    const dur = playbackStatus.durationMillis ?? 0;
-
-                                    console.log('[Video]', {
-                                        position: pos,
-                                        duration: dur,
-                                        didJustFinish: (playbackStatus as any).didJustFinish,
-                                        isPlaying: playbackStatus.isPlaying,
-                                        completionHandled: completionHandledRef.current,
-                                    });
-
-                                    // Reset guard when user seeks back to the beginning (replay)
-                                    if (pos < 2000 && completionHandledRef.current) {
-                                        completionHandledRef.current = false;
-                                    }
-
-                                    if (!isSeekingRef.current) {
-                                        setStatus(playbackStatus);
-                                        setDisplayPositionMs(null);
-                                        if (playbackStatus.isPlaying !== isPlaying) {
-                                            setIsPlaying(playbackStatus.isPlaying);
-                                        }
-                                        if (pos != null) {
-                                            onCurrentPositionChange?.(pos);
-                                        }
-                                        // Detect AirPlay active state (iOS only)
-                                        if ('isExternalPlaybackActive' in playbackStatus) {
-                                            setIsAirPlayActive(
-                                                (playbackStatus as any).isExternalPlaybackActive ?? false
-                                            );
-                                        }
-                                    }
-
-                                    if (completionHandledRef.current) return;
-
-                                    // Primary: expo-av sets didJustFinish when playback ends
-                                    if ((playbackStatus as any).didJustFinish) {
-                                        console.log('[Video] completion: didJustFinish');
-                                        completionHandledRef.current = true;
-                                        onVideoEnd?.();
-                                        return;
-                                    }
-
-                                    // Fallback: position within last 1 second and not playing.
-                                    // expo-av on web often never fires didJustFinish — the video
-                                    // simply stops at the end without that flag being set.
-                                    if (dur > 0 && pos >= dur - 1000 && !playbackStatus.isPlaying) {
-                                        console.log('[Video] fallback completion trigger — position:', pos, 'duration:', dur);
-                                        completionHandledRef.current = true;
-                                        onVideoEnd?.();
-                                    }
-                                }}
                             />
 
                             <Animated.View

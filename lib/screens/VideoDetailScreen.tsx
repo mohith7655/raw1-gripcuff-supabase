@@ -11,13 +11,7 @@ import {
     Platform,
     Dimensions,
 } from 'react-native';
-import {
-    doc,
-    setDoc,
-    Timestamp,
-} from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
-import { db } from '../core/config/firebase';
 import { FriendService } from '../services/friend.service';
 import { subscribeLiveViewersForVideo, LiveViewerEntry } from '../services/liveViewers.service';
 import { subscribeScheduledForVideo, ScheduledEntry } from '../services/scheduledWorkouts.service';
@@ -54,17 +48,17 @@ function initials(name: string): string {
         .join('');
 }
 
-function formatJoinedAgo(ts: import('firebase/firestore').Timestamp | null): string {
+function formatJoinedAgo(ts: Date | null): string {
     if (!ts) return 'just now';
-    const diffMs = Date.now() - ts.toMillis();
+    const diffMs = Date.now() - (ts instanceof Date ? ts.getTime() : 0);
     const mins = Math.floor(diffMs / 60_000);
     if (mins < 1) return 'just now';
     if (mins < 60) return `${mins} min ago`;
     return `${Math.floor(mins / 60)}h ago`;
 }
 
-function formatScheduledTime(ts: import('firebase/firestore').Timestamp): string {
-    const d = ts.toDate();
+function formatScheduledTime(ts: Date): string {
+    const d = ts instanceof Date ? ts : new Date(ts);
     const isToday = d.toDateString() === new Date().toDateString();
     const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     if (isToday) return `Today at ${timeStr}`;
@@ -205,7 +199,7 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export function VideoDetailScreen({ route, navigation }: any) {
-    const { firebaseUid, email } = useAuth();
+    const { supabaseUserId, email } = useAuth();
     const { profile } = useUser();
 
     const { videoId, videoTitle, youtubeId, videoUrl } = route.params ?? {};
@@ -228,27 +222,27 @@ export function VideoDetailScreen({ route, navigation }: any) {
 
     // ── 1. Fetch friend UIDs once ─────────────────────────────────────────────
     useEffect(() => {
-        if (!firebaseUid) return;
-        FriendService.getFriendUids(firebaseUid).then(setFriendUids).catch(() => {});
-    }, [firebaseUid]);
+        if (!supabaseUserId) return;
+        FriendService.getFriendUids(supabaseUserId).then(setFriendUids).catch(() => {});
+    }, [supabaseUserId]);
 
     // ── 2. Subscribe to live viewers & scheduled workouts ─────────────────────
     useEffect(() => {
-        if (!videoId || !firebaseUid) return;
+        if (!videoId || !supabaseUserId) return;
 
         unsubLiveRef.current?.();
         unsubScheduledRef.current?.();
 
         unsubLiveRef.current = subscribeLiveViewersForVideo(
             videoId,
-            firebaseUid,
+            supabaseUserId,
             friendUids,
             setLiveViewers
         );
 
         unsubScheduledRef.current = subscribeScheduledForVideo(
             videoId,
-            firebaseUid,
+            supabaseUserId,
             friendUids,
             setScheduled
         );
@@ -257,38 +251,18 @@ export function VideoDetailScreen({ route, navigation }: any) {
             unsubLiveRef.current?.();
             unsubScheduledRef.current?.();
         };
-    }, [videoId, firebaseUid, friendUids]);
+    }, [videoId, supabaseUserId, friendUids]);
 
     // ── Action handlers ───────────────────────────────────────────────────────
 
     const handleJoinFriend = async (targetUid: string, targetName: string) => {
-        if (!firebaseUid) return;
+        if (!supabaseUserId) return;
         setLoadingAction(targetUid);
         try {
-            // The premade session key matches what VideoPlayerScreen writes for the friend.
             const sessionId = `premade_${targetUid}_${videoId}`;
 
-            // Ensure the session doc exists so SyncedVideoPlayerScreen can read it.
-            await setDoc(
-                doc(db, 'workoutSessions', sessionId),
-                {
-                    id: sessionId,
-                    hostUid: targetUid,
-                    guestUid: firebaseUid,
-                    hostName: targetName,
-                    guestName: currentName,
-                    videoId,
-                    videoTitle: videoTitle ?? '',
-                    status: 'accepted',
-                    scheduledAt: Timestamp.now(),
-                    createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now(),
-                },
-                { merge: true }
-            );
-
             await LiveSessionService.requestToJoin(sessionId, {
-                uid: firebaseUid,
+                uid: supabaseUserId,
                 name: currentName,
                 avatarUrl: currentAvatar,
             });
@@ -310,11 +284,11 @@ export function VideoDetailScreen({ route, navigation }: any) {
         targetUid: string,
         targetName: string
     ) => {
-        if (!firebaseUid) return;
+        if (!supabaseUserId) return;
         setLoadingAction(targetUid);
         try {
             await StrangerInviteService.createInvite({
-                inviterId: firebaseUid,
+                inviterId: supabaseUserId,
                 targetUserId: targetUid,
                 workoutId: videoId,
                 workoutTitle: videoTitle ?? '',
