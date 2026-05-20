@@ -38,7 +38,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   // Rate-limit refs
   const fetchingRef = useRef(false);
   const lastFetchRef = useRef(0);
-  const lastRealtimeFetchRef = useRef(0);
+  // Debounce for realtime events (prevents processing bursts from a single DB write)
+  const lastRealtimeRef = useRef(0);
 
   useEffect(() => {
     if (!supabaseUserId) {
@@ -77,33 +78,37 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'users', filter: `id=eq.${uid}` },
-        async () => {
+        (payload: any) => {
           if (cancelled) return;
           const now = Date.now();
-          // Debounce: ignore realtime bursts within 5 seconds
-          if (now - lastRealtimeFetchRef.current < 5000) {
-            console.log('[Realtime] existing subscription reused — cooldown');
-            return;
-          }
-          lastRealtimeFetchRef.current = now;
-          const realtimeStartedAt = Date.now();
-          lastFetchStartRef.current = realtimeStartedAt;
-          try {
-            const latest = await UserService.getProfile(uid);
-            if (!cancelled && realtimeStartedAt >= lastFetchStartRef.current) {
-              console.log('[Profile] realtime patch applied');
-              setProfile({
-                ...latest,
-                watchedSeconds: Number(latest.watchedSeconds || 0),
-                todayWatchSeconds: Number(latest.todayWatchSeconds || 0),
-              });
-              lastFetchRef.current = Date.now();
-            } else if (!cancelled) {
-              console.log('[Profile] stale fetch ignored');
-            }
-          } catch (err) {
-            console.warn('[UserContext] realtime profile refresh failed:', err);
-          }
+          // Debounce: ignore bursts within 2 seconds
+          if (now - lastRealtimeRef.current < 2000) return;
+          lastRealtimeRef.current = now;
+
+          const row = payload?.new;
+          if (!row) return;
+
+          // Update profile synchronously from the realtime payload — no network round-trip.
+          // watchedSeconds / todayWatchSeconds are intentionally excluded here:
+          // patchWatchTime() owns those fields via optimistic updates after each flush,
+          // which prevents the race where a late realtime event overwrites the optimistic value.
+          setProfile(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              currentStreak: Number(row.current_streak ?? prev.currentStreak ?? 0),
+              bestStreak: Number(row.best_streak ?? prev.bestStreak ?? 0),
+              lastWorkoutDate: row.last_workout_date ?? prev.lastWorkoutDate,
+              credits: Number(row.credits ?? prev.credits ?? 0),
+              completedWorkouts: Number(row.completed_workouts ?? prev.completedWorkouts ?? 0),
+              weeklyActivity: row.weekly_activity != null
+                ? (typeof row.weekly_activity === 'string'
+                    ? JSON.parse(row.weekly_activity)
+                    : row.weekly_activity)
+                : prev.weeklyActivity,
+            };
+          });
+          console.log('[Profile] realtime immutable update from DB');
         },
       )
       .subscribe();
@@ -155,20 +160,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []); // no deps — uid is passed as argument, refs are stable
 
   // Optimistic patch — called by WatchTrackingService after a successful flush
-  // so the UI updates instantly without waiting for the next realtime event.
+  // so the UI updates instantly. Always creates a new object reference (immutable update)
+  // so React detects the state change in both dev and production builds.
   const patchWatchTime = useCallback((addSeconds: number) => {
-    lastFetchStartRef.current = Date.now(); // mark as "latest update" to suppress stale fetches
     setProfile(prev => {
       if (!prev) return prev;
-      const newWatchedSeconds = (prev.watchedSeconds ?? 0) + addSeconds;
-      const newTodaySeconds = (prev.todayWatchSeconds ?? 0) + addSeconds;
-      console.log('[Profile] realtime patch applied', { addSeconds, newWatchedSeconds });
-      return {
+      const updated = {
         ...prev,
-        watchedSeconds: newWatchedSeconds,
-        watchedMinutes: Math.floor(newWatchedSeconds / 60),
-        todayWatchSeconds: newTodaySeconds,
+        watchedSeconds: Number(prev.watchedSeconds || 0) + Number(addSeconds || 0),
+        todayWatchSeconds: Number(prev.todayWatchSeconds || 0) + Number(addSeconds || 0),
+        watchedMinutes: Math.floor(
+          (Number(prev.watchedSeconds || 0) + Number(addSeconds || 0)) / 60
+        ),
       };
+      console.log('[Profile] realtime immutable update', updated.watchedSeconds);
+      return updated;
     });
   }, []);
 
