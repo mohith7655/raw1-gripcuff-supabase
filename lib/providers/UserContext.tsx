@@ -81,8 +81,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         (payload: any) => {
           if (cancelled) return;
           const now = Date.now();
-          // Debounce: ignore bursts within 2 seconds
-          if (now - lastRealtimeRef.current < 2000) return;
+          // Debounce: 100ms — just enough to deduplicate duplicate Supabase events
+          // for the same write. Must NOT be 2000ms — that blocks streak updates that
+          // fire 0.5–1.5s after a watch-tracking flush.
+          if (now - lastRealtimeRef.current < 100) return;
           lastRealtimeRef.current = now;
 
           const row = payload?.new;

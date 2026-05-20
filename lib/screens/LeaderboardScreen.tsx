@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import {
     View,
     Text,
@@ -12,7 +12,7 @@ import {
     Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 // Leaderboard queries are handled by `LeaderboardService`
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 import { useAuth } from '../providers/AuthContext';
@@ -149,11 +149,20 @@ export function LeaderboardScreen() {
     const navigation = useNavigation<any>();
     const currentUid = supabaseUserId ?? null;
 
-    const { profile } = useUser();
+    const { profile, fetchProfile } = useUser();
     // Keep a ref so subscription closures always see the latest profile
     // without needing to recreate subscriptions on every profile update.
     const profileRef = useRef(profile);
     useEffect(() => { profileRef.current = profile; }, [profile]);
+
+    // Refresh profile from Supabase every time this screen gains focus.
+    // This ensures streak/watch-time values are always current, not stale from
+    // the initial app load or a realtime event that was blocked by the debounce.
+    useFocusEffect(
+        useCallback(() => {
+            if (currentUid) fetchProfile(currentUid);
+        }, [currentUid, fetchProfile])
+    );
 
     const [selectedPeriod, setSelectedPeriod] = useState<Tab>('self');
     const [users, setUsers] = useState<LeaderboardEntry[]>([]);
@@ -272,6 +281,12 @@ export function LeaderboardScreen() {
 }
 
 function SelfStatsView({ profile, uid, weeklyTop, monthlyTop }: { profile: any; uid: string | null; weeklyTop: LeaderboardEntry[]; monthlyTop: LeaderboardEntry[] }) {
+    console.log('[Leaderboard Self Stats]', {
+        currentStreak: profile?.currentStreak,
+        bestStreak: profile?.bestStreak,
+        watchedMinutes: profile?.watchedMinutes,
+    });
+
     // watched_seconds is the canonical source for total accumulated watch time
     const lifetimeSecs = Number(profile?.watchedSeconds ?? 0);
 
