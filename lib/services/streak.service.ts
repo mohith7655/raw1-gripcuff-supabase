@@ -112,6 +112,7 @@ export const StreakService = {
         const todayKey = getDateKey(tz);
         const yesterdayKey = getYesterdayKey(tz);
 
+        console.log('[Streak] fetching existing profile', uid);
         const { data: profile, error: profileError } = await supabase
             .from('users')
             .select('current_streak, best_streak, last_workout_date, weekly_activity, completed_workouts, total_live_sessions, watched_seconds')
@@ -119,6 +120,7 @@ export const StreakService = {
             .maybeSingle();
 
         if (profileError || !profile) {
+            console.error('[Streak] failed to fetch profile', profileError?.message);
             throw new Error(profileError?.message || 'User profile not found');
         }
 
@@ -182,6 +184,7 @@ export const StreakService = {
         }
 
         const newBestStreak = Math.max(bestStreak, newStreak);
+        console.log('[Streak] calculated streak', { currentStreak: newStreak, bestStreak: newBestStreak, todayKey });
         // Merge today into existing weekly_activity — never overwrite previous days
         let newWeeklyActivity = { ...weeklyActivityRaw, [todayKey]: true };
         newWeeklyActivity = this.cleanupWeeklyActivity(newWeeklyActivity, todayKey);
@@ -194,6 +197,7 @@ export const StreakService = {
         const creditsAwarded = type === 'liveSession' ? 15 : 10;
 
         // Upsert so that a missing row never causes a silent no-op
+        console.log('[Streak] writing to Supabase', { uid, newStreak, todayKey });
         const { error: updateError } = await supabase
             .from('users')
             .upsert({
@@ -211,8 +215,10 @@ export const StreakService = {
             }, { onConflict: 'id' });
 
         if (updateError) {
+            console.error('[Streak] Supabase update failed', updateError.message);
             throw new Error(updateError.message);
         }
+        console.log('[Streak] Supabase update success', { newStreak, todayKey });
 
         return {
             creditsAwarded,

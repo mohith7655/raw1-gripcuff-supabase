@@ -19,7 +19,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { User } from '../models/User';
 
-type Tab = 'self' | 'weekly' | 'monthly';
+type Tab = 'self' | 'weekly' | 'alltime';
 
 function formatWatchTime(seconds: number): string {
     const secs = Number(seconds) || 0;
@@ -127,20 +127,18 @@ function injectSelf(
     console.log('[Leaderboard] current user injected');
     const selfEntry: LeaderboardEntry = {
         uid: currentUid,
-        displayName: profile.fullName || profile.username || 'You',
+        displayName: profile.username || profile.fullName || 'You',
         photoURL: profile.profileImageUrl || '',
         score: Number(profile.watchedSeconds ?? 0),
-        currentStreak: profile.currentStreak ?? 0,
-        workouts: profile.completedWorkouts ?? 0,
-        liveSessions: profile.totalLiveSessions ?? 0,
-        workoutsCompleted: profile.completedWorkouts ?? 0,
+        currentStreak: Number(profile.currentStreak ?? 0),
+        bestStreak: Number(profile.bestStreak ?? 0),
+        workouts: Number(profile.completedWorkouts ?? 0),
+        liveSessions: Number(profile.totalLiveSessions ?? 0),
+        workoutsCompleted: Number(profile.completedWorkouts ?? 0),
     };
 
     const merged = [...entries, selfEntry];
-    merged.sort((a, b) => {
-        if (b.currentStreak !== a.currentStreak) return (b.currentStreak ?? 0) - (a.currentStreak ?? 0);
-        return (b.score ?? 0) - (a.score ?? 0);
-    });
+    merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
     return merged;
 }
 
@@ -182,8 +180,8 @@ export function LeaderboardScreen() {
             return () => unsub();
         }
 
-        if (selectedPeriod === 'monthly') {
-            const unsub = LeaderboardService.subscribeMonthlyLeaderboard(currentUid || '', (entries) => {
+        if (selectedPeriod === 'alltime') {
+            const unsub = LeaderboardService.subscribeAllTimeLeaderboard(currentUid || '', (entries) => {
                 setUsers(injectSelf(entries, currentUid, profileRef.current));
                 setLoading(false);
             }, (e) => { console.error(e); setLoading(false); });
@@ -199,7 +197,7 @@ export function LeaderboardScreen() {
     useEffect(() => {
         if (!currentUid) return;
         const u1 = LeaderboardService.subscribeWeeklyLeaderboard(currentUid, (entries) => setWeeklyTop(injectSelf(entries, currentUid, profileRef.current)), (e) => console.warn(e));
-        const u2 = LeaderboardService.subscribeMonthlyLeaderboard(currentUid, (entries) => setMonthlyTop(injectSelf(entries, currentUid, profileRef.current)), (e) => console.warn(e));
+        const u2 = LeaderboardService.subscribeAllTimeLeaderboard(currentUid, (entries) => setMonthlyTop(injectSelf(entries, currentUid, profileRef.current)), (e) => console.warn(e));
         return () => { u1(); u2(); };
     }, [currentUid]);
 
@@ -230,14 +228,14 @@ export function LeaderboardScreen() {
             </View>
 
             <View style={styles.tabs}>
-                {(['self', 'weekly', 'monthly'] as Tab[]).map((p) => (
+                {(['self', 'weekly', 'alltime'] as Tab[]).map((p) => (
                     <TouchableOpacity
                         key={p}
                         style={[styles.tab, selectedPeriod === p && styles.tabActive]}
                         onPress={() => setSelectedPeriod(p)}
                     >
                         <Text style={[styles.tabText, selectedPeriod === p && styles.tabTextActive]}>
-                            {p === 'self' ? 'Self Stats' : p === 'weekly' ? 'Weekly' : 'Monthly'}
+                            {p === 'self' ? 'Self Stats' : p === 'weekly' ? 'Weekly' : 'All Time'}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -253,8 +251,7 @@ export function LeaderboardScreen() {
             ) : (
                 (loading ? (
                     <ActivityIndicator color="#FF6B00" style={{ marginTop: 40 }} />
-                ) : users.length === 0 && !profile ? (
-                    // Only truly empty when there is no profile at all (unauthenticated edge case)
+                ) : users.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No users yet</Text>
                     </View>

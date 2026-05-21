@@ -355,12 +355,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
         // 80% threshold check — fire completion as soon as enough has been watched
         // (guards against users who skip/close before the video fully ends)
         const durMs = durationMsRef.current;
+        const pct = durMs > 0 ? maxWatchedMsRef.current / durMs : 0;
         if (
             !completionFiredRef.current &&
             durMs > 0 &&
-            maxWatchedMsRef.current / durMs >= 0.8
+            pct >= 0.8
         ) {
-            console.log('[Completion] 80% threshold reached — recording');
+            console.log('[Completion] trigger fired');
+            console.log('[Completion] pct watched', (pct * 100).toFixed(1) + '%');
             handleVideoEndRef.current().catch(() => {});
         }
 
@@ -414,7 +416,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
             completionAlreadyFired: completionFiredRef.current,
             elapsedSec: elapsedSecondsRef.current,
         });
-        if (!uid || !videoId) return;
+        if (!uid || !videoId) {
+            console.warn('[Completion] handleVideoEnd: missing uid or videoId', { uid, videoId });
+            return;
+        }
         if (completionFiredRef.current) {
             console.log('[Completion] Already recorded, skipping duplicate call');
             return;
@@ -441,6 +446,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     ? 'gripcuff'
                     : 'workout_program';
 
+            console.log('[Completion] calling markWorkoutComplete', { uid, watchedMinutes, sourceType, videoId });
             const result = await recordUniversalWorkoutCompletion(uid, {
                 workoutId: requestedVideoId ?? videoId,
                 workoutTitle: title,
@@ -614,10 +620,27 @@ function VideoPlayerScreen({ route, navigation }: any) {
         const handler = (e: MessageEvent) => {
             try {
                 const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-                const state = data?.info?.playerState ?? data?.info;
+                const info = data?.info;
+                if (!info || typeof info !== 'object') return;
+
+                // Track position and duration from YouTube infoDelivery events
+                if (typeof info.currentTime === 'number' && info.currentTime > 0) {
+                    const posMs = info.currentTime * 1000;
+                    elapsedSecondsRef.current = Math.floor(info.currentTime);
+                    if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
+                }
+                if (typeof info.duration === 'number' && info.duration > 0 && durationMsRef.current === 0) {
+                    durationMsRef.current = info.duration * 1000;
+                    console.log('[Completion] YouTube duration received:', info.duration, 's');
+                }
+
+                const state = info?.playerState;
                 if (typeof state === 'number') {
                     setLightsOut(state === 1 || state === 3);
                     if (state === 0) {
+                        // Natural video end — mark elapsed as sufficient so the minimum check passes
+                        if (elapsedSecondsRef.current < 5) elapsedSecondsRef.current = 5;
+                        console.log('[Completion] YouTube ended, elapsed:', elapsedSecondsRef.current, 's');
                         handleVideoEndRef.current();
                         triggerCompletionCheck();
                     }

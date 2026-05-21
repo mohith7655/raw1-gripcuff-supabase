@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { ChevronRight, Zap } from 'lucide-react-native';
 import { StreakData } from '../services/streak.service';
-import { LeaderboardEntry } from '../services/leaderboard.service';
+import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
 
 const ACCENT = '#FF6B00';
@@ -298,16 +298,33 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setEntries([]);
-    setLoading(false);
-  }, [period]);
+    setLoading(true);
+
+    const subscribe = period === 'alltime'
+      ? LeaderboardService.subscribeAllTimeLeaderboard
+      : LeaderboardService.subscribeWeeklyLeaderboard;
+
+    const unsub = subscribe(
+      currentUserId || '',
+      (data) => {
+        setEntries(data);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[LeaderboardTab]', period, err);
+        setLoading(false);
+      }
+    );
+
+    return unsub;
+  }, [period, currentUserId]);
 
   if (loading) {
     return <ActivityIndicator color={ACCENT} size="small" style={{ marginVertical: 20 }} />;
   }
 
   if (entries.length === 0) {
-    return <Text style={s.emptyText}>No entries yet. Be the first!</Text>;
+    return <Text style={s.emptyText}>No users yet</Text>;
   }
 
   return (
