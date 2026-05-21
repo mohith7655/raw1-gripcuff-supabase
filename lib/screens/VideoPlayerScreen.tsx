@@ -275,6 +275,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const completionFiredRef = useRef(false);
     const durationMsRef = useRef(0);          // populated by onDurationChange
     const handleVideoEndRef = useRef<() => Promise<void>>(async () => {});
+    // Independent completion timer refs — avoids stale closures in setInterval
+    const isVideoPlayingRef = useRef(false);  // true once video has started playing
+    const tickElapsedRef = useRef(0);         // wall-clock seconds counted while playing
+    // Updated every render so the timer interval always reads current route/profile values
+    const completionParamsRef = useRef<{
+        uid: string | null;
+        workoutId: string;
+        workoutTitle: string;
+        isChallengeVideo: boolean;
+        category: string | undefined;
+        timezone: string | undefined;
+    } | null>(null);
     const isChallengeVideo = route?.params?.isChallengeVideo ?? false;
     const [comments, setComments] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
@@ -292,6 +304,77 @@ function VideoPlayerScreen({ route, navigation }: any) {
             if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
         };
     }, []);
+
+    // ── Independent 1-second completion timer ────────────────────────────────
+    // Reads only refs — no stale closure risk. Starts counting once video is
+    // playing (isVideoPlayingRef = true). At 30 s fires completion directly,
+    // bypassing handleVideoEnd so there is no intermediate callback chain.
+    useEffect(() => {
+        console.log('[Timer] tick timer installed');
+        const id = setInterval(() => {
+            console.log('[Playback Tick]', {
+                elapsedSeconds: tickElapsedRef.current,
+                isPlaying: isVideoPlayingRef.current,
+                completionFired: completionFiredRef.current,
+            });
+
+            if (!isVideoPlayingRef.current) return;
+
+            tickElapsedRef.current += 1;
+            const newElapsed = tickElapsedRef.current;
+            // Keep elapsedSecondsRef in sync for anything else that reads it
+            if (newElapsed > elapsedSecondsRef.current) elapsedSecondsRef.current = newElapsed;
+
+            console.log('[Elapsed]', newElapsed);
+
+            if (completionFiredRef.current) return;
+            if (newElapsed < 30) return;
+
+            // 30 seconds of actual watch time — fire completion
+            completionFiredRef.current = true;
+            const params = completionParamsRef.current;
+            if (!params?.uid) {
+                console.error('[Completion Triggered] no uid available, resetting flag');
+                completionFiredRef.current = false;
+                return;
+            }
+
+            console.log('[Completion Triggered]', { currentSeconds: newElapsed, uid: params.uid });
+
+            const srcType: WorkoutSourceType = params.isChallengeVideo
+                ? 'daily_challenge'
+                : params.category === 'GripCuff'
+                    ? 'gripcuff'
+                    : 'workout_program';
+
+            const watchedMins = Math.max(1, Math.round(newElapsed / 60));
+
+            recordUniversalWorkoutCompletion(params.uid, {
+                workoutId: params.workoutId,
+                workoutTitle: params.workoutTitle,
+                sourceType: srcType,
+                category: params.category,
+                watchMinutes: watchedMins,
+                user: params.timezone ? { timezone: params.timezone } : undefined,
+            })
+            .then(result => {
+                console.log('[Completion Success]', {
+                    newStreak: result.newStreak,
+                    counted: result.counted,
+                    todayKey: result.todayKey,
+                });
+            })
+            .catch(e => {
+                console.error('[Completion Failed]', e?.message ?? e);
+                completionFiredRef.current = false;
+            });
+        }, 1000);
+
+        return () => {
+            console.log('[Timer] tick timer cleared');
+            clearInterval(id);
+        };
+    }, []); // mount/unmount only — all values read from refs
 
     // Handle workout start modal from notification params
     const notificationParams = useVideoPlayerNotificationParams();
@@ -352,22 +435,16 @@ function VideoPlayerScreen({ route, navigation }: any) {
         if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
         elapsedSecondsRef.current = Math.floor(posMs / 1000);
 
-        // 30-second threshold — fires completion once 30 s of video has been watched.
-        // This is the primary trigger for native (non-YouTube) videos.
-        const elapsedNow = elapsedSecondsRef.current;
-        if (!completionFiredRef.current && elapsedNow >= 30) {
-            console.log('[Completion Triggered] 30s threshold reached (native), elapsed:', elapsedNow);
-            handleVideoEndRef.current().catch(() => {});
+        // Signal to the independent tick timer that video is actively playing
+        if (posMs > 0 && !isVideoPlayingRef.current) {
+            console.log('[Timer] video playing — position update received, elapsed will start counting');
+            isVideoPlayingRef.current = true;
         }
 
-        // 80% threshold — secondary trigger for longer videos (still fires if 30s hasn't hit yet)
+        // 80% threshold — fires via handleVideoEnd (which has dedup guard)
         const durMs = durationMsRef.current;
         const pct = durMs > 0 ? maxWatchedMsRef.current / durMs : 0;
-        if (
-            !completionFiredRef.current &&
-            durMs > 0 &&
-            pct >= 0.8
-        ) {
+        if (!completionFiredRef.current && durMs > 0 && pct >= 0.8) {
             console.log('[Completion Triggered] 80% threshold reached:', (pct * 100).toFixed(1) + '%');
             handleVideoEndRef.current().catch(() => {});
         }
@@ -572,6 +649,17 @@ function VideoPlayerScreen({ route, navigation }: any) {
         .replace(/[^a-zA-Z0-9-_]/g, '-')
         .toLowerCase();
 
+    // Keep completionParamsRef current every render so the tick timer ([] deps)
+    // always reads up-to-date uid, workoutId, title, etc. without stale closure.
+    completionParamsRef.current = {
+        uid: supabaseUserId ?? null,
+        workoutId: requestedVideoId ?? videoId,
+        workoutTitle: title,
+        isChallengeVideo,
+        category: (sourceVideo as any)?.category as string | undefined,
+        timezone: (profile as any)?.timezone as string | undefined,
+    };
+
     // Live viewer presence via Firestore — only active for pre-made workout videos.
     // Pass null for videoId/userId when not applicable to skip writes but stay hook-safe.
     const viewerDisplayName =
@@ -629,17 +717,11 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 const info = data?.info;
                 if (!info || typeof info !== 'object') return;
 
-                // Track position and duration from YouTube infoDelivery events
+                // Track position from YouTube infoDelivery events (when available)
                 if (typeof info.currentTime === 'number' && info.currentTime > 0) {
                     const posMs = info.currentTime * 1000;
                     elapsedSecondsRef.current = Math.floor(info.currentTime);
                     if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
-
-                    // 30-second threshold for YouTube videos
-                    if (!completionFiredRef.current && elapsedSecondsRef.current >= 30) {
-                        console.log('[Completion Triggered] 30s threshold reached (YouTube), elapsed:', elapsedSecondsRef.current);
-                        handleVideoEndRef.current().catch(() => {});
-                    }
                 }
                 if (typeof info.duration === 'number' && info.duration > 0 && durationMsRef.current === 0) {
                     durationMsRef.current = info.duration * 1000;
@@ -649,8 +731,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 const state = info?.playerState;
                 if (typeof state === 'number') {
                     setLightsOut(state === 1 || state === 3);
-                    if (state === 0) {
-                        // Natural video end — mark elapsed as sufficient so the minimum check passes
+                    if (state === 1) {
+                        // Playing — signal tick timer to start counting
+                        if (!isVideoPlayingRef.current) {
+                            console.log('[Timer] video playing — YouTube playerState=1, elapsed will start counting');
+                            isVideoPlayingRef.current = true;
+                        }
+                    } else if (state === 2) {
+                        // Paused — stop counting wall-clock seconds
+                        isVideoPlayingRef.current = false;
+                    } else if (state === 0) {
+                        // Natural video end
+                        isVideoPlayingRef.current = false;
                         if (elapsedSecondsRef.current < 5) elapsedSecondsRef.current = 5;
                         console.log('[Completion] YouTube ended, elapsed:', elapsedSecondsRef.current, 's');
                         handleVideoEndRef.current();
