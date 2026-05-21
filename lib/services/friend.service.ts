@@ -121,7 +121,6 @@ export class FriendService {
             type: 'friend_request',
             title: 'Friend Request',
             body: 'Someone sent you a friend request',
-            requestId: '',
         }).catch((e) => console.warn('[Friends] notification write failed:', e));
     }
 

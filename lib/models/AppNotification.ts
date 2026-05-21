@@ -23,6 +23,5 @@ export interface AppNotification {
   read: boolean;
   chatId?: string;
   messageId?: string;
-  requestId?: string;
   sessionId?: string;
 }

@@ -15,7 +15,6 @@ export type NotificationInsertPayload = {
   body: string;
   chatId?: string;
   messageId?: string;
-  requestId?: string;
   sessionId?: string;
 };
 
@@ -32,7 +31,6 @@ function buildDedupKey(payload: NotificationInsertPayload): string {
   const bucket = Math.floor(Date.now() / 60_000);
   const anchor =
     payload.sessionId ??
-    payload.requestId ??
     payload.messageId ??
     payload.chatId ??
     payload.fromUid ??
@@ -55,7 +53,6 @@ function rowToNotification(row: Record<string, any>): AppNotification {
     read: !!row.read,
     chatId: row.chat_id ?? undefined,
     messageId: row.message_id ?? undefined,
-    requestId: row.request_id ?? undefined,
     sessionId: row.session_id ?? undefined,
   };
 }
@@ -85,7 +82,6 @@ export class NotificationService {
           read: false,
           chat_id: payload.chatId ?? null,
           message_id: payload.messageId ?? null,
-          request_id: payload.requestId ?? null,
           session_id: payload.sessionId ?? null,
           dedup_key: dedupKey,
         },
