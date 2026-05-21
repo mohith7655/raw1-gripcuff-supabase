@@ -38,7 +38,7 @@ async function _recalculateStreak(uid: string): Promise<void> {
 
     const { data, error } = await supabase
         .from('user_daily_activity')
-        .select('activity_date')
+        .select('activity_date, watched_minutes, completed_workouts')
         .eq('user_id', uid)
         .order('activity_date', { ascending: false })
         .limit(400); // ~13 months
@@ -48,23 +48,28 @@ async function _recalculateStreak(uid: string): Promise<void> {
         return;
     }
 
-    // Every row counts — streak = consecutive days the app was opened.
-    // No watched_minutes threshold: ensureTodayActivity creates the row on boot.
-    const rows = data ?? [];
+    const todayKey = getLocalDateKey();
 
-    if (rows.length === 0) {
-        console.log('[StreakCalc] skipping — no rows in user_daily_activity');
+    // Today always counts (app open = active day).
+    // Past days require real activity: watched_minutes > 0 OR completed_workouts > 0.
+    const activeRows = (data ?? []).filter(r =>
+        r.activity_date === todayKey ||
+        Number(r.watched_minutes || 0) > 0 ||
+        Number(r.completed_workouts || 0) > 0
+    );
+
+    if (activeRows.length === 0) {
+        console.log('[StreakCalc] skipping — no active rows in user_daily_activity');
         return;
     }
 
     const activeDates = new Set<string>(
-        rows.map(r => {
+        activeRows.map(r => {
             console.log('[ActivityRow]', r.activity_date);
             return r.activity_date as string;
         })
     );
 
-    const todayKey     = getLocalDateKey();
     const yesterdayKey = shiftDay(todayKey, -1);
 
     // Current streak: count consecutive days backwards from today or yesterday
