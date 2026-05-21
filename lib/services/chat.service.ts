@@ -37,7 +37,6 @@ export class ChatService {
             toUid: recipientId,
             fromUid: senderId,
             fromName: senderId,
-            avatar: null,
             type: 'chat_message',
             title: senderId,
             body: trimmed || 'You have a new message',

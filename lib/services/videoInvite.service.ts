@@ -50,7 +50,6 @@ export async function sendVideoInvite(payload: VideoInvitePayload): Promise<stri
             toUid: payload.toUid,
             fromUid: payload.fromUid,
             fromName: payload.fromName,
-            avatar: payload.fromAvatarUrl,
             type: 'video_invite',
             title: `${payload.fromName} invited you`,
             body: fallbackBody,

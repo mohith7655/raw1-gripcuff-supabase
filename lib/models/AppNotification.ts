@@ -19,7 +19,6 @@ export interface AppNotification {
   toUid: string;
   fromUid: string;
   fromName: string;
-  avatar?: string;
   createdAt: Date;
   read: boolean;
   chatId?: string;

@@ -118,7 +118,6 @@ export class FriendService {
             toUid,
             fromUid,
             fromName: fromUid,
-            avatar: null,
             type: 'friend_request',
             title: 'Friend Request',
             body: 'Someone sent you a friend request',

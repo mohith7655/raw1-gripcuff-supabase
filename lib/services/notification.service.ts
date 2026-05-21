@@ -10,7 +10,6 @@ export type NotificationInsertPayload = {
   toUid: string;
   fromUid?: string;
   fromName?: string;
-  avatar?: string | null;
   type: string;
   title: string;
   body: string;
@@ -52,7 +51,6 @@ function rowToNotification(row: Record<string, any>): AppNotification {
     toUid: row.to_uid ?? '',
     fromUid: row.from_uid ?? '',
     fromName: row.from_name ?? 'Someone',
-    avatar: row.avatar ?? undefined,
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     read: !!row.read,
     chatId: row.chat_id ?? undefined,
@@ -81,7 +79,6 @@ export class NotificationService {
           to_uid: payload.toUid,
           from_uid: payload.fromUid ?? '',
           from_name: payload.fromName ?? 'Someone',
-          avatar: payload.avatar ?? null,
           type: payload.type,
           title: payload.title,
           body: payload.body,
