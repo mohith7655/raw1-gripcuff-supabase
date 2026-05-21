@@ -79,7 +79,6 @@ export class UserService {
       username: profile.username || null,
       full_name: profile.fullName || null,
       avatar_url: profile.profileImageUrl || null,
-      streak: 0,
       watched_minutes: 0,
       current_streak: 0,
       best_streak: 0,

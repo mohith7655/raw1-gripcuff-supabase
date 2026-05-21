@@ -196,12 +196,10 @@ export const StreakService = {
         const newWatchedSeconds = watchedSeconds + minutes * 60;
         const creditsAwarded = type === 'liveSession' ? 15 : 10;
 
-        // Upsert so that a missing row never causes a silent no-op
         console.log('[Streak] writing to Supabase', { uid, newStreak, todayKey });
-        const { error: updateError } = await supabase
+        const { error: updateError, count: updateCount } = await supabase
             .from('users')
-            .upsert({
-                id: uid,
+            .update({
                 last_workout_date: todayKey,
                 current_streak: newStreak,
                 best_streak: newBestStreak,
@@ -210,15 +208,19 @@ export const StreakService = {
                 total_live_sessions: newTotalLiveSessions,
                 watched_seconds: newWatchedSeconds,
                 watched_minutes: Math.floor(newWatchedSeconds / 60),
-                streak: newStreak,
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
+            }, { count: 'exact' })
+            .eq('id', uid);
 
         if (updateError) {
             console.error('[Streak] Supabase update failed', updateError.message);
             throw new Error(updateError.message);
         }
-        console.log('[Streak] Supabase update success', { newStreak, todayKey });
+        if (updateCount === 0) {
+            console.error('[Streak] Supabase update matched 0 rows — uid mismatch?', uid);
+            throw new Error('Streak update matched 0 rows — user not found');
+        }
+        console.log('[Streak] Supabase update success', { newStreak, todayKey, rowsUpdated: updateCount });
 
         return {
             creditsAwarded,
@@ -358,12 +360,11 @@ export const StreakService = {
             console.log('[Streak] streak reset due to inactivity');
             await supabase
                 .from('users')
-                .upsert({
-                    id: uid,
+                .update({
                     current_streak: 0,
-                    streak: 0,
                     updated_at: new Date().toISOString()
-                }, { onConflict: 'id' });
+                })
+                .eq('id', uid);
             return { wasReset: true };
         }
 
