@@ -167,6 +167,16 @@ export const StreakService = {
             console.error('[Streak] Failed to insert workout_activity:', activityError.message);
         }
 
+        // Sync to user_daily_activity so recalculateUserStreak has real data
+        const { error: dailyErr } = await supabase.rpc('upsert_daily_watch_minutes', {
+            p_user_id: uid,
+            p_date:    todayKey,
+            p_minutes: minutes,
+        });
+        if (dailyErr) {
+            console.warn('[Streak] upsert_daily_watch_minutes failed:', dailyErr.message);
+        }
+
         // CASE 1-4: determine new streak
         let newStreak: number;
         if (!lastWorkoutDate) {

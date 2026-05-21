@@ -47,6 +47,7 @@ let _appStateSub: any = null;
 let _visibilityHandler: (() => void) | null = null;
 let _listenersAttached = false;
 let _onFlush: ((flushedSeconds: number) => void) | null = null;
+let _onStreakReady: ((uid: string) => void) | null = null;
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -80,7 +81,12 @@ async function _flush(isNewSession = false) {
             if (countSession) _sessionCountedForCurrentSession = true;
             console.log(`[WatchTracking] flushed ${seconds}s OK`);
             _onFlush?.(seconds); // optimistic UI patch
-            DailyActivityService.incrementWatchMinutes(uid, seconds / 60).catch(() => {});
+            // Save minutes first, then recompute streak from real data, then notify for profile refresh.
+            console.log(`[WatchTracking] calling incrementWatchMinutes uid=${uid} minutes=${(seconds / 60).toFixed(4)}`);
+            DailyActivityService.incrementWatchMinutes(uid, seconds / 60)
+                .then(() => DailyActivityService.recalculateUserStreak(uid))
+                .then(() => { _onStreakReady?.(uid); })
+                .catch(() => {});
         }
     } catch (e: any) {
         _pendingSeconds += seconds;
@@ -269,6 +275,15 @@ export const WatchTrackingService = {
      */
     setOnFlush(fn: ((flushedSeconds: number) => void) | null): void {
         _onFlush = fn;
+    },
+
+    /**
+     * Register a callback invoked after streak has been recalculated and written
+     * to the users table. UserContext uses this to trigger an explicit profile refetch.
+     * Pass null to unregister.
+     */
+    setOnStreakReady(fn: ((uid: string) => void) | null): void {
+        _onStreakReady = fn;
     },
 
     /** Human-readable duration: 65s → "1m 5s", 3661s → "1h 1m" */

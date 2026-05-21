@@ -42,6 +42,48 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   // Debounce for realtime events (prevents processing bursts from a single DB write)
   const lastRealtimeRef = useRef(0);
 
+  // Stable background refresh — never shows the loading spinner (spinner is for initial load only).
+  // Guards: concurrent-call ref + 3-second cooldown + stale-fetch discard.
+  // Declared before the boot useEffect so it can be referenced in the dependency array.
+  const fetchProfile = useCallback(async (uid: string) => {
+    const now = Date.now();
+    if (fetchingRef.current) {
+      console.log('[UserContext] fetchProfile skipped — already fetching');
+      return;
+    }
+    if (now - lastFetchRef.current < 3000) {
+      console.log('[UserContext] fetchProfile skipped — cooldown');
+      return;
+    }
+    fetchingRef.current = true;
+    const startedAt = Date.now();
+    lastFetchStartRef.current = startedAt;
+    lastFetchRef.current = startedAt;
+    try {
+      setError(null);
+      const data = await UserService.getProfile(uid);
+      if (startedAt >= lastFetchStartRef.current) {
+        setProfile({
+          ...data,
+          watchedSeconds: Number(data.watchedSeconds || 0),
+          todayWatchSeconds: Number(data.todayWatchSeconds || 0),
+        });
+        console.log('[Profile Read]', data.currentStreak ?? 0);
+      } else {
+        console.log('[Profile] stale fetch ignored');
+      }
+    } catch (err) {
+      const errorMessage = (err as Error).message;
+      // "User profile not found" is transient during bootstrap — don't surface as UI error
+      if (errorMessage !== 'User profile not found') {
+        setError(errorMessage);
+      }
+      console.warn('[UserContext] fetchProfile failed:', errorMessage);
+    } finally {
+      fetchingRef.current = false;
+    }
+  }, []); // no deps — uid is passed as argument, refs are stable
+
   useEffect(() => {
     if (!supabaseUserId) {
       setProfile(null);
@@ -64,9 +106,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           });
           lastFetchRef.current = Date.now();
         }
-        // Ensure today's activity row exists then recompute streak from source-of-truth table.
+        // Ensure today's activity row exists, recompute streak, then re-fetch profile
+        // so the UI reflects the correct streak immediately after boot.
         DailyActivityService.ensureTodayActivity(uid)
           .then(() => DailyActivityService.recalculateUserStreak(uid))
+          .then(() => {
+            lastFetchRef.current = 0; // bypass cooldown — boot sequence needs fresh data
+            return fetchProfile(uid);
+          })
           .catch(() => {});
       })
       .catch((err) => {
@@ -120,51 +167,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       )
       .subscribe();
 
+    // Also listen to user_daily_activity so streak updates reflect immediately.
+    const activityChannel = supabase
+      .channel(`user-daily-activity-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_daily_activity', filter: `user_id=eq.${uid}` },
+        () => {
+          if (cancelled) return;
+          console.log('[Profile] user_daily_activity changed — scheduling refresh');
+          lastFetchRef.current = 0;
+          fetchProfile(uid).catch(() => {});
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
+      supabase.removeChannel(activityChannel);
     };
-  }, [supabaseUserId]);
-
-  // Stable background refresh — never shows the loading spinner (spinner is for initial load only).
-  // Guards: concurrent-call ref + 3-second cooldown + stale-fetch discard.
-  const fetchProfile = useCallback(async (uid: string) => {
-    const now = Date.now();
-    if (fetchingRef.current) {
-      console.log('[UserContext] fetchProfile skipped — already fetching');
-      return;
-    }
-    if (now - lastFetchRef.current < 3000) {
-      console.log('[UserContext] fetchProfile skipped — cooldown');
-      return;
-    }
-    fetchingRef.current = true;
-    const startedAt = Date.now();
-    lastFetchStartRef.current = startedAt;
-    lastFetchRef.current = startedAt;
-    try {
-      setError(null);
-      const data = await UserService.getProfile(uid);
-      if (startedAt >= lastFetchStartRef.current) {
-        setProfile({
-          ...data,
-          watchedSeconds: Number(data.watchedSeconds || 0),
-          todayWatchSeconds: Number(data.todayWatchSeconds || 0),
-        });
-      } else {
-        console.log('[Profile] stale fetch ignored');
-      }
-    } catch (err) {
-      const errorMessage = (err as Error).message;
-      // "User profile not found" is transient during bootstrap — don't surface as UI error
-      if (errorMessage !== 'User profile not found') {
-        setError(errorMessage);
-      }
-      console.warn('[UserContext] fetchProfile failed:', errorMessage);
-    } finally {
-      fetchingRef.current = false;
-    }
-  }, []); // no deps — uid is passed as argument, refs are stable
+  }, [supabaseUserId, fetchProfile]);
 
   // Optimistic patch — called by WatchTrackingService after a successful flush
   // so the UI updates instantly. Always creates a new object reference (immutable update)
@@ -190,6 +213,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     WatchTrackingService.setOnFlush(patchWatchTime);
     return () => { WatchTrackingService.setOnFlush(null); };
   }, [patchWatchTime]);
+
+  // After streak is recalculated and written to DB, explicitly refetch profile so
+  // Profile and Leaderboard see the updated current_streak / best_streak immediately.
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    const uid = supabaseUserId;
+    WatchTrackingService.setOnStreakReady((readyUid) => {
+      if (readyUid !== uid) return;
+      fetchProfile(uid).then(() => {
+        console.log('[Profile Read]', uid);
+      }).catch(() => {});
+    });
+    return () => { WatchTrackingService.setOnStreakReady(null); };
+  }, [supabaseUserId, fetchProfile]);
 
   const updateProfile = useCallback(async (uid: string, data: Partial<User>) => {
     try {

@@ -71,10 +71,10 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   dateKey: string;
 }) {
   const rawMinutes = Number(minutes) || 0;
-  // A circle is active ONLY when weekly_activity[dateKey] === true (set by markWorkoutComplete).
-  // Watch time (rawMinutes) drives the minutes label inside the circle but never lights it up —
-  // that prevented false-positive circles from partial watch sessions.
-  const isActive = !isFuture && active;
+  // A circle is active when the user has any watch time on that day.
+  // Uses the already-coerced minutes (from WatchTrackingService optimistic state)
+  // rather than the weekly_activity flag (which only updates via markWorkoutComplete).
+  const isActive = !isFuture && rawMinutes > 0;
   const minLabel = formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');
