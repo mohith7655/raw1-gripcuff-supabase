@@ -56,6 +56,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
 import { TodaysChallengeCard } from '../components/TodaysChallengeCard';
 import { StreakService, StreakData } from '../services/streak.service';
+import { DailyActivityService } from '../services/dailyActivity.service';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
 import { msUntilMidnight, getDateKey, buildWeekDates, getLastNDayKeys } from '../utils/streakDate';
@@ -354,6 +355,7 @@ const HomeScreenInner = () => {
       .catch(() => {})
       .finally(() => { isRefreshingRef.current = false; });
     StreakService.checkAndBreakStreak(uid).catch(() => {});
+    DailyActivityService.recalculateUserStreak(uid).catch(() => {});
   }, [fetchProfile]); // fetchProfile is stable (useCallback with no deps)
 
   // ── ONE useFocusEffect — fires when tab is focused ───────────────────────

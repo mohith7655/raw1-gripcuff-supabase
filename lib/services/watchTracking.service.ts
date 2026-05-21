@@ -25,6 +25,7 @@
 
 import { Platform, AppState, AppStateStatus } from 'react-native';
 import { supabase } from '../core/config/supabase';
+import { DailyActivityService } from './dailyActivity.service';
 
 const TICK_MS  = 1_000;   // local increment interval
 const FLUSH_MS = 15_000;  // Supabase write interval
@@ -79,6 +80,7 @@ async function _flush(isNewSession = false) {
             if (countSession) _sessionCountedForCurrentSession = true;
             console.log(`[WatchTracking] flushed ${seconds}s OK`);
             _onFlush?.(seconds); // optimistic UI patch
+            DailyActivityService.incrementWatchMinutes(uid, seconds / 60).catch(() => {});
         }
     } catch (e: any) {
         _pendingSeconds += seconds;

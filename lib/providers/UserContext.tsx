@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from '../core/config/supabase';
 import { UserService } from '../services/user.service';
 import { WatchTrackingService } from '../services/watchTracking.service';
+import { DailyActivityService } from '../services/dailyActivity.service';
 import { User } from '../models/User';
 import { useAuth } from './AuthContext';
 
@@ -63,6 +64,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           });
           lastFetchRef.current = Date.now();
         }
+        // Ensure today's activity row exists then recompute streak from source-of-truth table.
+        DailyActivityService.ensureTodayActivity(uid)
+          .then(() => DailyActivityService.recalculateUserStreak(uid))
+          .catch(() => {});
       })
       .catch((err) => {
         // Bootstrap is handled in AuthContext — a missing row here means bootstrap
