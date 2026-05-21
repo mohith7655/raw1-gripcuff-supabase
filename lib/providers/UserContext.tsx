@@ -108,8 +108,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
         // Ensure today's activity row exists, recompute streak, then re-fetch profile
         // so the UI reflects the correct streak immediately after boot.
+        // ensureTodayActivity creates today's row AND recalculates streak internally.
         DailyActivityService.ensureTodayActivity(uid)
-          .then(() => DailyActivityService.recalculateUserStreak(uid))
           .then(() => {
             lastFetchRef.current = 0; // bypass cooldown — boot sequence needs fresh data
             return fetchProfile(uid);
