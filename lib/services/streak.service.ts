@@ -196,6 +196,7 @@ export const StreakService = {
         const newWatchedSeconds = watchedSeconds + minutes * 60;
         const creditsAwarded = type === 'liveSession' ? 15 : 10;
 
+        console.log('[Streak Save] writing', { uid, newStreak, todayKey, newBestStreak, newCompletedWorkouts });
         console.log('[Streak] writing to Supabase', { uid, newStreak, todayKey });
         const { error: updateError, count: updateCount } = await supabase
             .from('users')
@@ -220,6 +221,7 @@ export const StreakService = {
             console.error('[Streak] Supabase update matched 0 rows — uid mismatch?', uid);
             throw new Error('Streak update matched 0 rows — user not found');
         }
+        console.log('[Streak Save] success', { newStreak, todayKey, rowsUpdated: updateCount });
         console.log('[Streak] Supabase update success', { newStreak, todayKey, rowsUpdated: updateCount });
 
         return {

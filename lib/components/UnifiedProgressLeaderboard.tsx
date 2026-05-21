@@ -70,11 +70,11 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   minutes: number;
   dateKey: string;
 }) {
-  // Derive active from raw numeric minutes — never from formatted strings or the
-  // weeklyActivity boolean alone (that flag is only set on workout completion,
-  // not on partial watch-time, so decimal values like 1.3m would render gray).
   const rawMinutes = Number(minutes) || 0;
-  const isActive = !isFuture && (active || rawMinutes > 0);
+  // A circle is active ONLY when weekly_activity[dateKey] === true (set by markWorkoutComplete).
+  // Watch time (rawMinutes) drives the minutes label inside the circle but never lights it up —
+  // that prevented false-positive circles from partial watch sessions.
+  const isActive = !isFuture && active;
   const minLabel = formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');

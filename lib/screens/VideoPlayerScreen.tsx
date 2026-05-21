@@ -352,8 +352,15 @@ function VideoPlayerScreen({ route, navigation }: any) {
         if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
         elapsedSecondsRef.current = Math.floor(posMs / 1000);
 
-        // 80% threshold check — fire completion as soon as enough has been watched
-        // (guards against users who skip/close before the video fully ends)
+        // 30-second threshold — fires completion once 30 s of video has been watched.
+        // This is the primary trigger for native (non-YouTube) videos.
+        const elapsedNow = elapsedSecondsRef.current;
+        if (!completionFiredRef.current && elapsedNow >= 30) {
+            console.log('[Completion Triggered] 30s threshold reached (native), elapsed:', elapsedNow);
+            handleVideoEndRef.current().catch(() => {});
+        }
+
+        // 80% threshold — secondary trigger for longer videos (still fires if 30s hasn't hit yet)
         const durMs = durationMsRef.current;
         const pct = durMs > 0 ? maxWatchedMsRef.current / durMs : 0;
         if (
@@ -361,8 +368,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
             durMs > 0 &&
             pct >= 0.8
         ) {
-            console.log('[Completion] trigger fired');
-            console.log('[Completion] pct watched', (pct * 100).toFixed(1) + '%');
+            console.log('[Completion Triggered] 80% threshold reached:', (pct * 100).toFixed(1) + '%');
             handleVideoEndRef.current().catch(() => {});
         }
 
@@ -628,6 +634,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     const posMs = info.currentTime * 1000;
                     elapsedSecondsRef.current = Math.floor(info.currentTime);
                     if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
+
+                    // 30-second threshold for YouTube videos
+                    if (!completionFiredRef.current && elapsedSecondsRef.current >= 30) {
+                        console.log('[Completion Triggered] 30s threshold reached (YouTube), elapsed:', elapsedSecondsRef.current);
+                        handleVideoEndRef.current().catch(() => {});
+                    }
                 }
                 if (typeof info.duration === 'number' && info.duration > 0 && durationMsRef.current === 0) {
                     durationMsRef.current = info.duration * 1000;

@@ -49,6 +49,8 @@ export async function recordUniversalWorkoutCompletion(
         user,
     } = options;
 
+    console.log('[WorkoutCompletion] started', { uid, workoutId: options.workoutId, sourceType: options.sourceType });
+
     const timezone = getResolvedTimezone(user);
     const todayKey = getDateKey(timezone);
     const activityType: 'workout' | 'liveSession' =
@@ -57,6 +59,7 @@ export async function recordUniversalWorkoutCompletion(
             : 'workout';
 
     console.log('[WorkoutCompletion] recording', { sourceType, workoutId, todayKey, timezone, watchMinutes });
+    console.log('[WorkoutCompletion] calling markWorkoutComplete', { uid, activityType });
 
     const result = await StreakService.markWorkoutComplete(
         uid,
