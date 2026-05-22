@@ -18,7 +18,6 @@ function rowToMessage(row: any): ChatMessage {
 }
 
 export class ChatService {
-    // No separate conversations table — the chat_id itself is the conversation.
     static async getOrCreateConversation(
         uid1: string,
         uid2: string
@@ -35,66 +34,91 @@ export class ChatService {
     }
 
     // Insert message into messages table, then notify recipient.
+    // senderName is used for the notification's fromName field.
     static async sendMessage(
         chatId: string,
         senderId: string,
         recipientId: string,
-        text: string
-    ): Promise<void> {
+        text: string,
+        senderName?: string,
+    ): Promise<ChatMessage | null> {
         const trimmed = text.trim();
-        if (!trimmed) return;
+        if (!trimmed) return null;
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('messages')
-            .insert({ chat_id: chatId, sender_id: senderId, text: trimmed });
+            .insert({ chat_id: chatId, sender_id: senderId, text: trimmed })
+            .select('*')
+            .single();
 
         if (error) {
             console.error('[ChatService] insert failed:', error.message);
             throw new Error(error.message);
         }
 
-        // Notify recipient (best-effort — don't block or throw on failure)
+        console.log('[ChatService] inserted message', { id: data.id, chatId, senderId });
+
+        // Notify recipient (best-effort)
         NotificationService.insert({
             toUid: recipientId,
             fromUid: senderId,
-            fromName: 'Chat message',
+            fromName: senderName || 'Someone',
             type: 'chat_message',
             title: 'New message',
             body: trimmed,
             chatId,
         }).catch((e) => console.warn('[ChatService] notification write failed:', e));
+
+        return rowToMessage(data);
     }
 
     // Fetch past messages then subscribe to new INSERTs.
     // Calls callback immediately with the historical batch, then again on each
-    // new message. Returns an unsubscribe function.
+    // new message. Deduplicates by ID so optimistic inserts don't double-render.
+    // Returns an unsubscribe function.
     static subscribeToMessages(
         chatId: string,
         callback: (messages: ChatMessage[]) => void
     ): () => void {
         let cancelled = false;
         let currentMessages: ChatMessage[] = [];
+        const seenIds = new Set<string>();
 
-        // Initial fetch — newest 100 messages, ascending so oldest is at top
+        const addMessages = (msgs: ChatMessage[]) => {
+            let changed = false;
+            for (const m of msgs) {
+                if (!seenIds.has(m.id)) {
+                    seenIds.add(m.id);
+                    currentMessages = [...currentMessages, m];
+                    changed = true;
+                }
+            }
+            if (changed) callback(currentMessages);
+        };
+
+        // Initial fetch — 100 messages ascending so oldest is at top
+        console.log('[ChatService] fetching messages for chatId:', chatId);
         supabase
             .from('messages')
             .select('*')
             .eq('chat_id', chatId)
             .order('created_at', { ascending: true })
             .limit(100)
-            .then(({ data, error }) => {
+            .then(({ data, error: fetchErr }) => {
                 if (cancelled) return;
-                if (error) {
-                    console.warn('[ChatService] initial fetch failed:', error.message);
+                if (fetchErr) {
+                    console.warn('[ChatService] initial fetch failed:', fetchErr.message);
                     callback([]);
                     return;
                 }
-                currentMessages = (data ?? []).map(rowToMessage);
-                console.log('[ChatService] fetched', currentMessages.length, 'messages for', chatId);
-                callback(currentMessages);
+                const rows = (data ?? []).map(rowToMessage);
+                console.log('[ChatService] fetched', rows.length, 'messages for', chatId);
+                addMessages(rows);
             });
 
-        // Realtime subscription for new INSERTs
+        // Realtime subscription — fires for every INSERT on this chat_id.
+        // Requires the messages table to be in the supabase_realtime publication
+        // and have REPLICA IDENTITY FULL (see migration 20260522_messages.sql).
         const channel = supabase
             .channel(`messages:${chatId}`)
             .on(
@@ -107,36 +131,42 @@ export class ChatService {
                 },
                 (payload) => {
                     if (cancelled) return;
+                    console.log('[ChatService] realtime INSERT fired', {
+                        id: payload.new?.id,
+                        chatId: payload.new?.chat_id,
+                        senderId: payload.new?.sender_id,
+                    });
                     const newMsg = rowToMessage(payload.new);
-                    console.log('[ChatService] realtime INSERT', { id: newMsg.id, senderId: newMsg.senderId });
-                    currentMessages = [...currentMessages, newMsg];
-                    callback(currentMessages);
+                    addMessages([newMsg]);
                 }
             )
             .subscribe((status, err) => {
-                if (err) console.warn('[ChatService] subscription error:', err);
-                else console.log('[ChatService] subscription status:', status, 'chat:', chatId);
+                if (err) {
+                    console.warn('[ChatService] subscription error:', err);
+                } else {
+                    console.log('[ChatService] subscription status:', status, '| chatId:', chatId);
+                }
             });
 
         return () => {
             cancelled = true;
+            console.log('[ChatService] unsubscribing channel for', chatId);
             supabase.removeChannel(channel);
         };
     }
 
-    // Mark all unread messages in a chat as read for a given user
+    // Mark all unread messages from the other person as read
     static async markAsRead(chatId: string, uid: string): Promise<void> {
         const { error } = await supabase
             .from('messages')
             .update({ read: true })
             .eq('chat_id', chatId)
-            .neq('sender_id', uid)  // only mark messages sent by the other person
+            .neq('sender_id', uid)
             .eq('read', false);
 
         if (error) console.warn('[ChatService] markAsRead failed:', error.message);
     }
 
-    // Subscribe to all conversations for a user (stub — no conversations table)
     static subscribeToConversations(
         _uid: string,
         callback: (convos: ChatConversation[]) => void

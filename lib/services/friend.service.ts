@@ -113,15 +113,23 @@ export class FriendService {
         if (error) throw new Error(error.message);
         console.log('[Friends] request sent');
 
-        // Fire notification (best-effort)
-        NotificationService.insert({
-            toUid,
-            fromUid,
-            fromName: fromUid,
-            type: 'friend_request',
-            title: 'Friend Request',
-            body: 'Someone sent you a friend request',
-        }).catch((e) => console.warn('[Friends] notification write failed:', e));
+        // Fetch sender's display name for the notification (best-effort, don't block)
+        supabase
+            .from('users')
+            .select('full_name, username')
+            .eq('id', fromUid)
+            .maybeSingle()
+            .then(({ data: sender }) => {
+                const fromName = sender?.full_name || sender?.username || 'Someone';
+                NotificationService.insert({
+                    toUid,
+                    fromUid,
+                    fromName,
+                    type: 'friend_request',
+                    title: 'Friend Request',
+                    body: `${fromName} sent you a friend request`,
+                }).catch((e) => console.warn('[Friends] notification write failed:', e));
+            });
     }
 
     /**

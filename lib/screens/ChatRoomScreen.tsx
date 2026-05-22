@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Send, CircleUserRound } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useAuth } from '../providers/AuthContext';
+import { useUser } from '../providers/UserContext';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatMessage } from '../models/Chat';
 
@@ -31,6 +32,8 @@ export const ChatRoomScreen = () => {
     const { friendUid, friendName, friendAvatar } = route.params as RouteParams;
 
     const { supabaseUserId } = useAuth();
+    const { profile } = useUser();
+    const senderName = profile?.username || profile?.fullName || 'Someone';
     const chatId = getChatId(supabaseUserId ?? 'unknown', friendUid);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -71,7 +74,16 @@ export const ChatRoomScreen = () => {
         setText('');
         setSending(true);
         try {
-            await ChatService.sendMessage(chatId, uid, friendUid, msg);
+            const sent = await ChatService.sendMessage(chatId, uid, friendUid, msg, senderName);
+            // Optimistic: append the confirmed message immediately.
+            // subscribeToMessages deduplicates by ID so the realtime event won't double-render.
+            if (sent) {
+                setMessages(prev => {
+                    const alreadyIn = prev.some(m => m.id === sent.id);
+                    return alreadyIn ? prev : [...prev, sent];
+                });
+                setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+            }
         } catch (e) {
             console.warn('Failed to send message:', e);
             setText(msg); // restore text so user can retry

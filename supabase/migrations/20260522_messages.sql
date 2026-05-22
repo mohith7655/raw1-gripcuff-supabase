@@ -12,6 +12,13 @@ CREATE TABLE IF NOT EXISTS public.messages (
 CREATE INDEX IF NOT EXISTS messages_chat_created_idx
     ON public.messages (chat_id, created_at ASC);
 
+-- Required for Supabase Realtime: include all columns in the replication
+-- stream so the realtime filter (chat_id=eq.X) works correctly.
+ALTER TABLE public.messages REPLICA IDENTITY FULL;
+
+-- Add to the realtime publication so postgres_changes subscriptions fire.
+ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+
 -- RLS
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
