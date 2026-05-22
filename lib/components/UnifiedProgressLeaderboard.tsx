@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronRight, Zap } from 'lucide-react-native';
+import { supabase } from '../core/config/supabase';
 import { StreakData } from '../services/streak.service';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
@@ -189,6 +190,9 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
   const [weekOffset, setWeekOffset] = useState(0);
   const [fetchedActivity, setFetchedActivity] = useState<Record<string, boolean>>({});
   const [fetchedMinutes, setFetchedMinutes] = useState<Record<string, number>>({});
+  // DB minutes fetched directly from user_daily_activity for the displayed week.
+  // Keyed by activity_date (YYYY-MM-DD). Today's live value from the prop takes priority.
+  const [dbMinutes, setDbMinutes] = useState<Record<string, number>>({});
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) =>
@@ -218,6 +222,31 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
     setFetchedActivity({});
     setFetchedMinutes({});
   }, [uid, weekOffset]);
+
+  // Fetch watched_minutes from user_daily_activity for every displayed week.
+  // Runs whenever the uid or displayed week changes.
+  useEffect(() => {
+    if (!uid || weekDates.length === 0) return;
+    const from = weekDates[0];
+    const to   = weekDates[weekDates.length - 1];
+    supabase
+      .from('user_daily_activity')
+      .select('activity_date, watched_minutes')
+      .eq('user_id', uid)
+      .gte('activity_date', from)
+      .lte('activity_date', to)
+      .then(({ data: rows, error }) => {
+        if (error) {
+          console.warn('[StreakTab] user_daily_activity fetch failed:', error.message);
+          return;
+        }
+        const map: Record<string, number> = {};
+        for (const r of rows ?? []) {
+          map[r.activity_date as string] = Number(r.watched_minutes || 0);
+        }
+        setDbMinutes(map);
+      });
+  }, [uid, weekDates[0]]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -270,6 +299,12 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
         <View style={s.dotsRow}>
           {weekDates.map((dateKey, i) => {
             const isFuture = weekOffset === 0 && dateKey > todayKey;
+            // Today: take the larger of live prop minutes and DB minutes.
+            // Live prop (todayWatchSeconds) updates optimistically before the
+            // 15s flush persists to DB. Past days: use DB minutes only.
+            const minutes = dateKey === todayKey
+              ? Math.max(weekMinutes[dateKey] ?? 0, dbMinutes[dateKey] ?? 0)
+              : (dbMinutes[dateKey] ?? weekMinutes[dateKey] ?? 0);
             return (
               <DayDot
                 key={dateKey}
@@ -278,7 +313,7 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
                 active={!isFuture && !!weekActivity[dateKey]}
                 isToday={dateKey === todayKey}
                 isFuture={isFuture}
-                minutes={weekMinutes[dateKey] ?? 0}
+                minutes={minutes}
               />
             );
           })}

@@ -158,6 +158,43 @@ export const DailyActivityService = {
         }
 
         console.log('[DailyActivity] row ensured', { today });
+
+        // Boot-time reconciliation: if users.today_watch_seconds > 0 but
+        // user_daily_activity.watched_minutes = 0, the two systems drifted out of
+        // sync (e.g. increment_watch_time fired but upsert_daily_watch_minutes never
+        // did because startSession wasn't called on web). Fix it once at boot.
+        const [profileRes, dailyRes] = await Promise.all([
+            supabase
+                .from('users')
+                .select('today_watch_seconds')
+                .eq('id', uid)
+                .maybeSingle(),
+            supabase
+                .from('user_daily_activity')
+                .select('watched_minutes')
+                .eq('user_id', uid)
+                .eq('activity_date', today)
+                .maybeSingle(),
+        ]);
+
+        const todayWatchSeconds = Number(profileRes.data?.today_watch_seconds || 0);
+        const dailyMinutes      = Number(dailyRes.data?.watched_minutes || 0);
+
+        if (todayWatchSeconds > 0 && dailyMinutes === 0) {
+            const minutesToSync = todayWatchSeconds / 60;
+            console.log(`[DailyActivity] boot sync: syncing ${minutesToSync.toFixed(2)} minutes from users table`);
+            const { error: syncErr } = await supabase.rpc('upsert_daily_watch_minutes', {
+                p_user_id: uid,
+                p_date:    today,
+                p_minutes: minutesToSync,
+            });
+            if (syncErr) {
+                console.error('[DailyActivity] boot sync failed:', syncErr.message);
+            } else {
+                console.log(`[DailyActivity] boot sync OK: ${minutesToSync.toFixed(2)}m written to user_daily_activity`);
+            }
+        }
+
         // Row exists → recalculate streak so today is counted immediately.
         await _recalculateStreak(uid);
     },
@@ -180,7 +217,8 @@ export const DailyActivityService = {
         });
 
         if (error) {
-            console.error('[DailyActivity] upsert_daily_watch_minutes FAILED:', error.message);
+            console.error('[DailyActivity] upsert_daily_watch_minutes FAILED:', error.message, error);
+            throw new Error(`upsert_daily_watch_minutes: ${error.message}`);
         } else {
             console.log('[DailyActivity] upsert_daily_watch_minutes OK', { date: today, minutes: minutes.toFixed(4) });
         }

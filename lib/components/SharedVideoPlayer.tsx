@@ -218,6 +218,16 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
             }
         });
 
+        // Race-condition fix: the player auto-starts (p.play() in useVideoPlayer constructor)
+        // before this useEffect runs, so the playingChange event fires before the listener
+        // is attached. If the player is already playing when we attach, start the session now.
+        const uid = userIdRef.current;
+        if (uid && player.playing && !watchSessionStartedRef.current) {
+            watchSessionStartedRef.current = true;
+            WatchTrackingService.startSession(uid);
+            console.log('[Video] started session (post-mount catch-up)');
+        }
+
         // Fallback poll: on web, timeUpdate events are unreliable so we read
         // player.currentTime directly every 250 ms while playing.
         let pollId: ReturnType<typeof setInterval> | null = null;
@@ -227,6 +237,15 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                 const posMs = (player.currentTime ?? 0) * 1000;
                 const durMs = (player.duration ?? 0) * 1000;
                 if (posMs <= 0 && durMs <= 0) return;
+
+                // Web catch-up: if player is playing but session wasn't started yet
+                // (playingChange listener may not have fired), start session now.
+                const pollUid = userIdRef.current;
+                if (pollUid && player.playing && !watchSessionStartedRef.current) {
+                    watchSessionStartedRef.current = true;
+                    WatchTrackingService.startSession(pollUid);
+                    console.log('[Video] started session (web poll catch-up)');
+                }
 
                 if (posMs < 2000 && completionHandledRef.current) {
                     completionHandledRef.current = false;

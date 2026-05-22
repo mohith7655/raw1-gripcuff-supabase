@@ -81,12 +81,16 @@ async function _flush(isNewSession = false) {
             if (countSession) _sessionCountedForCurrentSession = true;
             console.log(`[WatchTracking] flushed ${seconds}s OK`);
             _onFlush?.(seconds); // optimistic UI patch
-            // Save minutes first, then recompute streak from real data, then notify for profile refresh.
-            console.log(`[WatchTracking] calling incrementWatchMinutes uid=${uid} minutes=${(seconds / 60).toFixed(4)}`);
+            console.log(`[WatchTracking] _onFlush fired — now calling incrementWatchMinutes uid=${uid} minutes=${(seconds / 60).toFixed(4)}`);
             DailyActivityService.incrementWatchMinutes(uid, seconds / 60)
-                .then(() => DailyActivityService.recalculateUserStreak(uid))
+                .then(() => {
+                    console.log('[WatchTracking] incrementWatchMinutes resolved — calling recalculateUserStreak');
+                    return DailyActivityService.recalculateUserStreak(uid);
+                })
                 .then(() => { _onStreakReady?.(uid); })
-                .catch(() => {});
+                .catch((e: any) => {
+                    console.error('[WatchTracking] daily activity write chain threw:', e?.message ?? e);
+                });
         }
     } catch (e: any) {
         _pendingSeconds += seconds;
@@ -107,6 +111,7 @@ function _stopTick() {
 
 function _startFlushLoop() {
     if (_flushId !== null) return;
+    console.log('[WatchTracking] flush loop started — interval', FLUSH_MS, 'ms');
     _flushId = setInterval(() => { _flush(); }, FLUSH_MS);
 }
 

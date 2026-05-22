@@ -273,19 +273,17 @@ export const StreakService = {
         const rollingDays  = getLastNDayKeys(tz, 7);
         const allDays = Array.from(new Set([...calendarWeek, ...rollingDays]));
 
-        // Fetch actual watched minutes from workout_activity for the past 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const { data: activities } = await supabase
-            .from('workout_activity')
-            .select('completed_at, watched_minutes')
+        // Fetch watched minutes from user_daily_activity — source of truth for watch time.
+        // activity_date is already a YYYY-MM-DD key in the user's local timezone.
+        const { data: dailyRows } = await supabase
+            .from('user_daily_activity')
+            .select('activity_date, watched_minutes')
             .eq('user_id', uid)
-            .gte('completed_at', thirtyDaysAgo.toISOString());
+            .gte('activity_date', getLastNDayKeys(tz, 30)[0]);
 
         const minutesByDay: Record<string, number> = {};
-        for (const act of activities ?? []) {
-            const localDate = new Date(act.completed_at).toLocaleDateString('en-CA', { timeZone: tz });
-            minutesByDay[localDate] = (minutesByDay[localDate] ?? 0) + (Number(act.watched_minutes) || 0);
+        for (const r of dailyRows ?? []) {
+            minutesByDay[r.activity_date as string] = Number(r.watched_minutes || 0);
         }
 
         const weeklyActivity: Record<string, boolean> = {};
