@@ -68,6 +68,8 @@ export class NotificationService {
     const dedupKey = buildDedupKey(payload);
     console.log(`${TAG} insert`, { type: payload.type, toUid: payload.toUid, dedupKey });
 
+    console.log('[NotificationService] full payload:', JSON.stringify(payload, null, 2));
+
     // upsert with ignoreDuplicates: if dedup_key already exists, do nothing and
     // return null data (not an error).  maybeSingle() handles the empty-result case.
     const { data, error } = await supabase
