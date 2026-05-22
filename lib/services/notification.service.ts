@@ -29,11 +29,12 @@ export type NotificationInsertPayload = {
 
 function buildDedupKey(payload: NotificationInsertPayload): string {
   const bucket = Math.floor(Date.now() / 60_000);
+  // Use || (not ??) so that empty strings fall through to the next candidate.
   const anchor =
-    payload.sessionId ??
-    payload.messageId ??
-    payload.chatId ??
-    payload.fromUid ??
+    payload.sessionId ||
+    payload.messageId ||
+    payload.chatId ||
+    payload.fromUid ||
     'none';
   return `${payload.type}:${payload.toUid}:${anchor}:${bucket}`;
 }
@@ -73,16 +74,16 @@ export class NotificationService {
       .from('notifications')
       .upsert(
         {
-          to_uid: payload.toUid,
-          from_uid: payload.fromUid ?? '',
+          to_uid: payload.toUid,           // TEXT column — uid stored as plain string
+          from_uid: payload.fromUid || null, // UUID column — must be valid UUID or null; never ''
           from_name: payload.fromName ?? 'Someone',
           type: payload.type,
           title: payload.title,
           body: payload.body,
           read: false,
-          chat_id: payload.chatId ?? null,
-          message_id: payload.messageId ?? null,
-          session_id: payload.sessionId ?? null,
+          chat_id: payload.chatId || null,
+          message_id: payload.messageId || null, // || catches '' so empty string → null
+          session_id: payload.sessionId || null,
           dedup_key: dedupKey,
         },
         { onConflict: 'dedup_key', ignoreDuplicates: true },

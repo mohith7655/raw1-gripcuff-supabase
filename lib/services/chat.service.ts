@@ -36,12 +36,13 @@ export class ChatService {
         NotificationService.insert({
             toUid: recipientId,
             fromUid: senderId,
-            fromName: senderId,
+            fromName: 'Chat message',
             type: 'chat_message',
-            title: senderId,
+            title: 'New message',
             body: trimmed || 'You have a new message',
             chatId,
-            messageId: '',
+            // messageId intentionally omitted — chatId is used as the dedup anchor.
+            // Passing messageId:'' would bypass the ?? guard and produce :: in the key.
         }).catch((e) => console.warn('[ChatService] Supabase notification write failed:', e));
     }
 
