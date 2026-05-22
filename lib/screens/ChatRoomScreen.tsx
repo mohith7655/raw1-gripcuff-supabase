@@ -93,7 +93,7 @@ export const ChatRoomScreen = () => {
             !prevMsg ||
             (item.createdAt &&
                 prevMsg.createdAt &&
-                item.createdAt.toMillis() - prevMsg.createdAt.toMillis() > 5 * 60 * 1000);
+                item.createdAt.getTime() - prevMsg.createdAt.getTime() > 5 * 60 * 1000);
 
         return (
             <View>
