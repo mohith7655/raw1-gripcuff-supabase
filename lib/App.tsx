@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
-import { NavigationContainer, DarkTheme, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { navigationRef } from './core/navigation';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, Video, Dumbbell, User, Users, Calendar } from 'lucide-react-native';
@@ -273,7 +274,6 @@ if (typeof global !== 'undefined' && !(global as any).__errorHandlerInstalled) {
 function MainApp() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
-  const navigationRef = useNavigationContainerRef();
   const { loading: accessLoading } = useAccess();
   const { supabaseUserId, email, user, loading: authLoading } = useAuth();
 

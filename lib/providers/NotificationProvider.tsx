@@ -3,8 +3,9 @@ import { useAuth } from './AuthContext';
 import { AppNotification } from '../models/AppNotification';
 import { TopBannerNotification } from '../components/TopBannerNotification';
 import { NotificationService } from '../services/notification.service';
-import { ChatService } from '../services/chat.service';
-import { ChatConversation } from '../models/Chat';
+import { getChatId } from '../services/chat.service';
+import { navigationRef } from '../core/navigation';
+import { PushTokenService } from '../services/pushToken.service';
 
 type NotificationContextType = {
   current: AppNotification | null;
@@ -17,6 +18,15 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 const TAG = '[NotificationProvider]';
 
+function isCurrentlyInChat(chatId: string | undefined, currentUid: string): boolean {
+  if (!chatId || !navigationRef.isReady()) return false;
+  const route = navigationRef.getCurrentRoute();
+  if (route?.name !== 'ChatRoom') return false;
+  const params = route.params as any;
+  if (!params?.friendUid) return false;
+  return getChatId(currentUid, params.friendUid) === chatId;
+}
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { supabaseUserId } = useAuth();
   const [queue, setQueue] = useState<AppNotification[]>([]);
@@ -25,9 +35,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [currentWorkoutInvite, setCurrentWorkoutInvite] = useState<AppNotification | null>(null);
   const bootstrappedRef = useRef(false);
   const seenRef = useRef<Set<string>>(new Set());
-  const chatBootstrapRef = useRef(false);
-  const unreadByChatRef = useRef<Record<string, number>>({});
-  const shownChatEventRef = useRef<Set<string>>(new Set());
+
+  // ── Push token registration on login ─────────────────────────────────────
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    PushTokenService.registerAndSave(supabaseUserId);
+  }, [supabaseUserId]);
 
   // ── Supabase realtime notification subscription ───────────────────────────
   useEffect(() => {
@@ -41,8 +54,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       return;
     }
 
+    const uid = supabaseUserId;
+
     const unsub = NotificationService.subscribeToNewNotifications(
-      supabaseUserId,
+      uid,
 
       (seenIds) => {
         seenIds.forEach((id) => seenRef.current.add(id));
@@ -50,10 +65,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       },
 
       (notification) => {
-        if (notification.type === 'chat_message') return;
-
         if (seenRef.current.has(notification.id)) return;
         seenRef.current.add(notification.id);
+
+        // Suppress chat banner if user is already in that chat room
+        if (notification.type === 'chat_message' && isCurrentlyInChat(notification.chatId, uid)) {
+          return;
+        }
 
         if (notification.type === 'workout_invite') {
           setWorkoutInviteQueue((prev) => [...prev, notification]);
@@ -72,7 +90,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         genuinelyNew.forEach((n) => {
           seenRef.current.add(n.id);
-          if (n.type === 'chat_message') return;
+          if (n.type === 'chat_message' && isCurrentlyInChat(n.chatId, uid)) return;
           if (n.type === 'workout_invite') {
             setWorkoutInviteQueue((prev) => [...prev, n]);
             return;
@@ -87,62 +105,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       bootstrappedRef.current = false;
       seenRef.current.clear();
     };
-  }, [supabaseUserId]);
-
-  // ── Chat popup bridge ─────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!supabaseUserId) {
-      chatBootstrapRef.current = false;
-      unreadByChatRef.current = {};
-      shownChatEventRef.current.clear();
-      return;
-    }
-
-    const unsub = ChatService.subscribeToConversations(supabaseUserId, async (convos: ChatConversation[]) => {
-      const incoming: AppNotification[] = [];
-
-      for (const convo of convos) {
-        const chatId = convo.id;
-        const nextUnread = convo.unreadCount?.[supabaseUserId] ?? 0;
-        const prevUnread = unreadByChatRef.current[chatId] ?? 0;
-        unreadByChatRef.current[chatId] = nextUnread;
-
-        if (!chatBootstrapRef.current) continue;
-        if (nextUnread <= prevUnread) continue;
-        if (!convo.lastMessageBy || convo.lastMessageBy === supabaseUserId) continue;
-
-        const ts = convo.lastMessageAt?.getTime?.() ?? Date.now();
-        const syntheticId = `chat:${chatId}:${ts}`;
-        if (shownChatEventRef.current.has(syntheticId)) continue;
-        shownChatEventRef.current.add(syntheticId);
-
-        const fromName = 'Someone';
-
-        incoming.push({
-          id: syntheticId,
-          type: 'chat_message',
-          title: fromName,
-          body: convo.lastMessage || 'You have a new message',
-          toUid: supabaseUserId,
-          fromUid: convo.lastMessageBy,
-          fromName,
-          avatar: undefined,
-          createdAt: new Date() as any,
-          read: false,
-          chatId,
-        });
-      }
-
-      if (incoming.length) {
-        setQueue((prev) => [...prev, ...incoming]);
-      }
-
-      if (!chatBootstrapRef.current) {
-        chatBootstrapRef.current = true;
-      }
-    });
-
-    return () => unsub();
   }, [supabaseUserId]);
 
   // ── Queue draining ────────────────────────────────────────────────────────
@@ -161,6 +123,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const dismissWorkoutInvite = useCallback(() => setCurrentWorkoutInvite(null), []);
 
+  // ── Banner tap navigation ─────────────────────────────────────────────────
+
+  const handleBannerPress = useCallback((notification: AppNotification) => {
+    if (!navigationRef.isReady()) return;
+    if (notification.type === 'chat_message') {
+      navigationRef.navigate('ChatInbox');
+    } else if (notification.type === 'friend_request') {
+      navigationRef.navigate('FriendsScreen');
+    } else if (notification.type === 'workout_invite') {
+      navigationRef.navigate('UpcomingSessionsScreen');
+    }
+  }, []);
+
   const ctx = useMemo(() => ({
     current,
     queueSize: queue.length,
@@ -174,6 +149,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       <TopBannerNotification
         notification={current}
         onDismiss={() => setCurrent(null)}
+        onPress={handleBannerPress}
       />
     </NotificationContext.Provider>
   );

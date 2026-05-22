@@ -6,6 +6,7 @@ import { AppNotification } from '../models/AppNotification';
 type Props = {
   notification: AppNotification | null;
   onDismiss: () => void;
+  onPress?: (notification: AppNotification) => void;
 };
 
 const TYPE_COLOR: Record<string, string> = {
@@ -16,9 +17,10 @@ const TYPE_COLOR: Record<string, string> = {
   system: '#A78BFA',
 };
 
-export function TopBannerNotification({ notification, onDismiss }: Props) {
+export function TopBannerNotification({ notification, onDismiss, onPress }: Props) {
   const translateY = useRef(new Animated.Value(-120)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!notification) return;
@@ -37,11 +39,17 @@ export function TopBannerNotification({ notification, onDismiss }: Props) {
       }),
     ]).start();
 
-    const timer = setTimeout(() => dismiss(), 2000);
-    return () => clearTimeout(timer);
+    timerRef.current = setTimeout(() => dismiss(), 4000);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [notification?.id]);
 
   const dismiss = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     Animated.parallel([
       Animated.timing(translateY, {
         toValue: -120,
@@ -62,22 +70,33 @@ export function TopBannerNotification({ notification, onDismiss }: Props) {
 
   return (
     <Animated.View style={[styles.container, { transform: [{ translateY }], opacity }]} pointerEvents="box-none">
-      <View style={[styles.card, { borderColor: `${accent}66` }]}>
-        {notification.avatar ? (
-          <Image source={{ uri: notification.avatar }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}>
-            <Ionicons name="person" color={accent} size={16} />
+      <TouchableOpacity
+        activeOpacity={onPress ? 0.8 : 1}
+        onPress={() => {
+          if (onPress) {
+            dismiss();
+            onPress(notification);
+          }
+        }}
+        style={styles.touchable}
+      >
+        <View style={[styles.card, { borderColor: `${accent}66` }]}>
+          {notification.avatar ? (
+            <Image source={{ uri: notification.avatar }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}>
+              <Ionicons name="person" color={accent} size={16} />
+            </View>
+          )}
+          <View style={styles.textWrap}>
+            <Text style={styles.title} numberOfLines={1}>{notification.title}</Text>
+            <Text style={styles.body} numberOfLines={2}>{notification.body}</Text>
           </View>
-        )}
-        <View style={styles.textWrap}>
-          <Text style={styles.title} numberOfLines={1}>{notification.title}</Text>
-          <Text style={styles.body} numberOfLines={2}>{notification.body}</Text>
+          <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close" size={16} color="#94A3B8" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="close" size={16} color="#94A3B8" />
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -92,6 +111,9 @@ const styles = StyleSheet.create({
     elevation: 9999,
     alignItems: 'center',
   } as any,
+  touchable: {
+    width: '100%',
+  },
   card: {
     width: '100%',
     maxWidth: 460,

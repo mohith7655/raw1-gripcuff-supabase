@@ -104,7 +104,49 @@ export class NotificationService {
     }
 
     console.log(`${TAG} inserted`, { id: data.id, type: payload.type });
+
+    // Send Expo push notification to recipient's device (best-effort, non-fatal)
+    NotificationService.sendExpoPush(payload).catch((e) =>
+      console.warn(`${TAG} push send failed:`, e),
+    );
+
     return data.id as string;
+  }
+
+  // ── Expo push ─────────────────────────────────────────────────────────────
+  // Looks up the recipient's saved Expo push token and POSTs to Expo's push API.
+  // Non-fatal — if the token is missing or the request fails, notifications
+  // still work in-app via the realtime subscription.
+
+  private static async sendExpoPush(payload: NotificationInsertPayload): Promise<void> {
+    const { data: row } = await supabase
+      .from('user_push_tokens')
+      .select('token')
+      .eq('user_id', payload.toUid)
+      .maybeSingle();
+
+    if (!row?.token) return;
+
+    const body = {
+      to: row.token,
+      title: payload.title,
+      body: payload.body,
+      data: {
+        type: payload.type,
+        chatId: payload.chatId || undefined,
+        sessionId: payload.sessionId || undefined,
+      },
+      sound: 'default',
+    };
+
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const json = await res.json().catch(() => null);
+    console.log(`${TAG} push sent`, { status: res.status, ticket: json?.data?.status });
   }
 
   // ── Mark single notification read ──────────────────────────────────────────
