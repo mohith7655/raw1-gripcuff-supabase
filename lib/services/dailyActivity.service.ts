@@ -2,8 +2,8 @@
  * DailyActivityService — source-of-truth streak architecture.
  *
  * Streak rules:
- *   - App open = day logged: ensureTodayActivity() creates a row for today on every boot.
- *   - Streak = consecutive days a row exists in user_daily_activity (no minutes threshold).
+ *   - App open = day logged: ensureTodayActivity() creates a row on every boot.
+ *   - Streak = consecutive days a row exists (row presence = user was active that day).
  *   - Watch minutes fill the circle UI but do not affect streak eligibility.
  *
  * Correct call order per flush:
@@ -50,13 +50,10 @@ async function _recalculateStreak(uid: string): Promise<void> {
 
     const todayKey = getLocalDateKey();
 
-    // Today always counts (app open = active day).
-    // Past days require real activity: watched_minutes > 0 OR completed_workouts > 0.
-    const activeRows = (data ?? []).filter(r =>
-        r.activity_date === todayKey ||
-        Number(r.watched_minutes || 0) > 0 ||
-        Number(r.completed_workouts || 0) > 0
-    );
+    // Row existence = user opened the app that day. ensureTodayActivity creates a
+    // row on every boot, so any day with a row counts toward the streak regardless
+    // of watched_minutes or completed_workouts.
+    const activeRows = (data ?? []).filter(r => !!r.activity_date);
 
     if (activeRows.length === 0) {
         console.log('[StreakCalc] skipping — no active rows in user_daily_activity');
@@ -138,7 +135,8 @@ async function _recalculateStreak(uid: string): Promise<void> {
 export const DailyActivityService = {
     /**
      * Ensure a row exists for today, then immediately recalculate streak.
-     * Called on every app boot — the row creation is what marks the day active.
+     * Called on every app boot — the row creation is what marks the day active
+     * (row exists = user opened the app = streak day).
      * ignoreDuplicates:true means existing rows are left untouched (minutes preserved).
      */
     async ensureTodayActivity(uid: string): Promise<void> {
@@ -166,7 +164,7 @@ export const DailyActivityService = {
         const [profileRes, dailyRes] = await Promise.all([
             supabase
                 .from('users')
-                .select('today_watch_seconds')
+                .select('today_watch_seconds, last_video_watch_at')
                 .eq('id', uid)
                 .maybeSingle(),
             supabase
@@ -179,8 +177,18 @@ export const DailyActivityService = {
 
         const todayWatchSeconds = Number(profileRes.data?.today_watch_seconds || 0);
         const dailyMinutes      = Number(dailyRes.data?.watched_minutes || 0);
+        const lastWatchAt       = profileRes.data?.last_video_watch_at ?? null;
 
-        if (todayWatchSeconds > 0 && dailyMinutes === 0) {
+        // today_watch_seconds resets on UTC day boundaries (increment_watch_time RPC).
+        // Guard against writing stale minutes: compare the UTC date of last_video_watch_at
+        // against today's LOCAL date (same mixed comparison used in HomeScreen).
+        // For IST +5:30: a 19:40 UTC session = 01:10 IST next day → UTC date '2026-05-22'
+        // does not match local today '2026-05-23' → boot sync correctly blocked.
+        const lastWatchDateUtc = lastWatchAt
+            ? new Date(lastWatchAt).toISOString().split('T')[0]
+            : null;
+
+        if (todayWatchSeconds > 0 && dailyMinutes === 0 && lastWatchDateUtc === today) {
             const minutesToSync = todayWatchSeconds / 60;
             console.log(`[DailyActivity] boot sync: syncing ${minutesToSync.toFixed(2)} minutes from users table`);
             const { error: syncErr } = await supabase.rpc('upsert_daily_watch_minutes', {
@@ -193,6 +201,8 @@ export const DailyActivityService = {
             } else {
                 console.log(`[DailyActivity] boot sync OK: ${minutesToSync.toFixed(2)}m written to user_daily_activity`);
             }
+        } else if (todayWatchSeconds > 0 && lastWatchDateUtc !== today) {
+            console.log(`[DailyActivity] boot sync skipped — today_watch_seconds (${todayWatchSeconds}s) is stale from UTC ${lastWatchDateUtc ?? 'unknown'}, not local today (${today})`);
         }
 
         // Row exists → recalculate streak so today is counted immediately.
@@ -209,11 +219,12 @@ export const DailyActivityService = {
         const today = getLocalDateKey();
         console.log('[DailyActivity] incrementing minutes', { uid, minutes: minutes.toFixed(3), today });
 
-        console.log('[DailyActivity] upsert_daily_watch_minutes →', { p_user_id: uid, p_date: today, p_minutes: minutes.toFixed(4) });
+        const rounded = Math.round(minutes * 100) / 100;
+        console.log('[DailyActivity] upsert_daily_watch_minutes →', { p_user_id: uid, p_date: today, p_minutes: rounded });
         const { error } = await supabase.rpc('upsert_daily_watch_minutes', {
             p_user_id: uid,
             p_date:    today,
-            p_minutes: minutes,
+            p_minutes: rounded,
         });
 
         if (error) {

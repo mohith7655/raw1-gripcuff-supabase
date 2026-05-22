@@ -72,11 +72,12 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   dateKey: string;
 }) {
   const rawMinutes = Number(minutes) || 0;
-  // A circle is active when the user has any watch time on that day.
-  // Uses the already-coerced minutes (from WatchTrackingService optimistic state)
-  // rather than the weekly_activity flag (which only updates via markWorkoutComplete).
-  const isActive = !isFuture && rawMinutes > 0;
-  const minLabel = formatMinutes(rawMinutes);
+  // Today is always orange — ensureTodayActivity creates the row on app open,
+  // so the user being here is enough. Past days require actual watch time.
+  const isActive = !isFuture && (isToday || rawMinutes > 0);
+  // Show '0m' for today when no video has been watched yet so the label is
+  // never blank inside an active (orange) circle.
+  const minLabel = isToday && rawMinutes === 0 ? '0m' : formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');
   const dateLabel = `${parseInt(mm)}/${parseInt(dd)}`;
@@ -299,11 +300,11 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
         <View style={s.dotsRow}>
           {weekDates.map((dateKey, i) => {
             const isFuture = weekOffset === 0 && dateKey > todayKey;
-            // Today: take the larger of live prop minutes and DB minutes.
-            // Live prop (todayWatchSeconds) updates optimistically before the
-            // 15s flush persists to DB. Past days: use DB minutes only.
+            // Today: weekMinutes comes from HomeScreen, which fetches user_daily_activity
+            // after each flush and applies a UTC date guard to block stale boot-sync data.
+            // Past days: DB is authoritative.
             const minutes = dateKey === todayKey
-              ? Math.max(weekMinutes[dateKey] ?? 0, dbMinutes[dateKey] ?? 0)
+              ? (weekMinutes[dateKey] ?? 0)
               : (dbMinutes[dateKey] ?? weekMinutes[dateKey] ?? 0);
             return (
               <DayDot

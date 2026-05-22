@@ -57,6 +57,7 @@ import { getProgramByVideoId } from '../data/preRecordedPrograms';
 import { TodaysChallengeCard } from '../components/TodaysChallengeCard';
 import { StreakService, StreakData } from '../services/streak.service';
 import { DailyActivityService } from '../services/dailyActivity.service';
+import { supabase } from '../core/config/supabase';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
 import { msUntilMidnight, getDateKey, buildWeekDates, getLastNDayKeys } from '../utils/streakDate';
@@ -243,10 +244,27 @@ const HomeScreenInner = () => {
   // weekly_activity, UserContext re-fetches the profile and this effect
   // rebuilds streakData — no separate StreakService fetch needed.
   const [streakData, setStreakData] = useState<StreakData | null>(null);
+  // Today's watched_minutes fetched fresh from user_daily_activity after each flush.
+  const [todayDbMinutes, setTodayDbMinutes] = useState(0);
 
   // Serialize weeklyActivity to a string so React sees a primitive dep,
   // not an object reference that is brand-new every render.
   const weeklyActivityJson = JSON.stringify(profile?.weeklyActivity ?? null);
+
+  // Fetch today's watched_minutes from user_daily_activity after each flush.
+  // Re-runs whenever lastVideoWatchAt changes (set by increment_watch_time after each tick).
+  useEffect(() => {
+    if (!supabaseUserId) { setTodayDbMinutes(0); return; }
+    const tz = getResolvedTimezone();
+    const today = getDateKey(tz);
+    supabase
+      .from('user_daily_activity')
+      .select('watched_minutes')
+      .eq('user_id', supabaseUserId)
+      .eq('activity_date', today)
+      .maybeSingle()
+      .then(({ data: row }) => setTodayDbMinutes(Number(row?.watched_minutes || 0)));
+  }, [supabaseUserId, profile?.lastVideoWatchAt]);
 
   useEffect(() => {
     if (!profile) return;
@@ -257,8 +275,16 @@ const HomeScreenInner = () => {
         : {};
 
     const todayKey = getDateKey(tz);
-    // Numeric coercion — DB may return string or null for BIGINT columns
-    const todayWatchSeconds = Number(profile.todayWatchSeconds || 0);
+
+    // Guard: only show DB minutes for today if the last watch was on the current UTC day.
+    // today_watch_seconds resets at UTC midnight; user_daily_activity uses local dates.
+    // Mixed comparison (UTC last-watch date vs local todayKey) prevents stale boot-sync
+    // data from showing when UTC day < local day (e.g. IST +5:30 early morning).
+    const lastWatchDateUtc = profile.lastVideoWatchAt
+      ? new Date(profile.lastVideoWatchAt).toISOString().split('T')[0]
+      : null;
+    const todayUtcKey = new Date().toISOString().split('T')[0];
+    const todayMinutes = lastWatchDateUtc === todayUtcKey ? todayDbMinutes : 0;
 
     const calendarWeek = buildWeekDates(tz, 0);
     const rollingDays = getLastNDayKeys(tz, 7);
@@ -267,13 +293,7 @@ const HomeScreenInner = () => {
     const weeklyMinutes: Record<string, number> = {};
     allDays.forEach(d => {
       weeklyActivity[d] = !!weeklyActivityRaw[d];
-      // Today: always derive from today_watch_seconds — never floor, never hardcode.
-      // Past days: no per-day seconds in schema yet — show 0 (orange dot, no minutes text).
-      if (d === todayKey) {
-        weeklyMinutes[d] = todayWatchSeconds / 60;
-      } else {
-        weeklyMinutes[d] = 0;
-      }
+      weeklyMinutes[d] = d === todayKey ? todayMinutes : 0;
     });
 
     const currentStreak = profile.currentStreak ?? 0;
@@ -319,8 +339,9 @@ const HomeScreenInner = () => {
     weeklyActivityJson,       // serialized — stable primitive
     profile?.completedWorkouts,
     profile?.watchedSeconds,
-    profile?.todayWatchSeconds,
+    profile?.lastVideoWatchAt,
     profile?.credits,
+    todayDbMinutes,           // re-run when fresh DB minutes arrive after each flush
   ]);
 
   const renderCountRef = useRef(0);
