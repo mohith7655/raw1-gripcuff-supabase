@@ -44,14 +44,14 @@ CREATE INDEX IF NOT EXISTS sched_sessions_scheduled_for_idx
 ALTER TABLE public.scheduled_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Host can do everything with their own sessions
-CREATE POLICY IF NOT EXISTS "Host manages own sessions"
+CREATE POLICY "Host manages own sessions"
   ON public.scheduled_sessions
   FOR ALL
   USING (host_user_id = auth.uid())
   WITH CHECK (host_user_id = auth.uid());
 
 -- Invited users can read sessions they have been invited to
-CREATE POLICY IF NOT EXISTS "Invited users can read sessions"
+CREATE POLICY "Invited users can read sessions"
   ON public.scheduled_sessions
   FOR SELECT
   USING (
@@ -97,14 +97,14 @@ ALTER TABLE public.scheduled_session_invites ENABLE ROW LEVEL SECURITY;
 
 -- Invited user can read and update (accept/decline) their own invite row.
 -- invited_by (host) can also read all invites for their sessions.
-CREATE POLICY IF NOT EXISTS "Invited user manages own invite"
+CREATE POLICY "Invited user manages own invite"
   ON public.scheduled_session_invites
   FOR ALL
   USING (invited_user_id = auth.uid() OR invited_by = auth.uid())
   WITH CHECK (invited_user_id = auth.uid() OR invited_by = auth.uid());
 
 -- Host can INSERT invite rows when creating a session
-CREATE POLICY IF NOT EXISTS "Host can insert invites"
+CREATE POLICY "Host can insert invites"
   ON public.scheduled_session_invites
   FOR INSERT
   WITH CHECK (invited_by = auth.uid());
