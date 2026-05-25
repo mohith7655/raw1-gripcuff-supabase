@@ -60,7 +60,7 @@ CREATE POLICY "Invited users can read sessions"
     EXISTS (
       SELECT 1
       FROM public.scheduled_session_invites ssi
-      WHERE ssi.session_id = id
+      WHERE ssi.session_id = scheduled_sessions.id
         AND ssi.invited_user_id = auth.uid()
     )
   );
