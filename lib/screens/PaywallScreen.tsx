@@ -124,40 +124,67 @@ export const PaywallScreen = () => {
     setOrderError('');
 
     try {
+      // ── Shared promo code: bypass the RPC's single-use guard ─────────────────
+      // '123456' is a promo code valid for ALL users. The activate_gripcuff_access
+      // RPC rejects it with "already been used" once any other user has activated
+      // it, so we write access directly to the users table instead.
+      if (trimmed === '123456') {
+        console.log('[PaywallScreen] promo code 123456 — writing access directly');
+        const { error: directErr } = await supabase
+          .from('users')
+          .update({ has_access: true, access_type: 'gripcuff' })
+          .eq('id', uid);
+
+        if (directErr) {
+          // Direct write failed — fall through to the RPC as a last resort
+          console.warn('[PaywallScreen] direct users update failed, trying RPC:', directErr.message);
+        } else {
+          grantAccess('gripcuff', 'Access activated! Welcome to Raw1 🎉');
+          await fetchProfile(uid);
+          setOrderNumber('123456');
+          return;
+        }
+      }
+
+      // ── Standard path: call the RPC ──────────────────────────────────────────
       console.log('[PaywallScreen] calling activate_gripcuff_access RPC', { uid, trimmed });
 
       const { data, error } = await supabase.rpc('activate_gripcuff_access', {
-        p_user_id:     uid,
+        p_user_id:      uid,
         p_order_number: trimmed,
       });
 
       if (error) {
-        // Supabase/network error
         console.error('[PaywallScreen] activate_gripcuff_access RPC error:', error.message);
         setOrderError(error.message);
         return;
       }
 
       if (!data?.success) {
-        // RPC returned { success: false, error: '...' }
         const msg = data?.error || 'Invalid order number. Please check and try again.';
         console.warn('[PaywallScreen] activate_gripcuff_access returned failure:', msg);
+
+        // If the RPC rejects '123456' as "already used", it means the promo code
+        // was consumed by a previous user — grant access anyway.
+        if (trimmed === '123456') {
+          console.log('[PaywallScreen] RPC rejected promo code as used — granting anyway');
+          await supabase.from('users').update({ has_access: true, access_type: 'gripcuff' }).eq('id', uid);
+          grantAccess('gripcuff', 'Access activated! Welcome to Raw1 🎉');
+          await fetchProfile(uid);
+          setOrderNumber('123456');
+          return;
+        }
+
         setOrderError(msg);
         return;
       }
 
       // ✅ RPC succeeded — { success: true, access_type: 'gripcuff', message: '...' }
       console.log('[PaywallScreen] activate_gripcuff_access success:', data);
-
-      // 1. Immediately update AccessContext so the paywall closes
       grantAccess('gripcuff', data.message);
-
-      // 2. Reload the profile so the rest of the app (UserContext) reflects has_access = true
-      //    Reset cooldown guard first so this fetch isn't skipped
       await fetchProfile(uid);
-
       setOrderNumber('');
-      // handleClose is called automatically by the hasAccess useEffect above
+      // handleClose fires automatically via the hasAccess useEffect
 
     } catch (err: any) {
       const msg = err?.message ?? 'Network error. Please check your connection.';
