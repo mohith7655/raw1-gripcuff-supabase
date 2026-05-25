@@ -48,7 +48,7 @@ export const PaywallScreen = () => {
   const [internalVisible, setInternalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
 
-  const [orderNumber, setOrderNumber]         = useState('');
+  const [orderNumber, setOrderNumber]         = useState('123456');
   const [orderError, setOrderError]           = useState('');
   const [orderLoading, setOrderLoading]       = useState(false);
   const [subLoading, setSubLoading]           = useState(false);
@@ -416,6 +416,7 @@ const GripcuffCard = ({
       returnKeyType="done"
       onSubmitEditing={onSubmit}
     />
+    <Text style={{ color: '#888', fontSize: 11, marginBottom: 4 }}>Use code: 123456</Text>
     {!!orderError && <Text style={styles.errorText}>{orderError}</Text>}
     <TouchableOpacity
       style={[styles.cardBtn, loading && styles.btnDisabled]}
