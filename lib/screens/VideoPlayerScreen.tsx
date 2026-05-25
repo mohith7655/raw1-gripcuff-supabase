@@ -250,7 +250,7 @@ const WebYouTubePlayer = ({ videoId }: { videoId: string }) => {
 
 function VideoPlayerScreen({ route, navigation }: any) {
     const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
-    const { hasAccess, showPaywall } = useAccess();
+    const { hasAccess, loading: accessLoading, showPaywall } = useAccess();
     const { profile } = useUser();
     const { supabaseUserId, email } = useAuth();
 
@@ -450,21 +450,31 @@ function VideoPlayerScreen({ route, navigation }: any) {
             handleVideoEndRef.current().catch(() => {});
         }
 
-        if (!hasAccess) {
-            const currentBucket = Math.floor(posMs / 5000);
-            if (currentBucket > 0 && currentBucket > lastPaywallBucketRef.current) {
-                lastPaywallBucketRef.current = currentBucket;
+        // Paywall preview: pause once at 5 s for users without access.
+        // Guards:
+        //   - accessLoading: skip if AccessContext hasn't finished the boot DB read yet
+        //     (avoids false-positive pause for paid users whose profile is still loading)
+        //   - lastPaywallBucketRef === 0: fire only ONCE per session; the bucket
+        //     approach previously re-fired every 5 s (at 10 s, 15 s, etc.)
+        if (!accessLoading && !hasAccess) {
+            if (posMs >= 5000 && lastPaywallBucketRef.current === 0) {
+                lastPaywallBucketRef.current = 1; // mark shown — won't fire again this session
                 sharedPlayerRef.current?.pauseVideo();
                 showPaywall();
             }
-        } else {
+        } else if (hasAccess) {
             lastPaywallBucketRef.current = 0;
         }
-    }, [hasAccess, showPaywall]);
+    }, [hasAccess, accessLoading, showPaywall]);
 
     useEffect(() => {
         if (!hasAccess) return;
-        lastPaywallBucketRef.current = 0;
+        // Access just became true (paid, or boot-sync confirmed existing subscription).
+        // If we had paused the video for the paywall, resume it now.
+        if (lastPaywallBucketRef.current > 0) {
+            sharedPlayerRef.current?.resumeVideo();
+        }
+        lastPaywallBucketRef.current = 0; // reset so the one-shot guard is clean
     }, [hasAccess]);
 
     useEffect(() => {
