@@ -21,6 +21,21 @@ import { supabase } from '../core/config/supabase';
 export type AccessType = null | 'gripcuff' | 'subscription';
 export type GripcuffStatus = null | 'has_gripcuff' | 'using_at_gym' | 'no_gripcuff';
 
+/**
+ * Normalize raw DB / profile access_type strings to the canonical AccessType.
+ *
+ * The Stripe webhook (stripe-webhook.ts) was originally written to store
+ * access_type = 'subscription', but some rows in Supabase were written as
+ * 'stripe' (e.g. by an older RPC or manual seeding).  Any Stripe-flavoured
+ * string → 'subscription' so the rest of the app only ever sees the two
+ * canonical values: 'gripcuff' | 'subscription'.
+ */
+const normalizeAccessType = (raw: string | null | undefined): AccessType => {
+  if (raw === 'gripcuff') return 'gripcuff';
+  if (raw === 'subscription' || raw === 'stripe') return 'subscription';
+  return null;
+};
+
 interface AccessContextType {
   accessType: AccessType;
   hasAccess: boolean;
@@ -156,7 +171,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
   // users table), propagate to AccessContext. This is the primary post-boot path.
   useEffect(() => {
     if (profile?.hasAccess === true) {
-      const at = (profile.accessType as AccessType) || 'subscription';
+      const at = normalizeAccessType(profile.accessType) ?? 'subscription';
       applyAccess(at);
       console.log('[AccessContext] profile.hasAccess → access granted:', at);
     }
@@ -222,7 +237,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
         if (error) {
           console.warn('[AccessContext] users.has_access fetch error:', error.message);
         } else if (row?.has_access && row?.access_type) {
-          applyAccess(row.access_type as AccessType);
+          applyAccess(normalizeAccessType(row.access_type) ?? 'subscription');
           setLoading(false);
           return;
         }
@@ -232,7 +247,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
 
       // ── Fallback: local cache ───────────────────────────────────────────────
       const cached = await readCache();
-      if (cached) applyAccess(cached);
+      if (cached) applyAccess(normalizeAccessType(cached) ?? cached);
 
       const cachedGcStatus = await readGripcuffStatus();
       if (cachedGcStatus) setGripcuffStatus(cachedGcStatus);
@@ -267,7 +282,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
           const row = payload.new as any;
           console.log('[AccessContext] user_access Realtime:', payload.eventType, row?.access_type);
           if (row?.is_active && row?.access_type) {
-            applyAccess(row.access_type as AccessType);
+            applyAccess(normalizeAccessType(row.access_type) ?? 'subscription');
             setActivationMessage('Access activated! Welcome to Raw1 🎉');
           }
         },

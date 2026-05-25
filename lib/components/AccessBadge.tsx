@@ -3,35 +3,41 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useAccess } from '../providers/AccessContext';
 
 const ORANGE = '#FF6B00';
+const GREEN  = '#22C55E';
 
 interface AccessBadgeProps {
   onPressInactive?: () => void;
 }
 
 export const AccessBadge = ({ onPressInactive }: AccessBadgeProps) => {
-  const { accessType, showPaywall } = useAccess();
+  const { accessType, hasAccess, loading, showPaywall } = useAccess();
   const handleInactive = onPressInactive ?? showPaywall;
 
-  if (accessType === 'subscription') {
+  // Don't render anything while access is still being determined —
+  // prevents a "Not Activated" flash for paid users on cold boot.
+  if (loading) return null;
+
+  if (hasAccess && accessType === 'subscription') {
     return (
-      <View style={{ backgroundColor: ORANGE, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 }}>
-        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>⭐ Subscriber</Text>
+      <View style={{ backgroundColor: GREEN, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 }}>
+        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>⭐ Subscribed ✓</Text>
       </View>
     );
   }
 
-  if (accessType === 'gripcuff') {
+  if (hasAccess && accessType === 'gripcuff') {
     return (
-      <View style={{ backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: ORANGE }}>
-        <Text style={{ color: ORANGE, fontSize: 11, fontWeight: '600' }}>🔗 GripCuff Activated</Text>
+      <View style={{ backgroundColor: GREEN, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 }}>
+        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>🔧 Gripcuff Active ✓</Text>
       </View>
     );
   }
 
+  // No access — tappable badge that opens paywall
   return (
     <TouchableOpacity onPress={handleInactive} activeOpacity={0.75}>
-      <View style={{ backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: '#666' }}>
-        <Text style={{ color: '#888', fontSize: 11 }}>🔒 Not Activated</Text>
+      <View style={{ backgroundColor: ORANGE, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 }}>
+        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>🔒 Not Activated</Text>
       </View>
     </TouchableOpacity>
   );
