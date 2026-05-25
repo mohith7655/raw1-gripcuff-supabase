@@ -18,6 +18,7 @@ import { Clipboard, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, UserPlus, Calendar, Clock, PlayCircle, Check, CircleUserRound, Zap, Users, Bell, ChevronRight, Search, Contact, Flame, PersonStanding, HeartPulse } from 'lucide-react-native';
+import { TimeArrowPicker } from '../components/TimeArrowPicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useFriend } from '../providers/FriendContext';
@@ -63,7 +64,25 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
     const [step, setStep] = useState(0);
     const [selectedFriend, setSelectedFriend] = useState<FriendUser | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ hour: number, min: number } | null>(null);
+
+    // Arrow-picker time state (mirrors SelfScheduleModal)
+    const getLocalNow = () => {
+        const now = new Date();
+        const h24 = now.getHours();
+        const rawMin = now.getMinutes();
+        const minute = Math.round(rawMin / 5) * 5 % 60;
+        const period: 'AM' | 'PM' = h24 >= 12 ? 'PM' : 'AM';
+        const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
+        return { displayHour: hour12, amPm: period, selectedMinute: minute };
+    };
+    const _localNow = getLocalNow();
+    const [displayHour, setDisplayHour] = useState(_localNow.displayHour);
+    const [amPm, setAmPm] = useState<'AM' | 'PM'>(_localNow.amPm);
+    const [selectedMinute, setSelectedMinute] = useState(_localNow.selectedMinute);
+    // Derived 24-h hour for use in Date construction
+    const selectedHour24 = amPm === 'AM'
+        ? (displayHour === 12 ? 0 : displayHour)
+        : (displayHour === 12 ? 12 : displayHour + 12);
     const [selectedCategory, setSelectedCategory] = useState<ProgramCategoryKey | null>(null);
     const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
@@ -100,7 +119,9 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
         if (!inviteFlowState) return;
         if (!selectedFriend && inviteFlowState.selectedFriend) setSelectedFriend(inviteFlowState.selectedFriend);
         if (!selectedDate && inviteFlowState.selectedDate) setSelectedDate(new Date(inviteFlowState.selectedDate));
-        if (!selectedTimeSlot && inviteFlowState.selectedTimeSlot) setSelectedTimeSlot(inviteFlowState.selectedTimeSlot);
+        if (inviteFlowState.displayHour) setDisplayHour(inviteFlowState.displayHour);
+        if (inviteFlowState.amPm) setAmPm(inviteFlowState.amPm);
+        if (inviteFlowState.selectedMinute != null) setSelectedMinute(inviteFlowState.selectedMinute);
         if (!selectedCategory && inviteFlowState.selectedCategory) setSelectedCategory(inviteFlowState.selectedCategory);
         if (!selectedVideo && inviteFlowState.selectedVideo) setSelectedVideo(inviteFlowState.selectedVideo);
         if (betAmount === 0 && inviteFlowState.betAmount) setBetAmount(inviteFlowState.betAmount);
@@ -129,12 +150,6 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
         return d;
     });
 
-    const timeSlots = Array.from({ length: 33 }).map((_, i) => {
-        const hour = Math.floor(i / 2) + 6; // Starts at 6 AM
-        const min = (i % 2) === 0 ? 0 : 30;
-        return { hour, min };
-    });
-
     const formatTime = (hour: number, min: number) => {
         const period = hour >= 12 ? 'PM' : 'AM';
         const h = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
@@ -144,7 +159,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
 
     const handleNext = () => {
         if (step === 0 && !selectedFriend) { Alert.alert('Error', 'Please select a friend to work out with first.'); return; }
-        if (step === 1 && (!selectedDate || !selectedTimeSlot)) { Alert.alert('Error', 'Please select a date and time for the workout.'); return; }
+        if (step === 1 && !selectedDate) { Alert.alert('Error', 'Please select a date for the workout.'); return; }
         if (step === 2 && !selectedCategory) { Alert.alert('Select a category', 'Tap a category to browse workouts.'); return; }
         if (step === 3 && !selectedVideo) { Alert.alert('Select a workout', 'Tap a workout video to continue.'); return; }
 
@@ -157,7 +172,10 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
         setIsNow(true);
         const now = new Date();
         setSelectedDate(now);
-        setSelectedTimeSlot({ hour: now.getHours(), min: now.getMinutes() });
+        const { displayHour: h, amPm: a, selectedMinute: m } = getLocalNow();
+        setDisplayHour(h);
+        setAmPm(a);
+        setSelectedMinute(m);
         // Skip category/video selection when video is pre-selected from a programme
         setStep(isFromProgramme ? 4 : 2);
     };
@@ -170,7 +188,6 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
     const handleSubmit = async () => {
         if (!selectedFriend) { Alert.alert('Error', 'No friend selected!'); return; }
         if (!selectedDate) { Alert.alert('Error', 'No date selected!'); return; }
-        if (!selectedTimeSlot) { Alert.alert('Error', 'No time slot selected!'); return; }
         if (!selectedVideo) { Alert.alert('Error', 'No video available. Please try again.'); return; }
 
         if (betAmount > userCredits) {
@@ -185,7 +202,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
         try {
             const finalDate = isNow ? new Date() : new Date(selectedDate);
             if (!isNow) {
-                finalDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.min, 0, 0);
+                finalDate.setHours(selectedHour24, selectedMinute, 0, 0);
             }
 
             const res = await sendInvite({
@@ -219,16 +236,17 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
             step,
             friend: selectedFriend?.uid,
             date: selectedDate?.toISOString?.(),
-            time: selectedTimeSlot ? `${selectedTimeSlot.hour}:${selectedTimeSlot.min}` : null,
+            time: fmtPickerTime,
             category: selectedCategory,
             selectedVideo: selectedVideo?.id,
         });
-    }, [step, selectedFriend?.uid, selectedDate, selectedTimeSlot, selectedCategory, selectedVideo?.id]);
+    }, [step, selectedFriend?.uid, selectedDate, displayHour, amPm, selectedMinute, selectedCategory, selectedVideo?.id]);
 
     const selectedProgram = selectedVideo?.id ? getProgramByVideoId(selectedVideo.id) : undefined;
     const summaryFriend = selectedFriend?.fullName || selectedFriend?.username || 'No friend selected yet';
+    const fmtPickerTime = `${displayHour}:${String(selectedMinute).padStart(2, '0')} ${amPm}`;
     const summaryTime = selectedDate
-        ? `${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} • ${isNow ? 'Now' : selectedTimeSlot ? formatTime(selectedTimeSlot.hour, selectedTimeSlot.min) : 'Time not selected'}`
+        ? `${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} • ${isNow ? 'Now' : fmtPickerTime}`
         : 'No schedule selected yet';
     const summaryCategory = CATEGORY_OPTIONS.find(c => c.key === selectedCategory)?.title ?? 'No category selected yet';
     const summaryProgram = selectedProgram?.title ?? (selectedVideo?.title?.split(' - ')?.[0] || 'No program selected yet');
@@ -535,21 +553,20 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                         </ScrollView>
 
                         <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Time</Text>
-                        <View style={styles.timeGrid}>
-                            {timeSlots.map((t, i) => {
-                                const isSelected = selectedTimeSlot?.hour === t.hour && selectedTimeSlot?.min === t.min;
-                                return (
-                                    <TouchableOpacity
-                                        key={i}
-                                        style={[styles.timeBubble, isSelected && styles.timeBubbleSelected]}
-                                        onPress={() => setSelectedTimeSlot(t)}
-                                    >
-                                        <Text style={[styles.timeText, isSelected && styles.timeTextSelected]}>
-                                            {formatTime(t.hour, t.min)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                        <View style={styles.pickerWrap}>
+                            <TimeArrowPicker
+                                hour={displayHour}
+                                minute={selectedMinute}
+                                amPm={amPm}
+                                onHourChange={setDisplayHour}
+                                onMinuteChange={setSelectedMinute}
+                                onAmPmChange={setAmPm}
+                                minuteStep={5}
+                            />
+                        </View>
+                        <View style={styles.summaryBox}>
+                            <Clock color="#FF6B00" size={14} />
+                            <Text style={styles.summaryBoxText}>{fmtPickerTime}</Text>
                         </View>
                     </View>
                 )}
@@ -651,7 +668,8 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                                 inviteFlowState: {
                                                     selectedFriend,
                                                     selectedDate: selectedDate?.toISOString() ?? null,
-                                                    selectedTimeSlot, selectedCategory,
+                                                    displayHour, amPm, selectedMinute,
+                                                    selectedCategory,
                                                     selectedVideo, betAmount,
                                                 },
                                             })}
@@ -756,7 +774,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                         </View>
 
                         {/* Bet Credits Section */}
-                        {selectedFriend && selectedDate && selectedTimeSlot && (
+                        {selectedFriend && selectedDate && (
                             <View style={{
                                 backgroundColor: '#1a2235',
                                 borderRadius: 16,
@@ -921,9 +939,9 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                     {step === 4 ? (
                         <TouchableOpacity
                             onPress={handleSubmit}
-                            disabled={isSubmitting || !selectedFriend || !selectedDate || !selectedTimeSlot || !selectedVideo}
+                            disabled={isSubmitting || !selectedFriend || !selectedDate || !selectedVideo}
                             style={{
-                                backgroundColor: (selectedFriend && selectedDate && selectedTimeSlot && selectedVideo) ? '#F97316' : '#7c7c7c',
+                                backgroundColor: (selectedFriend && selectedDate && selectedVideo) ? '#F97316' : '#7c7c7c',
                                 borderRadius: 30,
                                 padding: 18,
                                 alignItems: 'center',
@@ -1049,11 +1067,14 @@ const styles = StyleSheet.create({
     dateText: { color: AppTheme.textGrey, fontWeight: '600' },
     dateTextSelected: { color: 'white' },
 
-    timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    timeBubble: { width: '31%', paddingVertical: 14, backgroundColor: AppTheme.cardColor, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    timeBubbleSelected: { backgroundColor: AppTheme.primaryColor, borderColor: AppTheme.primaryColor },
-    timeText: { color: AppTheme.textGrey, fontWeight: '600' },
-    timeTextSelected: { color: 'white' },
+    pickerWrap: { marginVertical: 16, alignItems: 'center' },
+    summaryBox: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: 'rgba(255,107,0,0.08)', borderRadius: 10,
+        paddingHorizontal: 14, paddingVertical: 10, marginTop: 4, marginBottom: 12,
+        borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)',
+    },
+    summaryBoxText: { color: '#FF6B00', fontSize: 14, fontWeight: '600', flex: 1 },
 
     // Video cards - library-style
     videoCard: {

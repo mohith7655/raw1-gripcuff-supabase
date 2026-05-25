@@ -45,6 +45,12 @@ const toAppUser = (row: any, uid: string): User => {
     totalWatchSessions: Number(row?.total_watch_sessions ?? 0),
     lastVideoWatchAt: row?.last_video_watch_at || null,
     totalLiveSessions: Number(row?.total_live_sessions ?? 0),
+    // ── Access / subscription ──────────────────────────────────────────────────
+    hasAccess: Boolean(row?.has_access),
+    accessType: row?.access_type ?? null,
+    stripeCustomerId: row?.stripe_customer_id ?? null,
+    subscriptionId: row?.subscription_id ?? null,
+    subscriptionStatus: row?.subscription_status ?? null,
   };
 };
 

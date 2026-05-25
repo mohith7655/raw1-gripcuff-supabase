@@ -15,6 +15,8 @@ import { Calendar, Dumbbell, X } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useNotificationCenter } from '../providers/NotificationProvider';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
+import { useAuth } from '../providers/AuthContext';
+import { SessionService } from '../services/session.service';
 import { WorkoutSession } from '../models/WorkoutSession';
 
 const ACCENT = '#F97316';
@@ -111,6 +113,7 @@ function AcceptButton({ onPress, disabled }: { onPress: () => void; disabled: bo
 export function WorkoutInviteModal() {
     const { currentWorkoutInvite, dismissWorkoutInvite } = useNotificationCenter();
     const { acceptSession, declineSession, pendingInvites } = useWorkoutSession();
+    const { supabaseUserId } = useAuth();
 
     // Reliable fallback: show modal when pendingInvites arrives even if the
     // notification doc was skipped by the NotificationProvider bootstrap.
@@ -199,17 +202,39 @@ export function WorkoutInviteModal() {
     const handleAccept = useCallback(() => {
         if (busy || !activeSessionId) return;
         setBusy(true);
-        animateOut(() => {
+        animateOut(async () => {
+            // Mark notification read (existing flow)
             acceptSession(activeSessionId).catch(() => {});
             dismissActive();
+
+            // Update sessions table → get agoraChannel + workoutId, then navigate
+            try {
+                const uid = supabaseUserId ?? '';
+                const { agoraChannel, workoutId, workoutTitle } =
+                    await SessionService.acceptSession(activeSessionId, uid);
+
+                if (workoutId) {
+                    navigation.navigate('VideoPlayerScreen', {
+                        videoId: workoutId,
+                        title: workoutTitle || undefined,
+                        allowInvite: true,
+                        coWorkoutChannel: agoraChannel || undefined,
+                    });
+                }
+            } catch (e) {
+                console.warn('[WorkoutInviteModal] SessionService.acceptSession failed:', e);
+                // Still navigate to sessions screen as a fallback
+                navigation.navigate('UpcomingSessionsScreen');
+            }
         });
-    }, [busy, activeSessionId, animateOut, acceptSession, dismissActive]);
+    }, [busy, activeSessionId, animateOut, acceptSession, dismissActive, supabaseUserId, navigation]);
 
     const handleDecline = useCallback(() => {
         if (busy || !activeSessionId) return;
         setBusy(true);
         animateOut(() => {
             declineSession(activeSessionId).catch(() => {});
+            SessionService.declineSession(activeSessionId).catch(() => {});
             dismissActive();
         });
     }, [busy, activeSessionId, animateOut, declineSession, dismissActive]);

@@ -48,6 +48,7 @@ import { useVideoEngagement } from '../hooks/useVideoEngagement';
 import { useVideoGlobalCounts, formatCount } from '../services/videoEngagement.service';
 import { getSimilarPrograms, RecommendedProgram } from '../services/recommendation.service';
 import { useFocusEffect } from '@react-navigation/native';
+import { AgoraVoice } from '../services/agora/AgoraVoice';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -579,18 +580,41 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
+    // Co-workout: channel name passed when another user accepted an invite.
+    // Declared before useFocusEffect so it's in scope for the join/leave logic.
+    const coWorkoutChannel: string | null = route?.params?.coWorkoutChannel ?? null;
+
     // Pause video when navigating away, resume when returning.
     // Watch tracking is handled by SharedVideoPlayer's playingChange listener.
     useFocusEffect(useCallback(() => {
         sharedPlayerRef.current?.resumeVideo();
+
+        // If this screen was opened as part of a co-workout session, join the
+        // shared Agora voice channel so both users can talk while they work out.
+        if (coWorkoutChannel) {
+            console.log('[VideoPlayerScreen] joining co-workout Agora channel:', coWorkoutChannel);
+            AgoraVoice.joinChannel(coWorkoutChannel, () => {
+                console.log('[VideoPlayerScreen] co-workout speaker active');
+            }).catch((err: unknown) => {
+                console.warn('[VideoPlayerScreen] AgoraVoice.joinChannel failed:', err);
+            });
+        }
+
         return () => {
             sharedPlayerRef.current?.pauseVideo();
             if (completionTimerRef.current) {
                 clearTimeout(completionTimerRef.current);
                 completionTimerRef.current = null;
             }
+            // Leave the voice channel when the user navigates away.
+            if (coWorkoutChannel) {
+                console.log('[VideoPlayerScreen] leaving co-workout Agora channel');
+                AgoraVoice.leaveChannel();
+            }
         };
-    }, []));
+    // coWorkoutChannel is derived from route.params, stable for the lifetime of this screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [coWorkoutChannel]));
 
     const handleVideoEndCallback = useCallback(() => {
         handleVideoEndRef.current();
@@ -1590,9 +1614,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 }}
             />
 
-            {/* Panel — bottom half, dims when video is playing (lights-out mode) */}
-            <Animated.View style={[panelStyles.panel, { opacity: panelDimAnim }]}>
-                {/* Engagement action bar */}
+            {/* Panel — outer wrapper never dims */}
+            <View style={panelStyles.panel}>
+
+                {/* Reaction buttons — always full opacity, never dims during playback */}
                 <EngagementBar
                     engagement={engagement}
                     isFavorite={isFavorite(videoId)}
@@ -1612,54 +1637,59 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     })}
                 />
 
-                {/* Scrollable content area */}
-                {activeTab === 'social' ? renderSocialContent()
-                    : activeTab === 'requirements' ? renderRequirementsContent()
-                    : renderFaqQaContent()}
+                {/* Everything below reaction buttons dims during playback */}
+                <Animated.View style={{ opacity: panelDimAnim, flex: 1 }}>
 
-                {/* Tab order: Social → Requirements → FAQ & Q&A */}
-                <View style={panelStyles.tabRow}>
-                    {allowInvite && (
+                    {/* Scrollable content area */}
+                    {activeTab === 'social' ? renderSocialContent()
+                        : activeTab === 'requirements' ? renderRequirementsContent()
+                        : renderFaqQaContent()}
+
+                    {/* Tab order: Social → Requirements → FAQ & Q&A */}
+                    <View style={panelStyles.tabRow}>
+                        {allowInvite && (
+                            <TouchableOpacity
+                                style={[panelStyles.tab, activeTab === 'social' && panelStyles.tabActive]}
+                                onPress={() => setActiveTab('social')}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
+                                    {(() => {
+                                        const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
+                                        const fallback = Math.max(0, (viewerCount || 1) - 1);
+                                        const n = liveViewers.length > 0 ? exactCount : fallback;
+                                        return n > 0 ? (
+                                            <View style={panelStyles.socialLiveChip}>
+                                                <View style={panelStyles.socialLiveDot} />
+                                                <Text style={panelStyles.socialLiveChipText}>{n}</Text>
+                                            </View>
+                                        ) : null;
+                                    })()}
+                                </View>
+                            </TouchableOpacity>
+                        )}
+
                         <TouchableOpacity
-                            style={[panelStyles.tab, activeTab === 'social' && panelStyles.tabActive]}
-                            onPress={() => setActiveTab('social')}
+                            style={[panelStyles.tab, activeTab === 'requirements' && panelStyles.tabActive]}
+                            onPress={() => setActiveTab('requirements')}
                         >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
-                                {(() => {
-                                    const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
-                                    const fallback = Math.max(0, (viewerCount || 1) - 1);
-                                    const n = liveViewers.length > 0 ? exactCount : fallback;
-                                    return n > 0 ? (
-                                        <View style={panelStyles.socialLiveChip}>
-                                            <View style={panelStyles.socialLiveDot} />
-                                            <Text style={panelStyles.socialLiveChipText}>{n}</Text>
-                                        </View>
-                                    ) : null;
-                                })()}
-                            </View>
+                            <Text style={[panelStyles.tabText, activeTab === 'requirements' && panelStyles.tabTextActive]}>
+                                Requirements
+                            </Text>
                         </TouchableOpacity>
-                    )}
 
-                    <TouchableOpacity
-                        style={[panelStyles.tab, activeTab === 'requirements' && panelStyles.tabActive]}
-                        onPress={() => setActiveTab('requirements')}
-                    >
-                        <Text style={[panelStyles.tabText, activeTab === 'requirements' && panelStyles.tabTextActive]}>
-                            Requirements
-                        </Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[panelStyles.tab, activeTab === 'faq-qa' && panelStyles.tabActive]}
+                            onPress={() => setActiveTab('faq-qa')}
+                        >
+                            <Text style={[panelStyles.tabText, activeTab === 'faq-qa' && panelStyles.tabTextActive]}>
+                                FAQ & Q&A
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
-                    <TouchableOpacity
-                        style={[panelStyles.tab, activeTab === 'faq-qa' && panelStyles.tabActive]}
-                        onPress={() => setActiveTab('faq-qa')}
-                    >
-                        <Text style={[panelStyles.tabText, activeTab === 'faq-qa' && panelStyles.tabTextActive]}>
-                            FAQ & Q&A
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
+                </Animated.View>
+            </View>
         </KeyboardAvoidingView>
     );
 }

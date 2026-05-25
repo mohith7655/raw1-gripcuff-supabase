@@ -160,6 +160,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                     ? JSON.parse(row.weekly_activity)
                     : row.weekly_activity)
                 : prev.weeklyActivity,
+              // Access fields — updated when stripe webhook or gripcuff RPC writes to users table
+              hasAccess: row.has_access != null ? Boolean(row.has_access) : prev.hasAccess,
+              accessType: row.access_type !== undefined ? (row.access_type ?? null) : prev.accessType,
+              stripeCustomerId: row.stripe_customer_id !== undefined ? (row.stripe_customer_id ?? null) : prev.stripeCustomerId,
+              subscriptionId: row.subscription_id !== undefined ? (row.subscription_id ?? null) : prev.subscriptionId,
+              subscriptionStatus: row.subscription_status !== undefined ? (row.subscription_status ?? null) : prev.subscriptionStatus,
             };
           });
           console.log('[Profile] realtime immutable update from DB');

@@ -1,6 +1,14 @@
 import { WorkoutSession, WorkoutInviteNotification } from '../models/WorkoutSession';
 import { NotificationService } from './notification.service';
 
+/** Simple RFC-4122 v4 UUID — no extra deps required. */
+function generateId(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+}
+
 // Reusing the same timeout logic we used for the FriendService
 const withTimeout = <T>(promise: Promise<T>, ms: number = 8000): Promise<T> => {
     let timeoutId: NodeJS.Timeout;
@@ -39,23 +47,34 @@ export class WorkoutSessionService {
             thumbnail?: string;
         }
     ): Promise<string> {
+        const sessionId = generateId();
+
         const isToday = scheduledAt.toDateString() === new Date().toDateString();
         const dateStr = isToday ? 'Today' : scheduledAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         const timeStr = scheduledAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         const message = `${hostName} invited you to work out ${dateStr} at ${timeStr}`;
 
-        // Dual-write: Supabase is source of truth for notification reads/listeners.
-        NotificationService.insert({
+        console.log('[WorkoutSessionService] createSession', { sessionId, hostUid, guestUid, videoId, scheduledAt });
+
+        // Write notification to Supabase — this is the source of truth for the invite.
+        // sessionId ties the notification back to this invite so it can be accepted/declined.
+        const notifId = await NotificationService.insert({
             toUid: guestUid,
             fromUid: hostUid,
             fromName: hostName,
             type: 'workout_invite',
             title: 'Workout Invite',
             body: message,
-            sessionId: '',
-        }).catch((e) => console.warn('[WorkoutSessionService] Supabase notification write failed (createSession):', e));
+            sessionId,
+        });
 
-        return '';
+        if (!notifId) {
+            // insert() returns null for duplicate suppression — treat that as success
+            // since the friend already has a recent invite from this session.
+            console.log('[WorkoutSessionService] notification dedup — treating as success', { sessionId });
+        }
+
+        return sessionId;
     }
 
     /**

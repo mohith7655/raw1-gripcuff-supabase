@@ -13,8 +13,10 @@ import {
 import { Check, CircleUserRound, X, PlayCircle, Clock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFriend } from '../providers/FriendContext';
-import { useInvite } from '../hooks/useInvite';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
+import { useAuth } from '../providers/AuthContext';
+import { useUser } from '../providers/UserContext';
+import { SessionService } from '../services/session.service';
 import type { User } from '../models/User';
 
 const ACCENT = '#FF6B00';
@@ -35,17 +37,20 @@ type Screen = 'select' | 'sending' | 'waiting' | 'accepted' | 'declined' | 'time
 export function VideoInviteModal({ visible, videoId, videoTitle, category, programName, thumbnail, onClose }: Props) {
     const navigation = useNavigation<any>();
     const { friends } = useFriend();
-    const { sendInvite, loading } = useInvite();
     const { cancelSession, expireSession } = useWorkoutSession();
+    const { supabaseUserId } = useAuth();
+    const { profile } = useUser();
 
     const [screen, setScreen] = useState<Screen>('select');
     const [selected, setSelected] = useState<User | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [countdown, setCountdown] = useState(WAIT_SECONDS);
+    const [sendError, setSendError] = useState<string | null>(null);
 
-    const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const countdownRef    = useRef<ReturnType<typeof setInterval> | null>(null);
     const sessionUnsubRef = useRef<(() => void) | null>(null);
-    const mountedRef = useRef(true);
+    const mountedRef      = useRef(true);
+    const agoraChannelRef = useRef<string>('');
 
     // ── Cleanup on unmount ──
     useEffect(() => {
@@ -67,20 +72,23 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
             setSelected(null);
             setSessionId(null);
             setCountdown(WAIT_SECONDS);
+            setSendError(null);
+            agoraChannelRef.current = '';
         }
     }, [visible]);
 
-    // ── Firestore listener + countdown while waiting ──
+    // ── Realtime session status + countdown while waiting ──
     useEffect(() => {
         if (screen !== 'waiting' || !sessionId) return;
 
-        // Countdown
+        // Countdown — expire if no response in WAIT_SECONDS
         setCountdown(WAIT_SECONDS);
         countdownRef.current = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
                     clearInterval(countdownRef.current!);
                     if (mountedRef.current) {
+                        SessionService.declineSession(sessionId).catch(() => {});
                         expireSession(sessionId).catch(() => {});
                         setScreen('timeout');
                     }
@@ -90,7 +98,30 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
             });
         }, 1000);
 
-        // Firestore listener removed — status polling not available
+        // Supabase realtime — watch for the guest accepting (status → 'active')
+        sessionUnsubRef.current = SessionService.subscribeToSessionStatus(
+            sessionId,
+            (status, row) => {
+                if (!mountedRef.current) return;
+                if (status === 'active') {
+                    clearInterval(countdownRef.current!);
+                    setScreen('accepted');
+                    // Give the accepted animation a moment, then navigate
+                    setTimeout(() => {
+                        if (!mountedRef.current) return;
+                        onClose();
+                        navigation.navigate('VideoPlayerScreen', {
+                            videoId: row.workout_id,
+                            allowInvite: true,
+                            coWorkoutChannel: row.agora_channel,
+                        });
+                    }, 1400);
+                } else if (status === 'cancelled' || status === 'declined') {
+                    clearInterval(countdownRef.current!);
+                    setScreen('declined');
+                }
+            },
+        );
 
         return () => {
             clearInterval(countdownRef.current!);
@@ -100,37 +131,37 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
     }, [screen, sessionId]);
 
     const handleSelectFriend = async (friend: User) => {
+        if (!supabaseUserId) return;
         setSelected(friend);
+        setSendError(null);
         setScreen('sending');
         try {
-            const res = await sendInvite({
-                type: 'video_workout',
-                toUid: friend.uid,
-                toName: friend.fullName ?? friend.username,
-                toAvatarUrl: friend.profileImageUrl ?? null,
+            const hostName = profile?.fullName || profile?.username || 'Your friend';
+            const { sessionId: sid, agoraChannel } = await SessionService.createCoWorkoutSession(
+                supabaseUserId,
+                hostName,
+                friend.uid,
                 videoId,
                 videoTitle,
-                scheduledAt: new Date(),
-                betCredits: 0,
-                inviteType: 'instant',
-                category,
-                programName,
-                thumbnail,
-            });
+            );
             if (!mountedRef.current) return;
-            if (res.success && res.sessionId) {
-                setSessionId(res.sessionId);
-                setScreen('waiting');
-            } else {
-                setScreen('select');
-            }
-        } catch {
-            if (mountedRef.current) setScreen('select');
+            agoraChannelRef.current = agoraChannel;
+            setSessionId(sid);
+            setScreen('waiting');
+        } catch (e: any) {
+            if (!mountedRef.current) return;
+            const msg = e?.message ?? 'Could not send invite. Please try again.';
+            console.error('[VideoInviteModal] createCoWorkoutSession failed:', msg);
+            setSendError(msg);
+            setScreen('select');
         }
     };
 
     const handleCancel = () => {
-        if (sessionId) cancelSession(sessionId).catch(() => {});
+        if (sessionId) {
+            SessionService.declineSession(sessionId).catch(() => {});
+            cancelSession(sessionId).catch(() => {});
+        }
         onClose();
     };
 
@@ -175,6 +206,12 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                         </View>
 
                         <Text style={s.sectionLabel}>Tap a friend to invite them now</Text>
+
+                        {sendError ? (
+                            <View style={s.errorBanner}>
+                                <Text style={s.errorText}>{sendError}</Text>
+                            </View>
+                        ) : null}
 
                         {friends.length === 0 ? (
                             <View style={s.empty}>
@@ -375,6 +412,12 @@ const s = StyleSheet.create({
     inviteNowText: { color: 'white', fontSize: 12, fontWeight: '700' },
     empty: { paddingVertical: 32, alignItems: 'center' },
     emptyText: { color: '#666', fontSize: 14, textAlign: 'center' },
+    errorBanner: {
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)',
+        paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12,
+    },
+    errorText: { color: '#F87171', fontSize: 13, textAlign: 'center' },
     // Centered states
     centeredContent: {
         alignItems: 'center', paddingTop: 28, paddingBottom: 8,

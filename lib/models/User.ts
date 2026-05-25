@@ -39,6 +39,12 @@ export interface User {
   totalWatchSessions?: number;
   lastVideoWatchAt?: string | null;
   totalLiveSessions?: number;
+  // ── Access / subscription fields (from users.has_access, etc.) ──────────────
+  hasAccess?: boolean;
+  accessType?: string | null;
+  stripeCustomerId?: string | null;
+  subscriptionId?: string | null;
+  subscriptionStatus?: string | null;
 }
 
 export type CreateUserInput = Omit<User, 'uid' | 'createdAt' | 'updatedAt'>;

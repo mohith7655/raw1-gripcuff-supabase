@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { X, Clock, CalendarDays, PlayCircle, Check, ChevronLeft } from 'lucide-react-native';
+import { TimeArrowPicker } from './TimeArrowPicker';
 import { CircleUserRound } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFriend } from '../providers/FriendContext';
@@ -18,8 +19,6 @@ import { useInvite } from '../hooks/useInvite';
 import type { User } from '../models/User';
 
 const ACCENT = '#FF6B00';
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = [0, 15, 30, 45];
 
 type Step = 'datetime' | 'friends' | 'sending' | 'done' | 'error';
 
@@ -54,11 +53,27 @@ export function ScheduleSessionModal({
 
     const [step, setStep] = useState<Step>('datetime');
     const [selectedDateIdx, setSelectedDateIdx] = useState(0);
-    const [selectedHour, setSelectedHour] = useState(() => {
-        const h = new Date().getHours() + 1;
-        return h > 23 ? 0 : h;
-    });
-    const [selectedMinute, setSelectedMinute] = useState(0);
+    const [errorMsg, setErrorMsg] = useState<string>('Could not schedule the session.');
+
+    // Arrow-picker time state — mirrors SelfScheduleModal
+    const getLocalNow = () => {
+        const now = new Date();
+        const h24 = now.getHours();
+        const rawMin = now.getMinutes();
+        const minute = Math.round(rawMin / 5) * 5 % 60;
+        const period: 'AM' | 'PM' = h24 >= 12 ? 'PM' : 'AM';
+        const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
+        return { displayHour: hour12, amPm: period, selectedMinute: minute };
+    };
+    const _now = getLocalNow();
+    const [displayHour, setDisplayHour] = useState(_now.displayHour);
+    const [amPm, setAmPm] = useState<'AM' | 'PM'>(_now.amPm);
+    const [selectedMinute, setSelectedMinute] = useState(_now.selectedMinute);
+
+    // Derive 24-h hour for scheduledAt
+    const selectedHour = amPm === 'AM'
+        ? (displayHour === 12 ? 0 : displayHour)
+        : (displayHour === 12 ? 12 : displayHour + 12);
 
     const mountedRef = useRef(true);
 
@@ -81,6 +96,11 @@ export function ScheduleSessionModal({
     const resetAndClose = () => {
         setStep('datetime');
         setSelectedDateIdx(0);
+        setErrorMsg('Could not schedule the session.');
+        const { displayHour: h, amPm: a, selectedMinute: m } = getLocalNow();
+        setDisplayHour(h);
+        setAmPm(a);
+        setSelectedMinute(m);
         onClose();
     };
 
@@ -102,17 +122,25 @@ export function ScheduleSessionModal({
                 thumbnail,
             });
             if (!mountedRef.current) return;
-            if (res.success && res.sessionId) {
+            if (res.success) {
                 setStep('done');
                 setTimeout(() => {
                     if (!mountedRef.current) return;
                     resetAndClose();
                 }, 1800);
             } else {
+                const msg = res.error ?? 'Could not schedule the session.';
+                console.error('[ScheduleSessionModal] sendInvite failed:', msg);
+                setErrorMsg(msg);
                 setStep('error');
             }
-        } catch {
-            if (mountedRef.current) setStep('error');
+        } catch (e: any) {
+            const msg = e?.message ?? 'Could not schedule the session.';
+            console.error('[ScheduleSessionModal] exception:', msg);
+            if (mountedRef.current) {
+                setErrorMsg(msg);
+                setStep('error');
+            }
         }
     };
 
@@ -129,16 +157,9 @@ export function ScheduleSessionModal({
     const shortDate = (d: Date) =>
         d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-    const formatHour = (h: number) => {
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const h12 = h % 12 === 0 ? 12 : h % 12;
-        return `${h12} ${ampm}`;
-    };
-
-    const formatMinute = (m: number) => (m === 0 ? '00' : String(m));
-
+    const fmtMin = (m: number) => String(m).padStart(2, '0');
     const scheduledSummary =
-        `${labelForDay(dateOptions[selectedDateIdx])}, ${shortDate(dateOptions[selectedDateIdx])} at ${formatHour(selectedHour)}:${formatMinute(selectedMinute)}`;
+        `${labelForDay(dateOptions[selectedDateIdx])}, ${shortDate(dateOptions[selectedDateIdx])} at ${displayHour}:${fmtMin(selectedMinute)} ${amPm}`;
 
     const stepTitle =
         step === 'datetime' ? 'Schedule Workout' :
@@ -222,48 +243,21 @@ export function ScheduleSessionModal({
                             ))}
                         </ScrollView>
 
-                        {/* Hour */}
+                        {/* Time */}
                         <View style={s.sectionHeader}>
                             <Clock color={ACCENT} size={15} />
-                            <Text style={s.sectionLabel}>Hour</Text>
+                            <Text style={s.sectionLabel}>Time</Text>
                         </View>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={s.chipRow}
-                        >
-                            {HOURS.map((h) => (
-                                <TouchableOpacity
-                                    key={h}
-                                    style={[s.hourChip, selectedHour === h && s.chipActive]}
-                                    onPress={() => setSelectedHour(h)}
-                                    activeOpacity={0.75}
-                                >
-                                    <Text style={[s.hourText, selectedHour === h && s.chipTextActive]}>
-                                        {formatHour(h)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-
-                        {/* Minute */}
-                        <View style={s.sectionHeader}>
-                            <Clock color={ACCENT} size={15} />
-                            <Text style={s.sectionLabel}>Minute</Text>
-                        </View>
-                        <View style={s.minuteRow}>
-                            {MINUTES.map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    style={[s.minuteChip, selectedMinute === m && s.chipActive]}
-                                    onPress={() => setSelectedMinute(m)}
-                                    activeOpacity={0.75}
-                                >
-                                    <Text style={[s.minuteText, selectedMinute === m && s.chipTextActive]}>
-                                        :{formatMinute(m)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                        <View style={s.pickerWrap}>
+                            <TimeArrowPicker
+                                hour={displayHour}
+                                minute={selectedMinute}
+                                amPm={amPm}
+                                onHourChange={setDisplayHour}
+                                onMinuteChange={setSelectedMinute}
+                                onAmPmChange={setAmPm}
+                                minuteStep={5}
+                            />
                         </View>
 
                         {/* Summary */}
@@ -351,9 +345,10 @@ export function ScheduleSessionModal({
                 {/* ── Error ── */}
                 {step === 'error' && (
                     <View style={s.centered}>
-                        <Text style={s.statusText}>Could not schedule the session.</Text>
+                        <Text style={s.statusText}>Something went wrong</Text>
+                        <Text style={s.statusSub}>{errorMsg}</Text>
                         <TouchableOpacity
-                            style={s.primaryBtn}
+                            style={[s.primaryBtn, { marginTop: 20 }]}
                             onPress={() => setStep('friends')}
                             activeOpacity={0.85}
                         >
@@ -494,37 +489,9 @@ const s = StyleSheet.create({
     chipTextActive: {
         color: ACCENT,
     },
-    hourChip: {
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.06)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-    },
-    hourText: {
-        color: '#94A3B8',
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    minuteRow: {
-        flexDirection: 'row',
-        gap: 10,
-        marginBottom: 4,
-    },
-    minuteChip: {
-        flex: 1,
+    pickerWrap: {
+        marginVertical: 16,
         alignItems: 'center',
-        paddingVertical: 12,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.06)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-    },
-    minuteText: {
-        color: '#94A3B8',
-        fontSize: 15,
-        fontWeight: '700',
     },
     summaryBox: {
         flexDirection: 'row',

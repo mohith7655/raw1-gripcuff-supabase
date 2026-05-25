@@ -1,15 +1,25 @@
+/**
+ * AccessContext — manages paywall visibility and access state.
+ *
+ * Source of truth (in priority order):
+ *   1. users.has_access column — checked at boot via direct query
+ *   2. profile.hasAccess in UserContext — synced via Realtime when DB changes
+ *   3. Local cache (AsyncStorage / localStorage) — offline fallback
+ *
+ * RPCs are called by the components (PaywallScreen), not here.
+ * This context only manages the STATE of access; the DB writes happen in the UI layer
+ * via supabase.rpc('activate_gripcuff_access' | 'activate_stripe_access').
+ */
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+import { useUser } from './UserContext';
+import { supabase } from '../core/config/supabase';
 
 export type AccessType = null | 'gripcuff' | 'subscription';
 export type GripcuffStatus = null | 'has_gripcuff' | 'using_at_gym' | 'no_gripcuff';
-
-export interface GrantMeta {
-  orderNumber?: string;
-  subscriptionId?: string;
-}
 
 interface AccessContextType {
   accessType: AccessType;
@@ -20,7 +30,10 @@ interface AccessContextType {
   gripcuffStatus: GripcuffStatus;
   activationMessage: string | null;
   clearActivationMessage: () => void;
-  grantAccess: (type: 'gripcuff' | 'subscription', meta?: GrantMeta) => Promise<void>;
+  /** Called by PaywallScreen after a successful RPC to immediately reflect access in UI */
+  grantAccess: (type: 'gripcuff' | 'subscription', message?: string) => void;
+  /** Manual Supabase poll — for the native "I've Completed Payment" button */
+  checkAndRestoreAccess: () => Promise<boolean>;
   showPaywall: () => Promise<void>;
   hidePaywall: () => void;
   hideSurvey: () => void;
@@ -37,7 +50,8 @@ const AccessContext = createContext<AccessContextType>({
   gripcuffStatus: null,
   activationMessage: null,
   clearActivationMessage: () => {},
-  grantAccess: async () => {},
+  grantAccess: () => {},
+  checkAndRestoreAccess: async () => false,
   showPaywall: async () => {},
   hidePaywall: () => {},
   hideSurvey: () => {},
@@ -45,8 +59,10 @@ const AccessContext = createContext<AccessContextType>({
   checkAndShowPaywall: () => false,
 });
 
-const LS_KEY = 'raw1_accessType';
+const LS_KEY        = 'raw1_accessType';
 const GC_STATUS_KEY = 'raw1_gripcuffStatus';
+
+// ─── Local cache helpers ──────────────────────────────────────────────────────
 
 const readCache = async (): Promise<AccessType> => {
   try {
@@ -54,9 +70,7 @@ const readCache = async (): Promise<AccessType> => {
       return (localStorage.getItem(LS_KEY) as AccessType) || null;
     }
     return ((await AsyncStorage.getItem(LS_KEY)) as AccessType) || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 };
 
 const writeCache = async (type: AccessType) => {
@@ -77,9 +91,7 @@ const readGripcuffStatus = async (): Promise<GripcuffStatus> => {
       return (localStorage.getItem(GC_STATUS_KEY) as GripcuffStatus) || null;
     }
     return ((await AsyncStorage.getItem(GC_STATUS_KEY)) as GripcuffStatus) || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 };
 
 const writeGripcuffStatus = async (status: GripcuffStatus) => {
@@ -94,25 +106,31 @@ const writeGripcuffStatus = async (status: GripcuffStatus) => {
   } catch {}
 };
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
   const { supabaseUserId } = useAuth();
+  // AccessProvider is inside UserProvider — safe to use useUser()
+  const { profile } = useUser();
 
-  const [currentUid, setCurrentUid] = useState<string | null>(null);
-  const [accessType, setAccessType] = useState<AccessType>(null);
-  const [loading, setLoading] = useState(true);
-  const [paywallVisible, setPaywallVisible] = useState(false);
-  const [surveyVisible, setSurveyVisible] = useState(false);
-  const [gripcuffStatus, setGripcuffStatus] = useState<GripcuffStatus>(null);
+  const [currentUid, setCurrentUid]               = useState<string | null>(null);
+  const [accessType, setAccessType]               = useState<AccessType>(null);
+  const [loading, setLoading]                     = useState(true);
+  const [paywallVisible, setPaywallVisible]       = useState(false);
+  const [surveyVisible, setSurveyVisible]         = useState(false);
+  const [gripcuffStatus, setGripcuffStatus]       = useState<GripcuffStatus>(null);
   const [activationMessage, setActivationMessage] = useState<string | null>(null);
 
+  const currentUidRef = useRef<string | null>(null);
+
+  // Detect Stripe redirect URL params on web — set once at mount before the user logs in
   const pendingStripeRef = useRef<{ detected: boolean; sessionId: string | null }>({
     detected: false,
     sessionId: null,
   });
-
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
+    const params  = new URLSearchParams(window.location.search);
     const payment = params.get('payment');
     window.history.replaceState({}, '', window.location.pathname);
     if (payment === 'success') {
@@ -123,6 +141,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // ─── Core apply — updates state + local cache ───────────────────────────────
   const applyAccess = useCallback((type: AccessType) => {
     setAccessType(type);
     writeCache(type);
@@ -132,48 +151,178 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // ─── Sync from UserContext profile ─────────────────────────────────────────
+  // When UserContext loads the profile (or Realtime updates has_access on the
+  // users table), propagate to AccessContext. This is the primary post-boot path.
+  useEffect(() => {
+    if (profile?.hasAccess === true) {
+      const at = (profile.accessType as AccessType) || 'subscription';
+      applyAccess(at);
+      console.log('[AccessContext] profile.hasAccess → access granted:', at);
+    }
+  }, [profile?.hasAccess, profile?.accessType, applyAccess]);
+
+  // ─── Boot / uid-change sync ─────────────────────────────────────────────────
+  // Reads users.has_access directly so access is restored before profile fully loads.
   useEffect(() => {
     const sync = async () => {
       const uid = supabaseUserId ?? null;
 
       if (!uid) {
         setCurrentUid(null);
+        currentUidRef.current = null;
         applyAccess(null);
         setLoading(false);
         return;
       }
 
       setCurrentUid(uid);
+      currentUidRef.current = uid;
 
-      const cached = await readCache();
-      if (cached) setAccessType(cached);
-      const cachedGcStatus = await readGripcuffStatus();
-      if (cachedGcStatus) setGripcuffStatus(cachedGcStatus);
-
+      // ── Handle Stripe web redirect ──────────────────────────────────────────
       if (pendingStripeRef.current.detected) {
         const { sessionId } = pendingStripeRef.current;
         pendingStripeRef.current = { detected: false, sessionId: null };
-        applyAccess('subscription');
-        setActivationMessage('Welcome to Raw1! Subscription activated.');
+
+        console.log('[AccessContext] Stripe web redirect detected, session_id:', sessionId);
+
+        // Call the confirmed-working RPC. Pass session_id as p_subscription_id;
+        // the webhook (stripe-webhook.ts) will later fill in the full details.
+        try {
+          const { data, error } = await supabase.rpc('activate_stripe_access', {
+            p_user_id:             uid,
+            p_stripe_customer_id:  null,
+            p_subscription_id:     sessionId,
+            p_payment_intent_id:   null,
+          });
+          if (error) {
+            console.error('[AccessContext] activate_stripe_access RPC error:', error.message);
+          } else if (data?.success) {
+            applyAccess('subscription');
+            setActivationMessage(data.message || 'Subscription activated! Welcome to Raw1 🎉');
+            setLoading(false);
+            return;
+          } else {
+            console.warn('[AccessContext] activate_stripe_access returned:', data?.error);
+          }
+        } catch (e) {
+          console.error('[AccessContext] activate_stripe_access threw:', e);
+        }
+        // Fall through to local cache if RPC fails
       }
+
+      // ── Primary: read users.has_access (single fast query) ─────────────────
+      try {
+        const { data: row, error } = await supabase
+          .from('users')
+          .select('has_access, access_type')
+          .eq('id', uid)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('[AccessContext] users.has_access fetch error:', error.message);
+        } else if (row?.has_access && row?.access_type) {
+          applyAccess(row.access_type as AccessType);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('[AccessContext] users.has_access check failed:', e);
+      }
+
+      // ── Fallback: local cache ───────────────────────────────────────────────
+      const cached = await readCache();
+      if (cached) applyAccess(cached);
+
+      const cachedGcStatus = await readGripcuffStatus();
+      if (cachedGcStatus) setGripcuffStatus(cachedGcStatus);
 
       setLoading(false);
     };
 
     sync().catch((e) => {
-      console.warn('[AccessContext] identity sync failed:', e);
+      console.warn('[AccessContext] sync failed:', e);
       setLoading(false);
     });
   }, [applyAccess, supabaseUserId]);
 
   const hasAccess = accessType === 'gripcuff' || accessType === 'subscription';
 
+  // ─── Realtime: auto-grant when webhook writes to user_access (native Stripe) ─
+  // For the native Stripe flow: Linking.openURL → user pays in browser →
+  // Stripe webhook fires → stripe-webhook.ts Netlify function writes user_access →
+  // Supabase Realtime notifies the app here.
+  useEffect(() => {
+    const uid = currentUid;
+    if (!uid || hasAccess) return;
+
+    console.log('[AccessContext] subscribing user_access Realtime for uid:', uid);
+
+    const channel = supabase
+      .channel(`access-grant-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_access', filter: `user_id=eq.${uid}` },
+        (payload) => {
+          const row = payload.new as any;
+          console.log('[AccessContext] user_access Realtime:', payload.eventType, row?.access_type);
+          if (row?.is_active && row?.access_type) {
+            applyAccess(row.access_type as AccessType);
+            setActivationMessage('Access activated! Welcome to Raw1 🎉');
+          }
+        },
+      )
+      .subscribe((status, err) => {
+        if (err) console.warn('[AccessContext] user_access Realtime error:', err);
+        else console.log('[AccessContext] user_access Realtime:', status);
+      });
+
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUid, hasAccess, applyAccess]);
+
+  // ─── grantAccess ────────────────────────────────────────────────────────────
+  // Called by PaywallScreen AFTER a successful RPC call to immediately reflect
+  // access in the UI — no DB write here (the component already did the RPC).
   const grantAccess = useCallback(
-    async (type: 'gripcuff' | 'subscription', meta: GrantMeta = {}) => {
+    (type: 'gripcuff' | 'subscription', message?: string) => {
       applyAccess(type);
+      setActivationMessage(
+        message ??
+        (type === 'gripcuff'
+          ? 'Access activated! Welcome to Raw1 🎉'
+          : 'Subscription activated! Welcome to Raw1 🎉'),
+      );
     },
-    [applyAccess]
+    [applyAccess],
   );
+
+  // ─── checkAndRestoreAccess — manual poll (native "Check Payment" button) ────
+  const checkAndRestoreAccess = useCallback(async (): Promise<boolean> => {
+    const uid = currentUidRef.current;
+    if (!uid) return false;
+
+    try {
+      const { data: row, error } = await supabase
+        .from('users')
+        .select('has_access, access_type')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[AccessContext] checkAndRestoreAccess error:', error.message);
+        return false;
+      }
+
+      if (row?.has_access && row?.access_type) {
+        applyAccess(row.access_type as AccessType);
+        setActivationMessage('Access activated! Welcome to Raw1 🎉');
+        return true;
+      }
+    } catch (e) {
+      console.error('[AccessContext] checkAndRestoreAccess threw:', e);
+    }
+    return false;
+  }, [applyAccess]);
 
   const clearActivationMessage = useCallback(() => setActivationMessage(null), []);
 
@@ -183,18 +332,15 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
     else setSurveyVisible(true);
   }, []);
 
-  const hidePaywall = useCallback(() => setPaywallVisible(false), []);
-  const hideSurvey = useCallback(() => setSurveyVisible(false), []);
+  const hidePaywall   = useCallback(() => setPaywallVisible(false), []);
+  const hideSurvey    = useCallback(() => setSurveyVisible(false), []);
 
-  const completeSurvey = useCallback(
-    async (status: GripcuffStatus) => {
-      setGripcuffStatus(status);
-      await writeGripcuffStatus(status);
-      setSurveyVisible(false);
-      setPaywallVisible(true);
-    },
-    []
-  );
+  const completeSurvey = useCallback(async (status: GripcuffStatus) => {
+    setGripcuffStatus(status);
+    await writeGripcuffStatus(status);
+    setSurveyVisible(false);
+    setPaywallVisible(true);
+  }, []);
 
   const checkAndShowPaywall = useCallback((): boolean => {
     if (hasAccess) return false;
@@ -214,6 +360,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
         activationMessage,
         clearActivationMessage,
         grantAccess,
+        checkAndRestoreAccess,
         showPaywall,
         hidePaywall,
         hideSurvey,
