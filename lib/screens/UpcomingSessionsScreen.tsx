@@ -74,22 +74,11 @@ export const UpcomingSessionsScreen = () => {
 
     const handleAccept = async (id: string) => {
         setActionLoading(id);
-        // Look up the session BEFORE accepting — acceptSession triggers a reload
-        // that may move this entry out of pendingInvites before we read it.
-        const session = pendingInvites.find(s => s.id === id);
         try {
             await acceptSession(id);
-            if (session) {
-                // SyncedVideoPlayerScreen — co-workout view (workout video + Agora
-                // video tiles). Uses sessionId as the Agora channel name internally,
-                // so the host's "Join Now" toast lands in the same room.
-                navigation.navigate('SyncedVideoPlayer', {
-                    sessionId:  session.id,
-                    videoId:    session.videoId,
-                    videoTitle: session.videoTitle,
-                    friendName: session.hostName,
-                });
-            }
+            // Session moves to ACCEPTED — it will appear in "Upcoming Sessions".
+            // User joins via "Join Session" when ready, which routes through
+            // navigateToSession() → VideoPlayerScreen with PlaybackSync.
         } catch (e: any) {
             Alert.alert('Error', e.message);
         } finally {
@@ -127,29 +116,37 @@ export const UpcomingSessionsScreen = () => {
     };
 
     // Navigate to VideoPlayerScreen — the ONLY workout playback screen.
-    // Passing videoId + title is enough; the screen resolves the full video
-    // from the library. co_workout_channel enables Agora voice (if set).
-    // hostUserId lets VideoPlayerScreen determine if current user is host or guest
-    // so it can set up host-authoritative playback sync correctly.
-    const navigateToSession = (session: { videoId: string; videoTitle: string; thumbnail?: string; id: string; hostUid?: string }) => {
+    // coWorkoutChannel = sessionId activates Agora video + UID callbacks.
+    // hostUserId lets VideoPlayerScreen determine host vs guest for PlaybackSync.
+    // friendName drives the camera tile label for the remote participant.
+    const navigateToSession = (session: {
+        videoId: string;
+        videoTitle: string;
+        thumbnail?: string;
+        id: string;
+        hostUid?: string;
+        friendName?: string;
+    }) => {
         navigation.navigate('VideoPlayer', {
-            videoId:     session.videoId,
-            title:       session.videoTitle,
-            thumbnail:   session.thumbnail ?? undefined,
-            allowInvite: false,
-            sessionId:   session.id,
-            hostUserId:  session.hostUid,
+            videoId:          session.videoId,
+            title:            session.videoTitle,
+            thumbnail:        session.thumbnail ?? undefined,
+            allowInvite:      false,
+            sessionId:        session.id,
+            hostUserId:       session.hostUid,
+            coWorkoutChannel: session.id,
+            friendName:       session.friendName,
         });
     };
 
     // Host taps "Start Session" — marks session live, notifies guests, opens video.
-    const handleStartSession = async (session: { id: string; videoId: string; videoTitle: string; thumbnail?: string; hostUid?: string }) => {
+    const handleStartSession = async (session: { id: string; videoId: string; videoTitle: string; thumbnail?: string; hostUid?: string; guestName?: string }) => {
         setStartLoading(session.id);
         try {
             const hostName = profile?.fullName ?? profile?.username ?? 'Host';
             await ScheduledSessionService.markLive(session.id, hostName, session.videoTitle);
             await refreshSessions();
-            navigateToSession(session);
+            navigateToSession({ ...session, friendName: session.guestName });
         } catch (e: any) {
             Alert.alert('Error', e.message ?? 'Could not start the session.');
         } finally {
@@ -532,6 +529,7 @@ export const UpcomingSessionsScreen = () => {
                                                 thumbnail:  session.thumbnail,
                                                 id:         session.id,
                                                 hostUid:    session.hostUid,
+                                                friendName: isHost ? session.guestName : session.hostName,
                                             })}
                                         >
                                             <Play color="#fff" size={14} style={{ marginRight: 6 }} />
@@ -548,6 +546,7 @@ export const UpcomingSessionsScreen = () => {
                                                     videoTitle: session.videoTitle,
                                                     thumbnail:  session.thumbnail,
                                                     hostUid:    session.hostUid,
+                                                    guestName:  session.guestName,
                                                 })}
                                                 disabled={startLoading === session.id}
                                             >

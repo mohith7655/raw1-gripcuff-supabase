@@ -49,6 +49,9 @@ import { useVideoGlobalCounts, formatCount } from '../services/videoEngagement.s
 import { getSimilarPrograms, RecommendedProgram } from '../services/recommendation.service';
 import { useFocusEffect } from '@react-navigation/native';
 import { AgoraVoice } from '../services/agora/AgoraVoice';
+import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
+import { deriveAgoraUid } from '../utils/agoraUid';
+import { CoWorkoutCameraTiles } from '../components/CoWorkoutCameraTiles';
 import { PlaybackSyncService } from '../services/playbackSync.service';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -275,6 +278,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const syncSessionId: string | null = route?.params?.sessionId ?? null;
     const syncHostUserId: string | null = route?.params?.hostUserId ?? null;
     const isHost = !!(syncHostUserId && syncHostUserId === supabaseUserId);
+
+    // ── Co-workout video call ─────────────────────────────────────────────────
+    // coWorkoutChannel is set only when navigating from a scheduled session.
+    // remoteUids is populated by Agora onUserJoined / onUserOffline callbacks.
+    const friendName: string | undefined = route?.params?.friendName ?? undefined;
+    const [remoteUids, setRemoteUids] = useState<number[]>([]);
     // Tracks last observed position for seek-jump detection (host) and drift correction (guest)
     const lastSyncPositionMsRef = useRef<number>(0);
     // ── End sync refs ─────────────────────────────────────────────────────────
@@ -628,30 +637,49 @@ function VideoPlayerScreen({ route, navigation }: any) {
     useFocusEffect(useCallback(() => {
         sharedPlayerRef.current?.resumeVideo();
 
-        // If this screen was opened as part of a co-workout session, join the
-        // shared Agora voice channel so both users can talk while they work out.
-        if (coWorkoutChannel) {
-            console.log('[VideoPlayerScreen] joining co-workout Agora channel:', coWorkoutChannel);
-            AgoraVoice.joinChannel(coWorkoutChannel, () => {
-                console.log('[VideoPlayerScreen] co-workout speaker active');
+        // Co-workout: fetch token then join with video + UID tracking.
+        // cancelled flag guards against cleanup racing the async token fetch.
+        let cancelled = false;
+        if (coWorkoutChannel && supabaseUserId) {
+            const uid = deriveAgoraUid(supabaseUserId);
+            fetchAgoraToken(coWorkoutChannel, uid).then(token => {
+                if (cancelled) return;
+                console.log('[VideoPlayerScreen] joining co-workout channel:', coWorkoutChannel, 'uid:', uid);
+                return AgoraVoice.joinChannelWithToken(
+                    token,
+                    coWorkoutChannel,
+                    uid,
+                    (isLocal, isRemote) => {
+                        console.log('[VideoPlayerScreen] speaker — local:', isLocal, 'remote:', isRemote);
+                    },
+                    (remoteUid) => {
+                        console.log('[VideoPlayerScreen] remote joined:', remoteUid);
+                        setRemoteUids(prev => [...prev, remoteUid]);
+                    },
+                    (remoteUid) => {
+                        console.log('[VideoPlayerScreen] remote left:', remoteUid);
+                        setRemoteUids(prev => prev.filter(u => u !== remoteUid));
+                    },
+                );
             }).catch((err: unknown) => {
-                console.warn('[VideoPlayerScreen] AgoraVoice.joinChannel failed:', err);
+                console.warn('[VideoPlayerScreen] Agora join failed:', err);
             });
         }
 
         return () => {
+            cancelled = true;
             sharedPlayerRef.current?.pauseVideo();
             if (completionTimerRef.current) {
                 clearTimeout(completionTimerRef.current);
                 completionTimerRef.current = null;
             }
-            // Leave the voice channel when the user navigates away.
             if (coWorkoutChannel) {
                 console.log('[VideoPlayerScreen] leaving co-workout Agora channel');
                 AgoraVoice.leaveChannel();
+                setRemoteUids([]);
             }
         };
-    // coWorkoutChannel is derived from route.params, stable for the lifetime of this screen.
+    // coWorkoutChannel / supabaseUserId are stable for this screen's lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coWorkoutChannel]));
 
@@ -1550,6 +1578,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     </View>
                 )}
             </View>
+
+            {/* Co-workout camera tiles — only rendered when session has a video channel */}
+            {coWorkoutChannel && (
+                <CoWorkoutCameraTiles
+                    friendName={friendName}
+                    remoteUids={remoteUids}
+                />
+            )}
 
             {allowInvite && (() => {
                 const ytId = sourceVideo?.youtubeId;

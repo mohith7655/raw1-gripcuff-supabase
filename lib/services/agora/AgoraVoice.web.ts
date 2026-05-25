@@ -24,11 +24,11 @@ let _agoraState: AgoraState = 'idle';
 let _tokenStatus: 'idle' | 'fetching' | 'ok' | 'failed' = 'idle';
 let _cameraStatus: 'idle' | 'on' | 'off' | 'denied' = 'idle';
 let _lastError: string | null = null;
-let _remoteVideoActive = false; // true once a remote participant publishes video
-let _localVolumeLevel = 0;      // 0-100, updated every 200ms after join
+let _remoteVideoActive = false;
+let _localVolumeLevel = 0;
 let _localVolumeInterval: any = null;
 
-/* ── Public getters (consumed by AgoraVideoHelper.web.ts → screen) ── */
+/* ── Public getters ── */
 export const getLocalVideoTrack = (): ICameraVideoTrack | null => localVideoTrack;
 export const getLocalAudioTrack = (): IMicrophoneAudioTrack | null => localAudioTrack;
 export const getAgoraClient = (): IAgoraRTCClient | null => client;
@@ -43,7 +43,7 @@ export const getAgoraDebugInfo = () => ({
     remoteVideoActive: _remoteVideoActive,
 });
 
-/* ─── Token ─── */
+/* ─── Internal token fetch (used only by legacy joinChannel) ─── */
 const fetchToken = async (channelName: string): Promise<string> => {
     _tokenStatus = 'fetching';
     console.log('[AgoraVoice] Fetching token for channel:', channelName);
@@ -61,7 +61,6 @@ const fetchToken = async (channelName: string): Promise<string> => {
         throw new Error(`Token fetch failed (${res.status}): ${responseText.substring(0, 300)}`);
     }
 
-    // Guard against the dev server returning the SPA index.html with a 200 status
     let data: { token: string };
     try {
         data = JSON.parse(responseText);
@@ -80,8 +79,123 @@ const fetchToken = async (channelName: string): Promise<string> => {
     return token;
 };
 
+/* ─── Browser permission gate ─── */
+async function _requestBrowserPermissions(): Promise<void> {
+    console.log('[AgoraVoice] Requesting camera + mic via getUserMedia...');
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream.getTracks().forEach(t => t.stop());
+        console.log('[AgoraVoice] ✓ Browser permissions granted');
+    } catch (permErr: any) {
+        _cameraStatus = 'denied';
+        _agoraState = 'error';
+        _lastError = permErr.message;
+        console.error('[AgoraVoice] ✗ Permission denied:', permErr.name, permErr.message);
+        throw new Error(
+            permErr.name === 'NotFoundError'
+                ? 'No camera or microphone found on this device.'
+                : 'Camera and microphone access was denied. Click the camera icon in your address bar to allow access, then refresh.',
+        );
+    }
+}
+
+/* ─── Core join logic — shared by joinChannel and joinChannelWithToken ─── */
+async function _doJoin(
+    channelName: string,
+    token: string,
+    uid: number | null,
+    onSpeakerActive: (isLocal: boolean, isRemote: boolean) => void,
+    onRemoteUidJoined: (uid: number) => void,
+    onRemoteUidLeft: (uid: number) => void,
+): Promise<void> {
+    console.log('[AgoraVoice] Creating Agora RTC client...');
+    AgoraRTC.setLogLevel(4); // silent
+    const _client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }) as IAgoraRTCClient;
+    client = _client;
+
+    _client.on('user-published', async (user, mediaType) => {
+        console.log('[AgoraVoice] Remote user published:', user.uid, mediaType);
+        await _client.subscribe(user, mediaType);
+
+        if (mediaType === 'audio') {
+            user.audioTrack?.play();
+            console.log('[AgoraVoice] ✓ Remote audio playing');
+        }
+
+        if (mediaType === 'video' && user.videoTrack) {
+            _remoteVideoActive = true;
+            user.videoTrack.play('remote-video');
+            console.log('[AgoraVoice] ✓ Remote video playing → #remote-video (UID:', user.uid, ')');
+            onRemoteUidJoined(Number(user.uid));
+        }
+    });
+
+    _client.on('user-unpublished', (user, mediaType) => {
+        console.log('[AgoraVoice] Remote user unpublished:', user.uid, mediaType);
+        if (mediaType === 'video') {
+            _remoteVideoActive = false;
+        }
+    });
+
+    _client.on('user-left', (user) => {
+        console.log('[AgoraVoice] Remote user left:', user.uid);
+        _remoteVideoActive = false;
+        onRemoteUidLeft(Number(user.uid));
+    });
+
+    console.log('[AgoraVoice] Joining channel:', channelName, '(uid:', uid ?? 'auto', ')');
+    await _client.join(AGORA_APP_ID, channelName, token || null, uid ?? null);
+    console.log('[AgoraVoice] ✓ Joined. Local UID:', _client.uid);
+
+    console.log('[AgoraVoice] Creating microphone + camera tracks...');
+    const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+    localAudioTrack = audioTrack;
+    localVideoTrack = videoTrack;
+
+    setTimeout(() => {
+        const el = document.getElementById('local-video');
+        if (el) {
+            videoTrack.play('local-video');
+            console.log('[AgoraVoice] ✓ Local camera playing in #local-video');
+        } else {
+            console.warn('[AgoraVoice] #local-video not found in DOM yet.');
+        }
+    }, 100);
+
+    _cameraStatus = 'on';
+    console.log('[AgoraVoice] ✓ Tracks created — audio:', !!audioTrack, '| video:', !!videoTrack);
+
+    _localVolumeInterval = setInterval(() => {
+        if (!localAudioTrack) return;
+        const level = Math.round(localAudioTrack.getVolumeLevel() * 100);
+        _localVolumeLevel = level;
+        if (level > 25) console.log('[ActiveSpeaker] ME is speaking — UID:', _client.uid);
+    }, 200);
+
+    console.log('[AgoraVoice] Publishing tracks...');
+    await _client.publish([audioTrack, videoTrack]);
+    console.log('[AgoraVoice] ✓ Tracks published. Camera is LIVE.');
+
+    _agoraState = 'connected';
+
+    _client.enableAudioVolumeIndicator();
+    _client.on('volume-indicator', (volumes) => {
+        let localSpeaking = false;
+        let remoteSpeaking = false;
+        volumes.forEach((v) => {
+            if (v.level > 5) {
+                if (v.uid === _client.uid) localSpeaking = true;
+                else remoteSpeaking = true;
+            }
+        });
+        onSpeakerActive(localSpeaking, remoteSpeaking);
+    });
+}
+
 /* ─── Service ─── */
 export const AgoraVoice: AgoraVoiceService = {
+
+    // ── Legacy voice-only path — fetches its own token ────────────────────
     joinChannel: async (
         sessionId: string,
         onSpeakerActive: (isLocal: boolean, isRemote: boolean) => void,
@@ -91,131 +205,40 @@ export const AgoraVoice: AgoraVoiceService = {
         _remoteVideoActive = false;
 
         try {
-            /* ── Step 1: getUserMedia — browser permission gate ── */
-            console.log('[AgoraVoice] Step 1 — Requesting camera + mic via getUserMedia...');
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: true,
-                });
-                // Release immediately — Agora re-acquires its own streams
-                stream.getTracks().forEach(t => t.stop());
-                console.log('[AgoraVoice] ✓ Browser permissions granted');
-            } catch (permErr: any) {
-                _cameraStatus = 'denied';
-                _agoraState = 'error';
-                _lastError = permErr.message;
-                console.error('[AgoraVoice] ✗ Permission denied:', permErr.name, permErr.message);
-                throw new Error(
-                    permErr.name === 'NotFoundError'
-                        ? 'No camera or microphone found on this device.'
-                        : 'Camera and microphone access was denied. Click the camera icon in your address bar to allow access, then refresh.',
-                );
-            }
-
-            /* ── Step 2: Token ── */
-            console.log('[AgoraVoice] Step 2 — Fetching Agora token...');
+            await _requestBrowserPermissions();
             const token = await fetchToken(sessionId);
-
-            /* ── Step 3: Create client and register events ── */
-            console.log('[AgoraVoice] Step 3 — Creating Agora RTC client...');
-            AgoraRTC.setLogLevel(4); // silent
-            const _client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }) as IAgoraRTCClient;
-            client = _client;
-
-            _client.on('user-published', async (user, mediaType) => {
-                console.log('[AgoraVoice] Remote user published:', user.uid, mediaType);
-                await _client.subscribe(user, mediaType);
-
-                if (mediaType === 'audio') {
-                    user.audioTrack?.play();
-                    console.log('[AgoraVoice] ✓ Remote audio playing');
-                }
-
-                if (mediaType === 'video' && user.videoTrack) {
-                    _remoteVideoActive = true;
-                    // Play remote video into the #remote-video div in the DOM
-                    user.videoTrack.play('remote-video');
-                    console.log('[AgoraVoice] ✓ Remote video playing → #remote-video (UID:', user.uid, ')');
-                }
-            });
-
-            _client.on('user-unpublished', (user, mediaType) => {
-                console.log('[AgoraVoice] Remote user unpublished:', user.uid, mediaType);
-                if (mediaType === 'video') {
-                    _remoteVideoActive = false;
-                    console.log('[AgoraVoice] Remote video stopped');
-                }
-            });
-
-            _client.on('user-left', (user) => {
-                console.log('[AgoraVoice] Remote user left:', user.uid);
-                _remoteVideoActive = false;
-            });
-
-            /* ── Step 4: Join ── */
-            console.log('[AgoraVoice] Step 4 — Joining channel:', sessionId);
-            await _client.join(AGORA_APP_ID, sessionId, token, null);
-            console.log('[AgoraVoice] ✓ Joined. Local UID:', _client.uid);
-
-            /* ── Step 5: Create tracks ── */
-            console.log('[AgoraVoice] Step 5 — Creating microphone + camera tracks...');
-            const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-            localAudioTrack = audioTrack;
-            localVideoTrack = videoTrack;
-            
-            // Play local video directly into DOM element
-            setTimeout(() => {
-                const el = document.getElementById('local-video');
-                if (el) {
-                    videoTrack.play('local-video');
-                    console.log('[AgoraVoice] ✓ Local camera playing in #local-video');
-                } else {
-                    console.warn('[AgoraVoice] #local-video not found in DOM yet.');
-                }
-            }, 100);
-
-            _cameraStatus = 'on';
-            console.log('[AgoraVoice] ✓ Tracks created — audio:', !!audioTrack, '| video:', !!videoTrack);
-
-            /* ── Local volume polling (for display meter + speaker detection) ── */
-            _localVolumeInterval = setInterval(() => {
-                if (!localAudioTrack) return;
-                const level = Math.round(localAudioTrack.getVolumeLevel() * 100);
-                _localVolumeLevel = level;
-                console.log('[MyVolume]', level);
-                if (level > 25) {
-                    console.log('[ActiveSpeaker] ME is speaking — UID:', _client.uid);
-                }
-            }, 200);
-
-            /* ── Step 6: Publish ── */
-            console.log('[AgoraVoice] Step 6 — Publishing tracks...');
-            await _client.publish([audioTrack, videoTrack]);
-            console.log('[AgoraVoice] ✓ Tracks published. Camera is LIVE.');
-
-            _agoraState = 'connected';
-
-            /* ── Volume indicator (remote + local via Agora event) ── */
-            _client.enableAudioVolumeIndicator();
-            _client.on('volume-indicator', (volumes) => {
-                console.log('[Volume]', volumes.map(v => ({ uid: v.uid, level: v.level })));
-                let localSpeaking = false;
-                let remoteSpeaking = false;
-                volumes.forEach((v) => {
-                    if (v.level > 5) {
-                        if (v.uid === _client.uid) localSpeaking = true;
-                        else remoteSpeaking = true;
-                    }
-                });
-                onSpeakerActive(localSpeaking, remoteSpeaking);
-            });
-
+            await _doJoin(sessionId, token, null, onSpeakerActive, () => {}, () => {});
         } catch (err: any) {
             _agoraState = 'error';
             _lastError = err?.message ?? 'Unknown error';
             console.error('[AgoraVoice] ✗ joinChannel failed:', err);
-            throw err; // re-throw so the screen can show it
+            throw err;
+        }
+    },
+
+    // ── Video + voice path — uses pre-fetched token from AgoraTokenService ─
+    // onRemoteUidJoined / onRemoteUidLeft are no-ops on web: remote video is
+    // rendered via DOM injection in user-published, not via RtcSurfaceView.
+    joinChannelWithToken: async (
+        token: string,
+        channelName: string,
+        uid: number,
+        onSpeakerActive: (isLocal: boolean, isRemote: boolean) => void,
+        onRemoteUidJoined: (uid: number) => void,
+        onRemoteUidLeft: (uid: number) => void,
+    ) => {
+        _agoraState = 'connecting';
+        _lastError = null;
+        _remoteVideoActive = false;
+
+        try {
+            await _requestBrowserPermissions();
+            await _doJoin(channelName, token, uid, onSpeakerActive, onRemoteUidJoined, onRemoteUidLeft);
+        } catch (err: any) {
+            _agoraState = 'error';
+            _lastError = err?.message ?? 'Unknown error';
+            console.error('[AgoraVoice] ✗ joinChannelWithToken failed:', err);
+            throw err;
         }
     },
 

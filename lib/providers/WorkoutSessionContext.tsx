@@ -277,14 +277,17 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                         const popup = acceptancePopup;
                         setAcceptancePopup(null);
                         if (navigationRef.isReady()) {
-                            // SyncedVideoPlayerScreen — co-workout view (workout video +
-                            // Agora video tiles). It uses sessionId as the Agora channel
-                            // name internally, so both sides land in the same room.
-                            navigationRef.navigate('SyncedVideoPlayer' as never, {
-                                sessionId:  popup.sessionId,
-                                videoId:    popup.videoId,
-                                videoTitle: popup.videoTitle,
-                                friendName: popup.guestName,
+                            // Route host to VideoPlayerScreen — the same path used by the
+                            // "Join Session" button in UpcomingSessionsScreen (navigateToSession).
+                            // hostUserId = supabaseUserId because this popup only fires for the host.
+                            navigationRef.navigate('VideoPlayer' as never, {
+                                videoId:          popup.videoId,
+                                title:            popup.videoTitle,
+                                allowInvite:      false,
+                                sessionId:        popup.sessionId,
+                                hostUserId:       supabaseUserId,
+                                coWorkoutChannel: popup.sessionId,
+                                friendName:       popup.guestName,
                             } as never);
                         }
                     }}
