@@ -44,7 +44,12 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     const [unreadInvitesCount, setUnreadInvitesCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [acceptancePopup, setAcceptancePopup] = useState<{ guestName: string; videoTitle: string; sessionId: string } | null>(null);
+    const [acceptancePopup, setAcceptancePopup] = useState<{
+        guestName: string;
+        videoTitle: string;
+        sessionId: string;
+        videoId: string;
+    } | null>(null);
     // Tracks session IDs that the current user (as host) had as outgoing-pending
     // on the previous loadAll cycle, so we can detect a pending→accepted transition
     // and pop the "Join Now" modal exactly once per acceptance.
@@ -99,6 +104,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                     guestName: justAccepted.guestName,
                     videoTitle: justAccepted.videoTitle,
                     sessionId: justAccepted.id,
+                    videoId: justAccepted.videoId,
                 });
             }
 
@@ -268,12 +274,17 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                     videoTitle={acceptancePopup.videoTitle}
                     onClose={() => setAcceptancePopup(null)}
                     onJoin={() => {
-                        const sid = acceptancePopup.sessionId;
+                        const popup = acceptancePopup;
                         setAcceptancePopup(null);
                         if (navigationRef.isReady()) {
-                            navigationRef.navigate('AgoraVideoRoom' as never, {
-                                channelName: `session_${sid}`,
-                                participantName: profile?.fullName ?? profile?.username ?? 'Host',
+                            // SyncedVideoPlayerScreen — co-workout view (workout video +
+                            // Agora video tiles). It uses sessionId as the Agora channel
+                            // name internally, so both sides land in the same room.
+                            navigationRef.navigate('SyncedVideoPlayer' as never, {
+                                sessionId:  popup.sessionId,
+                                videoId:    popup.videoId,
+                                videoTitle: popup.videoTitle,
+                                friendName: popup.guestName,
                             } as never);
                         }
                     }}

@@ -74,15 +74,22 @@ export const UpcomingSessionsScreen = () => {
 
     const handleAccept = async (id: string) => {
         setActionLoading(id);
+        // Look up the session BEFORE accepting — acceptSession triggers a reload
+        // that may move this entry out of pendingInvites before we read it.
+        const session = pendingInvites.find(s => s.id === id);
         try {
             await acceptSession(id);
-            // Guest jumps straight into the Agora video call room.
-            // Channel name is deterministic so the host's "Join Now" toast
-            // lands in the same room.
-            navigation.navigate('AgoraVideoRoom', {
-                channelName: `session_${id}`,
-                participantName: profile?.fullName ?? profile?.username ?? 'Guest',
-            });
+            if (session) {
+                // SyncedVideoPlayerScreen — co-workout view (workout video + Agora
+                // video tiles). Uses sessionId as the Agora channel name internally,
+                // so the host's "Join Now" toast lands in the same room.
+                navigation.navigate('SyncedVideoPlayer', {
+                    sessionId:  session.id,
+                    videoId:    session.videoId,
+                    videoTitle: session.videoTitle,
+                    friendName: session.hostName,
+                });
+            }
         } catch (e: any) {
             Alert.alert('Error', e.message);
         } finally {
