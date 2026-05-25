@@ -200,12 +200,12 @@ export class ScheduledSessionService {
         co_workout_channel, last_activity_at, created_at,
         scheduled_session_invites (
           id, invited_user_id, status,
-          guest:users!scheduled_session_invites_invited_user_id_fkey (
-            full_name, username, profile_image_url
+          guest:users!invited_user_id (
+            full_name, username, avatar_url
           )
         ),
-        host:users!scheduled_sessions_host_user_id_fkey (
-          full_name, username, profile_image_url
+        host:users!host_user_id (
+          full_name, username, avatar_url
         )
       `)
       .eq('host_user_id', uid)
@@ -221,12 +221,12 @@ export class ScheduledSessionService {
       .from('scheduled_session_invites')
       .select(`
         id, session_id, invited_user_id, status,
-        session:scheduled_sessions!scheduled_session_invites_session_id_fkey (
+        session:scheduled_sessions!session_id (
           id, host_user_id, workout_id, workout_title, workout_video_url,
           thumbnail_url, category, program_name, scheduled_for, status,
           co_workout_channel, last_activity_at, created_at,
-          host:users!scheduled_sessions_host_user_id_fkey (
-            full_name, username, profile_image_url
+          host:users!host_user_id (
+            full_name, username, avatar_url
           )
         )
       `)
@@ -268,10 +268,10 @@ export class ScheduledSessionService {
         invited_user_id:   invite?.invited_user_id ?? null,
         host_full_name:    hostProfile?.full_name ?? null,
         host_username:     hostProfile?.username ?? null,
-        host_avatar:       hostProfile?.profile_image_url ?? null,
+        host_avatar:       hostProfile?.avatar_url ?? null,
         guest_full_name:   guestProfile?.full_name ?? null,
         guest_username:    guestProfile?.username ?? null,
-        guest_avatar:      guestProfile?.profile_image_url ?? null,
+        guest_avatar:      guestProfile?.avatar_url ?? null,
       }, uid, invite ? { status: invite.status, invited_user_id: invite.invited_user_id } : null));
     }
 
@@ -303,7 +303,7 @@ export class ScheduledSessionService {
         invited_user_id:   inviteRow.invited_user_id,
         host_full_name:    hostProfile?.full_name ?? null,
         host_username:     hostProfile?.username ?? null,
-        host_avatar:       hostProfile?.profile_image_url ?? null,
+        host_avatar:       hostProfile?.avatar_url ?? null,
         guest_full_name:   null,
         guest_username:    null,
         guest_avatar:      null,
