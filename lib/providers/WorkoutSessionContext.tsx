@@ -74,6 +74,10 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                 }
             }
 
+            console.log('[Sessions] outgoing pending', outgoing.length);
+            console.log('[Sessions] incoming pending', invites.length);
+            console.log('[Sessions] upcoming accepted', accepted.length);
+
             setPendingInvites(invites);
             setPendingOutgoing(outgoing);
             setUpcomingSessions(accepted);

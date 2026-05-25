@@ -216,6 +216,8 @@ export class ScheduledSessionService {
       console.warn('[ScheduledSessionService] hosted fetch error:', hostedErr.message);
     }
 
+    console.log('[Sessions] hosted', hostedRaw?.length ?? 0);
+
     // ── 2. Sessions the user is INVITED to ────────────────────────────────
     const { data: invitedRaw, error: invitedErr } = await supabase
       .from('scheduled_session_invites')
@@ -236,6 +238,8 @@ export class ScheduledSessionService {
     if (invitedErr) {
       console.warn('[ScheduledSessionService] invited fetch error:', invitedErr.message);
     }
+
+    console.log('[Sessions] incoming raw', invitedRaw?.length ?? 0);
 
     const sessions: WorkoutSession[] = [];
     const seenIds = new Set<string>();
@@ -278,7 +282,11 @@ export class ScheduledSessionService {
     // Map invited
     for (const inviteRow of (invitedRaw ?? [])) {
       const session: any = (inviteRow as any).session;
-      if (!session || seenIds.has(session.id)) continue;
+      if (!session) {
+        console.warn('[Sessions] invited row missing nested session — inviteRow:', JSON.stringify(inviteRow));
+        continue;
+      }
+      if (seenIds.has(session.id)) continue;
       seenIds.add(session.id);
 
       if (session.status === 'cancelled') continue;
@@ -310,6 +318,7 @@ export class ScheduledSessionService {
       }, uid, { status: inviteRow.status, invited_user_id: inviteRow.invited_user_id }));
     }
 
+    console.log('[Sessions] total mapped', sessions.length, '(hosted + incoming)');
     return sessions;
   }
 
