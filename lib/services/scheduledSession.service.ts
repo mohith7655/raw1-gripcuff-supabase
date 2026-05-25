@@ -46,6 +46,7 @@ interface SessionRow {
   scheduled_for: string;
   status: string;
   co_workout_channel: string | null;
+  resend_count: number | null;
   last_activity_at: string;
   created_at: string;
   // joined from scheduled_session_invites
@@ -102,6 +103,7 @@ function rowToSession(
     status,
     sessionType: 'friend',
     inviteType: 'scheduled',
+    resendCount: row.resend_count ?? 0,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.last_activity_at),
   };
@@ -197,7 +199,7 @@ export class ScheduledSessionService {
       .select(`
         id, host_user_id, workout_id, workout_title, workout_video_url,
         thumbnail_url, category, program_name, scheduled_for, status,
-        co_workout_channel, last_activity_at, created_at,
+        co_workout_channel, resend_count, last_activity_at, created_at,
         scheduled_session_invites (
           id, invited_user_id, status,
           guest:users!invited_user_id (
@@ -218,41 +220,47 @@ export class ScheduledSessionService {
 
     console.log('[Sessions] hosted', hostedRaw?.length ?? 0);
 
-    // ── 2. Sessions the user is INVITED to ────────────────────────────────
-    const { data: invitedRaw, error: invitedErr } = await supabase
+    // ── 2a. Invite rows for this user (known-working query) ───────────────
+    const { data: myInvites, error: inviteErr } = await supabase
       .from('scheduled_session_invites')
-      .select(`
-        id, session_id, invited_user_id, status,
-        session:scheduled_sessions (
-          id,
-          host_user_id,
-          workout_id,
-          workout_title,
-          workout_video_url,
-          thumbnail_url,
-          category,
-          program_name,
-          scheduled_for,
-          status,
-          co_workout_channel,
-          last_activity_at,
-          created_at,
-          host:users (
-            id,
-            full_name,
-            username,
-            avatar_url
-          )
-        )
-      `)
+      .select('id, session_id, invited_user_id, status')
       .eq('invited_user_id', uid)
       .neq('status', 'declined');
 
-    if (invitedErr) {
-      console.warn('[ScheduledSessionService] invited fetch error:', invitedErr.message);
+    if (inviteErr) {
+      console.warn('[ScheduledSessionService] invite rows fetch error:', inviteErr.message);
     }
 
-    console.log('[Sessions] incoming raw', invitedRaw?.length ?? 0);
+    const myInvitesList = myInvites ?? [];
+    console.log('[Sessions] incoming raw', myInvitesList.length);
+
+    // Build lookup: session_id → invite row
+    const inviteBySessionId = new Map(myInvitesList.map(inv => [inv.session_id, inv]));
+    const invitedSessionIds = [...inviteBySessionId.keys()];
+
+    // ── 2b. Fetch the actual session rows by ID — no join, bypasses RLS join issue ──
+    let invitedSessionRows: any[] = [];
+    if (invitedSessionIds.length > 0) {
+      const { data: sessData, error: sessErr } = await supabase
+        .from('scheduled_sessions')
+        .select(`
+          id, host_user_id, workout_id, workout_title, workout_video_url,
+          thumbnail_url, category, program_name, scheduled_for, status,
+          co_workout_channel, resend_count, last_activity_at, created_at,
+          host:users (
+            full_name, username, avatar_url
+          )
+        `)
+        .in('id', invitedSessionIds)
+        .neq('status', 'cancelled');
+
+      if (sessErr) {
+        console.warn('[ScheduledSessionService] invited sessions fetch error:', sessErr.message);
+      }
+
+      invitedSessionRows = sessData ?? [];
+      console.log('[Sessions] invited sessions fetched', invitedSessionRows.length);
+    }
 
     const sessions: WorkoutSession[] = [];
     const seenIds = new Set<string>();
@@ -279,6 +287,7 @@ export class ScheduledSessionService {
         scheduled_for:     row.scheduled_for,
         status:            row.status,
         co_workout_channel: row.co_workout_channel,
+        resend_count:      (row as any).resend_count ?? 0,
         last_activity_at:  row.last_activity_at,
         created_at:        row.created_at,
         invite_status:     invite?.status ?? null,
@@ -292,24 +301,20 @@ export class ScheduledSessionService {
       }, uid, invite ? { status: invite.status, invited_user_id: invite.invited_user_id } : null));
     }
 
-    // Map invited
-    for (const inviteRow of (invitedRaw ?? [])) {
-      const session: any = (inviteRow as any).session;
-      if (!session) {
-        console.warn('[Sessions] invited row missing nested session — inviteRow:', JSON.stringify(inviteRow));
-        continue;
-      }
+    // Map invited — iterate over the directly-fetched session rows
+    for (const session of invitedSessionRows) {
       if (seenIds.has(session.id)) continue;
       seenIds.add(session.id);
+
+      const inviteRow = inviteBySessionId.get(session.id);
+      if (!inviteRow) continue;   // shouldn't happen but guard anyway
 
       console.log('[Sessions] joined session OK', {
         inviteId: inviteRow.id,
         sessionId: session.id,
       });
 
-      if (session.status === 'cancelled') continue;
-
-      const hostProfile: any = session.host;
+      const hostProfile: any = (session as any).host;
 
       sessions.push(rowToSession({
         id:                session.id,
@@ -323,6 +328,7 @@ export class ScheduledSessionService {
         scheduled_for:     session.scheduled_for,
         status:            session.status,
         co_workout_channel: session.co_workout_channel,
+        resend_count:      (session as any).resend_count ?? 0,
         last_activity_at:  session.last_activity_at,
         created_at:        session.created_at,
         invite_status:     inviteRow.status,
@@ -424,6 +430,54 @@ export class ScheduledSessionService {
     }
 
     console.log('[ScheduledSessionService] session marked live', sessionId);
+  }
+
+  // ── Resend invite (host) ──────────────────────────────────────────────────
+  // Atomically increments resend_count via the try_increment_resend RPC and
+  // re-inserts the workout_invite notification to every invitee whose status
+  // is not 'declined'. Throws Error('max_resends_reached') when the cap is hit
+  // (UI in UpcomingSessionsScreen catches this exact string).
+
+  static async resendSessionInvite(sessionId: string, hostName: string): Promise<void> {
+    // 1 — Atomic cap-check + increment in one round-trip
+    const { data: newCount, error: rpcErr } = await supabase
+      .rpc('try_increment_resend', { p_session_id: sessionId });
+
+    if (rpcErr) throw new Error(rpcErr.message);
+    if (newCount === null || newCount === undefined) {
+      throw new Error('max_resends_reached');
+    }
+
+    // 2 — Pull the session's workout title + invitees so we can address the notification
+    const { data: session, error: sessErr } = await supabase
+      .from('scheduled_sessions')
+      .select('workout_title')
+      .eq('id', sessionId)
+      .single();
+    if (sessErr) throw new Error(sessErr.message);
+
+    const { data: invitees, error: inviteeErr } = await supabase
+      .from('scheduled_session_invites')
+      .select('invited_user_id')
+      .eq('session_id', sessionId)
+      .neq('status', 'declined');
+    if (inviteeErr) throw new Error(inviteeErr.message);
+
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    for (const row of invitees ?? []) {
+      NotificationService.insert({
+        toUid:    row.invited_user_id,
+        fromName: hostName,
+        type:     'workout_invite',
+        title:    'Workout Invite',
+        body:     `${hostName} re-invited you to "${session.workout_title}" — ${timeStr}`,
+        sessionId,
+      }).catch((e) =>
+        console.warn('[ScheduledSessionService] resend notification failed:', e?.message ?? e),
+      );
+    }
+
+    console.log('[ScheduledSessionService] invite resent', { sessionId, newCount });
   }
 
   // ── Realtime: subscribe to changes for a user ─────────────────────────────

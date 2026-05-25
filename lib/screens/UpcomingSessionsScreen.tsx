@@ -74,9 +74,20 @@ export const UpcomingSessionsScreen = () => {
 
     const handleAccept = async (id: string) => {
         setActionLoading(id);
-        try { await acceptSession(id); }
-        catch (e: any) { Alert.alert('Error', e.message); }
-        finally { setActionLoading(null); }
+        try {
+            await acceptSession(id);
+            // Guest jumps straight into the Agora video call room.
+            // Channel name is deterministic so the host's "Join Now" toast
+            // lands in the same room.
+            navigation.navigate('AgoraVideoRoom', {
+                channelName: `session_${id}`,
+                participantName: profile?.fullName ?? profile?.username ?? 'Guest',
+            });
+        } catch (e: any) {
+            Alert.alert('Error', e.message);
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleDecline = async (id: string) => {
@@ -111,18 +122,21 @@ export const UpcomingSessionsScreen = () => {
     // Navigate to VideoPlayerScreen — the ONLY workout playback screen.
     // Passing videoId + title is enough; the screen resolves the full video
     // from the library. co_workout_channel enables Agora voice (if set).
-    const navigateToSession = (session: { videoId: string; videoTitle: string; thumbnail?: string; id: string }) => {
+    // hostUserId lets VideoPlayerScreen determine if current user is host or guest
+    // so it can set up host-authoritative playback sync correctly.
+    const navigateToSession = (session: { videoId: string; videoTitle: string; thumbnail?: string; id: string; hostUid?: string }) => {
         navigation.navigate('VideoPlayer', {
-            videoId:    session.videoId,
-            title:      session.videoTitle,
-            thumbnail:  session.thumbnail ?? undefined,
+            videoId:     session.videoId,
+            title:       session.videoTitle,
+            thumbnail:   session.thumbnail ?? undefined,
             allowInvite: false,
-            sessionId:  session.id,
+            sessionId:   session.id,
+            hostUserId:  session.hostUid,
         });
     };
 
     // Host taps "Start Session" — marks session live, notifies guests, opens video.
-    const handleStartSession = async (session: { id: string; videoId: string; videoTitle: string; thumbnail?: string }) => {
+    const handleStartSession = async (session: { id: string; videoId: string; videoTitle: string; thumbnail?: string; hostUid?: string }) => {
         setStartLoading(session.id);
         try {
             const hostName = profile?.fullName ?? profile?.username ?? 'Host';
@@ -510,6 +524,7 @@ export const UpcomingSessionsScreen = () => {
                                                 videoTitle: session.videoTitle,
                                                 thumbnail:  session.thumbnail,
                                                 id:         session.id,
+                                                hostUid:    session.hostUid,
                                             })}
                                         >
                                             <Play color="#fff" size={14} style={{ marginRight: 6 }} />
@@ -525,6 +540,7 @@ export const UpcomingSessionsScreen = () => {
                                                     videoId:    session.videoId,
                                                     videoTitle: session.videoTitle,
                                                     thumbnail:  session.thumbnail,
+                                                    hostUid:    session.hostUid,
                                                 })}
                                                 disabled={startLoading === session.id}
                                             >

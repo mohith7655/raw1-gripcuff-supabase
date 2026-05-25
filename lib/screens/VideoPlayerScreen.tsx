@@ -49,6 +49,7 @@ import { useVideoGlobalCounts, formatCount } from '../services/videoEngagement.s
 import { getSimilarPrograms, RecommendedProgram } from '../services/recommendation.service';
 import { useFocusEffect } from '@react-navigation/native';
 import { AgoraVoice } from '../services/agora/AgoraVoice';
+import { PlaybackSyncService } from '../services/playbackSync.service';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -267,6 +268,17 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const [showWorkoutStartModal, setShowWorkoutStartModal] = useState(false);
     const [currentPositionMs, setCurrentPositionMs] = useState(0);
     const sharedPlayerRef = useRef<SharedVideoPlayerRef>(null);
+
+    // ── Realtime playback sync ────────────────────────────────────────────────
+    // sessionId + hostUserId are passed from UpcomingSessionsScreen.
+    // If absent (solo workout), all sync code is a no-op.
+    const syncSessionId: string | null = route?.params?.sessionId ?? null;
+    const syncHostUserId: string | null = route?.params?.hostUserId ?? null;
+    const isHost = !!(syncHostUserId && syncHostUserId === supabaseUserId);
+    // Tracks last observed position for seek-jump detection (host) and drift correction (guest)
+    const lastSyncPositionMsRef = useRef<number>(0);
+    // ── End sync refs ─────────────────────────────────────────────────────────
+
     const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastPaywallBucketRef = useRef(0);
     const watchStartRef = useRef<number | null>(null);
@@ -433,6 +445,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     const handlePositionChange = useCallback((posMs: number) => {
         setCurrentPositionMs(posMs);
+        // Note: lastSyncPositionMsRef is updated by the playback-sync useEffect (not here)
+        // so the seek-detection delta calculation stays accurate across renders.
         if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
         elapsedSecondsRef.current = Math.floor(posMs / 1000);
 
@@ -587,6 +601,21 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // HOST: wrap setLightsOut to also emit play/pause sync events.
+    // If not a session host (or no sessionId), this is identical to setLightsOut.
+    const handlePlayStateChange = useCallback((playing: boolean) => {
+        setLightsOut(playing);
+
+        if (!isHost || !syncSessionId || !supabaseUserId) return;
+
+        const currentSec = lastSyncPositionMsRef.current / 1000;
+        const durationSec = durationMsRef.current / 1000;
+        console.log('[PlaybackSync] host action', { playing, currentSec: currentSec.toFixed(2) });
+        PlaybackSyncService.emit(syncSessionId, playing, currentSec, durationSec, supabaseUserId)
+            .catch(() => {});
+    // isHost / syncSessionId / supabaseUserId are stable for this screen's lifetime
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [setLightsOut]);
 
     const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
@@ -625,6 +654,77 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // coWorkoutChannel is derived from route.params, stable for the lifetime of this screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coWorkoutChannel]));
+
+    // ── Playback Sync: HOST — detect seek jumps and emit ─────────────────────
+    // Watches currentPositionMs state (updated by handlePositionChange every ~250 ms).
+    // If the position jumps more than 3 s between consecutive ticks it's a manual seek.
+    // lastSyncPositionMsRef is intentionally updated HERE (not in handlePositionChange) so
+    // we can always compare "what the ref stored last render" vs "what just came in".
+    useEffect(() => {
+        // Always advance the ref so guest-side drift checks stay current
+        const lastMs = lastSyncPositionMsRef.current;
+        lastSyncPositionMsRef.current = currentPositionMs;
+
+        if (!isHost || !syncSessionId || !supabaseUserId) return;
+
+        const delta = Math.abs(currentPositionMs - lastMs);
+
+        // Skip the very first tick (lastMs === 0, position just starting)
+        if (lastMs === 0) return;
+
+        if (delta > 3000) {
+            const currentSec = currentPositionMs / 1000;
+            const durationSec = durationMsRef.current / 1000;
+            console.log('[PlaybackSync] host action seek', currentSec.toFixed(2));
+            PlaybackSyncService.emit(
+                syncSessionId,
+                isVideoPlayingRef.current,
+                currentSec,
+                durationSec,
+                supabaseUserId
+            ).catch(() => {});
+        }
+    // currentPositionMs is the reactive trigger — the rest are stable refs/consts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPositionMs]);
+
+    // ── Playback Sync: GUEST — subscribe and mirror host state ───────────────
+    // Only active when the current user is NOT the host and a sessionId is present.
+    useEffect(() => {
+        if (isHost || !syncSessionId) return;
+
+        console.log('[PlaybackSync] guest subscribing to session', syncSessionId);
+
+        const unsub = PlaybackSyncService.subscribe(syncSessionId, (state) => {
+            // Mirror position — seek if we're more than 1 second off
+            const localSec = lastSyncPositionMsRef.current / 1000;
+            const remoteSec = state.current_time_seconds;
+
+            if (Math.abs(localSec - remoteSec) > 1) {
+                console.log('[PlaybackSync] remote seek to', remoteSec.toFixed(2));
+                sharedPlayerRef.current?.seekTo(remoteSec * 1000);
+            }
+
+            // Mirror play / pause
+            if (state.is_playing) {
+                sharedPlayerRef.current?.resumeVideo();
+            } else {
+                sharedPlayerRef.current?.pauseVideo();
+            }
+        });
+
+        return () => {
+            console.log('[PlaybackSync] guest unsubscribing');
+            unsub();
+        };
+    // syncSessionId and isHost are stable for the lifetime of this screen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [syncSessionId, isHost]);
+
+    // ── Playback Sync: HOST — emit on play / pause ────────────────────────────
+    // Intercepts setLightsOut (the existing onPlayStateChange handler) to also
+    // push a sync event whenever the host's play state changes.
+    // ─────────────────────────────────────────────────────────────────────────
 
     const handleVideoEndCallback = useCallback(() => {
         handleVideoEndRef.current();
@@ -1418,7 +1518,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onBack={handleBack}
                         actionLabel="Done"
                         onActionPress={triggerCompletionCheck}
-                        onPlayStateChange={setLightsOut}
+                        onPlayStateChange={handlePlayStateChange}
                         userId={supabaseUserId ?? undefined}
                         onSeekForward={triggerCompletionCheck}
                         onVideoEnd={handleVideoEndCallback}

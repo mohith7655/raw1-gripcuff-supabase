@@ -17,9 +17,10 @@ type Props = {
     guestName: string;
     videoTitle: string;
     onClose: () => void;
+    onJoin?: () => void;
 };
 
-export function InviteAcceptedModal({ guestName, videoTitle, onClose }: Props) {
+export function InviteAcceptedModal({ guestName, videoTitle, onClose, onJoin }: Props) {
     const translateY = useRef(new Animated.Value(-120)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -39,8 +40,9 @@ export function InviteAcceptedModal({ guestName, videoTitle, onClose }: Props) {
             }),
         ]).start();
 
-        // Auto-dismiss after 5 seconds
-        const timer = setTimeout(() => dismiss(), 5000);
+        // Auto-dismiss after 10 seconds — longer than the old 5 so the host
+        // has time to tap "Join Now" before it slides away.
+        const timer = setTimeout(() => dismiss(), 10000);
         return () => clearTimeout(timer);
     }, []);
 
@@ -79,6 +81,15 @@ export function InviteAcceptedModal({ guestName, videoTitle, onClose }: Props) {
                         <Text style={styles.video}>{videoTitle}</Text>
                     </Text>
                 </View>
+                {onJoin && (
+                    <TouchableOpacity
+                        onPress={() => { onJoin(); dismiss(); }}
+                        style={styles.joinBtn}
+                        activeOpacity={0.85}
+                    >
+                        <Text style={styles.joinBtnText}>Join Now</Text>
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity onPress={dismiss} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="close" size={18} color="#6B7280" />
                 </TouchableOpacity>
@@ -142,6 +153,18 @@ const styles = StyleSheet.create({
     video: {
         color: '#fff',
         fontWeight: '500',
+    },
+    joinBtn: {
+        flexShrink: 0,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: ORANGE,
+    },
+    joinBtnText: {
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: '700',
     },
     closeBtn: {
         flexShrink: 0,

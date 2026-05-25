@@ -95,25 +95,13 @@ export class WorkoutSessionService {
   static readonly MAX_RESENDS = 3;
 
   /**
-   * Resends a previous invite by re-inserting the notification.
-   * Does NOT create a new session row — same sessionId, updated body.
+   * Resends a previous invite. Delegates to ScheduledSessionService which:
+   *   - atomically increments resend_count (caps at MAX_RESENDS via RPC)
+   *   - re-inserts the notification for each invitee
+   *   - throws Error('max_resends_reached') at the cap
    */
   static async resendSession(sessionId: string, hostName: string, _hostAvatarUrl?: string): Promise<void> {
-    const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-    // Re-insert notification (dedup key is time-windowed — 60-second bucket
-    // means this only sends once per minute, which is the expected behaviour).
-    NotificationService.insert({
-      toUid:    '',  // caller (WorkoutSessionContext) must pass guestUid — left as '' here
-      fromUid:  '',
-      fromName: hostName,
-      type:     'workout_invite',
-      title:    'Workout Invite',
-      body:     `${hostName} re-invited you to work out Today at ${timeStr}`,
-      sessionId,
-    }).catch((e) =>
-      console.warn('[WorkoutSessionService] resendSession notification failed:', e),
-    );
+    await ScheduledSessionService.resendSessionInvite(sessionId, hostName);
   }
 
   /**

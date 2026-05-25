@@ -5,6 +5,7 @@ import { WorkoutSession, WorkoutInviteNotification } from '../models/WorkoutSess
 import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
 import { InviteAcceptedModal } from '../components/InviteAcceptedModal';
+import { navigationRef } from '../core/navigation';
 
 export interface CreateSessionExtras {
     inviteType?: 'instant' | 'scheduled';
@@ -43,7 +44,13 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     const [unreadInvitesCount, setUnreadInvitesCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [acceptancePopup, setAcceptancePopup] = useState<{ guestName: string; videoTitle: string } | null>(null);
+    const [acceptancePopup, setAcceptancePopup] = useState<{ guestName: string; videoTitle: string; sessionId: string } | null>(null);
+    // Tracks session IDs that the current user (as host) had as outgoing-pending
+    // on the previous loadAll cycle, so we can detect a pending→accepted transition
+    // and pop the "Join Now" modal exactly once per acceptance.
+    const prevOutgoingIdsRef = useRef<Set<string>>(new Set());
+    // Prevents the modal from refiring for the same session on subsequent reloads.
+    const announcedAcceptedIdsRef = useRef<Set<string>>(new Set());
 
     const loadAll = useCallback(async (uid: string) => {
         try {
@@ -77,6 +84,26 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
             console.log('[Sessions] outgoing pending', outgoing.length);
             console.log('[Sessions] incoming pending', invites.length);
             console.log('[Sessions] upcoming accepted', accepted.length);
+
+            // Detect host-side acceptance: any accepted session that was outgoing-pending
+            // on the previous tick and we haven't already announced.
+            const justAccepted = accepted.find(s =>
+                s.hostUid === uid
+                && prevOutgoingIdsRef.current.has(s.id)
+                && !announcedAcceptedIdsRef.current.has(s.id)
+            );
+            if (justAccepted) {
+                console.log('[Sessions] host detected acceptance', justAccepted.id);
+                announcedAcceptedIdsRef.current.add(justAccepted.id);
+                setAcceptancePopup({
+                    guestName: justAccepted.guestName,
+                    videoTitle: justAccepted.videoTitle,
+                    sessionId: justAccepted.id,
+                });
+            }
+
+            // Update the outgoing-pending snapshot for the next diff
+            prevOutgoingIdsRef.current = new Set(outgoing.map(s => s.id));
 
             setPendingInvites(invites);
             setPendingOutgoing(outgoing);
@@ -240,6 +267,16 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                     guestName={acceptancePopup.guestName}
                     videoTitle={acceptancePopup.videoTitle}
                     onClose={() => setAcceptancePopup(null)}
+                    onJoin={() => {
+                        const sid = acceptancePopup.sessionId;
+                        setAcceptancePopup(null);
+                        if (navigationRef.isReady()) {
+                            navigationRef.navigate('AgoraVideoRoom' as never, {
+                                channelName: `session_${sid}`,
+                                participantName: profile?.fullName ?? profile?.username ?? 'Host',
+                            } as never);
+                        }
+                    }}
                 />
             )}
         </WorkoutSessionContext.Provider>

@@ -33,6 +33,8 @@ import { WatchTrackingService } from '../services/watchTracking.service';
 export type SharedVideoPlayerRef = {
     pauseVideo: () => void;
     resumeVideo: () => void;
+    /** Seek to the given position in milliseconds. No-op if the player is not loaded. */
+    seekTo: (ms: number) => void;
 };
 
 type InviteCta = {
@@ -108,6 +110,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     useImperativeHandle(ref, () => ({
         pauseVideo: () => { player.pause(); },
         resumeVideo: () => { player.play(); },
+        seekTo: (ms: number) => { safeSeek(ms); },
     }));
 
     useEffect(() => {
