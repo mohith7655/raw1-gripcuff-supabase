@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { WorkoutSessionService } from '../services/workoutSession.service';
+import { ScheduledSessionService } from '../services/scheduledSession.service';
 import { WorkoutSession, WorkoutInviteNotification } from '../models/WorkoutSession';
 import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
@@ -95,6 +96,21 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
             setUpcomingSessions([]);
             setCompletedSessions([]);
         }
+    }, [supabaseUserId, loadAll]);
+
+    // ── Realtime: re-fetch whenever a session or invite row changes ───────────
+    // Covers both hosted sessions (host_user_id = uid) and
+    // invited sessions (invited_user_id = uid).
+    useEffect(() => {
+        if (!supabaseUserId) return;
+        const uid = supabaseUserId;
+
+        const unsub = ScheduledSessionService.subscribeForUser(uid, () => {
+            console.log('[WorkoutSessionContext] realtime change — reloading sessions');
+            loadAll(uid).catch(() => {});
+        });
+
+        return unsub;
     }, [supabaseUserId, loadAll]);
 
     const createSession = async (guestUid: string, guestName: string, guestAvatarUrl: string | undefined, videoId: string, videoTitle: string, scheduledAt: Date, betCredits: number, extras?: CreateSessionExtras) => {

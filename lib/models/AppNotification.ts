@@ -1,5 +1,6 @@
 export type AppNotificationType =
   | 'workout_invite'
+  | 'session_invite'       // scheduled session invite (from scheduled_sessions flow)
   | 'friend_request'
   | 'chat_message'
   | 'message'

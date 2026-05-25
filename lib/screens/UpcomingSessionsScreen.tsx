@@ -6,6 +6,8 @@ import { Calendar, Clock, Check, X, Dumbbell, UserRound, ArrowLeft, Play } from 
 import { AppTheme } from '../core/theme/app_theme';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
+import { ScheduledSessionService } from '../services/scheduledSession.service';
+import { useUser } from '../providers/UserContext';
 
 interface SelfScheduledEntry {
     id: string;
@@ -42,8 +44,10 @@ export const UpcomingSessionsScreen = () => {
 
     const navigation = useNavigation<any>();
 
-    const { user } = useAuth();
+    const { user, supabaseUserId } = useAuth();
+    const { profile } = useUser();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [startLoading, setStartLoading] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [selfScheduled, setSelfScheduled] = useState<SelfScheduledEntry[]>([]);
 
@@ -101,6 +105,34 @@ export const UpcomingSessionsScreen = () => {
             }
         } finally {
             setActionLoading(null);
+        }
+    };
+
+    // Navigate to VideoPlayerScreen — the ONLY workout playback screen.
+    // Passing videoId + title is enough; the screen resolves the full video
+    // from the library. co_workout_channel enables Agora voice (if set).
+    const navigateToSession = (session: { videoId: string; videoTitle: string; thumbnail?: string; id: string }) => {
+        navigation.navigate('VideoPlayer', {
+            videoId:    session.videoId,
+            title:      session.videoTitle,
+            thumbnail:  session.thumbnail ?? undefined,
+            allowInvite: false,
+            sessionId:  session.id,
+        });
+    };
+
+    // Host taps "Start Session" — marks session live, notifies guests, opens video.
+    const handleStartSession = async (session: { id: string; videoId: string; videoTitle: string; thumbnail?: string }) => {
+        setStartLoading(session.id);
+        try {
+            const hostName = profile?.fullName ?? profile?.username ?? 'Host';
+            await ScheduledSessionService.markLive(session.id, hostName, session.videoTitle);
+            await refreshSessions();
+            navigateToSession(session);
+        } catch (e: any) {
+            Alert.alert('Error', e.message ?? 'Could not start the session.');
+        } finally {
+            setStartLoading(null);
         }
     };
 
@@ -469,17 +501,41 @@ export const UpcomingSessionsScreen = () => {
                                 </View>
 
                                 {session.status === 'accepted' && (
-                                    <TouchableOpacity
-                                        style={styles.joinNowButton}
-                                        onPress={() => navigation.navigate('SyncedVideoPlayer', {
-                                            sessionId: session.id,
-                                            videoId: session.videoId,
-                                            videoTitle: session.videoTitle,
-                                            friendName: partnerName,
-                                        })}
-                                    >
-                                        <Text style={styles.joinNowText}>Join Now</Text>
-                                    </TouchableOpacity>
+                                    <View style={styles.joinRow}>
+                                        {/* Both host and guest use VideoPlayerScreen — no separate player logic */}
+                                        <TouchableOpacity
+                                            style={styles.joinNowButton}
+                                            onPress={() => navigateToSession({
+                                                videoId:    session.videoId,
+                                                videoTitle: session.videoTitle,
+                                                thumbnail:  session.thumbnail,
+                                                id:         session.id,
+                                            })}
+                                        >
+                                            <Play color="#fff" size={14} style={{ marginRight: 6 }} />
+                                            <Text style={styles.joinNowText}>Join Session</Text>
+                                        </TouchableOpacity>
+
+                                        {/* Host can also Start Early before scheduled time */}
+                                        {session.hostUid === supabaseUserId && (
+                                            <TouchableOpacity
+                                                style={styles.startEarlyBtn}
+                                                onPress={() => handleStartSession({
+                                                    id:         session.id,
+                                                    videoId:    session.videoId,
+                                                    videoTitle: session.videoTitle,
+                                                    thumbnail:  session.thumbnail,
+                                                })}
+                                                disabled={startLoading === session.id}
+                                            >
+                                                {startLoading === session.id ? (
+                                                    <ActivityIndicator size="small" color={AppTheme.primaryColor} />
+                                                ) : (
+                                                    <Text style={styles.startEarlyText}>Start Early</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
                                 )}
                             </View>
                         );
@@ -708,20 +764,41 @@ const styles = StyleSheet.create({
 
     avatarPile: { flexDirection: 'row', alignItems: 'center' },
 
-    joinNowButton: {
-        backgroundColor: '#000000',
-        borderRadius: 8,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        marginTop: 10,
+    joinRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#FF6B00',
+        marginTop: 10,
+        gap: 10,
+    },
+    joinNowButton: {
+        flex: 1,
+        flexDirection: 'row',
+        backgroundColor: AppTheme.primaryColor,
+        borderRadius: 10,
+        paddingVertical: 11,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     joinNowText: {
         color: '#FFFFFF',
-        fontWeight: 'bold',
+        fontWeight: '700',
         fontSize: 14,
+    },
+    startEarlyBtn: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: AppTheme.primaryColor,
+        backgroundColor: 'rgba(255,107,0,0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    startEarlyText: {
+        color: AppTheme.primaryColor,
+        fontWeight: '700',
+        fontSize: 13,
     },
 
     pastCard: {
