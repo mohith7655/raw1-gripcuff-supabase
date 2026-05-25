@@ -284,6 +284,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // remoteUids is populated by Agora onUserJoined / onUserOffline callbacks.
     const friendName: string | undefined = route?.params?.friendName ?? undefined;
     const [remoteUids, setRemoteUids] = useState<number[]>([]);
+    const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
     // Tracks last observed position for seek-jump detection (host) and drift correction (guest)
     const lastSyncPositionMsRef = useRef<number>(0);
     // ── End sync refs ─────────────────────────────────────────────────────────
@@ -631,6 +632,15 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // Co-workout: channel name passed when another user accepted an invite.
     // Declared before useFocusEffect so it's in scope for the join/leave logic.
     const coWorkoutChannel: string | null = route?.params?.coWorkoutChannel ?? null;
+    const isCoWorkout = !!coWorkoutChannel;
+
+    // End-session handler — leaves Agora (cleanup also runs on unmount) and pops back.
+    const handleEndCoWorkout = useCallback(() => {
+        if (coWorkoutChannel) {
+            AgoraVoice.leaveChannel().catch(() => {});
+        }
+        navigation.goBack();
+    }, [coWorkoutChannel, navigation]);
 
     // Pause video when navigating away, resume when returning.
     // Watch tracking is handled by SharedVideoPlayer's playingChange listener.
@@ -663,6 +673,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 );
             }).catch((err: unknown) => {
                 console.warn('[VideoPlayerScreen] Agora join failed:', err);
+                const msg = (err as Error)?.message ?? '';
+                if (/denied|permission|NotAllowed/i.test(msg)) {
+                    setCameraPermissionDenied(true);
+                }
             });
         }
 
@@ -1541,11 +1555,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 ) : sourceVideo?.videoUrl ? (
                     <SharedVideoPlayer
                         ref={sharedPlayerRef}
-                        title={title}
+                        title={isCoWorkout ? (friendName ?? title) : title}
                         videoUri={sourceVideo.videoUrl}
-                        onBack={handleBack}
-                        actionLabel="Done"
-                        onActionPress={triggerCompletionCheck}
+                        onBack={isCoWorkout ? handleEndCoWorkout : handleBack}
+                        actionLabel={isCoWorkout ? 'End' : 'Done'}
+                        actionVariant={isCoWorkout ? 'danger' : 'default'}
+                        onActionPress={isCoWorkout ? handleEndCoWorkout : triggerCompletionCheck}
+                        headerTitleSuffix={isCoWorkout ? (
+                            <View style={s.liveIndicatorContainer}>
+                                <View style={s.liveDot} />
+                                <Text style={s.liveText}>Live</Text>
+                            </View>
+                        ) : undefined}
                         onPlayStateChange={handlePlayStateChange}
                         userId={supabaseUserId ?? undefined}
                         onSeekForward={triggerCompletionCheck}
@@ -1578,14 +1599,6 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     </View>
                 )}
             </View>
-
-            {/* Co-workout camera tiles — only rendered when session has a video channel */}
-            {coWorkoutChannel && (
-                <CoWorkoutCameraTiles
-                    friendName={friendName}
-                    remoteUids={remoteUids}
-                />
-            )}
 
             {allowInvite && (() => {
                 const ytId = sourceVideo?.youtubeId;
@@ -1760,7 +1773,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 }}
             />
 
-            {/* Panel — outer wrapper never dims */}
+            {/* Co-workout: replace the workout panel with camera tiles */}
+            {isCoWorkout ? (
+                <CoWorkoutCameraTiles
+                    friendName={friendName}
+                    remoteUids={remoteUids}
+                    cameraPermissionDenied={cameraPermissionDenied}
+                />
+            ) : (
             <View style={panelStyles.panel}>
 
                 {/* Reaction buttons — always full opacity, never dims during playback */}
@@ -1836,6 +1856,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
                 </Animated.View>
             </View>
+            )}
         </KeyboardAvoidingView>
     );
 }
@@ -1884,6 +1905,29 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    // Co-workout LIVE pill — rendered inside SharedVideoPlayer's headerTitleContainer
+    liveIndicatorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    liveDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#00ff88',
+        marginRight: 4,
+    },
+    liveText: {
+        color: '#00ff88',
+        fontSize: 10,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
 });
 

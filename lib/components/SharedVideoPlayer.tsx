@@ -52,6 +52,9 @@ interface SharedVideoPlayerProps {
     onBack: () => void;
     actionLabel?: string;
     onActionPress?: () => void;
+    actionVariant?: 'default' | 'danger';
+    /** Rendered inside the header title container, below the title — e.g. a LIVE pill. */
+    headerTitleSuffix?: React.ReactNode;
     inviteCta?: InviteCta;
     footerText?: string;
     headerLeftExtra?: React.ReactNode;
@@ -70,6 +73,8 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     onBack,
     actionLabel,
     onActionPress,
+    actionVariant,
+    headerTitleSuffix,
     inviteCta,
     footerText,
     headerLeftExtra,
@@ -515,6 +520,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                     <Text style={styles.headerTitle} numberOfLines={1}>
                         {title}
                     </Text>
+                    {headerTitleSuffix}
                 </View>
 
                 <View style={styles.headerActions}>
@@ -523,7 +529,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
 
                     {actionLabel ? (
                         <TouchableOpacity
-                            style={styles.actionBtn}
+                            style={[styles.actionBtn, actionVariant === 'danger' && styles.actionBtnDanger]}
                             onPress={onActionPress ?? onBack}
                         >
                             <Text style={styles.actionBtnText}>{actionLabel}</Text>
@@ -767,6 +773,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 8,
+    },
+    actionBtnDanger: {
+        backgroundColor: '#ff4444',
     },
     actionBtnText: {
         color: 'white',
