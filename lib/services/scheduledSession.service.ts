@@ -223,7 +223,7 @@ export class ScheduledSessionService {
       .from('scheduled_session_invites')
       .select(`
         id, session_id, invited_user_id, status,
-        session:scheduled_sessions!session_id (
+        session:scheduled_sessions (
           id, host_user_id, workout_id, workout_title, workout_video_url,
           thumbnail_url, category, program_name, scheduled_for, status,
           co_workout_channel, last_activity_at, created_at,
@@ -288,6 +288,11 @@ export class ScheduledSessionService {
       }
       if (seenIds.has(session.id)) continue;
       seenIds.add(session.id);
+
+      console.log('[Sessions] joined session OK', {
+        inviteId: inviteRow.id,
+        sessionId: session.id,
+      });
 
       if (session.status === 'cancelled') continue;
 
