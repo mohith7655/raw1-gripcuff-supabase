@@ -53,6 +53,7 @@ import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 import { deriveAgoraUid } from '../utils/agoraUid';
 import { CoWorkoutCameraTiles } from '../components/CoWorkoutCameraTiles';
 import { PlaybackSyncService } from '../services/playbackSync.service';
+import { useVideoInteractions } from '../hooks/useVideoInteractions';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -871,6 +872,25 @@ function VideoPlayerScreen({ route, navigation }: any) {
         },
     );
     const globalCounts = useVideoGlobalCounts(videoId !== 'default-video' ? videoId : null);
+
+    // Supabase-backed per-user interactions (Like / Dislike / Want to Try / Favourite)
+    const interactionVideoId =
+        videoId !== 'default-video' ? (requestedVideoId ?? videoId) : null;
+    const interactionVideoType =
+        (route?.params?.videoType as 'exercise_library' | 'premade_workout' | undefined)
+            ?? (allowInvite ? 'premade_workout' : 'exercise_library');
+    const interactions = useVideoInteractions(interactionVideoId, interactionVideoType);
+
+    // Drives EngagementBar's `engagement.state` reads from Supabase so the
+    // active/inactive visuals survive app restarts and refreshes.
+    const engagementWithPersistedState = useMemo(() => ({
+        ...engagement,
+        state: {
+            liked: interactions.liked,
+            disliked: interactions.disliked,
+            tryIntent: interactions.wantToTry,
+        },
+    }), [engagement, interactions.liked, interactions.disliked, interactions.wantToTry]);
 
     // Similar programs (sync — uses in-memory program data)
     const similarPrograms = useMemo(
@@ -1783,24 +1803,39 @@ function VideoPlayerScreen({ route, navigation }: any) {
             ) : (
             <View style={panelStyles.panel}>
 
-                {/* Reaction buttons — always full opacity, never dims during playback */}
+                {/* Reaction buttons — always full opacity, never dims during playback.
+                    Active state and persistence are driven by useVideoInteractions
+                    (Supabase video_interactions table). Original engagement / favourites
+                    side effects (global counts, in-memory favourites list) are preserved. */}
                 <EngagementBar
-                    engagement={engagement}
-                    isFavorite={isFavorite(videoId)}
+                    engagement={engagementWithPersistedState}
+                    isFavorite={interactions.favourited}
                     totalLikes={globalCounts.totalLikes}
                     totalDislikes={globalCounts.totalDislikes}
-                    onLike={engagement.toggleLike}
-                    onDislike={engagement.toggleDislike}
-                    onTryIntent={engagement.toggleTryIntent}
-                    onFavorite={() => toggleFavorite({
-                        id: videoId,
-                        title,
-                        duration: sourceVideo?.duration ?? '',
-                        category: (sourceVideo as any)?.category,
-                        videoUrl: sourceVideo?.videoUrl,
-                        thumbnail: sourceVideo?.thumbnail,
-                        type: 'video',
-                    })}
+                    onLike={() => {
+                        engagement.toggleLike();
+                        interactions.toggleInteraction('liked');
+                    }}
+                    onDislike={() => {
+                        engagement.toggleDislike();
+                        interactions.toggleInteraction('disliked');
+                    }}
+                    onTryIntent={() => {
+                        engagement.toggleTryIntent();
+                        interactions.toggleInteraction('want_to_try');
+                    }}
+                    onFavorite={() => {
+                        toggleFavorite({
+                            id: videoId,
+                            title,
+                            duration: sourceVideo?.duration ?? '',
+                            category: (sourceVideo as any)?.category,
+                            videoUrl: sourceVideo?.videoUrl,
+                            thumbnail: sourceVideo?.thumbnail,
+                            type: 'video',
+                        });
+                        interactions.toggleInteraction('favourited');
+                    }}
                 />
 
                 {/* Everything below reaction buttons dims during playback */}

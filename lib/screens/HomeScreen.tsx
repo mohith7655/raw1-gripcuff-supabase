@@ -751,6 +751,7 @@ const HomeScreenInner = () => {
                           programName: routeWorkoutTitle || undefined,
                           category: item.category || undefined,
                           allowInvite: item.allowInvite === true,
+                          videoType: item.allowInvite === true ? 'premade_workout' : 'exercise_library',
                         })}
                         style={{
                           width: 160, borderRadius: 12, overflow: 'hidden',

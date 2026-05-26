@@ -30,9 +30,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Video, VideoType, SubTab } from '../models/Video';
 import { ExploreCoaches } from './ExploreCoaches';
 import { useFavorites } from '../hooks/useFavorites';
+import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
-import { getProgramByVideoId } from '../data/preRecordedPrograms';
+import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
 
 export const LibraryScreen = () => {
   const navigation = useNavigation<any>();
@@ -275,6 +276,7 @@ export const LibraryScreen = () => {
                       title: video.title,
                       videoUrl: EXERCISE_LIBRARY_VIDEO_URL,
                       youtubeId: null,
+                      videoType: 'exercise_library',
                     })}
                   >
                     <View style={{
@@ -715,7 +717,10 @@ const VideoContent = ({
 
   // Grouped layout only for "All Videos" tab (subTab === 'all')
   const isGroupedView = subTab === 'all';
-  const { favorites, favoriteIds } = useFavorites();
+
+  // Supabase-backed favourites: refetches on screen focus via useFocusEffect inside the hook.
+  const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
+  const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
 
   const Outer = ({ children }: { children: React.ReactNode }) =>
     scrollable
@@ -723,15 +728,28 @@ const VideoContent = ({
       : <View style={styles.contentContainer}>{children}</View>;
 
   if (subTab === 'favorites') {
-    const isExercise = (video: any) => {
-      const idStr = String(video.id);
-      return idStr.startsWith('bp-') || idStr.startsWith('all-') || idStr.startsWith('gc_');
-    };
+    // Map favourited video_ids to full video metadata from the same sources
+    // the "All Exercises" / "Premade Workouts" lists draw from.
+    const exerciseCatalog: Video[] = [
+      ...allVideos,
+      ...gripCuffVideos,
+      ...trainerVideos,
+      ...bodyPartVideos,
+    ];
+    const exerciseFavorites: Video[] = exerciseCatalog.filter((v) => favExerciseIds.has(v.id));
 
-    const exerciseFavorites = favorites.filter((v: any) => isExercise(v));
-    const workoutFavorites = favorites.filter((v: any) => !isExercise(v));
+    const workoutCatalog = getAllPrograms().flatMap((p) => p.videos);
+    const workoutFavorites = workoutCatalog
+        .filter((v) => favWorkoutIds.has(v.id))
+        .map((v) => ({
+            ...v,
+            category: v.category as any,
+            videoType: 'All' as const,
+        })) as unknown as Video[];
 
-    if (favorites.length === 0) {
+    const totalFavorites = exerciseFavorites.length + workoutFavorites.length;
+
+    if (totalFavorites === 0) {
       return (
         <Outer>
           <View style={styles.emptyVisibilityState}>
@@ -769,7 +787,7 @@ const VideoContent = ({
                 index={index}
                 showCheckbox={false}
                 onToggle={() => onToggle(video.id)}
-                onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null })}
+                onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null, videoType: 'exercise_library' })}
               />
             ))}
           </ScrollView>
@@ -799,7 +817,13 @@ const VideoContent = ({
                 index={index}
                 showCheckbox={false}
                 onToggle={() => onToggle(video.id)}
-                onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id })}
+                onPress={() => navigation.navigate('VideoPlayer', {
+                  title: video.title,
+                  videoId: video.id,
+                  videoUrl: video.videoUrl,
+                  videoType: 'premade_workout',
+                  allowInvite: true,
+                })}
               />
             ))}
           </ScrollView>
@@ -953,7 +977,7 @@ const VideoContent = ({
                       index={index}
                       showCheckbox={false}
                       onToggle={() => onToggle(video.id)}
-                      onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null })}
+                      onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null, videoType: 'exercise_library' })}
                     />
                   ))}
                 </ScrollView>
@@ -964,7 +988,7 @@ const VideoContent = ({
                       key={video.id}
                       video={video}
                       index={index}
-                      onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null })}
+                      onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null, videoType: 'exercise_library' })}
                     />
                   ))}
                 </View>
@@ -981,7 +1005,7 @@ const VideoContent = ({
                         video={video}
                         index={index}
                         cardWidth={cardWidth}
-                        onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null })}
+                        onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null, videoType: 'exercise_library' })}
                       />
                     ))}
                   </View>
