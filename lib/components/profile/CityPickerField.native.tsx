@@ -102,7 +102,6 @@ export function CityPickerField({ value, onChange }: Props) {
                             }}
                             enablePoweredByContainer={false}
                             keepResultsAfterBlur
-                            autoFocus
                         />
                     </SafeAreaView>
                 </View>

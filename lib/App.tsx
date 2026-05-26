@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, getStateFromPath as navGetStateFromPath } from '@react-navigation/native';
+import * as ExpoLinking from 'expo-linking';
 import { navigationRef } from './core/navigation';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -37,6 +38,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { WorkoutsScreen } from './screens/WorkoutsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { AccountSettingsScreen } from './screens/AccountSettingsScreen';
 import { CreditsScreen } from './screens/CreditsScreen';
 import { EarnCreditsScreen } from './screens/EarnCreditsScreen';
 import { GripCuffTrainingScreen } from './screens/GripCuffTrainingScreen';
@@ -66,6 +68,14 @@ import { AgoraVideoRoom } from './screens/AgoraVideoRoom';
 import { ChatInboxScreen } from './screens/ChatInboxScreen';
 import { ChatRoomScreen } from './screens/ChatRoomScreen';
 import { ChatFriendProfileScreen } from './screens/ChatFriendProfileScreen';
+import { SocialProfileScreen } from './screens/SocialProfileScreen';
+import { EditSocialProfileScreen } from './screens/EditSocialProfileScreen';
+import { CommunityScreen } from './screens/CommunityScreen';
+import { BadgesScreen } from './screens/BadgesScreen';
+import { QRCodeScreen } from './screens/QRCodeScreen';
+import { QRProfileScreen } from './screens/QRProfileScreen';
+import { LookingToMeetEditScreen } from './screens/LookingToMeetEditScreen';
+import { ScannedProfileScreen } from './screens/ScannedProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AllFavouritesScreen } from './screens/AllFavouritesScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
@@ -75,14 +85,6 @@ import { initializeCurrentUserOnLeaderboard } from './services/leaderboard.servi
 import { WorkoutInviteModal } from './components/WorkoutInviteModal';
 
 LogBox.ignoreAllLogs(); // temporary to identify crash
-
-if (__DEV__) {
-  const originalConsoleError = console.error;
-  console.error = (...args) => {
-    console.log('ERROR:', ...args);
-    originalConsoleError(...args);
-  };
-}
 
 class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any }> {
   state = { hasError: false, error: null };
@@ -118,16 +120,120 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+type PublicProfileParams = { uid?: string; username?: string; slug?: string } | null;
+
+const parsePublicProfilePath = (pathname: string): PublicProfileParams => {
+  const clean = (pathname || '/').replace(/\/+$/, '');
+  const slugMatch = clean.match(/^\/u\/([^/?#]+)/i) || clean.match(/^\/profile\/([^/?#]+)/i);
+  if (slugMatch) return { slug: decodeURIComponent(slugMatch[1]) };
+  const uidMatch = clean.match(/^\/p\/([^/?#]+)/i);
+  if (uidMatch) return { uid: decodeURIComponent(uidMatch[1]) };
+  return null;
+};
+
+const parsePublicProfileFromUrl = (urlLike?: string | null): PublicProfileParams => {
+  const raw = String(urlLike || '').trim();
+  if (!raw) return null;
+
+  const nativeMatch = raw.match(/^raw1:\/\/profile\/([^/?#]+)/i);
+  if (nativeMatch) return { slug: decodeURIComponent(nativeMatch[1]) };
+
+  const fromPathMatch = raw.match(/\/u\/([^/?#]+)/i) || raw.match(/\/profile\/([^/?#]+)/i);
+  if (fromPathMatch) return { slug: decodeURIComponent(fromPathMatch[1]) };
+
+  const uidMatch = raw.match(/\/p\/([^/?#]+)/i);
+  if (uidMatch) return { uid: decodeURIComponent(uidMatch[1]) };
+
+  const queryIdx = raw.indexOf('?');
+  if (queryIdx !== -1) {
+    const q = new URLSearchParams(raw.slice(queryIdx + 1).split('#')[0]);
+    const slug = (q.get('slug') || q.get('u') || q.get('username') || '').trim();
+    if (slug) return { slug };
+    const uid = (q.get('p') || q.get('uid') || '').trim();
+    if (uid) return { uid };
+  }
+
+  const hashIdx = raw.indexOf('#');
+  if (hashIdx !== -1) {
+    const hashPart = raw.slice(hashIdx + 1);
+    const hashPathMatch = hashPart.match(/\/u\/([^/?#]+)/i) || hashPart.match(/\/profile\/([^/?#]+)/i);
+    if (hashPathMatch) return { slug: decodeURIComponent(hashPathMatch[1]) } as any;
+  }
+
+  return null;
+};
+
+const parsePublicProfileFromLocation = (
+  locationLike: { pathname?: string; search?: string; hash?: string },
+): PublicProfileParams => {
+  const fullUrl = `${locationLike.pathname || ''}${locationLike.search || ''}${locationLike.hash || ''}`;
+  const parsedByUrl = parsePublicProfileFromUrl(fullUrl);
+  if (parsedByUrl) return parsedByUrl;
+
+  const fromPath = parsePublicProfilePath(locationLike.pathname || '/');
+  if (fromPath) return fromPath;
+
+  const query = new URLSearchParams(locationLike.search || '');
+  const querySlug = (query.get('slug') || query.get('u') || query.get('username') || '').trim();
+  if (querySlug) return { slug: querySlug };
+  const queryUid = (query.get('p') || query.get('uid') || '').trim();
+  if (queryUid) return { uid: queryUid };
+
+  const rawHash = (locationLike.hash || '').replace(/^#/, '');
+  if (!rawHash) return null;
+
+  const hashPath = rawHash.startsWith('/') ? rawHash : `/${rawHash}`;
+  const fromHashPath = parsePublicProfilePath(hashPath);
+  if (fromHashPath) return fromHashPath;
+
+  const hashQueryIdx = rawHash.indexOf('?');
+  if (hashQueryIdx === -1) return null;
+  const hashQuery = new URLSearchParams(rawHash.slice(hashQueryIdx + 1));
+  const hashSlug = (hashQuery.get('slug') || hashQuery.get('u') || hashQuery.get('username') || '').trim();
+  if (hashSlug) return { slug: hashSlug };
+  const hashUid = (hashQuery.get('p') || hashQuery.get('uid') || '').trim();
+  if (hashUid) return { uid: hashUid };
+  return null;
+};
+
+const APP_WEB_BASE_URL = (process.env.EXPO_PUBLIC_APP_WEB_URL || 'https://raw1.app').replace(/\/+$/, '');
+const linking = {
+  prefixes: [
+    ExpoLinking.createURL('/'),
+    'raw1://',
+    'https://raw1.app',
+    'https://www.raw1.app',
+    APP_WEB_BASE_URL,
+  ],
+  config: {
+    screens: {
+      ScannedProfileScreen: {
+        path: 'u/:slug',
+        parse: { slug: (v: string) => decodeURIComponent(v) },
+      },
+    },
+  },
+  getStateFromPath: (path: string, options: any) => {
+    const normalized = path.replace(/^profile\//i, 'u/');
+    return navGetStateFromPath(normalized, options);
+  },
+};
 
 // Auth Stack
-function AuthStack() {
+function AuthStack({ initialPublicProfile }: { initialPublicProfile?: PublicProfileParams }) {
   return (
     <Stack.Navigator
+      initialRouteName={initialPublicProfile ? 'ScannedProfileScreen' : 'Welcome'}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: '#000' }
       }}
     >
+      <Stack.Screen
+        name="ScannedProfileScreen"
+        component={ScannedProfileScreen}
+        initialParams={initialPublicProfile ?? undefined}
+      />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
@@ -193,10 +299,16 @@ function HomeTabs() {
   );
 }
 
-function AppStack({ initialRoute }: { initialRoute?: string }) {
+function AppStack({
+  initialRoute,
+  initialPublicProfile,
+}: {
+  initialRoute?: string;
+  initialPublicProfile?: PublicProfileParams;
+}) {
   return (
     <Stack.Navigator
-      initialRouteName={initialRoute ?? 'HomeTabs'}
+      initialRouteName={initialPublicProfile ? 'ScannedProfileScreen' : (initialRoute ?? 'HomeTabs')}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: '#0d1520' }
@@ -220,6 +332,7 @@ function AppStack({ initialRoute }: { initialRoute?: string }) {
         <Stack.Screen name="WorkoutResult" component={WorkoutResultScreen} />
         <Stack.Screen name="FacePullDetails" component={FacePullDetailsPage} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="AccountSettingsScreen" component={AccountSettingsScreen} />
         <Stack.Screen name="CreditsScreen" component={CreditsScreen} />
         <Stack.Screen name="EarnCreditsScreen" component={EarnCreditsScreen} />
         <Stack.Screen name="GripCuffTrainingScreen" component={GripCuffTrainingScreen} />
@@ -250,6 +363,19 @@ function AppStack({ initialRoute }: { initialRoute?: string }) {
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
         <Stack.Screen name="ChatFriendProfile" component={ChatFriendProfileScreen} />
         <Stack.Screen name="LeaderboardScreen" component={LeaderboardScreen} />
+        {/* ── Social Profile System ── */}
+        <Stack.Screen name="SocialProfileScreen" component={SocialProfileScreen} />
+        <Stack.Screen name="EditSocialProfileScreen" component={EditSocialProfileScreen} />
+        <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} />
+        <Stack.Screen name="QRProfileScreen" component={QRProfileScreen} />
+        <Stack.Screen name="LookingToMeetEditScreen" component={LookingToMeetEditScreen} />
+        <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
+        <Stack.Screen name="BadgesScreen" component={BadgesScreen} />
+        <Stack.Screen
+          name="ScannedProfileScreen"
+          component={ScannedProfileScreen}
+          initialParams={initialPublicProfile ?? undefined}
+        />
       </Stack.Group>
     </Stack.Navigator>
   );
@@ -277,6 +403,13 @@ function MainApp() {
   const [bootLoading, setBootLoading] = useState(true);
   const { loading: accessLoading } = useAccess();
   const { supabaseUserId, email, user, loading: authLoading } = useAuth();
+  const [initialPublicProfile, setInitialPublicProfile] = useState<PublicProfileParams>(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return parsePublicProfileFromLocation(window.location);
+    }
+    return null;
+  });
+  const hasHandledPublicRouteRef = useRef(false);
 
   // Registers for FCM push notifications and handles notification-click navigation.
   // Must be called here — inside all providers but outside NavigationContainer.
@@ -473,6 +606,48 @@ function MainApp() {
   }, [navigationRef]);
 
   useEffect(() => {
+    let mounted = true;
+
+    const hydrateInitialPublicRoute = async () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        if (mounted) setInitialPublicProfile(parsePublicProfileFromLocation(window.location));
+        return;
+      }
+      try {
+        const initialUrl = await ExpoLinking.getInitialURL();
+        if (!mounted || !initialUrl) return;
+        const parsed = parsePublicProfileFromUrl(initialUrl);
+        if (parsed) setInitialPublicProfile(parsed);
+      } catch {}
+    };
+
+    hydrateInitialPublicRoute();
+
+    const sub = ExpoLinking.addEventListener('url', ({ url }: { url: string }) => {
+      const parsed = parsePublicProfileFromUrl(url);
+      if (!parsed) return;
+      setInitialPublicProfile(parsed);
+      if (navigationRef.isReady()) {
+        (navigationRef as any).navigate('ScannedProfileScreen', parsed);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
+
+  // Ensure public profile routes always land on the scanned profile screen, not home/welcome.
+  useEffect(() => {
+    if (!initialPublicProfile || hasHandledPublicRouteRef.current) return;
+    if (!navigationRef.isReady()) return;
+
+    hasHandledPublicRouteRef.current = true;
+    (navigationRef as any).navigate('ScannedProfileScreen', initialPublicProfile);
+  }, [initialPublicProfile, supabaseUserId, authLoading, bootLoading, accessLoading]);
+
+  useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
     window.history.pushState({ page: 1 }, '');
@@ -551,7 +726,7 @@ function MainApp() {
         // Any other action (including the default notification tap) → navigate
         // to UpcomingSessionsScreen so the user can see and join their session.
         if (navigationRef.isReady()) {
-          navigationRef.navigate('UpcomingSessionsScreen' as never, {} as never);
+          (navigationRef as any).navigate('UpcomingSessionsScreen', {});
         }
       },
     );
@@ -576,6 +751,7 @@ function MainApp() {
     <View style={{ flex: 1 }}>
       <NavigationContainer
         ref={navigationRef}
+        linking={linking as any}
         theme={{
           ...DarkTheme,
           colors: {
@@ -591,11 +767,14 @@ function MainApp() {
       >
         {supabaseUserId ? (
           <StrangerInviteProvider>
-            <AppStack initialRoute={needsOnboarding ? 'Onboarding' : 'HomeTabs'} />
+            <AppStack
+              initialRoute={needsOnboarding ? 'Onboarding' : 'HomeTabs'}
+              initialPublicProfile={initialPublicProfile}
+            />
             <WorkoutInviteModal />
           </StrangerInviteProvider>
         ) : (
-          <AuthStack />
+          <AuthStack initialPublicProfile={initialPublicProfile} />
         )}
       </NavigationContainer>
       {/* Survey + Paywall overlays — sit above all navigation */}
@@ -625,11 +804,11 @@ function MainApp() {
           const targetVideoId = activeAlarm?.videoId || workout.videoId;
           if (targetVideoId && navigationRef.isReady()) {
             console.log('[ReminderWatcherService] navigation triggered', { videoId: targetVideoId });
-            navigationRef.navigate('VideoPlayer' as never, {
+            (navigationRef as any).navigate('VideoPlayer', {
               videoId: targetVideoId,
               allowInvite: true,
               autoStart: true,
-            } as never);
+            });
           }
         }}
       />

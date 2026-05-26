@@ -17,6 +17,8 @@ if (!API_KEY) console.warn('LocationPickerField: EXPO_PUBLIC_GOOGLE_PLACES_API_K
 
 export type LocationValue = {
     address: string;
+    placeName?: string;
+    placeId?: string;
     lat: number;
     lng: number;
 };
@@ -71,7 +73,9 @@ export function LocationPickerField({ value, onChange }: Props) {
                             query={{ key: API_KEY, language: 'en' }}
                             onPress={(data, details) => {
                                 onChange({
-                                    address: data.description,
+                                    address: details?.formatted_address || data.description,
+                                    placeName: details?.name || data.description.split(',')[0]?.trim(),
+                                    placeId: data.place_id,
                                     lat: details?.geometry?.location?.lat ?? 0,
                                     lng: details?.geometry?.location?.lng ?? 0,
                                 });
@@ -88,7 +92,6 @@ export function LocationPickerField({ value, onChange }: Props) {
                             }}
                             enablePoweredByContainer={false}
                             keepResultsAfterBlur
-                            autoFocus
                         />
                     </SafeAreaView>
                 </View>

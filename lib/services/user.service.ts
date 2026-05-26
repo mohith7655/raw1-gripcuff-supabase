@@ -1,9 +1,16 @@
 import { supabase } from '../core/config/supabase';
 import { User, UserLocationData, UserLocations } from '../models';
+import { SocialProfileService } from './socialProfile.service';
 
 const parseLocData = (jsonb: any, fallbackAddr?: string | null): UserLocationData | undefined => {
   if (jsonb && typeof jsonb === 'object' && typeof jsonb.address === 'string') {
-    return { address: jsonb.address, lat: Number(jsonb.lat ?? 0), lng: Number(jsonb.lng ?? 0), placeId: jsonb.placeId };
+    return {
+      address: jsonb.address,
+      placeName: jsonb.placeName,
+      lat: Number(jsonb.lat ?? 0),
+      lng: Number(jsonb.lng ?? 0),
+      placeId: jsonb.placeId,
+    };
   }
   if (fallbackAddr) return { address: fallbackAddr, lat: 0, lng: 0 };
   return undefined;
@@ -99,6 +106,24 @@ export class UserService {
       console.error('[UserService] createProfile failed:', error.message);
       throw new Error(error.message);
     }
+
+    const { error: profilesErr } = await supabase
+      .from('profiles')
+      .upsert({
+        id: uid,
+        username: profile.username || null,
+        full_name: profile.fullName || null,
+        avatar_url: profile.profileImageUrl || null,
+      }, { onConflict: 'id' });
+    if (profilesErr) {
+      console.warn('[UserService] profiles upsert failed:', profilesErr.message);
+    } else {
+      try {
+        await SocialProfileService.ensureQrSlug(uid, profile.username || profile.fullName || null);
+      } catch (slugErr) {
+        console.warn('[UserService] ensure qr_slug failed:', slugErr);
+      }
+    }
   }
 
   static async updateProfile(uid: string, data: Partial<User>): Promise<void> {
@@ -140,6 +165,27 @@ export class UserService {
     if (error) {
       console.error('[UserService] updateProfile failed:', error.message);
       throw new Error(error.message);
+    }
+
+    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined) {
+      const { error: profileSyncErr } = await supabase
+        .from('profiles')
+        .upsert({
+          id: uid,
+          username: data.username ?? undefined,
+          full_name: data.fullName ?? undefined,
+          avatar_url: data.profileImageUrl ?? undefined,
+        }, { onConflict: 'id' });
+      if (profileSyncErr) {
+        console.warn('[UserService] profile mirror sync failed:', profileSyncErr.message);
+      }
+      if (data.username || data.fullName) {
+        try {
+          await SocialProfileService.ensureQrSlug(uid, data.username || data.fullName || null);
+        } catch (slugErr) {
+          console.warn('[UserService] ensure qr_slug failed:', slugErr);
+        }
+      }
     }
   }
 

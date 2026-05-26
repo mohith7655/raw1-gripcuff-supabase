@@ -1,1 +1,5 @@
-/*    /index.html   200
+# Profile QR routes → serverless function (instant HTML page + OG tags)
+/u/*    /.netlify/functions/profile   200
+
+# SPA catch-all — must come AFTER the specific rules above
+/*      /index.html                   200

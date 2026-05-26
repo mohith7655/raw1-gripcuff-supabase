@@ -1,5 +1,6 @@
 export interface UserLocationData {
   address: string;
+  placeName?: string;
   lat: number;
   lng: number;
   placeId?: string;

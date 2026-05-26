@@ -1,0 +1,16 @@
+alter table if exists public.profiles
+add column if not exists gym_place_id text,
+add column if not exists gym_name text,
+add column if not exists gym_address text,
+add column if not exists gym_lat double precision,
+add column if not exists gym_lng double precision,
+add column if not exists house_place_id text,
+add column if not exists house_name text,
+add column if not exists house_address text,
+add column if not exists house_lat double precision,
+add column if not exists house_lng double precision,
+add column if not exists park_place_id text,
+add column if not exists park_name text,
+add column if not exists park_address text,
+add column if not exists park_lat double precision,
+add column if not exists park_lng double precision;

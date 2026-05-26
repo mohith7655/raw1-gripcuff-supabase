@@ -1,94 +1,323 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * FriendsScreen (v2)
+ *
+ * Three tabs: Friends · Requests · Suggestions
+ * Suggestions tab surfaces open-to-connect users not yet connected.
+ * Pull-to-refresh, search, real-time presence dots, friend actions.
+ */
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    FlatList,
+    Image,
+    Linking,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    FlatList,
-    Image,
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Platform,
-    Linking,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
     ArrowLeft,
-    CircleUserRound,
-    UserCheck,
-    UserPlus,
-    UserX,
-    Clock,
-    Search,
-    Users,
-    Contact,
+    Search, UserPlus, UserCheck, UserX, Clock,
+    MessageCircle, Dumbbell, Contact, ChevronRight,
+    Flame, Users,
 } from 'lucide-react-native';
 import { useFriend } from '../providers/FriendContext';
 import { useAuth } from '../providers/AuthContext';
 import { FriendService } from '../services/friend.service';
+import { SocialProfileService } from '../services/socialProfile.service';
 import { RelationshipStatus } from '../models/Friend';
 import { User } from '../models/User';
-import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
-import { SCREEN_PADDING } from '../constants/theme';
+import { AppTheme } from '../core/theme/app_theme';
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
-// ── Small reusable components ────────────────────────────────────────────────
+const C = {
+    bg:          '#070d1a',
+    bgCard:      '#0f1923',
+    bgInput:     'rgba(255,255,255,0.05)',
+    accent:      '#ff7a00',
+    accentSoft:  'rgba(255,122,0,0.12)',
+    accentBorder:'rgba(255,122,0,0.22)',
+    green:       '#22C55E',
+    greenSoft:   'rgba(34,197,94,0.1)',
+    text:        '#FFFFFF',
+    textMuted:   '#94A3B8',
+    textDim:     '#374151',
+    border:      'rgba(255,255,255,0.07)',
+    danger:      '#EF4444',
+    dangerSoft:  'rgba(239,68,68,0.1)',
+};
 
-function Avatar({ uri, size = 44 }: { uri?: string; size?: number }) {
-    if (uri) {
-        return (
-            <Image
-                key={uri}
-                source={{ uri }}
-                style={{ width: size, height: size, borderRadius: size / 2 }}
-            />
-        );
-    }
+type TabId = 'friends' | 'requests' | 'suggestions';
+
+// ─── Avatar ───────────────────────────────────────────────────────────────────
+
+function Avatar({
+    uri, size = 48, online = false,
+}: { uri?: string | null; size?: number; online?: boolean }) {
+    const [err, setErr] = useState(false);
     return (
-        <View
-            style={[
-                styles.avatarFallback,
-                { width: size, height: size, borderRadius: size / 2 },
-            ]}
-        >
-            <CircleUserRound color={AppTheme.primaryColor} size={size * 0.55} />
+        <View style={{ width: size, height: size }}>
+            {uri && !err
+                ? <Image
+                    source={{ uri }}
+                    style={{ width: size, height: size, borderRadius: size / 2 }}
+                    onError={() => setErr(true)}
+                  />
+                : <View style={[{
+                    width: size, height: size, borderRadius: size / 2,
+                    backgroundColor: C.bgCard,
+                    alignItems: 'center', justifyContent: 'center',
+                    borderWidth: 1, borderColor: C.border,
+                  }]}>
+                    <Text style={{ fontSize: size * 0.4 }}>👤</Text>
+                  </View>
+            }
+            {online && (
+                <View style={{
+                    position: 'absolute', bottom: 0, right: 0,
+                    width: 12, height: 12, borderRadius: 6,
+                    backgroundColor: C.green,
+                    borderWidth: 2, borderColor: C.bg,
+                }} />
+            )}
         </View>
     );
 }
 
-function EmptyState({ icon, message }: { icon: React.ReactNode; message: string }) {
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyState({ emoji, title, body }: { emoji: string; title: string; body: string }) {
     return (
-        <View style={styles.emptyState}>
-            {icon}
-            <Text style={styles.emptyText}>{message}</Text>
+        <View style={s.empty}>
+            <Text style={s.emptyEmoji}>{emoji}</Text>
+            <Text style={s.emptyTitle}>{title}</Text>
+            <Text style={s.emptyBody}>{body}</Text>
         </View>
     );
 }
 
-function SectionHeader({ title }: { title: string }) {
-    return <Text style={styles.sectionHeader}>{title}</Text>;
+// ─── Tab bar ──────────────────────────────────────────────────────────────────
+
+function TabBar({
+    active, onChange, requestCount,
+}: { active: TabId; onChange: (t: TabId) => void; requestCount: number }) {
+    const tabs: { id: TabId; label: string; badge?: number }[] = [
+        { id: 'friends',     label: 'Friends' },
+        { id: 'requests',    label: 'Requests', badge: requestCount },
+        { id: 'suggestions', label: 'Suggestions' },
+    ];
+
+    return (
+        <View style={s.tabBar}>
+            {tabs.map(tab => (
+                <TouchableOpacity
+                    key={tab.id}
+                    style={[s.tab, active === tab.id && s.tabActive]}
+                    onPress={() => onChange(tab.id)}
+                    activeOpacity={0.7}
+                >
+                    <Text style={[s.tabText, active === tab.id && s.tabTextActive]}>
+                        {tab.label}
+                    </Text>
+                    {tab.badge != null && tab.badge > 0 && (
+                        <View style={s.tabBadge}>
+                            <Text style={s.tabBadgeText}>{tab.badge}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            ))}
+        </View>
+    );
 }
 
-// ── Tab: Friends ─────────────────────────────────────────────────────────────
+// ─── Friends tab ──────────────────────────────────────────────────────────────
 
-function FriendsTab({ showFind, setShowFind }: { showFind: boolean; setShowFind: (v: boolean) => void }) {
+function FriendsTab() {
     const navigation = useNavigation<any>();
-    const { friends, loading, removeFriend, incomingRequests, outgoingRequests, acceptRequest, declineRequest } = useFriend();
-    const { user } = useAuth();
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [profiles, setProfiles] = useState<Record<string, User>>({});
+    const { friends, loading, removeFriend } = useFriend();
+    const { supabaseUserId } = useAuth();
 
-    // Fetch profiles for request senders/recipients via Supabase
+    const [query,     setQuery]     = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+
+    const filtered = query.trim()
+        ? friends.filter(f =>
+            f.fullName.toLowerCase().includes(query.toLowerCase()) ||
+            f.username.toLowerCase().includes(query.toLowerCase())
+          )
+        : friends;
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        // FriendContext reloads on its own mount; just wait briefly
+        await new Promise(r => setTimeout(r, 800));
+        setRefreshing(false);
+    };
+
+    const handleRemove = (f: User) => {
+        const doIt = () => removeFriend(f.uid).catch((e: Error) => Alert.alert('Error', e.message));
+        if (Platform.OS === 'web') {
+            if ((window as any).confirm(`Remove ${f.fullName}?`)) doIt();
+        } else {
+            Alert.alert('Remove Friend', `Remove ${f.fullName} from your friends list?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Remove', style: 'destructive', onPress: doIt },
+            ]);
+        }
+    };
+
+    const handleInvite = async () => {
+        const msg = "Hey, I'm on Raw1 — great fitness app! Join me: https://apps.apple.com";
+        try {
+            const url = `sms:?body=${encodeURIComponent(msg)}`;
+            Platform.OS === 'web' ? window.open(url, '_blank') : await Linking.openURL(url);
+        } catch { Alert.alert('Error', 'Could not open SMS app.'); }
+    };
+
+    if (loading) return <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />;
+
+    return (
+        <FlatList
+            data={filtered}
+            keyExtractor={i => i.uid}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+                <View style={{ gap: 10, marginBottom: 12 }}>
+                    {/* Search bar */}
+                    <View style={s.searchBar}>
+                        <Search size={16} color={C.textMuted} />
+                        <TextInput
+                            style={s.searchInput}
+                            value={query}
+                            onChangeText={setQuery}
+                            placeholder="Search friends..."
+                            placeholderTextColor={C.textDim}
+                            autoCapitalize="none"
+                        />
+                    </View>
+
+                    {/* Invite contacts */}
+                    <TouchableOpacity style={s.inviteBtn} onPress={handleInvite} activeOpacity={0.8}>
+                        <Contact size={18} color={C.accent} />
+                        <Text style={s.inviteBtnText}>Invite Friends from Contacts</Text>
+                    </TouchableOpacity>
+
+                    {friends.length > 0 && (
+                        <Text style={s.listCount}>
+                            {friends.length} {friends.length === 1 ? 'friend' : 'friends'}
+                        </Text>
+                    )}
+                </View>
+            }
+            renderItem={({ item }) => (
+                <FriendRow
+                    user={item}
+                    onProfile={() => navigation.navigate('SocialProfileScreen', { uid: item.uid })}
+                    onMessage={() => navigation.navigate('ChatRoom', {
+                        friendUid: item.uid,
+                        friendName: item.fullName || item.username,
+                        friendAvatar: item.profileImageUrl,
+                    })}
+                    onRemove={() => handleRemove(item)}
+                />
+            )}
+            ListEmptyComponent={
+                <EmptyState
+                    emoji="👥"
+                    title="No friends yet"
+                    body="Discover people in the Suggestions tab and start connecting!"
+                />
+            }
+        />
+    );
+}
+
+// ─── Friend row ───────────────────────────────────────────────────────────────
+
+function FriendRow({ user, onProfile, onMessage, onRemove }: {
+    user: User;
+    onProfile: () => void;
+    onMessage: () => void;
+    onRemove: () => void;
+}) {
+    // Consider "online" if last activity within 15 min (use updatedAt as proxy)
+    const isOnline = user.updatedAt
+        && (Date.now() - user.updatedAt.getTime()) < 15 * 60_000;
+
+    return (
+        <TouchableOpacity style={s.friendRow} onPress={onProfile} activeOpacity={0.8}>
+            <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} />
+            <View style={s.rowInfo}>
+                <Text style={s.rowName} numberOfLines={1}>{user.fullName}</Text>
+                <Text style={s.rowSub} numberOfLines={1}>@{user.username}</Text>
+                <View style={s.rowMeta}>
+                    {(user.currentStreak ?? 0) > 0 && (
+                        <View style={s.metaChip}>
+                            <Text style={s.metaChipText}>🔥 {user.currentStreak}d streak</Text>
+                        </View>
+                    )}
+                    {(user.completedWorkouts ?? 0) > 0 && (
+                        <View style={s.metaChip}>
+                            <Text style={s.metaChipText}>💪 {user.completedWorkouts}</Text>
+                        </View>
+                    )}
+                </View>
+            </View>
+            <View style={s.rowActions}>
+                <TouchableOpacity style={s.actionMsg} onPress={onMessage} activeOpacity={0.75}>
+                    <MessageCircle size={16} color={C.text} />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.actionDanger} onPress={onRemove} activeOpacity={0.75}>
+                    <UserX size={16} color={C.danger} />
+                </TouchableOpacity>
+            </View>
+        </TouchableOpacity>
+    );
+}
+
+// ─── Requests tab ─────────────────────────────────────────────────────────────
+
+function RequestsTab() {
+    const {
+        incomingRequests, outgoingRequests,
+        acceptRequest, declineRequest,
+        searchUsers, searchResults, clearSearch, searching,
+    } = useFriend();
+    const { supabaseUserId, user } = useAuth();
+
+    const [profiles, setProfiles] = useState<Record<string, User>>({});
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    // ── Find friends section ───────────────────────────────────────────────────
+    const [query,       setQuery]      = useState('');
+    const [hasSearched, setHasSearched] = useState(false);
+    const [localResults, setLocalResults] = useState<User[]>([]);
+    const [statusMap, setStatusMap] = useState<Record<string, RelationshipStatus>>({});
+    const [actionBusy, setActionBusy] = useState<string | null>(null);
+    const { sendRequest, incomingRequests: incoming } = useFriend();
+
+    // Fetch profiles for request senders/receivers
     useEffect(() => {
         const uids = [
-            ...incomingRequests.map((r) => r.fromUid),
-            ...outgoingRequests.map((r) => r.toUid),
+            ...incomingRequests.map(r => r.fromUid),
+            ...outgoingRequests.map(r => r.toUid),
         ];
         const unique = [...new Set(uids)];
         if (unique.length === 0) return;
-
         import('../core/config/supabase').then(({ supabase }) =>
             supabase.from('users').select('*').in('id', unique)
         ).then(({ data }) => {
@@ -100,456 +329,455 @@ function FriendsTab({ showFind, setShowFind }: { showFind: boolean; setShowFind:
                     fullName: row.full_name || 'User',
                     username: row.username || '',
                     profileImageUrl: row.avatar_url || undefined,
-                } as User;
+                    completedVideos: 0, totalVideos: 0, credits: 0,
+                    createdAt: new Date(), updatedAt: new Date(),
+                };
             });
             setProfiles(map);
         }).catch(() => {});
     }, [incomingRequests, outgoingRequests]);
 
-    const handleRemove = (friend: User) => {
-        const doRemove = () => removeFriend(friend.uid).catch((e: Error) => Alert.alert('Error', e.message));
-        if (Platform.OS === 'web') {
-            if ((window as Window & typeof globalThis).confirm(`Remove ${friend.fullName} from friends?`)) doRemove();
-        } else {
-            Alert.alert('Remove Friend', `Remove ${friend.fullName} from your friends list?`, [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: doRemove },
-            ]);
-        }
-    };
-
     const handleAccept = async (requestId: string, fromUid: string, toUid: string) => {
         setActionLoading(requestId);
         try { await acceptRequest(requestId, fromUid, toUid); }
-        catch (e: unknown) { Alert.alert('Error', (e as Error).message); }
+        catch (e: any) { Alert.alert('Error', e.message); }
         finally { setActionLoading(null); }
     };
-
     const handleDecline = async (requestId: string) => {
         setActionLoading(requestId);
         try { await declineRequest(requestId); }
-        catch (e: unknown) { Alert.alert('Error', (e as Error).message); }
+        catch (e: any) { Alert.alert('Error', e.message); }
         finally { setActionLoading(null); }
     };
 
-    const handleInviteFriends = async () => {
-        const message = "Hey, i have just started using raw1 for my fitness. self coaching ,personal coaching and workout coachig and self coaching all in one place. Thought of you, give it a try! https://apps.apple.com";
-        const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-        try {
-            if (Platform.OS === 'web') { window.open(smsUrl, '_blank'); }
-            else { await Linking.openURL(smsUrl); }
-        } catch { Alert.alert('Error', 'Could not open SMS app.'); }
-    };
+    // Search
+    useEffect(() => { setLocalResults(searchResults); }, [searchResults]);
 
-    if (loading) return <ActivityIndicator color={AppTheme.primaryColor} style={styles.loader} />;
-
-    return (
-        <FlatList
-            data={friends}
-            keyExtractor={(item) => item.uid}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            ListHeaderComponent={
-                <View style={{ marginBottom: 8 }}>
-                    <TouchableOpacity style={styles.inviteContactsBtn} onPress={handleInviteFriends} activeOpacity={0.8}>
-                        <Contact color="#fff" size={20} />
-                        <Text style={styles.inviteContactsText}>Invite Friends from Contacts</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.findToggleBtn, showFind && styles.findToggleBtnActive]}
-                        onPress={() => setShowFind(!showFind)}
-                        activeOpacity={0.8}
-                    >
-                        <Search color={showFind ? '#fff' : AppTheme.textGrey} size={18} />
-                        <Text style={[styles.findToggleText, showFind && styles.findToggleTextActive]}>
-                            Find Friends
-                        </Text>
-                    </TouchableOpacity>
-                    {showFind && <FindSection />}
-                    {friends.length === 0 && !showFind && (
-                        <EmptyState icon={<Users color={AppTheme.textGrey} size={40} />} message="No friends yet. Find people to add!" />
-                    )}
-                </View>
-            }
-            renderItem={({ item }) => (
-                <View style={styles.row}>
-                    <Avatar uri={item.profileImageUrl} />
-                    <View style={styles.rowInfo}>
-                        <Text style={styles.rowName}>{item.fullName}</Text>
-                        <Text style={styles.rowSub}>@{item.username}</Text>
-                    </View>
-                    <View style={styles.rowActions}>
-                        <TouchableOpacity
-                            style={styles.btnMessage}
-                            onPress={() => navigation.navigate('ChatRoom', {
-                                friendUid: item.uid,
-                                friendName: item.fullName || item.username,
-                                friendAvatar: item.profileImageUrl,
-                            })}
-                            activeOpacity={0.75}
-                        >
-                            <Text style={styles.btnMessageText}>Message</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.btnDanger} onPress={() => handleRemove(item)} activeOpacity={0.75}>
-                            <UserX color="#ff5252" size={16} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )}
-            ListFooterComponent={
-                <View>
-                    {/* ── Incoming Requests ── */}
-                    <SectionHeader title="Incoming" />
-                    {incomingRequests.length === 0 ? (
-                        <EmptyState icon={<UserPlus color={AppTheme.textGrey} size={32} />} message="No incoming requests" />
-                    ) : (
-                        incomingRequests.map((req) => {
-                            const sender = profiles[req.fromUid];
-                            const busy = actionLoading === req.id;
-                            return (
-                                <View key={req.id} style={styles.row}>
-                                    <Avatar uri={sender?.profileImageUrl} />
-                                    <View style={styles.rowInfo}>
-                                        <Text style={styles.rowName}>{sender?.fullName ?? '...'}</Text>
-                                        <Text style={styles.rowSub}>@{sender?.username ?? req.fromUid}</Text>
-                                    </View>
-                                    <View style={styles.rowActions}>
-                                        {busy ? (
-                                            <ActivityIndicator color={AppTheme.primaryColor} size="small" />
-                                        ) : (
-                                            <>
-                                                <TouchableOpacity style={styles.btnAccept} onPress={() => handleAccept(req.id, req.fromUid, req.toUid)} activeOpacity={0.75}>
-                                                    <UserCheck color="#fff" size={14} />
-                                                    <Text style={styles.btnAcceptText}>Accept</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity style={styles.btnDecline} onPress={() => handleDecline(req.id)} activeOpacity={0.75}>
-                                                    <UserX color="#ff5252" size={14} />
-                                                </TouchableOpacity>
-                                            </>
-                                        )}
-                                    </View>
-                                </View>
-                            );
-                        })
-                    )}
-
-                    {/* ── Sent Requests ── */}
-                    <SectionHeader title="Sent" />
-                    {outgoingRequests.length === 0 ? (
-                        <EmptyState icon={<Clock color={AppTheme.textGrey} size={32} />} message="No pending requests sent" />
-                    ) : (
-                        outgoingRequests.map((req) => {
-                            const recipient = profiles[req.toUid];
-                            return (
-                                <View key={req.id} style={styles.row}>
-                                    <Avatar uri={recipient?.profileImageUrl} />
-                                    <View style={styles.rowInfo}>
-                                        <Text style={styles.rowName}>{recipient?.fullName ?? '...'}</Text>
-                                        <Text style={styles.rowSub}>@{recipient?.username ?? req.toUid}</Text>
-                                    </View>
-                                    <View style={styles.pendingBadge}>
-                                        <Clock color={AppTheme.primaryColor} size={12} />
-                                        <Text style={styles.pendingText}>Pending</Text>
-                                    </View>
-                                </View>
-                            );
-                        })
-                    )}
-                </View>
-            }
-        />
-    );
-}
-
-// ── Inline Find Section ───────────────────────────────────────────────────────
-
-function FindSection() {
-    const [inputValue, setInputValue] = useState('');
-    const [localResults, setLocalResults] = useState<User[]>([]);
-    const [hasSearched, setHasSearched] = useState(false);
-    const { searchUsers, clearSearch, searching: isSearching } = useFriend();
-    const { user } = useAuth();
-
-    // Status cache: uid -> RelationshipStatus
-    const [statusMap, setStatusMap] = useState<Record<string, RelationshipStatus>>({});
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const { sendRequest, acceptRequest, incomingRequests } = useFriend();
-
-    const handleSearch = () => {
-        if (!inputValue.trim()) return;
-        setLocalResults([]);
-        setStatusMap({});
-        setHasSearched(true);
-        searchUsers(inputValue.trim());
-    };
-
-    // Pull results from context after searchUsers updates them
-    const { searchResults } = useFriend();
-    useEffect(() => {
-        setLocalResults(searchResults);
-    }, [searchResults]);
-
-    // Refresh status map whenever local results change
     useEffect(() => {
         if (!user?.uid || localResults.length === 0) return;
         Promise.all(
-            localResults.map(async (result) => {
-                const status = await FriendService.getRequestStatus(user.uid, result.uid);
-                return { uid: result.uid, status };
-            })
-        ).then((entries) => {
+            localResults.map(async r => ({ uid: r.uid, status: await FriendService.getRequestStatus(user.uid, r.uid) }))
+        ).then(entries => {
             const map: Record<string, RelationshipStatus> = {};
             entries.forEach(({ uid, status }) => { map[uid] = status; });
             setStatusMap(map);
         });
     }, [localResults, user?.uid]);
 
-    const handleClearInput = (text: string) => {
-        setInputValue(text);
-        if (!text.trim()) {
-            clearSearch();
-            setLocalResults([]);
-            setStatusMap({});
-            setHasSearched(false);
-        } else {
-            // Trigger debounced search on every keystroke
-            setHasSearched(true);
-            searchUsers(text);
-        }
+    const handleQueryChange = (t: string) => {
+        setQuery(t);
+        if (!t.trim()) { clearSearch(); setLocalResults([]); setHasSearched(false); return; }
+        setHasSearched(true);
+        searchUsers(t);
     };
 
-    const handleAction = async (targetUser: User) => {
-        console.log('[FriendsScreen] handleAction PRESSED for:', targetUser.username);
-        if (!user?.uid) {
-            console.warn('[FriendsScreen] handleAction missing user.uid');
-            return;
-        }
-        const status = statusMap[targetUser.uid] ?? 'none';
-        console.log('[FriendsScreen] Current status:', status);
-        setActionLoading(targetUser.uid);
+    const handleSearchSubmit = () => {
+        if (!query.trim()) return;
+        setHasSearched(true);
+        searchUsers(query.trim());
+    };
 
+    const handleSearchAction = async (target: User) => {
+        if (!user?.uid) return;
+        const status = statusMap[target.uid] ?? 'none';
+        setActionBusy(target.uid);
         try {
             if (status === 'none') {
-                console.log('[FriendsScreen] Calling sendRequest...');
-                await sendRequest(targetUser.uid);
-                console.log('[FriendsScreen] sendRequest SUCCESS, updating UI to pending_sent');
-                setStatusMap((prev) => ({ ...prev, [targetUser.uid]: 'pending_sent' }));
+                await sendRequest(target.uid);
+                setStatusMap(p => ({ ...p, [target.uid]: 'pending_sent' }));
             } else if (status === 'pending_received') {
-                const req = incomingRequests.find(
-                    (r) => r.fromUid === targetUser.uid && r.toUid === user.uid
-                );
+                const req = incoming.find(r => r.fromUid === target.uid && r.toUid === user.uid);
                 if (req) {
                     await acceptRequest(req.id, req.fromUid, req.toUid);
-                    setStatusMap((prev) => ({ ...prev, [targetUser.uid]: 'friends' }));
+                    setStatusMap(p => ({ ...p, [target.uid]: 'friends' }));
                 }
             }
-        } catch (e: unknown) {
-            console.error('[FriendsScreen] handleAction ERROR:', e);
-            Alert.alert('Error', (e as Error).message);
-        } finally {
-            setActionLoading(null);
-        }
+        } catch (e: any) { Alert.alert('Error', e.message); }
+        finally { setActionBusy(null); }
     };
-
-    const renderActionButton = (targetUser: User) => {
-        const status = statusMap[targetUser.uid] ?? 'none';
-        const busy = actionLoading === targetUser.uid;
-
-        if (busy) return <ActivityIndicator color={AppTheme.primaryColor} size="small" />;
-
-        switch (status) {
-            case 'friends':
-                return (
-                    <View style={styles.btnFriends}>
-                        <UserCheck color={AppTheme.primaryColor} size={14} />
-                        <Text style={styles.btnFriendsText}>Friends</Text>
-                    </View>
-                );
-            case 'pending_sent':
-                return (
-                    <View style={styles.pendingBadge}>
-                        <Clock color={AppTheme.primaryColor} size={12} />
-                        <Text style={styles.pendingText}>Pending</Text>
-                    </View>
-                );
-            case 'pending_received':
-                return (
-                    <TouchableOpacity
-                        style={styles.btnAccept}
-                        onPress={() => handleAction(targetUser)}
-                        activeOpacity={0.75}
-                    >
-                        <UserCheck color="#fff" size={14} />
-                        <Text style={styles.btnAcceptText}>Accept</Text>
-                    </TouchableOpacity>
-                );
-            default:
-                return (
-                    <TouchableOpacity
-                        style={styles.btnAdd}
-                        onPress={() => handleAction(targetUser)}
-                        activeOpacity={0.75}
-                    >
-                        <UserPlus color="#fff" size={14} />
-                        <Text style={styles.btnAddText}>Add</Text>
-                    </TouchableOpacity>
-                );
-        }
-    };
-
-    const isEmpty = inputValue.trim().length === 0;
 
     return (
-        <View style={styles.findSection}>
-            {/* Search bar row */}
-            <View style={styles.searchRow}>
-                <View style={styles.searchContainer}>
-                    <Search color={AppTheme.textGrey} size={18} style={{ marginRight: 8 }} />
+        <ScrollView
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8, gap: 16 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+        >
+            {/* ── Find people ── */}
+            <View style={s.card}>
+                <Text style={s.cardTitle}>Find People</Text>
+                <View style={s.searchBar}>
+                    <Search size={16} color={C.textMuted} />
                     <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search by username or email…"
-                        placeholderTextColor={AppTheme.textGrey}
-                        value={inputValue}
-                        onChangeText={handleClearInput}
-                        onSubmitEditing={handleSearch}
+                        style={s.searchInput}
+                        value={query}
+                        onChangeText={handleQueryChange}
+                        onSubmitEditing={handleSearchSubmit}
+                        placeholder="Search by username or email..."
+                        placeholderTextColor={C.textDim}
                         autoCapitalize="none"
-                        autoCorrect={false}
                         returnKeyType="search"
-                        autoFocus
                     />
+                    {query.length > 0 && (
+                        <TouchableOpacity onPress={() => handleQueryChange('')} style={{ padding: 4 }}>
+                            <Text style={{ color: C.textMuted, fontSize: 16 }}>×</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
-                <TouchableOpacity
-                    style={[styles.searchBtn, isEmpty && styles.searchBtnDisabled]}
-                    onPress={handleSearch}
-                    disabled={isEmpty || isSearching}
-                    activeOpacity={0.8}
-                >
-                    {isSearching
-                        ? <ActivityIndicator color="#fff" size="small" />
-                        : <Search color="#fff" size={18} />
-                    }
-                </TouchableOpacity>
+                {searching && <ActivityIndicator color={C.accent} style={{ marginTop: 12 }} />}
+                {hasSearched && !searching && localResults.length === 0 && (
+                    <Text style={s.noResults}>No users found</Text>
+                )}
+                {localResults.map(item => {
+                    const status = statusMap[item.uid] ?? 'none';
+                    const busy   = actionBusy === item.uid;
+                    return (
+                        <View key={item.uid} style={s.searchRow}>
+                            <Avatar uri={item.profileImageUrl} size={40} />
+                            <View style={s.rowInfo}>
+                                <Text style={s.rowName}>{item.fullName}</Text>
+                                <Text style={s.rowSub}>@{item.username}</Text>
+                            </View>
+                            {busy ? (
+                                <ActivityIndicator color={C.accent} size="small" />
+                            ) : status === 'friends' ? (
+                                <View style={s.badgeFriend}>
+                                    <UserCheck size={13} color={C.green} />
+                                    <Text style={s.badgeFriendText}>Friends</Text>
+                                </View>
+                            ) : status === 'pending_sent' ? (
+                                <View style={s.badgePending}>
+                                    <Clock size={12} color={C.accent} />
+                                    <Text style={s.badgePendingText}>Sent</Text>
+                                </View>
+                            ) : status === 'pending_received' ? (
+                                <TouchableOpacity style={s.btnAccept} onPress={() => handleSearchAction(item)} activeOpacity={0.75}>
+                                    <UserCheck size={13} color="#fff" />
+                                    <Text style={s.btnAcceptText}>Accept</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity style={s.btnAdd} onPress={() => handleSearchAction(item)} activeOpacity={0.75}>
+                                    <UserPlus size={13} color="#fff" />
+                                    <Text style={s.btnAddText}>Add</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    );
+                })}
             </View>
 
-            {isSearching && (
-                <ActivityIndicator color={AppTheme.primaryColor} style={{ marginVertical: 12 }} />
-            )}
+            {/* ── Incoming requests ── */}
+            <View style={s.card}>
+                <Text style={s.cardTitle}>
+                    Incoming
+                    {incomingRequests.length > 0 && (
+                        <Text style={{ color: C.accent }}> · {incomingRequests.length}</Text>
+                    )}
+                </Text>
+                {incomingRequests.length === 0 ? (
+                    <Text style={s.emptyCard}>No pending requests</Text>
+                ) : incomingRequests.map(req => {
+                    const sender = profiles[req.fromUid];
+                    const busy   = actionLoading === req.id;
+                    return (
+                        <View key={req.id} style={s.requestRow}>
+                            <Avatar uri={sender?.profileImageUrl} size={44} />
+                            <View style={s.rowInfo}>
+                                <Text style={s.rowName}>{sender?.fullName ?? '...'}</Text>
+                                <Text style={s.rowSub}>@{sender?.username ?? req.fromUid.slice(0, 8)}</Text>
+                            </View>
+                            {busy ? (
+                                <ActivityIndicator color={C.accent} size="small" />
+                            ) : (
+                                <View style={s.rowActions}>
+                                    <TouchableOpacity
+                                        style={s.btnAccept}
+                                        onPress={() => handleAccept(req.id, req.fromUid, req.toUid)}
+                                        activeOpacity={0.75}
+                                    >
+                                        <UserCheck size={13} color="#fff" />
+                                        <Text style={s.btnAcceptText}>Accept</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={s.btnDecline}
+                                        onPress={() => handleDecline(req.id)}
+                                        activeOpacity={0.75}
+                                    >
+                                        <UserX size={14} color={C.danger} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    );
+                })}
+            </View>
 
-            {hasSearched && localResults.length === 0 && !isSearching && (
-                <EmptyState
-                    icon={<Search color={AppTheme.textGrey} size={32} />}
-                    message="No users found"
-                />
-            )}
-
-            {localResults.map((item) => (
-                <View key={item.uid} style={styles.row}>
-                    <Avatar uri={item.profileImageUrl} />
-                    <View style={styles.rowInfo}>
-                        <Text style={styles.rowName}>{item.fullName}</Text>
-                        <Text style={styles.rowSub}>@{item.username}</Text>
-                    </View>
-                    {renderActionButton(item)}
+            {/* ── Sent requests ── */}
+            {outgoingRequests.length > 0 && (
+                <View style={s.card}>
+                    <Text style={s.cardTitle}>Sent</Text>
+                    {outgoingRequests.map(req => {
+                        const recipient = profiles[req.toUid];
+                        return (
+                            <View key={req.id} style={s.requestRow}>
+                                <Avatar uri={recipient?.profileImageUrl} size={44} />
+                                <View style={s.rowInfo}>
+                                    <Text style={s.rowName}>{recipient?.fullName ?? '...'}</Text>
+                                    <Text style={s.rowSub}>@{recipient?.username ?? req.toUid.slice(0, 8)}</Text>
+                                </View>
+                                <View style={s.badgePending}>
+                                    <Clock size={12} color={C.accent} />
+                                    <Text style={s.badgePendingText}>Pending</Text>
+                                </View>
+                            </View>
+                        );
+                    })}
                 </View>
-            ))}
-        </View>
+            )}
+        </ScrollView>
     );
 }
 
-// ── Main Screen ───────────────────────────────────────────────────────────────
+// ─── Suggestions tab ──────────────────────────────────────────────────────────
+
+function SuggestionsTab() {
+    const navigation = useNavigation<any>();
+    const { supabaseUserId } = useAuth();
+    const { friends, sendRequest } = useFriend();
+
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [loading,     setLoading]     = useState(true);
+    const [refreshing,  setRefreshing]  = useState(false);
+    const [sentUids,    setSentUids]    = useState<Set<string>>(new Set());
+
+    const load = useCallback(async (silent = false) => {
+        if (!supabaseUserId) return;
+        if (!silent) setLoading(true);
+        try {
+            const friendUids = friends.map(f => f.uid);
+            const data = await SocialProfileService.getSuggestions(supabaseUserId, friendUids, 20);
+            setSuggestions(data);
+        } catch {}
+        finally { setLoading(false); setRefreshing(false); }
+    }, [supabaseUserId, friends]);
+
+    useEffect(() => { load(); }, [load]);
+
+    const onRefresh = () => { setRefreshing(true); load(true); };
+
+    const handleConnect = async (uid: string) => {
+        setSentUids(prev => new Set([...prev, uid]));
+        try {
+            await sendRequest(uid);
+        } catch {
+            setSentUids(prev => { const n = new Set(prev); n.delete(uid); return n; });
+        }
+    };
+
+    if (loading) return <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />;
+
+    if (suggestions.length === 0) {
+        return (
+            <EmptyState
+                emoji="🌍"
+                title="No suggestions right now"
+                body="As more users set 'Open to Connect', they'll appear here."
+            />
+        );
+    }
+
+    return (
+        <FlatList
+            data={suggestions}
+            keyExtractor={item => item.uid}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8, gap: 12 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
+            ListHeaderComponent={
+                <Text style={s.suggestionHeader}>
+                    People open to connect with you
+                </Text>
+            }
+            renderItem={({ item }) => {
+                const sent = sentUids.has(item.uid);
+                return (
+                    <TouchableOpacity
+                        style={s.suggestionCard}
+                        onPress={() => navigation.navigate('SocialProfileScreen', { uid: item.uid })}
+                        activeOpacity={0.85}
+                    >
+                        <Avatar uri={item.avatarUrl} size={52} />
+                        <View style={s.rowInfo}>
+                            <Text style={s.rowName} numberOfLines={1}>{item.fullName}</Text>
+                            <Text style={s.rowSub}>@{item.username}</Text>
+                            {item.whatIDo ? (
+                                <Text style={s.suggestionWhat} numberOfLines={1}>{item.whatIDo}</Text>
+                            ) : null}
+                            {item.gymArea ? (
+                                <Text style={s.suggestionGym} numberOfLines={1}>📍 {item.gymArea}</Text>
+                            ) : null}
+                            <View style={s.suggestionStats}>
+                                {item.currentStreak > 0 && (
+                                    <Text style={s.suggestionStat}>🔥 {item.currentStreak}d</Text>
+                                )}
+                                {item.completedWorkouts > 0 && (
+                                    <Text style={s.suggestionStat}>💪 {item.completedWorkouts}</Text>
+                                )}
+                            </View>
+                        </View>
+                        <View style={s.suggestionActions}>
+                            {sent ? (
+                                <View style={s.badgePending}>
+                                    <Clock size={12} color={C.accent} />
+                                    <Text style={s.badgePendingText}>Sent</Text>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    style={s.btnConnect}
+                                    onPress={() => handleConnect(item.uid)}
+                                    activeOpacity={0.8}
+                                >
+                                    <UserPlus size={14} color="#fff" />
+                                    <Text style={s.btnConnectText}>Connect</Text>
+                                </TouchableOpacity>
+                            )}
+                            <ChevronRight size={14} color={C.textDim} style={{ marginTop: 4 }} />
+                        </View>
+                    </TouchableOpacity>
+                );
+            }}
+        />
+    );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 
 export function FriendsScreen() {
     const navigation = useNavigation<any>();
-    const [showFind, setShowFind] = useState(false);
+    const { supabaseUserId } = useAuth();
+    const { incomingRequests } = useFriend();
+    const [activeTab, setActiveTab] = useState<TabId>('friends');
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SafeAreaView style={s.safe} edges={['top']}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color={AppTheme.primaryColor} size={24} />
+            <View style={s.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
+                    <ArrowLeft size={22} color={C.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Friends</Text>
-                <View style={{ width: 40 }} />
+                <Text style={s.headerTitle}>Friends</Text>
+                <TouchableOpacity
+                    style={s.iconBtn}
+                    onPress={() => navigation.navigate('SocialProfileScreen', { uid: supabaseUserId })}
+                >
+                    <UserPlus size={22} color={C.text} strokeWidth={1.9} />
+                </TouchableOpacity>
             </View>
 
+            {/* Tab bar */}
+            <TabBar
+                active={activeTab}
+                onChange={setActiveTab}
+                requestCount={incomingRequests.length}
+            />
+
+            {/* Tab content */}
             <View style={{ flex: 1 }}>
-                <FriendsTab showFind={showFind} setShowFind={setShowFind} />
+                {activeTab === 'friends'     && <FriendsTab />}
+                {activeTab === 'requests'    && <RequestsTab />}
+                {activeTab === 'suggestions' && <SuggestionsTab />}
             </View>
         </SafeAreaView>
     );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-    safeArea: {
+const s = StyleSheet.create({
+    safe: {
         flex: 1,
-        backgroundColor: AppTheme.background,
+        backgroundColor: C.bg,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: SCREEN_PADDING,
-        paddingVertical: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: C.border,
     },
-    backButton: {
-        width: 40,
-        padding: 4,
+    iconBtn: {
+        width: 38, height: 38,
+        borderRadius: 19,
+        alignItems: 'center', justifyContent: 'center',
     },
     headerTitle: {
         flex: 1,
         textAlign: 'center',
-        fontSize: FontSizes.h4,
-        fontWeight: FontWeights.bold as 'bold',
-        color: AppTheme.textWhite,
+        fontSize: 18,
+        fontWeight: '800',
+        color: C.text,
+    },
+    profileIconWrap: {
+        width: 34, height: 34,
+        borderRadius: 17,
+        backgroundColor: C.bgCard,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: C.accentBorder,
     },
 
-    // Find toggle button
-    findToggleBtn: {
+    // Tab bar — orange underline style
+    tabBar: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: C.border,
+    },
+    tab: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        marginTop: 10,
-        paddingVertical: 13,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: AppTheme.cardColor,
+        gap: 5,
+        paddingVertical: 12,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
     },
-    findToggleBtnActive: {
-        backgroundColor: AppTheme.primaryColor,
-        borderColor: AppTheme.primaryColor,
+    tabActive: {
+        borderBottomColor: C.accent,
     },
-    findToggleText: {
-        fontSize: FontSizes.body,
-        fontWeight: FontWeights.semibold as '600',
-        color: AppTheme.textGrey,
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: C.textMuted,
     },
-    findToggleTextActive: {
+    tabTextActive: {
+        color: C.text,
+        fontWeight: '700',
+    },
+    tabBadge: {
+        backgroundColor: C.accent,
+        borderRadius: 8,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        minWidth: 18,
+        alignItems: 'center',
+    },
+    tabBadgeText: {
         color: '#fff',
-    },
-    findSection: {
-        marginTop: 12,
+        fontSize: 10,
+        fontWeight: '800',
     },
 
-    // List
-    listContent: {
-        paddingHorizontal: SCREEN_PADDING,
-        paddingBottom: 40,
-        paddingTop: 4,
-    },
-    row: {
+    // Friend row
+    friendRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: AppTheme.cardColor,
-        borderRadius: 12,
+        backgroundColor: C.bgCard,
+        borderRadius: 14,
         padding: 12,
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: C.border,
         gap: 12,
     },
     rowInfo: {
@@ -557,206 +785,233 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     rowName: {
-        fontSize: FontSizes.body,
-        fontWeight: FontWeights.semibold as '600',
-        color: AppTheme.textWhite,
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.text,
     },
     rowSub: {
-        fontSize: FontSizes.small,
-        color: AppTheme.textGrey,
+        fontSize: 12,
+        color: C.textMuted,
+    },
+    rowMeta: {
+        flexDirection: 'row',
+        gap: 6,
+        marginTop: 4,
+    },
+    metaChip: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 8,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+    },
+    metaChipText: {
+        fontSize: 10,
+        color: C.textMuted,
+        fontWeight: '600',
     },
     rowActions: {
         flexDirection: 'row',
-        alignItems: 'center',
         gap: 8,
+        alignItems: 'center',
+    },
+    actionMsg: {
+        width: 36, height: 36,
+        borderRadius: 10,
+        backgroundColor: C.accentSoft,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: C.accentBorder,
+    },
+    actionDanger: {
+        width: 36, height: 36,
+        borderRadius: 10,
+        backgroundColor: C.dangerSoft,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)',
     },
 
-    // Avatar fallback
-    avatarFallback: {
-        backgroundColor: AppTheme.inactiveColor,
-        alignItems: 'center',
-        justifyContent: 'center',
+    // Card (requests tab)
+    card: {
+        backgroundColor: C.bgCard,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: C.border,
+        gap: 12,
+    },
+    cardTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.text,
+    },
+    emptyCard: {
+        fontSize: 13,
+        color: C.textMuted,
+        textAlign: 'center',
+        paddingVertical: 8,
     },
 
-    // Action buttons
-    btnAccept: {
+    // Request row
+    requestRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        backgroundColor: '#22c55e',
-        borderRadius: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
+        gap: 12,
+        paddingTop: 4,
     },
-    btnAcceptText: {
-        color: '#fff',
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.bold as 'bold',
-    },
-    btnDecline: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,82,82,0.15)',
-        borderRadius: 8,
-        padding: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255,82,82,0.3)',
-    },
-    btnMessage: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: AppTheme.primaryColor,
-        borderRadius: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-    },
-    btnMessageText: {
-        color: '#fff',
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.bold as 'bold',
-    },
-    btnDanger: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: 'rgba(255,82,82,0.1)',
-        borderRadius: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255,82,82,0.25)',
-    },
-    btnDangerText: {
-        color: '#ff5252',
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.semibold as '600',
-    },
-    btnAdd: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: AppTheme.primaryColor,
-        borderRadius: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-    },
-    btnAddText: {
-        color: '#fff',
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.bold as 'bold',
-    },
-    btnFriends: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: 'rgba(249,115,22,0.1)',
-        borderRadius: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.3)',
-    },
-    btnFriendsText: {
-        color: AppTheme.primaryColor,
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.semibold as '600',
-    },
-    pendingBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: 'rgba(249,115,22,0.12)',
-        borderRadius: 8,
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.25)',
-    },
-    pendingText: {
-        color: AppTheme.primaryColor,
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.medium as '500',
-    },
-
-    // Section headers (Requests tab)
-    sectionHeader: {
-        fontSize: FontSizes.small,
-        fontWeight: FontWeights.bold as 'bold',
-        color: AppTheme.textGrey,
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
-        marginTop: 12,
-        marginBottom: 8,
-    },
-
-    // Search (inline find section)
     searchRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
-        gap: 8,
+        gap: 12,
+        paddingVertical: 6,
+        borderTopWidth: 1,
+        borderTopColor: C.border,
     },
-    searchContainer: {
-        flex: 1,
+    noResults: {
+        textAlign: 'center',
+        color: C.textMuted,
+        fontSize: 13,
+        paddingVertical: 8,
+    },
+
+    // Search bar
+    searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: AppTheme.cardColor,
+        gap: 8,
+        backgroundColor: C.bgInput,
         borderRadius: 12,
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: C.border,
     },
     searchInput: {
         flex: 1,
-        fontSize: FontSizes.body,
-        color: AppTheme.textWhite,
+        fontSize: 14,
+        color: C.text,
         paddingVertical: 0,
     },
-    searchBtn: {
-        backgroundColor: AppTheme.primaryColor,
-        borderRadius: 10,
-        paddingVertical: 11,
-        paddingHorizontal: 14,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    searchBtnDisabled: {
-        opacity: 0.4,
-    },
 
-    // Empty state
-    emptyState: {
-        alignItems: 'center',
-        paddingVertical: 48,
-        gap: 12,
-    },
-    emptyText: {
-        fontSize: FontSizes.body,
-        color: AppTheme.textGrey,
-        textAlign: 'center',
-    },
-
-    loader: {
-        marginTop: 48,
-    },
-
-    // Invite Button
-    inviteContactsBtn: {
+    // Invite button
+    inviteBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#1a1a1a',
-        paddingVertical: 14,
-        borderRadius: 12,
         gap: 8,
+        backgroundColor: C.bgCard,
+        borderRadius: 12,
+        paddingVertical: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: C.accentBorder,
     },
-    inviteContactsText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 15,
+    inviteBtnText: {
+        color: C.accent,
+        fontWeight: '700',
+        fontSize: 14,
     },
 
+    listCount: {
+        fontSize: 12,
+        color: C.textMuted,
+        fontWeight: '600',
+    },
+
+    // Action buttons
+    btnAdd: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: C.accent, borderRadius: 8,
+        paddingVertical: 6, paddingHorizontal: 12,
+    },
+    btnAddText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
+    btnAccept: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: '#22c55e', borderRadius: 8,
+        paddingVertical: 6, paddingHorizontal: 12,
+    },
+    btnAcceptText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
+    btnDecline: {
+        width: 32, height: 32, borderRadius: 8,
+        alignItems: 'center', justifyContent: 'center',
+        backgroundColor: C.dangerSoft,
+        borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)',
+    },
+
+    badgeFriend: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: 'rgba(34,197,94,0.1)',
+        borderWidth: 1, borderColor: 'rgba(34,197,94,0.25)',
+        borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9,
+    },
+    badgeFriendText: { color: C.green, fontSize: 11, fontWeight: '600' },
+
+    badgePending: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: C.accentSoft,
+        borderWidth: 1, borderColor: C.accentBorder,
+        borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9,
+    },
+    badgePendingText: { color: C.accent, fontSize: 11, fontWeight: '600' },
+
+    // Suggestion card
+    suggestionHeader: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: C.textMuted,
+        marginBottom: 4,
+    },
+    suggestionCard: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: C.bgCard,
+        borderRadius: 16,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: C.border,
+        gap: 12,
+    },
+    suggestionWhat: {
+        fontSize: 11,
+        color: C.accent,
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    suggestionGym: {
+        fontSize: 11,
+        color: C.textMuted,
+        marginTop: 1,
+    },
+    suggestionStats: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    suggestionStat: {
+        fontSize: 11,
+        color: C.textMuted,
+        fontWeight: '600',
+    },
+    suggestionActions: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    btnConnect: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: C.accent,
+        borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12,
+    },
+    btnConnectText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
+    // Empty states
+    empty: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 40,
+        paddingVertical: 80,
+        gap: 8,
+    },
+    emptyEmoji: { fontSize: 44, marginBottom: 4 },
+    emptyTitle: { fontSize: 18, fontWeight: '800', color: C.text, textAlign: 'center' },
+    emptyBody:  { fontSize: 14, color: C.textMuted, textAlign: 'center', lineHeight: 21 },
 });
