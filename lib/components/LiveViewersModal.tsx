@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
+    Easing,
     Image,
     Modal,
     ScrollView,
@@ -311,41 +312,39 @@ interface PulsingDotProps {
 }
 
 export function PulsingDot({ size = 8, color = '#22C55E' }: PulsingDotProps) {
-    const scale = useRef(new Animated.Value(1)).current;
-    const opacity = useRef(new Animated.Value(0.9)).current;
+    const breathe = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.parallel([
-                    Animated.timing(scale,   { toValue: 1.6, duration: 700, useNativeDriver: true }),
-                    Animated.timing(opacity, { toValue: 0,   duration: 700, useNativeDriver: true }),
-                ]),
-                Animated.parallel([
-                    Animated.timing(scale,   { toValue: 1,   duration: 0,   useNativeDriver: true }),
-                    Animated.timing(opacity, { toValue: 0.9, duration: 0,   useNativeDriver: true }),
-                ]),
+                Animated.timing(breathe, {
+                    toValue: 1,
+                    duration: 3000,
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(breathe, {
+                    toValue: 0,
+                    duration: 3000,
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }),
             ])
         ).start();
     }, []);
 
+    const scale   = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
+    const opacity = breathe.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.0] });
+
     return (
-        <View style={{ width: size * 2, height: size * 2, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Pulse ring */}
-            <Animated.View style={[
-                {
-                    position: 'absolute',
-                    width: size * 2, height: size * 2, borderRadius: size,
-                    backgroundColor: color,
-                },
-                { transform: [{ scale }], opacity },
-            ]} />
-            {/* Solid core */}
-            <View style={{
-                width: size, height: size, borderRadius: size / 2,
-                backgroundColor: color,
-            }} />
-        </View>
+        <Animated.View style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: color,
+            transform: [{ scale }],
+            opacity,
+        }} />
     );
 }
 
