@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
     Modal,
     View,
@@ -32,6 +32,11 @@ interface Props {
     selectedProgram?: { id?: string; title?: string } | null;
     selectedCategory?: { id?: string; title?: string } | null;
     thumbnail?: string;
+    /**
+     * When provided (e.g. from WorkoutTogetherModal), the date/time picker is
+     * pre-initialised and the modal opens directly on the friend-selector step.
+     */
+    initialScheduledAt?: Date;
     onClose: () => void;
 }
 
@@ -45,6 +50,7 @@ export function ScheduleSessionModal({
     selectedProgram: _selectedProgram,
     selectedCategory: _selectedCategory,
     thumbnail,
+    initialScheduledAt,
     onClose,
 }: Props) {
     const navigation = useNavigation<any>();
@@ -86,6 +92,36 @@ export function ScheduleSessionModal({
             return d;
         });
     }, []);
+
+    // When `initialScheduledAt` is provided (from WorkoutTogetherModal), pre-fill
+    // date/time and jump directly to the friend-selector step on open.
+    useEffect(() => {
+        if (!visible) return;
+        if (initialScheduledAt) {
+            const d = initialScheduledAt;
+            const h24 = d.getHours();
+            const rawMin = d.getMinutes();
+            const minute = Math.round(rawMin / 5) * 5 % 60;
+            const period: 'AM' | 'PM' = h24 >= 12 ? 'PM' : 'AM';
+            const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
+            setDisplayHour(hour12);
+            setAmPm(period);
+            setSelectedMinute(minute);
+            const midnight = new Date(d);
+            midnight.setHours(0, 0, 0, 0);
+            const idx = dateOptions.findIndex(opt => opt.getTime() === midnight.getTime());
+            setSelectedDateIdx(idx >= 0 ? idx : 0);
+            setStep('friends');
+        } else {
+            const { displayHour: h, amPm: a, selectedMinute: m } = getLocalNow();
+            setDisplayHour(h);
+            setAmPm(a);
+            setSelectedMinute(m);
+            setSelectedDateIdx(0);
+            setStep('datetime');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visible]);
 
     const scheduledAt = useMemo(() => {
         const d = new Date(dateOptions[selectedDateIdx]);

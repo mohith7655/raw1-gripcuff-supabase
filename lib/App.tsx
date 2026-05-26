@@ -9,6 +9,7 @@ import { useNotifications } from './hooks/useNotifications';
 import * as Notifications from 'expo-notifications';
 import { WorkoutReminderModal } from './components/WorkoutReminderModal';
 import { WorkoutReminderService } from './services/workoutReminder.service';
+import { SessionReminderService } from './services/sessionReminder.service';
 import { reminderWatcherService, ForegroundAlarm } from './services/reminderWatcher.service';
 import { migrateLegacyReminders } from './services/moveReminder.service';
 import { AppState } from 'react-native';
@@ -519,6 +520,44 @@ function MainApp() {
       respSub.remove();
     };
   }, [supabaseUserId]);
+
+  // ── Session reminder response handler ─────────────────────────────────────
+  // Handles action buttons and taps on workout-session notifications:
+  //   • SNOOZE  → re-schedule +5 minutes
+  //   • DISMISS → silently close (do nothing)
+  //   • Tap     → open UpcomingSessionsScreen so the user can join the session
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const sessionRespSub = Notifications.addNotificationResponseReceivedListener(
+      async (response) => {
+        const data = response.notification.request.content.data as any;
+        if (!data || data.type !== 'session_reminder') return;
+
+        const action = response.actionIdentifier;
+
+        if (action === 'SNOOZE') {
+          await SessionReminderService.snooze(response.notification.request.content)
+            .catch(e => console.warn('[App] session reminder snooze failed:', e));
+          return;
+        }
+
+        if (action === 'DISMISS') {
+          // User explicitly dismissed — nothing to do.
+          return;
+        }
+
+        // Any other action (including the default notification tap) → navigate
+        // to UpcomingSessionsScreen so the user can see and join their session.
+        if (navigationRef.isReady()) {
+          navigationRef.navigate('UpcomingSessionsScreen' as never, {} as never);
+        }
+      },
+    );
+
+    return () => sessionRespSub.remove();
+  }, []); // no deps — navigationRef is a stable ref, no uid needed here
 
   if (authLoading || bootLoading || accessLoading) {
     return (

@@ -65,6 +65,11 @@ interface Props {
     selectedProgram?: { id?: string; title?: string } | null;
     selectedCategory?: { id?: string; title?: string } | null;
     thumbnail?: string;
+    /**
+     * When provided (e.g. from WorkoutTogetherModal), the date/time picker is
+     * pre-initialised and the modal opens directly on the "Set Reminders" step.
+     */
+    initialScheduledAt?: Date;
     onClose: () => void;
 }
 
@@ -81,6 +86,7 @@ export function SelfScheduleModal({
     selectedProgram,
     selectedCategory,
     thumbnail,
+    initialScheduledAt,
     onClose,
 }: Props) {
     const { supabaseUserId } = useAuth();
@@ -123,14 +129,38 @@ export function SelfScheduleModal({
 
     const [step, setStep] = useState<Step>('datetime');
 
-    // Re-initialize time to current local time each time the modal becomes visible
+    // Re-initialize time each time the modal becomes visible.
+    // When `initialScheduledAt` is provided (from WorkoutTogetherModal) the
+    // picker is pre-filled with that date/time and we jump straight to the
+    // reminders step — the user already chose date + time in the prior sheet.
     useEffect(() => {
         if (!visible) return;
-        const { displayHour: h, amPm: a, selectedMinute: m } = getLocalNow();
-        setDisplayHour(h);
-        setAmPm(a);
-        setSelectedMinute(m);
-        setSelectedDateIdx(0);
+        if (initialScheduledAt) {
+            const d = initialScheduledAt;
+            const h24 = d.getHours();
+            const rawMin = d.getMinutes();
+            const minute = Math.round(rawMin / 5) * 5 % 60;
+            const period: 'AM' | 'PM' = h24 >= 12 ? 'PM' : 'AM';
+            const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
+            setDisplayHour(hour12);
+            setAmPm(period);
+            setSelectedMinute(minute);
+            // Find the matching dateOptions index (compare midnight timestamps)
+            const midnight = new Date(d);
+            midnight.setHours(0, 0, 0, 0);
+            const idx = dateOptions.findIndex(opt => opt.getTime() === midnight.getTime());
+            setSelectedDateIdx(idx >= 0 ? idx : 0);
+            // Skip straight to reminders since date/time was already chosen
+            setStep('reminders');
+            slideAnim.setValue(-(contentW));
+        } else {
+            const { displayHour: h, amPm: a, selectedMinute: m } = getLocalNow();
+            setDisplayHour(h);
+            setAmPm(a);
+            setSelectedMinute(m);
+            setSelectedDateIdx(0);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visible]);
 
     // ── Derived date options ──

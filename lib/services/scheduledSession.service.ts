@@ -86,12 +86,15 @@ function rowToSession(
     status = 'pending';
   }
 
+  // A session with no guest invite is a self-scheduled (solo) session.
+  const isSelf = !guestUid;
+
   return {
     id: row.id,
     hostUid: row.host_user_id,
     guestUid,
     hostName: row.host_full_name ?? row.host_username ?? 'User',
-    guestName: row.guest_full_name ?? row.guest_username ?? 'Friend',
+    guestName: isSelf ? 'Private Workout' : (row.guest_full_name ?? row.guest_username ?? 'Friend'),
     hostAvatarUrl: row.host_avatar ?? undefined,
     guestAvatarUrl: row.guest_avatar ?? undefined,
     videoId: row.workout_id,
@@ -101,7 +104,7 @@ function rowToSession(
     programName: row.program_name ?? undefined,
     scheduledAt: new Date(row.scheduled_for),
     status,
-    sessionType: 'friend',
+    sessionType: isSelf ? 'self' : 'friend',
     inviteType: 'scheduled',
     resendCount: row.resend_count ?? 0,
     createdAt: new Date(row.created_at),
@@ -186,6 +189,47 @@ export class ScheduledSessionService {
     });
 
     return sessionId;
+  }
+
+  // ── Create self-scheduled session (no guest, no invite, no notification) ──
+  // Used by WorkoutTogetherModal when the user picks "Self Schedule".
+
+  static async createSelfSession(params: {
+    hostUid: string;
+    videoId: string;
+    videoTitle: string;
+    scheduledAt: Date;
+    thumbnail?: string | null;
+    category?: string | null;
+    programName?: string | null;
+  }): Promise<string> {
+    const { hostUid, videoId, videoTitle, scheduledAt, thumbnail, category, programName } = params;
+
+    const { data: sessionRow, error: sessionErr } = await supabase
+      .from('scheduled_sessions')
+      .insert({
+        host_user_id:     hostUid,
+        workout_id:       videoId,
+        workout_title:    videoTitle,
+        thumbnail_url:    thumbnail   ?? null,
+        category:         category    ?? null,
+        program_name:     programName ?? null,
+        scheduled_for:    scheduledAt.toISOString(),
+        status:           'scheduled',
+        last_activity_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (sessionErr || !sessionRow) {
+      throw new Error(sessionErr?.message ?? 'Failed to create self session');
+    }
+
+    console.log('[ScheduledSessionService] created self session', sessionRow.id, {
+      hostUid, videoId, scheduledAt,
+    });
+
+    return sessionRow.id as string;
   }
 
   // ── Fetch all sessions for a user ─────────────────────────────────────────

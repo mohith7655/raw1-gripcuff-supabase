@@ -53,6 +53,34 @@ export class WorkoutSessionService {
   }
 
   /**
+   * Creates a self-scheduled (solo) session — no guest, no invite, no notification.
+   * Returns the new session ID.
+   */
+  static async createSelfSession(
+    hostUid: string,
+    videoId: string,
+    videoTitle: string,
+    scheduledAt: Date,
+    extras?: {
+      category?: string;
+      programName?: string;
+      thumbnail?: string;
+    }
+  ): Promise<string> {
+    console.log('[WorkoutSessionService] createSelfSession', { hostUid, videoId, scheduledAt });
+
+    return ScheduledSessionService.createSelfSession({
+      hostUid,
+      videoId,
+      videoTitle,
+      scheduledAt,
+      thumbnail:   extras?.thumbnail   ?? null,
+      category:    extras?.category    ?? null,
+      programName: extras?.programName ?? null,
+    });
+  }
+
+  /**
    * Fetches ALL sessions where the user is host or guest.
    * Delegates to ScheduledSessionService which queries the real DB.
    */

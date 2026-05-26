@@ -34,12 +34,13 @@ export const UpcomingSessionsScreen = () => {
         pendingOutgoing,
         upcomingSessions,
         completedSessions,
+        selfSessions,
         loading,
         acceptSession,
         declineSession,
         cancelSession,
         resendSession,
-        refreshSessions
+        refreshSessions,
     } = useWorkoutSession();
 
     const navigation = useNavigation<any>();
@@ -49,7 +50,6 @@ export const UpcomingSessionsScreen = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [startLoading, setStartLoading] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [selfScheduled, setSelfScheduled] = useState<SelfScheduledEntry[]>([]);
 
     // Refresh sessions every time the screen comes into focus
     useEffect(() => {
@@ -60,10 +60,18 @@ export const UpcomingSessionsScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigation]);
 
-    // Self-scheduled workouts — no Firestore, start empty
-    useEffect(() => {
-        setSelfScheduled([]);
-    }, [user?.uid]);
+    // Map context WorkoutSession[] → SelfScheduledEntry[] shape used by this screen.
+    const selfScheduled: SelfScheduledEntry[] = selfSessions.map(s => ({
+        id:          s.id,
+        workoutId:   s.videoId,
+        workoutTitle: s.videoTitle,
+        videoTitle:   s.videoTitle,
+        category:     s.category    ?? null,
+        programName:  s.programName ?? null,
+        thumbnail:    s.thumbnail   ?? null,
+        scheduledFor: s.scheduledAt instanceof Date ? s.scheduledAt : new Date(s.scheduledAt),
+        status:       s.status,
+    }));
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -165,8 +173,13 @@ export const UpcomingSessionsScreen = () => {
                     style: 'destructive',
                     onPress: async () => {
                         setActionLoading(id);
-                        setSelfScheduled(prev => prev.filter(e => e.id !== id));
-                        setActionLoading(null);
+                        try {
+                            await cancelSession(id);
+                        } catch (e: any) {
+                            Alert.alert('Error', e.message ?? 'Could not remove session.');
+                        } finally {
+                            setActionLoading(null);
+                        }
                     },
                 },
             ]

@@ -12,7 +12,7 @@ export interface WorkoutSession {
     videoTitle: string;         // Cache the video title for the UI
     scheduledAt: Date;          // The exact date & time selected
     status: 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled' | 'expired';
-    sessionType?: 'friend' | 'premade';
+    sessionType?: 'self' | 'friend' | 'premade';
     inviteType?: 'instant' | 'scheduled';
     category?: string;
     programName?: string;

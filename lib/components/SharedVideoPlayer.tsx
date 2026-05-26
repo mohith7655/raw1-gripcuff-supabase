@@ -1,4 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { PulsingDot, StackedAvatars } from './LiveViewersModal';
+import { ActiveWatcher } from '../services/WorkoutWatcherService';
 import {
     Animated,
     PanResponder,
@@ -40,10 +42,18 @@ export type SharedVideoPlayerRef = {
 type InviteCta = {
     title: string;
     subtitle: string | React.ReactNode;
-    onPress: () => void;
+    /** Opens the unified Workout Together scheduling flow (Step 1 date/time → Step 2 type). */
+    onWorkoutTogether: () => void;
+    /** @deprecated replaced by onViewersPress — kept for backward compat */
+    onStartNow: () => void;
     viewerCount?: number;
+    /** Live viewer objects — used for the stacked avatar overlay on the pill. */
+    viewers?: ActiveWatcher[];
+    /** Current user's UID — used to exclude self from avatar stack. */
+    currentUid?: string | null;
+    /** Opens the LiveViewersModal. */
+    onViewersPress?: () => void;
     onInviteSocial?: () => void;
-    onScheduleSelf?: () => void;
 };
 
 interface SharedVideoPlayerProps {
@@ -702,28 +712,40 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                 />
             ) : inviteCta ? (
                 <View style={styles.footerStack}>
-                    {/* Invite a Friend */}
+                    {/* ── Workout Together (primary) ── */}
                     <TouchableOpacity
-                        style={styles.footerBtn}
-                        onPress={inviteCta.onPress}
+                        style={styles.footerBtnWorkoutTogether}
+                        onPress={inviteCta.onWorkoutTogether}
                         activeOpacity={0.85}
                     >
-                        <Users color="#FF6B00" size={14} />
-                        <Text style={styles.footerBtnText}>Invite Friend</Text>
+                        <CalendarClock color="#fff" size={14} />
+                        <Text style={styles.footerBtnWorkoutTogetherText}>Workout Together</Text>
                     </TouchableOpacity>
 
-                    {/* Schedule for Later */}
-                    {inviteCta.onScheduleSelf && (
-                        <TouchableOpacity
-                            style={styles.footerBtnSchedule}
-                            onPress={inviteCta.onScheduleSelf}
-                            activeOpacity={0.85}
-                        >
-                            <CalendarClock color="#818CF8" size={14} />
-                            <Text style={styles.footerBtnScheduleText}>Schedule</Text>
-                        </TouchableOpacity>
-                    )}
-
+                    {/* ── LIVE viewer pill (replaces "Start Now") ── */}
+                    <TouchableOpacity
+                        style={styles.footerBtnLive}
+                        onPress={inviteCta.onViewersPress ?? inviteCta.onStartNow}
+                        activeOpacity={0.8}
+                    >
+                        {/* Stacked avatars for other viewers */}
+                        {(inviteCta.viewers ?? []).filter(v => v.uid !== inviteCta.currentUid).length > 0 && (
+                            <StackedAvatars
+                                viewers={inviteCta.viewers ?? []}
+                                currentUid={inviteCta.currentUid}
+                                maxVisible={3}
+                                size={20}
+                            />
+                        )}
+                        <PulsingDot size={6} color="#22C55E" />
+                        {/* LIVE + count always together; self counts as 1 */}
+                        <Text style={styles.footerBtnLiveLabel}>
+                            {'LIVE '}
+                            <Text style={styles.footerBtnLiveCount}>
+                                {Math.max(1, (inviteCta.viewerCount ?? 0) + 1)}
+                            </Text>
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             ) : footerText ? (
                 <View style={styles.footerRow}>
@@ -935,6 +957,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
         textAlign: 'center',
     },
+    // Legacy — kept so any residual refs compile; superseded by footerBtnWorkoutTogether
     footerBtn: {
         flex: 1,
         flexDirection: 'row',
@@ -969,6 +992,66 @@ const styles = StyleSheet.create({
     footerBtnScheduleText: {
         color: '#818CF8',
         fontSize: 12,
+        fontWeight: '700',
+    },
+    // ── New unified footer buttons ─────────────────────────────────────────
+    footerBtnWorkoutTogether: {
+        flex: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 11,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        backgroundColor: '#FF6B00',
+    },
+    footerBtnWorkoutTogetherText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    footerBtnStartNow: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        paddingVertical: 11,
+        paddingHorizontal: 6,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,107,0,0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,107,0,0.28)',
+    },
+    footerBtnStartNowText: {
+        color: '#FF6B00',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    // ── LIVE viewer pill ──────────────────────────────────────────────────────
+    footerBtnLive: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        paddingVertical: 11,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        backgroundColor: 'rgba(34,197,94,0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(34,197,94,0.3)',
+    },
+    footerBtnLiveLabel: {
+        color: '#22C55E',
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+    },
+    footerBtnLiveCount: {
+        color: '#fff',
+        fontSize: 13,
         fontWeight: '700',
     },
     footerBtnSocial: {

@@ -21,6 +21,7 @@ import { VideoInviteModal } from '../components/VideoInviteModal';
 import { InviteTypeSelectorModal } from '../components/InviteTypeSelectorModal';
 import { ScheduleSessionModal } from '../components/ScheduleSessionModal';
 import { SelfScheduleModal } from '../components/SelfScheduleModal';
+import { WorkoutTogetherModal } from '../components/WorkoutTogetherModal';
 import { SharedVideoPlayer, SharedVideoPlayerRef } from '../components/SharedVideoPlayer';
 import { WorkoutStartModal } from '../components/WorkoutStartModal';
 import MuscleVisualizer from '../components/MuscleVisualizer';
@@ -54,6 +55,7 @@ import { deriveAgoraUid } from '../utils/agoraUid';
 import { CoWorkoutCameraTiles } from '../components/CoWorkoutCameraTiles';
 import { PlaybackSyncService } from '../services/playbackSync.service';
 import { useVideoInteractions } from '../hooks/useVideoInteractions';
+import { LiveViewersModal } from '../components/LiveViewersModal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -259,6 +261,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const { profile } = useUser();
     const { supabaseUserId, email } = useAuth();
 
+    const [showWorkoutTogetherModal, setShowWorkoutTogetherModal] = useState(false);
+    const [showViewersModal, setShowViewersModal] = useState(false);
+    // Legacy states kept to avoid breaking residual refs; no longer opened from primary flow
     const [showInviteTypeModal, setShowInviteTypeModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -1594,17 +1599,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onCurrentPositionChange={handlePositionChange}
                         onDurationChange={handleDurationChange}
                         inviteCta={allowInvite ? {
-                            title: 'Invite a Friend',
-                            subtitle: <Text>Instantly workout with a friend <Text style={{ color: '#F97316' }}>right now.</Text></Text>,
-                            onPress: () => setShowInviteTypeModal(true),
+                            title: 'Workout Together',
+                            subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F97316' }}>your way.</Text></Text>,
+                            onWorkoutTogether: () => setShowWorkoutTogetherModal(true),
+                            onStartNow: () => setShowInviteModal(true),
                             viewerCount: (() => {
-                                const count = Math.max(0, (viewerCount || 1) - 1);
                                 const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
-                                const finalCount = liveViewers.length > 0 ? exactCount : count;
-                                return finalCount > 0 ? finalCount : undefined;
+                                return exactCount > 0 ? exactCount : undefined;
                             })(),
+                            viewers: liveViewers,
+                            currentUid: supabaseUserId ?? null,
+                            onViewersPress: () => setShowViewersModal(true),
                             onInviteSocial: () => setShowSocialModal(true),
-                            onScheduleSelf: () => setShowSelfScheduleModal(true),
                         } : undefined}
                     />
                 ) : (
@@ -1660,6 +1666,29 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
                 return (
                     <>
+                        {/* ── Live Viewers Modal — who's watching this video right now ── */}
+                        <LiveViewersModal
+                            visible={showViewersModal}
+                            viewers={liveViewers}
+                            currentUid={supabaseUserId ?? null}
+                            friendUids={friendUids}
+                            onClose={() => setShowViewersModal(false)}
+                        />
+
+                        {/* ── Unified "Workout Together" — self-contained multi-step sheet ── */}
+                        <WorkoutTogetherModal
+                            visible={showWorkoutTogetherModal}
+                            videoId={vid}
+                            videoTitle={title}
+                            workoutId={workoutId}
+                            workoutTitle={workoutTitle}
+                            category={workoutCategory}
+                            programName={workoutProgram}
+                            thumbnail={thumbUrl || undefined}
+                            onClose={() => setShowWorkoutTogetherModal(false)}
+                        />
+
+                        {/* ── Legacy InviteTypeSelectorModal (kept for other entry points) ── */}
                         <InviteTypeSelectorModal
                             visible={showInviteTypeModal}
                             videoTitle={title}
@@ -1677,6 +1706,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             onClose={() => setShowInviteTypeModal(false)}
                         />
 
+                        {/* ── Instant invite (Start Now) ── */}
                         <VideoInviteModal
                             visible={showInviteModal}
                             videoId={vid}
@@ -1687,6 +1717,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             onClose={() => setShowInviteModal(false)}
                         />
 
+                        {/* ── Invite Friend (Scheduled) — pre-fills date when coming from WorkoutTogetherModal ── */}
                         <ScheduleSessionModal
                             visible={showScheduleModal}
                             videoId={vid}
