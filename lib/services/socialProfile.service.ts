@@ -121,11 +121,10 @@ export class SocialProfileService {
             candidate = `${base}_${randomSuffix()}`;
         }
 
-        const { error: updateErr } = await supabase
+        const { error: upsertErr } = await supabase
             .from('profiles')
-            .update({ qr_slug: candidate })
-            .eq('id', uid);
-        if (updateErr) throw new Error(updateErr.message);
+            .upsert({ id: uid, qr_slug: candidate }, { onConflict: 'id' });
+        if (upsertErr) throw new Error(upsertErr.message);
 
         return candidate;
     }
@@ -199,8 +198,7 @@ export class SocialProfileService {
 
         const { error } = await supabase
             .from('profiles')
-            .update(payload)
-            .eq('id', uid);
+            .upsert({ id: uid, ...payload }, { onConflict: 'id' });
 
         if (error) throw new Error(error.message);
     }

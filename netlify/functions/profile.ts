@@ -33,26 +33,77 @@ async function supaRest(path: string) {
 }
 
 async function fetchProfile(slug: string) {
-    const cols = [
-        'id', 'full_name', 'username', 'bio', 'avatar_url',
-        'what_i_do', 'open_to_connect', 'looking_to_meet',
+    const profileCols = [
+        'id', 'qr_slug', 'bio', 'what_i_do', 'open_to_connect', 'looking_to_meet',
         'gym_name', 'gym_area', 'gym_address',
         'house_name', 'house_address',
         'park_name', 'park_address',
         'hobbies', 'community_note',
     ].join(',');
 
+    const userCols = 'id,full_name,username,avatar_url,bio';
+
+    let uid: string | null = null;
+    let profileRow: any = null;
+    let userRow:    any = null;
+
+    // 1. Try profiles.qr_slug
     const bySlug = await supaRest(
-        `profiles?qr_slug=eq.${encodeURIComponent(slug)}&select=${cols}&limit=1`,
+        `profiles?qr_slug=eq.${encodeURIComponent(slug)}&select=${profileCols}&limit=1`,
     );
-    if (Array.isArray(bySlug) && bySlug.length) return bySlug[0];
+    if (Array.isArray(bySlug) && bySlug.length) {
+        profileRow = bySlug[0];
+        uid = profileRow.id;
+    }
 
-    const byUser = await supaRest(
-        `profiles?username=ilike.${encodeURIComponent(slug)}&select=${cols}&limit=1`,
-    );
-    if (Array.isArray(byUser) && byUser.length) return byUser[0];
+    // 2. Try users.username (case-insensitive) — picks up users without a profiles row
+    if (!uid) {
+        const byUsername = await supaRest(
+            `users?username=ilike.${encodeURIComponent(slug)}&select=${userCols}&limit=1`,
+        );
+        if (Array.isArray(byUsername) && byUsername.length) {
+            userRow = byUsername[0];
+            uid = userRow.id;
+        }
+    }
 
-    return null;
+    if (!uid) return null;
+
+    // Fetch the other table if we don't already have it
+    if (!profileRow) {
+        const p = await supaRest(
+            `profiles?id=eq.${encodeURIComponent(uid)}&select=${profileCols}&limit=1`,
+        );
+        if (Array.isArray(p) && p.length) profileRow = p[0];
+    }
+    if (!userRow) {
+        const u = await supaRest(
+            `users?id=eq.${encodeURIComponent(uid)}&select=${userCols}&limit=1`,
+        );
+        if (Array.isArray(u) && u.length) userRow = u[0];
+    }
+
+    if (!userRow && !profileRow) return null;
+
+    return {
+        id:               uid,
+        full_name:        userRow?.full_name ?? null,
+        username:         userRow?.username  ?? null,
+        avatar_url:       userRow?.avatar_url ?? null,
+        bio:              profileRow?.bio ?? userRow?.bio ?? null,
+        what_i_do:        profileRow?.what_i_do ?? null,
+        open_to_connect:  profileRow?.open_to_connect ?? true,
+        looking_to_meet:  profileRow?.looking_to_meet ?? null,
+        gym_name:         profileRow?.gym_name ?? null,
+        gym_area:         profileRow?.gym_area ?? null,
+        gym_address:      profileRow?.gym_address ?? null,
+        house_name:       profileRow?.house_name ?? null,
+        house_address:    profileRow?.house_address ?? null,
+        park_name:        profileRow?.park_name ?? null,
+        park_address:     profileRow?.park_address ?? null,
+        hobbies:          profileRow?.hobbies ?? [],
+        community_note:   profileRow?.community_note ?? null,
+    };
 }
 
 const esc = (s: unknown) =>
