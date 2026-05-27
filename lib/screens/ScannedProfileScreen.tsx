@@ -153,24 +153,33 @@ export function ScannedProfileScreen() {
   const [social,       setSocial]       = useState<SocialProfile | null>(null);
   const [streakData,   setStreakData]   = useState<StreakData | null>(null);
   const [relStatus,    setRelStatus]    = useState<RelationshipStatus>('none');
+  const [friendsCount, setFriendsCount] = useState(0);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
   const [connectBusy,  setConnectBusy]  = useState(false);
 
   const toFallbackUser = useCallback((row: any, uid: string): User => ({
     uid,
-    email: '',
+    email: row?.email || '',
     fullName: row?.full_name || 'Athlete',
     username: row?.username || '',
     profileImageUrl: row?.avatar_url || undefined,
+    phone: row?.phone || undefined,
+    dateOfBirth: row?.date_of_birth || undefined,
+    gender: row?.gender || undefined,
+    age: row?.age != null ? Number(row.age) : undefined,
     completedVideos: 0, totalVideos: 0, credits: 0,
     createdAt: new Date(), updatedAt: new Date(),
-    currentStreak: 0, bestStreak: 0, lastWorkoutDate: null,
-    weeklyActivity: {}, completedWorkouts: 0, watchedMinutes: 0,
-    watchedSeconds: 0, todayWatchSeconds: 0, totalWatchSessions: 0,
-    lastVideoWatchAt: null, totalLiveSessions: 0, hasAccess: false,
-    accessType: null, stripeCustomerId: null, subscriptionId: null,
-    subscriptionStatus: null,
+    currentStreak: Number(row?.current_streak ?? 0),
+    bestStreak: Number(row?.best_streak ?? 0),
+    lastWorkoutDate: null,
+    weeklyActivity: {},
+    completedWorkouts: Number(row?.completed_workouts ?? 0),
+    watchedMinutes: 0, watchedSeconds: 0, todayWatchSeconds: 0,
+    totalWatchSessions: 0, lastVideoWatchAt: null, totalLiveSessions: 0,
+    hasAccess: Boolean(row?.has_access),
+    accessType: row?.access_type ?? null,
+    stripeCustomerId: null, subscriptionId: null, subscriptionStatus: null,
   }), []);
 
   // ── Resolve slug → uid ─────────────────────────────────────────────────────
@@ -208,7 +217,7 @@ export function ScannedProfileScreen() {
         UserService.getProfile(targetUid),
         SocialProfileService.get(targetUid),
         StreakService.getStreakData(targetUid),
-        supabase.from('profiles').select('id, full_name, username, avatar_url, age, gender, date_of_birth, phone, has_access, access_type, current_streak, best_streak, completed_workouts').eq('id', targetUid).maybeSingle(),
+        supabase.from('profiles').select('id, full_name, username, avatar_url, email, age, gender, date_of_birth, phone, has_access, access_type, current_streak, best_streak, completed_workouts').eq('id', targetUid).maybeSingle(),
       ]);
       setSocial(spRes.status === 'fulfilled' ? spRes.value : null);
       setStreakData(streakRes.status === 'fulfilled' ? streakRes.value : null);
@@ -218,6 +227,15 @@ export function ScannedProfileScreen() {
         if (row) nextUser = toFallbackUser(row, targetUid);
       }
       setUser(nextUser);
+      // Fetch friends count
+      try {
+        const { count } = await supabase
+          .from('friend_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'accepted')
+          .or(`sender_id.eq.${targetUid},receiver_id.eq.${targetUid}`);
+        setFriendsCount(count ?? 0);
+      } catch { setFriendsCount(0); }
       if (supabaseUserId && supabaseUserId !== targetUid) {
         const status = await FriendService.getRequestStatus(supabaseUserId, targetUid);
         setRelStatus(status);
@@ -386,6 +404,14 @@ export function ScannedProfileScreen() {
           <View style={s.basicInfoContainer}>
             {/* Age */}
             <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Email</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{user?.email || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Age */}
+            <View style={s.basicInfoItem}>
               <Text style={s.basicInfoLabel}>Age</Text>
               <View style={s.basicInfoValueRow}>
                 <Text style={s.basicInfoValue}>{user?.age ? `${user.age} yrs` : '—'}</Text>
@@ -436,6 +462,18 @@ export function ScannedProfileScreen() {
 
         {/* ── STATS ─────────────────────────────────────────────────────────── */}
         <StatPill streak={streak} workouts={workouts} prs={prs} />
+
+        {/* ── FRIENDS COUNT ────────────────────────────────────────────────── */}
+        <ProfileCard>
+          <View style={s.cardHeaderRow}>
+            <Text style={s.cardTitle}>Friends</Text>
+          </View>
+          <View style={s.friendsRow}>
+            <Users size={20} color={C.orange} strokeWidth={2.2} />
+            <Text style={s.friendsCountText}>{friendsCount}</Text>
+            <Text style={s.friendsLabel}>connections</Text>
+          </View>
+        </ProfileCard>
 
         {/* ── ABOUT ME ──────────────────────────────────────────────────────── */}
         {!!bio && (
@@ -658,6 +696,11 @@ const s = StyleSheet.create({
   inlineRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   inlineText:  { color: C.text, fontSize: 15, fontWeight: '600' },
   pillsRow:    { flexDirection: 'row', gap: 12 },
+
+  // Friends
+  friendsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  friendsCountText: { color: C.text, fontSize: 22, fontWeight: '800' },
+  friendsLabel: { color: C.muted, fontSize: 14, fontWeight: '500' },
 
   // Hobbies
   hobbiesRow:  { flexDirection: 'row', marginTop: 14 },
