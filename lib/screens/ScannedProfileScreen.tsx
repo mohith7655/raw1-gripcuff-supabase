@@ -381,6 +381,57 @@ export function ScannedProfileScreen() {
               {openToConnect ? 'Open to connect' : 'Connections by Request'}
             </Text>
           </View>
+
+          {/* Basic Info List */}
+          <View style={s.basicInfoContainer}>
+            {/* Age */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Age</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{user?.age ? `${user.age} yrs` : '—'}</Text>
+              </View>
+            </View>
+
+            {/* Gender */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Gender</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{user?.gender || '—'}</Text>
+              </View>
+            </View>
+
+            {/* DOB */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>DOB</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{user?.dateOfBirth || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Phone */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Phone</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{user?.phone || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Access */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Gripcuff Access</Text>
+              <View style={s.basicInfoValueRow}>
+                {user?.hasAccess ? (
+                  <View style={s.accessPill}>
+                    <Text style={s.accessPillText}>
+                      {user.accessType === 'subscription' ? 'Subscription' : 'Product'}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={s.accessInactive}>Inactive</Text>
+                )}
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* ── STATS ─────────────────────────────────────────────────────────── */}
@@ -457,24 +508,46 @@ export function ScannedProfileScreen() {
         )}
 
         {/* ── BADGES ────────────────────────────────────────────────────────── */}
-        {visibleBadges.length > 0 && (
-          <ProfileCard>
-            <View style={s.cardHeaderRow}>
-              <Text style={s.cardTitle}>Badges</Text>
-              {extraCount > 0 && (
-                <Text style={s.extraCount}>+{extraCount} more</Text>
-              )}
-            </View>
-            <View style={s.badgesRow}>
-              {visibleBadges.map((badge, i) => (
-                <View key={badge.id} style={[s.badgeShape, i % 2 === 1 && s.badgeShapeAlt]}>
-                  <Text style={s.badgeEmoji}>{badge.emoji}</Text>
-                  <Text style={s.badgeLabel} numberOfLines={1}>{badge.label}</Text>
+        <ProfileCard>
+          <View style={s.cardHeaderRow}>
+            <Text style={s.cardTitle}>Badges</Text>
+          </View>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={s.badgesScroll}
+          >
+            {ALL_BADGES.slice(0, 8).map((badge, i) => {
+              const earnedIds = new Set(earnedBadges.map(b => b.id));
+              const isEarned = earnedIds.has(badge.id);
+              return (
+                <View key={badge.id} style={s.badgeItemContainer}>
+                  <View 
+                    style={[
+                      s.badgeShape, 
+                      i % 2 === 1 && s.badgeShapeAlt,
+                      !isEarned && s.badgeShapeLocked
+                    ]}
+                  >
+                    <Text style={[s.badgeEmoji, !isEarned && s.badgeEmojiLocked]}>
+                      {badge.emoji}
+                    </Text>
+                  </View>
+                  <Text style={[s.badgeLabel, !isEarned && s.badgeLabelLocked]} numberOfLines={1}>
+                    {badge.label}
+                  </Text>
                 </View>
-              ))}
-            </View>
-          </ProfileCard>
-        )}
+              );
+            })}
+            {Math.max(0, ALL_BADGES.length - 8) > 0 && (
+              <View style={s.moreBadgeContainer}>
+                <View style={s.moreBadge}>
+                  <Text style={s.moreBadgeText}>+{Math.max(0, ALL_BADGES.length - 8)}</Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </ProfileCard>
 
       </ScrollView>
 
@@ -601,20 +674,97 @@ const s = StyleSheet.create({
   communityBold:  { color: C.text, fontSize: 14, fontWeight: '700' },
   communityMuted: { color: C.muted, fontSize: 13, marginTop: 2, lineHeight: 18 },
 
+  // Basic Info
+  basicInfoContainer: {
+    marginTop: 20,
+    width: '100%',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  basicInfoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  basicInfoLabel: {
+    color: C.muted,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  basicInfoValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  basicInfoValue: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  accessInactive: {
+    color: C.orange,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  accessPill: {
+    backgroundColor: C.orange,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  accessPillText: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
   // Badges
-  badgesRow:  { flexDirection: 'row', gap: 10, marginTop: 10, flexWrap: 'wrap' },
+  badgesScroll: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 10,
+    alignItems: 'flex-start',
+    paddingBottom: 4,
+  },
+  badgeItemContainer: {
+    alignItems: 'center',
+    width: 72,
+    gap: 6,
+  },
   badgeShape: {
-    width: 70, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4,
-    borderRadius: 14,
+    width: 64, height: 64, borderRadius: 18,
     backgroundColor: 'rgba(255,122,0,0.1)',
     borderWidth: 1.5, borderColor: C.orange,
-    gap: 4,
+    alignItems: 'center', justifyContent: 'center',
   },
   badgeShapeAlt: {
-    backgroundColor: C.purpleSoft, borderColor: C.purpleBorder,
+    backgroundColor: 'rgba(139,92,246,0.12)', borderColor: 'rgba(139,92,246,0.7)',
+    transform: [{ rotate: '-4deg' }],
   },
-  badgeEmoji: { fontSize: 24 },
-  badgeLabel: { color: C.muted, fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  badgeShapeLocked: {
+    backgroundColor: C.bgCard,
+    borderColor: 'rgba(255,255,255,0.06)',
+    opacity: 0.5,
+  },
+  badgeEmoji: { fontSize: 30 },
+  badgeEmojiLocked: { opacity: 0.4 },
+  badgeLabel: { color: C.text, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  badgeLabelLocked: { color: C.muted },
+  moreBadgeContainer: {
+    width: 64,
+    alignItems: 'center',
+    paddingTop: 6,
+  },
+  moreBadge: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  moreBadgeText: { color: C.muted, fontSize: 13, fontWeight: '700' },
 
   // Bottom bar
   bottomBar: {
