@@ -41,7 +41,7 @@ async function fetchProfile(slug: string) {
         'hobbies', 'community_note',
     ].join(',');
 
-    const userCols = 'id,full_name,username,avatar_url,bio';
+    const userCols = 'id,full_name,username,avatar_url,bio,email,age,gender,date_of_birth,phone,has_access,access_type,current_streak,best_streak,completed_workouts';
 
     let uid: string | null = null;
     let profileRow: any = null;
@@ -83,6 +83,15 @@ async function fetchProfile(slug: string) {
         if (Array.isArray(u) && u.length) userRow = u[0];
     }
 
+    // Fetch friends count
+    let friendsCount = 0;
+    try {
+        const fr = await supaRest(
+            `friend_requests?status=eq.accepted&or=(sender_id.eq.${uid},receiver_id.eq.${uid})&select=id`,
+        );
+        if (Array.isArray(fr)) friendsCount = fr.length;
+    } catch {}
+
     if (!userRow && !profileRow) return null;
 
     return {
@@ -90,6 +99,17 @@ async function fetchProfile(slug: string) {
         full_name:        userRow?.full_name ?? null,
         username:         userRow?.username  ?? null,
         avatar_url:       userRow?.avatar_url ?? null,
+        email:            userRow?.email ?? null,
+        age:              userRow?.age ?? null,
+        gender:           userRow?.gender ?? null,
+        date_of_birth:    userRow?.date_of_birth ?? null,
+        phone:            userRow?.phone ?? null,
+        has_access:       userRow?.has_access ?? false,
+        access_type:      userRow?.access_type ?? null,
+        current_streak:   userRow?.current_streak ?? 0,
+        best_streak:      userRow?.best_streak ?? 0,
+        completed_workouts: userRow?.completed_workouts ?? 0,
+        friends_count:    friendsCount,
         bio:              profileRow?.bio ?? userRow?.bio ?? null,
         what_i_do:        profileRow?.what_i_do ?? null,
         open_to_connect:  profileRow?.open_to_connect ?? true,
@@ -127,6 +147,21 @@ function renderProfile(p: Record<string, any>, slug: string): string {
     const avatar   = p.avatar_url ?? '';
     const openToConnect = p.open_to_connect !== false;
 
+    // Basic info
+    const email    = esc(p.email || '');
+    const age      = p.age ? `${p.age} yrs` : '';
+    const gender   = esc(p.gender || '');
+    const dob      = esc(p.date_of_birth || '');
+    const phone    = esc(p.phone || '');
+    const hasAccess = p.has_access;
+    const accessType = p.access_type === 'subscription' ? 'Subscription' : p.access_type === 'product' ? 'Product' : '';
+
+    // Stats
+    const streak   = Number(p.current_streak ?? 0);
+    const workouts = Number(p.completed_workouts ?? 0);
+    const prs      = Number(p.best_streak ?? 0);
+    const friendsCount = Number(p.friends_count ?? 0);
+
     const gymName    = esc(p.gym_name   || '');
     const gymAddr    = esc(shortAddress(p.gym_address || p.gym_area));
     const homeName   = esc(p.house_name || '');
@@ -136,9 +171,9 @@ function renderProfile(p: Record<string, any>, slug: string): string {
 
     const lookingToMeet = p.looking_to_meet || 'both';
     const lookingLabel  =
-        lookingToMeet === 'social'       ? 'Social connections & workout buddies'
-        : lookingToMeet === 'professional' ? 'Professional connections & networking'
-        : 'Social & professional connections';
+        lookingToMeet === 'social'       ? 'Social connections &amp; workout buddies'
+        : lookingToMeet === 'professional' ? 'Professional connections &amp; networking'
+        : 'Social &amp; professional connections';
 
     const hobbies: string[] = Array.isArray(p.hobbies)
         ? p.hobbies.filter((h: string) => HOBBY_LABELS[h]).slice(0, 6)
@@ -157,6 +192,50 @@ function renderProfile(p: Record<string, any>, slug: string): string {
     const avatarHTML = avatar
         ? `<img src="${esc(avatar)}" alt="${name}" class="avatar-img" />`
         : `<div class="avatar-placeholder">👤</div>`;
+
+    // ── Info rows ──
+    const infoRows = [
+        email  ? `<div class="info-row"><span class="info-label">Email</span><span class="info-value">${email}</span></div>` : '',
+        age    ? `<div class="info-row"><span class="info-label">Age</span><span class="info-value">${age}</span></div>` : '',
+        gender ? `<div class="info-row"><span class="info-label">Gender</span><span class="info-value" style="text-transform:capitalize">${gender}</span></div>` : '',
+        dob    ? `<div class="info-row"><span class="info-label">DOB</span><span class="info-value">${dob}</span></div>` : '',
+        phone  ? `<div class="info-row"><span class="info-label">Phone</span><span class="info-value">${phone}</span></div>` : '',
+        `<div class="info-row"><span class="info-label">Gripcuff Access</span><span class="info-value">${hasAccess ? `<span class="access-pill">${accessType || 'Active'}</span>` : '<span style="color:#ff7a00;font-weight:700">Inactive</span>'}</span></div>`,
+    ].filter(Boolean).join('');
+
+    const infoSection = `
+        <div class="card">
+            <div class="card-label">Profile Info</div>
+            ${infoRows}
+        </div>`;
+
+    // ── Stats ──
+    const statsSection = `
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-num">${streak}</div>
+                <div class="stat-label">🔥 Day Streak</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">${workouts}</div>
+                <div class="stat-label">💪 Workouts</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">${prs}</div>
+                <div class="stat-label">🏆 Best Streak</div>
+            </div>
+        </div>`;
+
+    // ── Friends ──
+    const friendsSection = `
+        <div class="card">
+            <div class="card-label">Friends</div>
+            <div class="what-row">
+                <span>👥</span>
+                <span class="card-value" style="font-size:22px;font-weight:800">${friendsCount}</span>
+                <span class="card-body">connections</span>
+            </div>
+        </div>`;
 
     const bioSection = bio ? `
         <div class="card">
@@ -206,6 +285,32 @@ function renderProfile(p: Record<string, any>, slug: string): string {
                 <p class="card-body">${communityNote}</p>
             </div>
         </div>` : '';
+
+    // ── Badges ──
+    const BADGE_DATA = [
+        { id: 'first_workout', emoji: '🏋️', label: 'First Workout' },
+        { id: '7_day_streak', emoji: '🔥', label: '7-Day Streak' },
+        { id: '14_day_streak', emoji: '⚡', label: '14-Day Streak' },
+        { id: 'first_live_session', emoji: '📡', label: 'First Live' },
+        { id: 'early_bird', emoji: '🌅', label: 'Early Bird' },
+        { id: 'night_owl', emoji: '🦉', label: 'Night Owl' },
+        { id: 'social_butterfly', emoji: '🦋', label: 'Social Butterfly' },
+        { id: 'mentor', emoji: '🎓', label: 'Mentor' },
+    ];
+
+    const badgesHtml = BADGE_DATA.map((b, i) => {
+        const altClass = i % 2 === 1 ? ' badge-alt' : '';
+        return `<div class="badge-item">
+            <div class="badge-shape${altClass}"><span class="badge-emoji">${b.emoji}</span></div>
+            <div class="badge-name">${b.label}</div>
+        </div>`;
+    }).join('');
+
+    const badgesSection = `
+        <div class="card">
+            <div class="card-label">Badges</div>
+            <div class="badges-row">${badgesHtml}</div>
+        </div>`;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -261,6 +366,45 @@ function renderProfile(p: Record<string, any>, slug: string): string {
             background: #ff7a00; border-radius: 100px;
             padding: 6px 18px; font-size: 12px; font-weight: 700; color: #000; margin-top: 2px;
         }
+        /* Info rows */
+        .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #9ca3af; font-size: 14px; font-weight: 500; }
+        .info-value { color: #fff; font-size: 14px; font-weight: 600; text-align: right; }
+        .access-pill {
+            background: #ff7a00; color: #000; padding: 3px 10px;
+            border-radius: 6px; font-size: 12px; font-weight: 800;
+        }
+        /* Stats row */
+        .stats-row {
+            display: flex; gap: 10px;
+        }
+        .stat-box {
+            flex: 1; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px; padding: 16px 12px; text-align: center;
+        }
+        .stat-num { font-size: 24px; font-weight: 800; color: #ff7a00; }
+        .stat-label { font-size: 11px; color: #9ca3af; margin-top: 4px; font-weight: 600; }
+        /* Badges */
+        .badges-row {
+            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; margin-top: 8px;
+        }
+        .badge-item { text-align: center; min-width: 72px; }
+        .badge-shape {
+            width: 64px; height: 64px; border-radius: 18px; margin: 0 auto;
+            background: rgba(255,122,0,0.1); border: 1.5px solid #ff7a00;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .badge-alt {
+            background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.7);
+            transform: rotate(-4deg);
+        }
+        .badge-emoji { font-size: 30px; }
+        .badge-name { font-size: 11px; font-weight: 600; color: #fff; margin-top: 6px; }
         .card {
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.06);
@@ -325,12 +469,16 @@ function renderProfile(p: Record<string, any>, slug: string): string {
             ${username ? `<div class="hero-handle">@${username}</div>` : ''}
             <div class="connect-pill">${openToConnect ? 'Open to connect' : 'Connections by Request'}</div>
         </div>
+        ${infoSection}
+        ${statsSection}
+        ${friendsSection}
         ${bioSection}
         ${whatSection}
         ${lookingSection}
         ${locationsSection}
         ${hobbiesSection}
         ${communitySection}
+        ${badgesSection}
         <div class="divider"></div>
     </div>
     <div class="cta-fixed">
