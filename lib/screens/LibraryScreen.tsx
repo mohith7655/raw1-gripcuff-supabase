@@ -1231,7 +1231,7 @@ const VideoTile = ({
             </Text>
             <Text style={styles.videoCategory}>{video.category} • {video.difficulty}</Text>
           </View>
-          <TouchableOpacity onPress={handleFavoritePress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleFavoritePress(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
               <Ionicons
                 name={fav ? "heart" : "heart-outline"}

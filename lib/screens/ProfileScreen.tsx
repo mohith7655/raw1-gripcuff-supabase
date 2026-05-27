@@ -369,8 +369,8 @@ export const ProfileScreen = () => {
             <View style={s.privacyRow}>
               {[
                 { id: 'public', label: 'Public' },
-                { id: 'private', label: 'Private' },
-                { id: 'friends_only', label: 'Only friends' },
+                { id: 'friends_only', label: 'Only Friends' },
+                { id: 'private', label: 'Hidden (no commission)' },
               ].map(opt => {
                 const isActive = (social?.privacyLevel || 'public') === opt.id;
                 return (
