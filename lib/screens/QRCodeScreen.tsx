@@ -42,7 +42,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { HOBBY_META } from '../models/SocialProfile';
-import { ALL_BADGES, Badge } from '../models/Badge';
+import { ALL_BADGES, Badge } from '../services/rewards.service';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
