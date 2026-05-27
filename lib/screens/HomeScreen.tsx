@@ -567,16 +567,6 @@ const HomeScreenInner = () => {
                 </Text>
               </View>
 
-              {/* Unified streak + leaderboard */}
-              <UnifiedProgressLeaderboard
-                streakData={streakData}
-                currentUserId={supabaseUserId ?? undefined}
-                onViewAll={() => navigation.navigate('LeaderboardScreen')}
-              />
-
-              {/* Daily Reminder Scheduler */}
-              <DailyReminderCard userId={supabaseUserId ?? undefined} />
-
               {/* Quick Stats */}
               <View style={styles.compactStatsCard}>
                 <TouchableOpacity
@@ -630,6 +620,16 @@ const HomeScreenInner = () => {
                   </View>
                 </TouchableOpacity>
               </View>
+
+              {/* Unified streak + leaderboard */}
+              <UnifiedProgressLeaderboard
+                streakData={streakData}
+                currentUserId={supabaseUserId ?? undefined}
+                onViewAll={() => navigation.navigate('LeaderboardScreen')}
+              />
+
+              {/* Daily Reminder Scheduler */}
+              <DailyReminderCard userId={supabaseUserId ?? undefined} />
 
 
 

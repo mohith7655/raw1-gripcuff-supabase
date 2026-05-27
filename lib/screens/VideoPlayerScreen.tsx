@@ -87,13 +87,8 @@ function EngagementBar({
     const { state } = engagement;
 
     const buttons = [
-        {
-            key: 'like',
-            label: totalLikes > 0 ? formatCount(totalLikes) : 'Like',
-            icon: '👍',
-            active: state.liked,
-            onPress: onLike,
-        },
+        { key: 'fav', label: isFavorite ? 'Favorited' : 'Favorite', icon: '❤️', active: isFavorite, onPress: onFavorite },
+        { key: 'try', label: state.tryIntent ? 'Trying' : 'Want to try it', icon: '🔥', active: state.tryIntent, onPress: onTryIntent },
         {
             key: 'dislike',
             label: totalDislikes > 0 ? formatCount(totalDislikes) : 'Dislike',
@@ -101,8 +96,6 @@ function EngagementBar({
             active: state.disliked,
             onPress: onDislike,
         },
-        { key: 'try', label: state.tryIntent ? 'Trying' : 'Want to try it', icon: '🔥', active: state.tryIntent, onPress: onTryIntent },
-        { key: 'fav', label: isFavorite ? 'Favorited' : 'Favorite',          icon: '❤️', active: isFavorite,      onPress: onFavorite },
     ];
 
     return (
@@ -1057,47 +1050,6 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Live Now */}
-                <View style={socialStyles.sectionCard}>
-                    <Text style={socialStyles.sectionLabel}>LIVE NOW</Text>
-                    {otherViewers.length === 0 ? (
-                        <Text style={socialStyles.emptyText}>You're the only one here.</Text>
-                    ) : (
-                        otherViewers.map((v, i) => (
-                            <View key={v.uid} style={[socialStyles.row, i < otherViewers.length - 1 && socialStyles.rowBorder]}>
-                                <View style={[socialStyles.avatar, { backgroundColor: avatarColor(v.displayName || '?') }]}>
-                                    <Text style={socialStyles.avatarText}>{(v.displayName || '?')[0].toUpperCase()}</Text>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={socialStyles.name}>{v.displayName}</Text>
-                                    {v.username ? <Text style={socialStyles.sub}>@{v.username}</Text> : null}
-                                </View>
-                                <View style={{ flexDirection: 'row', gap: 6 }}>
-                                    <TouchableOpacity
-                                        style={socialStyles.softBtn}
-                                        onPress={() => Alert.alert('Friend Request Sent', `Request sent to ${v.displayName}`)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Ionicons name="person-add-outline" size={13} color={ACCENT} />
-                                        <Text style={socialStyles.softBtnText}>Add</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={socialStyles.ctaBtn}
-                                        onPress={() => {
-                                            setSocialTargetName(v.displayName);
-                                            sendSocialInvite({ targetUserId: v.uid, workoutId: requestedVideoId ?? videoId, workoutTitle: title, workoutThumbnail: sourceVideo?.thumbnail ?? null });
-                                        }}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Ionicons name="barbell-outline" size={13} color="#fff" />
-                                        <Text style={socialStyles.ctaBtnText}>Invite</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))
-                    )}
-                </View>
-
                 {/* Scheduled Today */}
                 <View style={socialStyles.sectionCard}>
                     <Text style={socialStyles.sectionLabel}>SCHEDULED TODAY</Text>
@@ -1152,9 +1104,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     )}
                 </View>
 
-                {/* Open Stranger Sessions */}
+                {/* Community Sessions */}
                 <View style={socialStyles.sectionCard}>
-                    <Text style={socialStyles.sectionLabel}>OPEN STRANGER SESSIONS</Text>
+                    <Text style={socialStyles.sectionLabel}>COMMUNITY SESSIONS</Text>
                     {socialHub.open.length === 0 ? (
                         <Text style={socialStyles.emptyText}>No open sessions right now.</Text>
                     ) : (

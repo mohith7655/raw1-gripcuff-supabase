@@ -83,13 +83,11 @@ async function fetchProfile(slug: string) {
         if (Array.isArray(u) && u.length) userRow = u[0];
     }
 
-    // Fetch friends count
+    // Fetch friends count via SECURITY DEFINER function (bypasses RLS for anon role)
     let friendsCount = 0;
     try {
-        const fr = await supaRest(
-            `friend_requests?status=eq.accepted&or=(sender_id.eq.${uid},receiver_id.eq.${uid})&select=id`,
-        );
-        if (Array.isArray(fr)) friendsCount = fr.length;
+        const fr = await supaRest(`rpc/get_friend_count?profile_id=${encodeURIComponent(uid)}`);
+        if (typeof fr === 'number') friendsCount = fr;
     } catch {}
 
     if (!userRow && !profileRow) return null;

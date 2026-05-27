@@ -227,14 +227,10 @@ export function ScannedProfileScreen() {
         if (row) nextUser = toFallbackUser(row, targetUid);
       }
       setUser(nextUser);
-      // Fetch friends count
+      // Fetch friends count via SECURITY DEFINER function (bypasses RLS for anon role)
       try {
-        const { count } = await supabase
-          .from('friend_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'accepted')
-          .or(`sender_id.eq.${targetUid},receiver_id.eq.${targetUid}`);
-        setFriendsCount(count ?? 0);
+        const { data, error } = await supabase.rpc('get_friend_count', { profile_id: targetUid });
+        setFriendsCount(error ? 0 : (data ?? 0));
       } catch { setFriendsCount(0); }
       if (supabaseUserId && supabaseUserId !== targetUid) {
         const status = await FriendService.getRequestStatus(supabaseUserId, targetUid);

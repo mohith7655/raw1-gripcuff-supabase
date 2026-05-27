@@ -1172,9 +1172,9 @@ const VideoTile = ({
           ]}
         >
           {video.isCompleted ? (
-            <Check color="#fff" size={20} />
+            <Check color="#fff" size={14} />
           ) : (
-            <Play color="#fff" size={20} fill="#fff" />
+            <Play color="#fff" size={14} fill="#fff" />
           )}
         </View>
 
@@ -1638,25 +1638,25 @@ const styles = StyleSheet.create({
     alignContent: 'flex-start',
   },
   videoCard: {
-    width: 260, // Slightly wider for better title visibility
-    height: 180, // Fixed height for masonry flow
+    width: 160,
     backgroundColor: AppTheme.cardColor,
-    borderRadius: 16,
+    borderRadius: 10,
     overflow: 'hidden',
     boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
     elevation: 5,
     marginRight: 16,
   },
   videoThumbnail: {
-    aspectRatio: 16 / 9,
+    width: 160,
+    height: 110,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   centerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
