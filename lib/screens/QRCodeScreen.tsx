@@ -42,6 +42,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { HOBBY_META } from '../models/SocialProfile';
+import { ALL_BADGES, Badge } from '../models/Badge';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -156,8 +157,8 @@ export function QRCodeScreen() {
   const route      = useRoute<any>();
 
   const {
-    uid, username, displayName, email, age, gender, avatarUrl,
-    streak, workouts, prs,
+    uid, username, displayName, email, age, gender, dateOfBirth, phone, hasAccess, accessType, avatarUrl,
+    streak, workouts, prs, earnedBadges,
     bio, whatIDo, lookingToMeet, connectionGoals, hobbies,
     gymName, gymAddress, houseName, houseAddress, parkName, parkAddress,
     openToMentor, helpingBeginners, communityNote,
@@ -284,9 +285,56 @@ export function QRCodeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={s.identityName} numberOfLines={1}>{displayName || 'Athlete'}</Text>
               {username ? <Text style={s.identityHandle}>@{username}</Text> : null}
-              <View style={s.identityMeta}>
-                {age ? <Text style={s.metaChip}>{age} yrs</Text> : null}
-                {gender ? <Text style={s.metaChip}>{gender}</Text> : null}
+            </View>
+          </View>
+
+          {/* Basic Info List */}
+          <View style={s.basicInfoContainer}>
+            {/* Age */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Age</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{age ? `${age} yrs` : '—'}</Text>
+              </View>
+            </View>
+
+            {/* Gender */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Gender</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{gender || '—'}</Text>
+              </View>
+            </View>
+
+            {/* DOB */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>DOB</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{dateOfBirth || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Phone */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Phone</Text>
+              <View style={s.basicInfoValueRow}>
+                <Text style={s.basicInfoValue}>{phone || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Access */}
+            <View style={s.basicInfoItem}>
+              <Text style={s.basicInfoLabel}>Gripcuff Access</Text>
+              <View style={s.basicInfoValueRow}>
+                {hasAccess ? (
+                  <View style={s.accessPill}>
+                    <Text style={s.accessPillText}>
+                      {accessType === 'subscription' ? 'Subscription' : 'Product'}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={s.accessInactive}>Inactive</Text>
+                )}
               </View>
             </View>
           </View>
@@ -399,6 +447,44 @@ export function QRCodeScreen() {
               </View>
             </SectionCard>
           )}
+
+          {/* Badges */}
+          <SectionCard title="Badges">
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={s.badgesScroll}
+            >
+              {ALL_BADGES.slice(0, 8).map((badge, i) => {
+                const isEarned = (earnedBadges ?? []).includes(badge.id);
+                return (
+                  <View key={badge.id} style={s.badgeItemContainer}>
+                    <View 
+                      style={[
+                        s.badgeShape, 
+                        i % 2 === 1 && s.badgeShapeAlt,
+                        !isEarned && s.badgeShapeLocked
+                      ]}
+                    >
+                      <Text style={[s.badgeEmoji, !isEarned && s.badgeEmojiLocked]}>
+                        {badge.emoji}
+                      </Text>
+                    </View>
+                    <Text style={[s.badgeLabel, !isEarned && s.badgeLabelLocked]} numberOfLines={1}>
+                      {badge.label}
+                    </Text>
+                  </View>
+                );
+              })}
+              {Math.max(0, ALL_BADGES.length - 8) > 0 && (
+                <View style={s.moreBadgeContainer}>
+                  <View style={s.moreBadge}>
+                    <Text style={s.moreBadgeText}>+{Math.max(0, ALL_BADGES.length - 8)}</Text>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+          </SectionCard>
 
         </View>
 
@@ -607,4 +693,96 @@ const s = StyleSheet.create({
   infoTextBlock: { flex: 1 },
   infoBold: { color: C.text, fontSize: 13, fontWeight: '700' },
   infoMuted: { color: C.muted, fontSize: 11, lineHeight: 16, marginTop: 2 },
+
+  // Basic Info
+  basicInfoContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  basicInfoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+  },
+  basicInfoLabel: {
+    color: C.dim,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  basicInfoValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  basicInfoValue: {
+    color: C.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  accessInactive: {
+    color: C.orange,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  accessPill: {
+    backgroundColor: C.orange,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  accessPillText: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  // Badges
+  badgesScroll: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 4,
+    paddingBottom: 4,
+    alignItems: 'flex-start',
+  },
+  badgeItemContainer: {
+    alignItems: 'center',
+    width: 60,
+    gap: 6,
+  },
+  badgeShape: {
+    width: 52, height: 52, borderRadius: 14,
+    backgroundColor: 'rgba(255,122,0,0.1)',
+    borderWidth: 1.5, borderColor: C.orange,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  badgeShapeAlt: {
+    backgroundColor: 'rgba(139,92,246,0.12)', borderColor: 'rgba(139,92,246,0.7)',
+    transform: [{ rotate: '-4deg' }],
+  },
+  badgeShapeLocked: {
+    backgroundColor: C.bgCard,
+    borderColor: 'rgba(255,255,255,0.06)',
+    opacity: 0.5,
+  },
+  badgeEmoji: { fontSize: 24 },
+  badgeEmojiLocked: { opacity: 0.4 },
+  badgeLabel: { color: C.text, fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  badgeLabelLocked: { color: C.muted },
+  moreBadgeContainer: {
+    width: 52,
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  moreBadge: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  moreBadgeText: { color: C.muted, fontSize: 12, fontWeight: '700' },
 });

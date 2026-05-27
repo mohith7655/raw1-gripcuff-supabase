@@ -377,6 +377,14 @@ export function SocialProfileScreen() {
                                 style={s.iconBtn}
                                 onPress={() => navigation.navigate('QRProfileScreen', {
                                     uid, username, displayName,
+                                    email: user?.email,
+                                    age: user?.age,
+                                    gender: user?.gender,
+                                    dateOfBirth: user?.dateOfBirth,
+                                    phone: user?.phone,
+                                    hasAccess: user?.hasAccess,
+                                    accessType: user?.accessType,
+                                    earnedBadges: Array.from(new Set(streakData?.badges ?? [])),
                                     avatarUrl: user?.profileImageUrl,
                                     streak: streakData?.currentStreak ?? 0,
                                     workouts: streakData?.totalWorkouts ?? 0,
