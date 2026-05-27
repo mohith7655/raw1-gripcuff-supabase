@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -12,10 +12,14 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Check, MapPin } from 'lucide-react-native';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { ArrowLeft, Check, MapPin, Camera, CircleUserRound, Trash2 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { WebSafeAvatar } from '../components/WebSafeAvatar';
+import { StorageService } from '../services/storage.service';
+import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { useAuth } from '../providers/AuthContext';
+import { useUser } from '../providers/UserContext';
 import { SocialProfileService } from '../services/socialProfile.service';
 import {
     SocialProfile,
@@ -47,7 +51,11 @@ const C = {
     border: 'rgba(255,255,255,0.08)',
 };
 
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
+console.log('ENV key:', process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY);
+const GOOGLE_PLACES_KEY =
+    process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ||
+    'AIzaSyB0lV46JQgSqqWCq6fA6Mcyt5eVrt6CsWY';
+console.log('[Places] API key:', GOOGLE_PLACES_KEY);
 
 function compactAddress(address?: string | null, name?: string | null) {
     if (!address) return '';
@@ -59,6 +67,19 @@ function compactAddress(address?: string | null, name?: string | null) {
         .slice(0, 3)
         .join(', ');
 }
+
+const LOOKING_TO_MEET_PRESETS = [
+    'Mentor',
+    'Investor',
+    'Founder',
+    'Co-founder',
+    'Advisor',
+    'Industry Expert',
+    'Consultant',
+    'Business Owner',
+    'Influencer',
+    'Community Leader'
+];
 
 function placeFromSocial(sp: SocialProfile, kind: 'gym' | 'house' | 'park'): ProfilePlace {
     if (kind === 'gym') {
@@ -153,6 +174,7 @@ function GooglePlaceField({
     value: ProfilePlace;
     onSelect: (place: ProfilePlace) => void;
 }) {
+    const ref = useRef<GooglePlacesAutocompleteRef>(null);
     const selectedTitle = value.name || value.address;
     const selectedSubtitle = compactAddress(value.address, value.name);
 
@@ -160,6 +182,7 @@ function GooglePlaceField({
         <View style={s.placeWrap}>
             <FieldLabel text={label} />
             <GooglePlacesAutocomplete
+                ref={ref}
                 placeholder={placeholder}
                 fetchDetails
                 minLength={2}
@@ -169,11 +192,10 @@ function GooglePlaceField({
                     language: 'en',
                     types: queryTypes,
                 }}
-                requestUrl={
-                    Platform.OS === 'web'
-                        ? { useOnPlatform: 'web', url: 'https://maps.googleapis.com/maps/api' }
-                        : undefined
-                }
+                requestUrl={{
+                    useOnPlatform: 'web',
+                    url: 'https://corsproxy.org/https://maps.googleapis.com/maps/api',
+                }}
                 onPress={(data, details) => {
                     const description = data.description || '';
                     const formatted = details?.formatted_address || description;
@@ -199,6 +221,18 @@ function GooglePlaceField({
                     placeholderTextColor: C.textDim,
                     autoCorrect: false,
                     autoCapitalize: 'none',
+                    onBlur: () => {
+                        const text = ref.current?.getAddressText() || '';
+                        if (text && text !== value.name && text !== value.address) {
+                            onSelect({
+                                placeId: undefined,
+                                name: text,
+                                address: '',
+                                lat: null,
+                                lng: null,
+                            });
+                        }
+                    }
                 }}
                 enablePoweredByContainer={false}
                 keepResultsAfterBlur
@@ -222,14 +256,29 @@ function GooglePlaceField({
 
 export function EditSocialProfileScreen() {
     const navigation = useNavigation<any>();
+    const route = useRoute<any>();
+    const section = route.params?.section || 'all';
     const { supabaseUserId } = useAuth();
+    const { profile, updateProfile, fetchProfile } = useUser();
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [fullName, setFullName] = useState(profile?.fullName || '');
+    const [username, setUsername] = useState(profile?.username || '');
+    const [age, setAge] = useState(profile?.age != null ? String(profile.age) : '');
+    const [phone, setPhone] = useState(profile?.phone || '');
+    const [dob, setDob] = useState(profile?.dateOfBirth || '');
+    const [gender, setGender] = useState<string | null>(profile?.gender ?? null);
+    const [photoUri, setPhotoUri] = useState<string | null>(profile?.profileImageUrl ? `${profile.profileImageUrl}?t=${Date.now()}` : null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadPct, setUploadPct] = useState(0);
+
     const [bio, setBio] = useState('');
-    const [whatIDo, setWhatIDo] = useState('');
-    const [openToConnect, setOpenToConnect] = useState(false);
-    const [lookingToMeet, setLookingToMeet] = useState<LookingToMeet | null>(null);
+    const [selectedWhatIDoPresets, setSelectedWhatIDoPresets] = useState<Set<string>>(new Set());
+    const [customWhatIDoText, setCustomWhatIDoText] = useState('');
+    const [privacyLevel, setPrivacyLevel] = useState<'public' | 'private' | 'friends_only'>('public');
+    const [selectedMeetPresets, setSelectedMeetPresets] = useState<Set<string>>(new Set());
+    const [customMeetText, setCustomMeetText] = useState('');
     const [connectionGoals, setGoals] = useState<Set<ConnectionGoal>>(new Set());
     const [gymPlace, setGymPlace] = useState<ProfilePlace>({});
     const [housePlace, setHousePlace] = useState<ProfilePlace>({});
@@ -239,17 +288,45 @@ export function EditSocialProfileScreen() {
     const [helpingBeginners, setHelpBeginners] = useState(false);
     const [openToMentor, setOpenToMentor] = useState(false);
     const [ageGroups, setAgeGroups] = useState<Set<AgeGroup>>(new Set());
-    const [showPresets, setShowPresets] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
-        if (!supabaseUserId) return;
+        if (!supabaseUserId || loaded) return;
         SocialProfileService.get(supabaseUserId)
             .then(sp => {
+                console.log('[EditProfile] loaded sp:', JSON.stringify(sp));
                 if (!sp) return;
                 setBio(sp.bio ?? '');
-                setWhatIDo(sp.whatIDo ?? '');
-                setOpenToConnect(sp.openToConnect ?? false);
-                setLookingToMeet(sp.lookingToMeet ?? null);
+                
+                const whatIDoStr = sp.whatIDo || '';
+                const whatIDoParts = whatIDoStr.split(',').map(p => p.trim()).filter(Boolean);
+                const whatIDoPresetsSet = new Set<string>();
+                const whatIDoCustoms: string[] = [];
+                for (const p of whatIDoParts) {
+                    if (WHAT_I_DO_PRESETS.includes(p)) {
+                        whatIDoPresetsSet.add(p);
+                    } else {
+                        whatIDoCustoms.push(p);
+                    }
+                }
+                setSelectedWhatIDoPresets(whatIDoPresetsSet);
+                setCustomWhatIDoText(whatIDoCustoms.join(', '));
+                setPrivacyLevel(sp.privacyLevel ?? (sp.openToConnect ? 'public' : 'private'));
+                
+                const meetStr = sp.lookingToMeet || '';
+                const meetParts = meetStr.split(',').map(p => p.trim()).filter(Boolean);
+                const presets = new Set<string>();
+                const customs: string[] = [];
+                for (const p of meetParts) {
+                    if (LOOKING_TO_MEET_PRESETS.includes(p)) {
+                        presets.add(p);
+                    } else {
+                        customs.push(p);
+                    }
+                }
+                setSelectedMeetPresets(presets);
+                setCustomMeetText(customs.join(', '));
+                
                 setGoals(new Set(sp.connectionGoals ?? []));
                 setGymPlace(placeFromSocial(sp, 'gym'));
                 setHousePlace(placeFromSocial(sp, 'house'));
@@ -259,10 +336,27 @@ export function EditSocialProfileScreen() {
                 setHelpBeginners(sp.helpingBeginners ?? false);
                 setOpenToMentor(sp.openToMentor ?? false);
                 setAgeGroups(new Set((sp.openToTrainAgeGroups ?? []) as AgeGroup[]));
+                setLoaded(true);
             })
             .catch(() => {})
             .finally(() => setLoading(false));
-    }, [supabaseUserId]);
+    }, [supabaseUserId, loaded]);
+
+    const toggleWhatIDoPreset = useCallback((preset: string) => {
+        setSelectedWhatIDoPresets(prev => {
+            const next = new Set(prev);
+            next.has(preset) ? next.delete(preset) : next.add(preset);
+            return next;
+        });
+    }, []);
+
+    const toggleMeetPreset = useCallback((preset: string) => {
+        setSelectedMeetPresets(prev => {
+            const next = new Set(prev);
+            next.has(preset) ? next.delete(preset) : next.add(preset);
+            return next;
+        });
+    }, []);
 
     const toggleGoal = useCallback((g: ConnectionGoal) => {
         setGoals(prev => {
@@ -292,12 +386,21 @@ export function EditSocialProfileScreen() {
         if (!supabaseUserId) return;
         setSaving(true);
         try {
+            await updateProfile(supabaseUserId, {
+                fullName: fullName.trim() || null,
+                username: username.trim() || null,
+                age: age ? parseInt(age, 10) : null,
+                phone: phone.trim() || null,
+                dateOfBirth: dob.trim() || null,
+                gender: gender || null,
+            });
+
             const gymAddress = gymPlace.address?.trim() || null;
             await SocialProfileService.update(supabaseUserId, {
                 bio: bio.trim() || null,
-                whatIDo: whatIDo.trim() || null,
-                openToConnect,
-                lookingToMeet,
+                whatIDo: [...Array.from(selectedWhatIDoPresets), customWhatIDoText.trim()].filter(Boolean).join(', ') || null,
+                privacyLevel,
+                lookingToMeet: [...Array.from(selectedMeetPresets), customMeetText.trim()].filter(Boolean).join(', ') || null,
                 connectionGoals: [...connectionGoals],
                 gymName: gymPlace.name?.trim() || null,
                 gymArea: compactAddress(gymAddress, gymPlace.name) || gymAddress,
@@ -310,7 +413,8 @@ export function EditSocialProfileScreen() {
                 openToMentor,
                 openToTrainAgeGroups: [...ageGroups],
             });
-            navigation.goBack();
+            await fetchProfile(supabaseUserId);
+            navigation.navigate('ProfileScreen');
         } catch (e: any) {
             Alert.alert('Error', e?.message ?? 'Could not save changes.');
         } finally {
@@ -318,7 +422,83 @@ export function EditSocialProfileScreen() {
         }
     };
 
-    if (loading) {
+    const pickAndUpload = async () => {
+        const uid = supabaseUserId;
+        if (!uid) return;
+
+        if (Platform.OS === 'web') {
+            const input = document.createElement('input') as any;
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e: any) => {
+                const file: File | undefined = e.target?.files?.[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    Alert.alert('Invalid file', 'Please select an image file.');
+                    return;
+                }
+                setUploading(true);
+                setUploadPct(0);
+                try {
+                    const objectUrl = URL.createObjectURL(file);
+                    const url = await StorageService.uploadProfilePicture(uid, objectUrl, pct => setUploadPct(pct));
+                    URL.revokeObjectURL(objectUrl);
+                    setPhotoUri(`${url}?t=${Date.now()}`);
+                    await updateProfile(uid, { profileImageUrl: url });
+                } catch (e: any) {
+                    Alert.alert('Upload failed', e?.message ?? 'Could not upload photo.');
+                } finally { setUploading(false); setUploadPct(0); }
+            };
+            input.click();
+            return;
+        }
+
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+            exif: false,
+        });
+        if (result.canceled) return;
+        setUploading(true);
+        setUploadPct(0);
+        try {
+            const url = await StorageService.uploadProfilePicture(uid, result.assets[0].uri, pct => setUploadPct(pct));
+            setPhotoUri(`${url}?t=${Date.now()}`);
+            await updateProfile(uid, { profileImageUrl: url });
+        } catch (e: any) {
+            Alert.alert('Upload failed', e?.message ?? 'Could not upload photo.');
+        } finally { setUploading(false); setUploadPct(0); }
+    };
+
+    const removePhoto = async () => {
+        const uid = supabaseUserId;
+        if (!uid) return;
+        Alert.alert('Remove Photo', 'Remove your profile picture?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Remove', style: 'destructive',
+                onPress: async () => {
+                    setUploading(true);
+                    try {
+                        await StorageService.deleteProfilePicture(uid);
+                        await updateProfile(uid, { profileImageUrl: null as any });
+                        setPhotoUri(null);
+                    } catch (e: any) {
+                        Alert.alert('Error', e?.message ?? 'Could not remove photo.');
+                    } finally { setUploading(false); }
+                },
+            },
+        ]);
+    };
+
+    if (loading || !loaded) {
         return (
             <SafeAreaView style={s.safe} edges={['top']}>
                 <ActivityIndicator color={C.accent} style={s.loading} />
@@ -329,7 +509,7 @@ export function EditSocialProfileScreen() {
     return (
         <SafeAreaView style={s.safe} edges={['top']}>
             <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
+                <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')} style={s.iconBtn}>
                     <ArrowLeft size={22} color={C.text} />
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Edit Profile</Text>
@@ -348,204 +528,314 @@ export function EditSocialProfileScreen() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                <Card>
-                    <View style={s.switchRowNoBorder}>
-                        <View style={s.flex}>
-                            <Text style={s.switchLabel}>Open to Connect</Text>
-                            <Text style={s.switchSub}>Show a connection badge on your public fitness profile.</Text>
-                        </View>
-                        <Switch
-                            value={openToConnect}
-                            onValueChange={setOpenToConnect}
-                            trackColor={{ false: '#2a3a4a', true: C.green }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-                </Card>
+                {(section === 'all' || section === 'hero') && (
+                    <>
+                        <View style={s.avatarSection}>
+                            <View style={s.avatarWrap}>
+                                {photoUri ? (
+                                    <WebSafeAvatar uri={photoUri} size={110} style={s.avatarImg} />
+                                ) : (
+                                    <View style={[s.avatarImg, s.avatarPlaceholder]}>
+                                        <CircleUserRound size={48} color={C.textMuted} />
+                                    </View>
+                                )}
+                                {uploading && (
+                                    <View style={s.uploadOverlay}>
+                                        <ActivityIndicator color="#fff" />
+                                        {uploadPct > 0 && <Text style={s.uploadText}>{uploadPct}%</Text>}
+                                    </View>
+                                )}
+                            </View>
 
-                <SectionTitle text="About You" />
-                <Card>
-                    <FieldLabel text="Bio" />
-                    <TextInput
-                        style={[s.input, s.inputMulti]}
-                        value={bio}
-                        onChangeText={setBio}
-                        placeholder="Share a short intro about yourself..."
-                        placeholderTextColor={C.textDim}
-                        multiline
-                        numberOfLines={3}
-                        maxLength={160}
-                    />
-                    <Text style={s.charCount}>{bio.length}/160</Text>
-
-                    <FieldLabel text="What I Do" />
-                    <TextInput
-                        style={s.input}
-                        value={whatIDo}
-                        onChangeText={setWhatIDo}
-                        placeholder="e.g. Gym & Fitness, Software Engineer"
-                        placeholderTextColor={C.textDim}
-                        maxLength={80}
-                    />
-                    <TouchableOpacity style={s.presetToggle} onPress={() => setShowPresets(p => !p)}>
-                        <Text style={s.presetToggleText}>{showPresets ? 'Hide presets' : 'Choose a preset'}</Text>
-                    </TouchableOpacity>
-                    {showPresets ? (
-                        <View style={s.presetGrid}>
-                            {WHAT_I_DO_PRESETS.map(preset => (
-                                <TouchableOpacity
-                                    key={preset}
-                                    style={[s.presetChip, whatIDo === preset && s.presetChipActive]}
-                                    onPress={() => {
-                                        setWhatIDo(preset);
-                                        setShowPresets(false);
-                                    }}
-                                    activeOpacity={0.74}
-                                >
-                                    <Text style={[s.presetChipText, whatIDo === preset && s.presetChipTextActive]}>
-                                        {preset}
-                                    </Text>
+                            <View style={s.avatarActions}>
+                                <TouchableOpacity style={s.photoBtn} onPress={pickAndUpload} disabled={uploading}>
+                                    <Camera size={16} color={C.accent} />
+                                    <Text style={s.photoBtnText}>Change Photo</Text>
                                 </TouchableOpacity>
-                            ))}
+                                {photoUri && (
+                                    <TouchableOpacity style={[s.photoBtn, s.photoBtnDanger]} onPress={removePhoto} disabled={uploading}>
+                                        <Trash2 size={16} color="#ef4444" />
+                                        <Text style={s.photoBtnTextDanger}>Remove</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            <Text style={s.emailText}>{profile?.email}</Text>
                         </View>
-                    ) : null}
-                </Card>
 
-                <SectionTitle text="Connection Intent" />
-                <Card>
-                    <FieldLabel text="Looking to Meet" />
-                    <View style={s.pillRow}>
-                        {(['social', 'professional', 'both'] as LookingToMeet[]).map(opt => (
-                            <TouchableOpacity
-                                key={opt}
-                                style={[s.pill, lookingToMeet === opt && s.pillActive]}
-                                onPress={() => setLookingToMeet(lookingToMeet === opt ? null : opt)}
-                                activeOpacity={0.74}
-                            >
-                                <Text style={[s.pillText, lookingToMeet === opt && s.pillTextActive]}>
-                                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <FieldLabel text="I'm here for" />
-                    <View style={s.chipWrap}>
-                        {ALL_CONNECTION_GOALS.map(goal => {
-                            const meta = CONNECTION_GOAL_META[goal];
-                            return (
-                                <ToggleChip
-                                    key={goal}
-                                    value={goal}
-                                    selected={connectionGoals.has(goal)}
-                                    onToggle={toggleGoal}
-                                    label={metaLabel(meta)}
+                        <SectionTitle text="Profile Details" />
+                        <Card>
+                            <FieldLabel text="USERNAME" />
+                            <View style={s.inputWrapper}>
+                                <Text style={s.inputPrefix}>@ </Text>
+                                <TextInput
+                                    style={s.inputWithPrefix}
+                                    value={username}
+                                    onChangeText={setUsername}
+                                    placeholder="Enter username"
+                                    placeholderTextColor={C.textDim}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
                                 />
-                            );
-                        })}
-                    </View>
-                </Card>
+                            </View>
 
-                <SectionTitle text="Locations" />
-                <Card style={s.placesCard}>
-                    <GooglePlaceField
-                        label="Gym Location"
-                        placeholder="Search gym, club, or training studio"
-                        queryTypes="establishment"
-                        value={gymPlace}
-                        onSelect={setGymPlace}
-                    />
-                    <GooglePlaceField
-                        label="House Location"
-                        placeholder="Search your home area or neighborhood"
-                        queryTypes="geocode"
-                        value={housePlace}
-                        onSelect={setHousePlace}
-                    />
-                    <GooglePlaceField
-                        label="Local Park"
-                        placeholder="Search a park or outdoor training spot"
-                        queryTypes="establishment"
-                        value={parkPlace}
-                        onSelect={setParkPlace}
-                    />
-                </Card>
+                            <FieldLabel text="FULL NAME" />
+                            <TextInput
+                                style={s.input}
+                                value={fullName}
+                                onChangeText={setFullName}
+                                placeholder="Enter full name"
+                                placeholderTextColor={C.textDim}
+                            />
 
-                <SectionTitle text="Hobbies & Interests" />
-                <Card>
-                    <View style={s.chipWrap}>
-                        {ALL_HOBBIES.map(h => {
-                            const meta = HOBBY_META[h];
-                            return (
-                                <ToggleChip
-                                    key={h}
-                                    value={h}
-                                    selected={hobbies.has(h)}
-                                    onToggle={toggleHobby}
-                                    label={metaLabel(meta)}
-                                />
-                            );
-                        })}
-                    </View>
-                </Card>
+                            <FieldLabel text="AGE" />
+                            <TextInput
+                                style={s.input}
+                                value={age}
+                                onChangeText={setAge}
+                                placeholder="Age"
+                                placeholderTextColor={C.textDim}
+                                keyboardType="number-pad"
+                                maxLength={3}
+                            />
 
-                <SectionTitle text="Community" />
-                <Card>
-                    <FieldLabel text="Community Note" />
-                    <TextInput
-                        style={[s.input, s.inputMultiSmall]}
-                        value={communityNote}
-                        onChangeText={setCommunityNote}
-                        placeholder="Volunteer work, events, how you give back..."
-                        placeholderTextColor={C.textDim}
-                        multiline
-                        numberOfLines={2}
-                        maxLength={200}
-                    />
+                            <FieldLabel text="PHONE" />
+                            <TextInput
+                                style={s.input}
+                                value={phone}
+                                onChangeText={setPhone}
+                                placeholder="e.g. +1 234 567 8900"
+                                placeholderTextColor={C.textDim}
+                                keyboardType="phone-pad"
+                            />
 
-                    <View style={s.switchRow}>
-                        <View style={s.flex}>
-                            <Text style={s.switchLabel}>Helping Beginners</Text>
-                            <Text style={s.switchSub}>Happy to guide newcomers to fitness.</Text>
-                        </View>
-                        <Switch
-                            value={helpingBeginners}
-                            onValueChange={setHelpBeginners}
-                            trackColor={{ false: '#2a3a4a', true: C.accent }}
-                            thumbColor="#fff"
-                        />
-                    </View>
+                            <FieldLabel text="DATE OF BIRTH" />
+                            <TextInput
+                                style={s.input}
+                                value={dob}
+                                onChangeText={setDob}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor={C.textDim}
+                            />
 
-                    <View style={s.switchRow}>
-                        <View style={s.flex}>
-                            <Text style={s.switchLabel}>Open to Mentor</Text>
-                            <Text style={s.switchSub}>Willing to mentor others on their fitness journey.</Text>
-                        </View>
-                        <Switch
-                            value={openToMentor}
-                            onValueChange={setOpenToMentor}
-                            trackColor={{ false: '#2a3a4a', true: C.accent }}
-                            thumbColor="#fff"
-                        />
-                    </View>
+                            <FieldLabel text="GENDER" />
+                            <View style={s.genderRow}>
+                                <TouchableOpacity
+                                    style={[s.genderBtn, gender === 'male' && s.genderBtnActive]}
+                                    onPress={() => setGender('male')}
+                                >
+                                    <Text style={[s.genderBtnText, gender === 'male' && s.genderBtnTextActive]}>👨 Male</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[s.genderBtn, gender === 'female' && s.genderBtnActive]}
+                                    onPress={() => setGender('female')}
+                                >
+                                    <Text style={[s.genderBtnText, gender === 'female' && s.genderBtnTextActive]}>👩 Female</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </Card>
+                    </>
+                )}
 
-                    {(helpingBeginners || openToMentor) ? (
-                        <>
-                            <FieldLabel text="Age groups I train with" />
-                            <View style={s.chipWrap}>
-                                {ALL_AGE_GROUPS.map(ag => (
+                {(section === 'all' || section === 'about') && (
+                    <>
+                        <SectionTitle text="About You" />
+                        <Card>
+                            <FieldLabel text="Bio" />
+                            <TextInput
+                                style={[s.input, s.inputMulti]}
+                                value={bio}
+                                onChangeText={setBio}
+                                placeholder="Share a short intro about yourself..."
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={160}
+                            />
+                            <Text style={s.charCount}>{bio.length}/160</Text>
+                        </Card>
+                    </>
+                )}
+
+                {(section === 'all' || section === 'whatIDo') && (
+                    <>
+                        <SectionTitle text="What I Do" />
+                        <Card>
+                            <FieldLabel text="Profession / Activity" />
+                            <View style={[s.chipWrap, { marginBottom: 16 }]}>
+                                {WHAT_I_DO_PRESETS.map(p => (
                                     <ToggleChip
-                                        key={ag}
-                                        value={ag}
-                                        selected={ageGroups.has(ag)}
-                                        onToggle={toggleAgeGroup}
-                                        label={AGE_GROUP_META[ag]}
+                                        key={p}
+                                        value={p}
+                                        label={p}
+                                        selected={selectedWhatIDoPresets.has(p)}
+                                        onToggle={toggleWhatIDoPreset}
                                     />
                                 ))}
                             </View>
-                        </>
-                    ) : null}
-                </Card>
+                            <FieldLabel text="Custom (Optional)" />
+                            <TextInput
+                                style={[s.input, s.inputMultiSmall]}
+                                value={customWhatIDoText}
+                                onChangeText={(val) => setCustomWhatIDoText(val)}
+                                placeholder="Add custom profession or activity..."
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={2}
+                            />
+                        </Card>
+                    </>
+                )}
+
+                {(section === 'all' || section === 'meet') && (
+                    <>
+                        <SectionTitle text="Connection Intent" />
+                        <Card>
+                            <FieldLabel text="Privacy / Visibility" />
+                            <View style={[s.chipWrap, { marginBottom: 16 }]}>
+                                {([
+                                    { value: 'public', label: 'Public' },
+                                    { value: 'private', label: 'Private' },
+                                    { value: 'friends_only', label: 'Only Friends' }
+                                ] as const).map(opt => (
+                                    <ToggleChip
+                                        key={opt.value}
+                                        value={opt.value}
+                                        label={opt.label}
+                                        selected={privacyLevel === opt.value}
+                                        onToggle={() => setPrivacyLevel(opt.value)}
+                                    />
+                                ))}
+                            </View>
+
+                            <FieldLabel text="Looking to Meet" />
+                            <View style={[s.chipWrap, { marginBottom: 16 }]}>
+                                {LOOKING_TO_MEET_PRESETS.map(p => (
+                                    <ToggleChip
+                                        key={p}
+                                        value={p}
+                                        label={p}
+                                        selected={selectedMeetPresets.has(p)}
+                                        onToggle={toggleMeetPreset}
+                                    />
+                                ))}
+                            </View>
+                            <FieldLabel text="Custom (Optional)" />
+                            <TextInput
+                                style={[s.input, s.inputMultiSmall]}
+                                value={customMeetText}
+                                onChangeText={(val) => setCustomMeetText(val)}
+                                placeholder="Add custom looking to meet details..."
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={2}
+                            />
+                        </Card>
+                    </>
+                )}
+
+                {(section === 'all' || section === 'locations') && (
+                    <>
+                        <SectionTitle text="Locations" />
+                        <Card style={s.placesCard}>
+                            <GooglePlaceField
+                                label="Gym Location"
+                                placeholder="Search gym, club, or training studio"
+                                queryTypes="establishment"
+                                value={gymPlace}
+                                onSelect={setGymPlace}
+                            />
+                            <GooglePlaceField
+                                label="House Location"
+                                placeholder="Search your home area or neighborhood"
+                                queryTypes="geocode"
+                                value={housePlace}
+                                onSelect={setHousePlace}
+                            />
+                            <GooglePlaceField
+                                label="Local Park"
+                                placeholder="Search a park or outdoor training spot"
+                                queryTypes="establishment"
+                                value={parkPlace}
+                                onSelect={setParkPlace}
+                            />
+                        </Card>
+                    </>
+                )}
+
+                {(section === 'all' || section === 'hobbies') && (
+                    <>
+                        <SectionTitle text="Hobbies & Interests" />
+                        <Card>
+                            <View style={s.chipWrap}>
+                                {ALL_HOBBIES.map(h => {
+                                    const meta = HOBBY_META[h];
+                                    return (
+                                        <ToggleChip
+                                            key={h}
+                                            value={h}
+                                            selected={hobbies.has(h)}
+                                            onToggle={toggleHobby}
+                                            label={metaLabel(meta)}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        </Card>
+                    </>
+                )}
+
+                {(section === 'all' || section === 'community') && (
+                    <>
+                        <SectionTitle text="Community Service" />
+                        <Card>
+                            <View style={s.switchRow}>
+                                <View style={s.flex}>
+                                    <Text style={s.switchLabel}>Helping Beginners</Text>
+                                    <Text style={s.switchSub}>Happy to guide newcomers to fitness.</Text>
+                                </View>
+                                <Switch
+                                    value={helpingBeginners}
+                                    onValueChange={setHelpBeginners}
+                                    trackColor={{ false: '#2a3a4a', true: C.accent }}
+                                    thumbColor="#fff"
+                                />
+                            </View>
+
+                            <View style={s.switchRow}>
+                                <View style={s.flex}>
+                                    <Text style={s.switchLabel}>Open to Mentor (+55 only)</Text>
+                                    <Text style={s.switchSub}>Willing to mentor others on their fitness journey.</Text>
+                                </View>
+                                <Switch
+                                    value={openToMentor}
+                                    onValueChange={(val) => {
+                                        setOpenToMentor(val);
+                                        if (val) {
+                                            setAgeGroups(new Set(['seniors']));
+                                        }
+                                    }}
+                                    trackColor={{ false: '#2a3a4a', true: C.accent }}
+                                    thumbColor="#fff"
+                                />
+                            </View>
+                        </Card>
+
+                        <SectionTitle text="Community Note" />
+                        <Card>
+                            <FieldLabel text="Community Note" />
+                            <TextInput
+                                style={[s.input, s.inputMultiSmall]}
+                                value={communityNote}
+                                onChangeText={setCommunityNote}
+                                placeholder="Volunteer work, events, how you give back..."
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={2}
+                                maxLength={200}
+                            />
+                        </Card>
+                    </>
+                )}
 
                 <TouchableOpacity
                     style={[s.bottomSave, saving && s.saveBtnBusy]}
@@ -561,10 +851,33 @@ export function EditSocialProfileScreen() {
 }
 
 const s = StyleSheet.create({
-    safe: {
-        flex: 1,
-        backgroundColor: C.bg,
-    },
+    safe: { flex: 1, backgroundColor: C.bg },
+
+    // Avatar Section
+    avatarSection: { alignItems: 'center', paddingVertical: 12, gap: 12 },
+    avatarWrap: { width: 110, height: 110, borderRadius: 55, position: 'relative' },
+    avatarImg: { width: 110, height: 110, borderRadius: 55, overflow: 'hidden' },
+    avatarPlaceholder: { backgroundColor: C.bgCard, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.accentBorder },
+    uploadOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 55, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+    uploadText: { color: '#fff', fontSize: 13, fontWeight: '700', marginTop: 4 },
+    avatarActions: { flexDirection: 'row', gap: 10 },
+    photoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: C.bgCard, borderWidth: 1, borderColor: C.accentBorder },
+    photoBtnDanger: { borderColor: 'rgba(239, 68, 68, 0.3)' },
+    photoBtnText: { color: C.accent, fontSize: 13, fontWeight: '600' },
+    photoBtnTextDanger: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
+    emailText: { fontSize: 13, color: C.textDim, marginBottom: 8 },
+
+    // Input variants
+    inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bgInput, borderRadius: 12, borderWidth: 1, borderColor: C.border, marginBottom: 16, paddingLeft: 14 },
+    inputPrefix: { color: C.accent, fontSize: 15, fontWeight: '700' },
+    inputWithPrefix: { flex: 1, color: C.text, fontSize: 15, paddingVertical: 12, paddingRight: 14 },
+
+    genderRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+    genderBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: C.bgInput, borderWidth: 1, borderColor: C.border },
+    genderBtnActive: { borderColor: C.accent, backgroundColor: C.accentSoft },
+    genderBtnText: { color: C.textMuted, fontSize: 14, fontWeight: '600' },
+    genderBtnTextActive: { color: C.accent },
+
     loading: {
         marginTop: 80,
     },

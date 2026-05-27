@@ -13,6 +13,12 @@ export const ALL_BADGES: Badge[] = [
     { id: '30_day_streak', label: '30 Day Discipline', emoji: '🏆', description: 'Maintain a 30-day streak', creditReward: 200 },
     { id: 'first_live_session', label: 'Live Session Beast', emoji: '🎥', description: 'Complete your first live session', creditReward: 0 },
     { id: '100_workouts', label: 'Century Club', emoji: '💯', description: 'Complete 100 workouts', creditReward: 500 },
+    { id: 'heavy_lifter', label: 'Heavy Lifter', emoji: '🏋️‍♂️', description: 'Log 10 weightlifting sessions', creditReward: 100 },
+    { id: 'cardio_king', label: 'Cardio King', emoji: '🏃‍♂️', description: 'Complete 5 running or cardio sessions', creditReward: 100 },
+    { id: 'flexibility_master', label: 'Flex Master', emoji: '🧘‍♂️', description: 'Log 5 stretching or yoga sessions', creditReward: 100 },
+    { id: 'early_grinder', label: 'Early Grinder', emoji: '🌅', description: 'Hit the gym before 6 AM', creditReward: 50 },
+    { id: 'iron_will', label: 'Iron Will', emoji: '🦾', description: 'Complete a workout on a Sunday', creditReward: 150 },
+    { id: 'endurance_beast', label: 'Endurance Beast', emoji: '💦', description: 'Workout for more than 90 minutes', creditReward: 200 },
 ];
 
 // Milestone thresholds for progress bar

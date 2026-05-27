@@ -5,9 +5,7 @@
  * fields still live on `users`; place metadata is read/written through the
  * `profiles` table columns added in the profile place migration.
  */
-
-export type LookingToMeet = 'social' | 'professional' | 'both';
-
+export type LookingToMeet = string;
 export type ConnectionGoal =
     | 'workout_buddies'
     | 'fitness_motivation'
@@ -56,7 +54,8 @@ export interface SocialProfile {
     qrSlug?: string | null;
     bio?: string | null;
     whatIDo?: string | null;
-    openToConnect?: boolean;
+    openToConnect?: boolean; // Deprecated
+    privacyLevel?: 'public' | 'private' | 'friends_only';
     lookingToMeet?: LookingToMeet | null;
     connectionGoals?: ConnectionGoal[];
 

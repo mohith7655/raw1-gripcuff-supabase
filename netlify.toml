@@ -19,6 +19,13 @@
   # Bundle each function independently (required for TypeScript + npm imports)
   node_bundler = "esbuild"
 
+# ── Proxy for Google Maps API (Bypass CORS) ──────────────────────────────────
+[[redirects]]
+  from = "/api/places/*"
+  to = "https://maps.googleapis.com/maps/api/place/:splat"
+  status = 200
+  force = true
+
 # ── Service worker headers ───────────────────────────────────────────────────
 # Chrome requires the SW to be served as text/javascript (not text/html).
 # If Netlify's SPA rewrite returns index.html for /firebase-messaging-sw.js,

@@ -6,7 +6,7 @@ import { MapPin } from 'lucide-react-native';
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
 const GOOGLE_PLACES_WEB_PROXY_URL =
     process.env.EXPO_PUBLIC_GOOGLE_PLACES_WEB_PROXY_URL ??
-    'https://corsproxy.io/?https://maps.googleapis.com/maps/api';
+    'https://corsproxy.org/https://maps.googleapis.com/maps/api';
 
 export type LocationValue = {
     address: string;

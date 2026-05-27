@@ -31,7 +31,8 @@ const fromRow = (row: any): SocialProfile => ({
     qrSlug: row.qr_slug ?? null,
     bio: row.bio ?? null,
     whatIDo: row.what_i_do ?? null,
-    openToConnect: row.open_to_connect ?? false,
+    openToConnect: row.open_to_connect ?? false, // fallback
+    privacyLevel: row.privacy_level ?? 'public',
     lookingToMeet: row.looking_to_meet ?? null,
     connectionGoals: Array.isArray(row.connection_goals) ? row.connection_goals : [],
     gymPlaceId: row.gym_place_id ?? null,
@@ -146,11 +147,20 @@ export class SocialProfileService {
     }
 
     static async get(uid: string): Promise<SocialProfile | null> {
+        console.log('[SocialProfileService] get query for uid:', uid);
+
         const { data, error } = await supabase
             .from('profiles')
             .select(ALL_COLS)
             .eq('id', uid)
             .maybeSingle();
+
+        console.log(
+            '[SocialProfileService] get raw result:',
+            JSON.stringify(data),
+            'error:',
+            JSON.stringify(error),
+        );
 
         if (error) {
             console.warn('[SocialProfile] get error:', error.message);
@@ -162,19 +172,28 @@ export class SocialProfileService {
     static async update(uid: string, patch: Partial<Omit<SocialProfile, 'uid'>>): Promise<void> {
         const payload: Record<string, unknown> = {};
 
+        const toArray = (v: unknown): unknown[] => {
+            if (v === null || v === undefined) return [];
+            if (Array.isArray(v)) return [...v];
+            if (v instanceof Set) return Array.from(v);
+            if (typeof v === 'string') return v ? [v] : [];
+            return Array.from(v as Iterable<unknown>);
+        };
+
         // Social fields
         if (patch.bio !== undefined)                    payload.bio = patch.bio;
         if (patch.whatIDo !== undefined)                payload.what_i_do = patch.whatIDo;
         if (patch.openToConnect !== undefined)          payload.open_to_connect = patch.openToConnect;
+        if (patch.privacyLevel !== undefined)           payload.privacy_level = patch.privacyLevel;
         if (patch.lookingToMeet !== undefined)          payload.looking_to_meet = patch.lookingToMeet;
-        if (patch.connectionGoals !== undefined)        payload.connection_goals = patch.connectionGoals;
+        if (patch.connectionGoals !== undefined)        payload.connection_goals = toArray(patch.connectionGoals);
         if (patch.gymName !== undefined)                payload.gym_name = patch.gymName;
         if (patch.gymArea !== undefined)                payload.gym_area = patch.gymArea;
-        if (patch.hobbies !== undefined)                payload.hobbies = patch.hobbies;
+        if (patch.hobbies !== undefined)                payload.hobbies = toArray(patch.hobbies);
         if (patch.communityNote !== undefined)          payload.community_note = patch.communityNote;
         if (patch.helpingBeginners !== undefined)       payload.helping_beginners = patch.helpingBeginners;
         if (patch.openToMentor !== undefined)           payload.open_to_mentor = patch.openToMentor;
-        if (patch.openToTrainAgeGroups !== undefined)   payload.open_to_train_age_groups = patch.openToTrainAgeGroups;
+        if (patch.openToTrainAgeGroups !== undefined)   payload.open_to_train_age_groups = toArray(patch.openToTrainAgeGroups);
 
         // Place fields
         if (patch.gymPlaceId !== undefined)             payload.gym_place_id = patch.gymPlaceId;
@@ -196,11 +215,26 @@ export class SocialProfileService {
 
         if (Object.keys(payload).length === 0) return;
 
-        const { error } = await supabase
-            .from('profiles')
-            .upsert({ id: uid, ...payload }, { onConflict: 'id' });
+        console.log('[SocialProfileService] update payload:', JSON.stringify(payload));
 
-        if (error) throw new Error(error.message);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .update(payload)
+                .eq('id', uid)
+                .select('bio, what_i_do, hobbies')
+                .single();
+
+            console.log('[SocialProfileService] update result:', JSON.stringify(data));
+
+            if (error) {
+                console.error('[SocialProfileService] update error:', JSON.stringify(error));
+                throw error;
+            }
+        } catch (error) {
+            console.error('[SocialProfileService] update error:', JSON.stringify(error));
+            throw error;
+        }
     }
 
     static async getSuggestions(

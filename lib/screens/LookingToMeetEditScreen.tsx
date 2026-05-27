@@ -64,11 +64,9 @@ const C = {
 };
 
 const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
-const GOOGLE_PLACES_WEB_PROXY_URL =
-  process.env.EXPO_PUBLIC_GOOGLE_PLACES_WEB_PROXY_URL ??
-  'https://corsproxy.io/?https://maps.googleapis.com/maps/api';
 const GOOGLE_PLACES_REQUEST_URL =
-  Platform.OS === 'web' ? GOOGLE_PLACES_WEB_PROXY_URL : 'https://maps.googleapis.com/maps/api';
+  process.env.EXPO_PUBLIC_GOOGLE_PLACES_WEB_PROXY_URL ??
+  (Platform.OS === 'web' ? '/api/places' : 'https://maps.googleapis.com/maps/api');
 
 const OPEN_TO_OPTIONS = [
   {
