@@ -52,10 +52,8 @@ const C = {
 };
 
 console.log('ENV key:', process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY);
-const GOOGLE_PLACES_KEY =
-    process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ||
-    'AIzaSyB0lV46JQgSqqWCq6fA6Mcyt5eVrt6CsWY';
-console.log('[Places] API key:', GOOGLE_PLACES_KEY);
+const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
+console.log('[Places] API key:', GOOGLE_PLACES_KEY ? 'Present' : 'Missing');
 
 function compactAddress(address?: string | null, name?: string | null) {
     if (!address) return '';
