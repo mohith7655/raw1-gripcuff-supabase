@@ -167,7 +167,7 @@ export class UserService {
       throw new Error(error.message);
     }
 
-    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined) {
+    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined) {
       const { error: profileSyncErr } = await supabase
         .from('profiles')
         .upsert({
@@ -175,6 +175,13 @@ export class UserService {
           username: data.username ?? undefined,
           full_name: data.fullName ?? undefined,
           avatar_url: data.profileImageUrl ?? undefined,
+          age: data.age ?? undefined,
+          gender: data.gender ?? undefined,
+          date_of_birth: data.dateOfBirth ?? undefined,
+          phone: data.phone ?? undefined,
+          current_streak: data.currentStreak ?? undefined,
+          best_streak: data.bestStreak ?? undefined,
+          completed_workouts: data.completedWorkouts ?? undefined,
         }, { onConflict: 'id' });
       if (profileSyncErr) {
         console.warn('[UserService] profile mirror sync failed:', profileSyncErr.message);

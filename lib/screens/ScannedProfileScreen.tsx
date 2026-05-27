@@ -208,7 +208,7 @@ export function ScannedProfileScreen() {
         UserService.getProfile(targetUid),
         SocialProfileService.get(targetUid),
         StreakService.getStreakData(targetUid),
-        supabase.from('profiles').select('id, full_name, username, avatar_url').eq('id', targetUid).maybeSingle(),
+        supabase.from('profiles').select('id, full_name, username, avatar_url, age, gender, date_of_birth, phone, has_access, access_type, current_streak, best_streak, completed_workouts').eq('id', targetUid).maybeSingle(),
       ]);
       setSocial(spRes.status === 'fulfilled' ? spRes.value : null);
       setStreakData(streakRes.status === 'fulfilled' ? streakRes.value : null);
