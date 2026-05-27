@@ -15,6 +15,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -37,11 +38,13 @@ import {
   QrCode,
   Settings,
   Trees,
-  Trophy,
   Users,
+  Check,
+  X,
 } from 'lucide-react-native';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
+import { useFriend } from '../providers/FriendContext';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { StreakService, StreakData } from '../services/streak.service';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
@@ -56,6 +59,8 @@ import { ProfileCard } from '../components/profile/ProfileCard';
 const C = {
   orange:       '#ff7a00',
   green:        '#22c55e',
+  greenSoft:    'rgba(34,197,94,0.12)',
+  greenBorder:  'rgba(34,197,94,0.28)',
   bg:           '#0d1520',
   cardBg:       'rgba(255,255,255,0.04)',
   cardBorder:   'rgba(255,255,255,0.06)',
@@ -63,6 +68,9 @@ const C = {
   muted:        '#9ca3af',
   accentSoft:   'rgba(255,122,0,0.12)',
   accentBorder: 'rgba(255,122,0,0.28)',
+  blue:         '#3b82f6',
+  blueSoft:     'rgba(59,130,246,0.12)',
+  blueBorder:   'rgba(59,130,246,0.28)',
 };
 
 type IconComp = React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
@@ -118,7 +126,8 @@ function deriveBadges(streakData: StreakData | null): Badge[] {
 export const ProfileScreen = () => {
   const navigation = useNavigation<any>();
   const { supabaseUserId } = useAuth();
-  const { profile } = useUser();
+  const { profile, updateProfile } = useUser();
+  const { friends } = useFriend();
 
   const [social,     setSocial]     = useState<SocialProfile | null>(null);
   const [streakData, setStreakData] = useState<StreakData | null>(null);
@@ -159,11 +168,54 @@ export const ProfileScreen = () => {
     return () => loop.stop();
   }, [loading, pulse]);
 
+  const handleSetPrivacy = async (level: 'public' | 'friends_only' | 'private') => {
+    if (!supabaseUserId) return;
+    if (social?.privacyLevel === level) return;
+    
+    const prevLevel = social?.privacyLevel || 'public';
+    // Optimistic update
+    setSocial(prev => prev ? { ...prev, privacyLevel: level } : null);
+
+    try {
+      await SocialProfileService.update(supabaseUserId, { privacyLevel: level });
+    } catch (err) {
+      console.warn('Failed to update privacy level', err);
+      // Revert on error
+      setSocial(prev => prev ? { ...prev, privacyLevel: prevLevel } : null);
+    }
+  };
+
+  const [editingField, setEditingField] = useState<'age' | 'gender' | 'dateOfBirth' | 'phone' | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const handleEditClick = (field: 'age' | 'gender' | 'dateOfBirth' | 'phone', initialValue: string) => {
+    setEditingField(field);
+    setEditValue(initialValue);
+  };
+
+  const handleSaveField = async () => {
+    if (!supabaseUserId || !editingField) return;
+    try {
+      let finalValue: any = editValue.trim();
+      if (editingField === 'age') {
+         finalValue = parseInt(finalValue, 10);
+         if (isNaN(finalValue)) finalValue = profile?.age || null;
+      }
+      await updateProfile(supabaseUserId, { [editingField]: finalValue });
+    } catch (e) {
+      console.warn('Failed to save', e);
+    } finally {
+      setEditingField(null);
+    }
+  };
+
   // ── Derived data ──────────────────────────────────────────────────────────
-  const displayName = profile?.fullName  || 'Mohith Kumar';
-  const username    = profile?.username   || 's.mohithkumar';
-  const bio         = social?.bio?.trim() || 'Gym lover & fitness enthusiast. Always pushing for progress.';
-  const whatIDo     = social?.whatIDo?.trim() || 'Gym & Fitness';
+  const displayName = profile?.fullName  || 'User';
+  const username    = profile?.username   || 'username';
+  const email       = profile?.email      || 'email@example.com';
+  const bio         = social?.bio?.trim() || 'No bio yet.';
+  const whatIDoRaw  = social?.whatIDo?.trim();
+  const whatIDoItems= whatIDoRaw ? whatIDoRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
   const openToConnect = social?.openToConnect !== false;
 
   const streak   = streakData?.currentStreak  ?? profile?.currentStreak    ?? 3;
@@ -171,34 +223,30 @@ export const ProfileScreen = () => {
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
 
   // Location data
-  const gymName    = social?.gymName?.trim()   || 'PowerHouse Gym';
-  const gymAddress = splitAddress(social?.gymAddress || social?.gymArea, 'Koramangala, Bengaluru').sub;
+  const gymName    = social?.gymName?.trim()   || '';
+  const gymAddress = splitAddress(social?.gymAddress || social?.gymArea, '').sub;
 
-  const homeName    = social?.houseName?.trim() || 'HSR Layout';
-  const homeAddress = splitAddress(social?.houseAddress, 'Bengaluru').sub;
+  const homeName    = social?.houseName?.trim() || '';
+  const homeAddress = splitAddress(social?.houseAddress, '').sub;
 
-  const parkName    = social?.parkName?.trim() || 'Lalbagh Botanical Garden';
-  const parkAddress = splitAddress(social?.parkAddress, 'Mavalli, Bengaluru').sub;
+  const parkName    = social?.parkName?.trim() || '';
+  const parkAddress = splitAddress(social?.parkAddress, '').sub;
 
   // Looking-to-meet text
-  const lookingText = (() => {
-    const l = social?.lookingToMeet;
-    if (l === 'social')       return 'Open to social connections & workout buddies.';
-    if (l === 'professional') return 'Open to professional connections & networking.';
-    return 'Open to both social & professional connections.';
-  })();
+  const lookingTextRaw = social?.lookingToMeet?.trim();
+  const lookingItems = lookingTextRaw ? lookingTextRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
 
   // Hobbies
   const hobbyItems = ((social?.hobbies?.length
     ? social.hobbies
     : ['gym', 'cycling', 'photography', 'reading']) as Hobby[]
-  ).filter(h => !!HOBBY_META[h]).slice(0, 4);
+  ).filter(h => !!HOBBY_META[h]);
 
   // Badges
   const earned       = deriveBadges(streakData);
-  const badgeList    = earned.length > 0 ? earned : ALL_BADGES;
-  const visibleBadges = badgeList.slice(0, 4);
-  const extraCount   = Math.max(0, badgeList.length - 4);
+  const earnedIds    = new Set(earned.map(b => b.id));
+  const visibleBadges = ALL_BADGES.slice(0, 8);
+  const extraCount   = Math.max(0, ALL_BADGES.length - 8);
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
@@ -249,7 +297,32 @@ export const ProfileScreen = () => {
             {/* QR icon — orange 2px border rounded rect */}
             <TouchableOpacity
               style={s.qrBtn}
-              onPress={() => navigation.navigate('QRProfileScreen', { uid: supabaseUserId, username, displayName })}
+              onPress={() => navigation.navigate('QRProfileScreen', {
+                uid: supabaseUserId,
+                username,
+                displayName,
+                email: profile?.email,
+                age: profile?.age,
+                gender: profile?.gender,
+                avatarUrl: profile?.profileImageUrl,
+                streak: streak,
+                workouts: workouts,
+                prs: prs,
+                bio: social?.bio,
+                whatIDo: social?.whatIDo,
+                lookingToMeet: social?.lookingToMeet,
+                connectionGoals: social?.connectionGoals,
+                hobbies: social?.hobbies,
+                gymName: social?.gymName,
+                gymAddress: social?.gymAddress || social?.gymArea,
+                houseName: social?.houseName,
+                houseAddress: social?.houseAddress,
+                parkName: social?.parkName,
+                parkAddress: social?.parkAddress,
+                openToMentor: social?.openToMentor,
+                helpingBeginners: social?.helpingBeginners,
+                communityNote: social?.communityNote,
+              })}
               activeOpacity={0.76}
             >
               <QrCode size={21} color={C.text} strokeWidth={2} />
@@ -272,121 +345,221 @@ export const ProfileScreen = () => {
 
           {/* ── HERO ───────────────────────────────────────────────────────── */}
           <View style={s.hero}>
-            {/* Avatar with orange ring */}
-            <View style={s.avatarRing}>
+            <TouchableOpacity 
+              style={s.avatarRing}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'hero' })}
+            >
               <Avatar uri={profile?.profileImageUrl} size={134} />
-              {/* Edit pencil badge */}
-              <TouchableOpacity
-                style={s.editBadge}
-                onPress={() => navigation.navigate('EditSocialProfileScreen')}
-                activeOpacity={0.82}
-              >
-                <Pencil size={13} color="#fff" strokeWidth={2.5} />
-              </TouchableOpacity>
+              <View style={s.editBadge}>
+                <Camera size={14} color="#fff" strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+
+            <Text style={s.handle}>@{username}</Text>
+            <Text style={s.name} numberOfLines={1}>{displayName}</Text>
+            <Text style={s.email}>{email}</Text>
+
+            {/* Privacy Controls */}
+            <View style={s.privacyRow}>
+              {[
+                { id: 'public', label: 'Public' },
+                { id: 'private', label: 'Private' },
+                { id: 'friends_only', label: 'Only friends' },
+              ].map(opt => {
+                const isActive = (social?.privacyLevel || 'public') === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[s.privacyPill, isActive && s.privacyPillActive]}
+                    onPress={() => handleSetPrivacy(opt.id as any)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[s.privacyPillText, isActive && s.privacyPillTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
-            <Text style={s.name} numberOfLines={1}>{displayName}</Text>
-            <Text style={s.handle}>@{username}</Text>
+            {/* Basic Info List */}
+            <View style={s.basicInfoContainer}>
+              {/* Age */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Age</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'age' ? (
+                    <>
+                      <TextInput 
+                        style={s.inlineInput} 
+                        value={editValue} 
+                        onChangeText={setEditValue} 
+                        keyboardType="numeric"
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.age ? `${profile.age} yrs` : '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('age', profile?.age?.toString() || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
 
-            {/* "Open to connect" pill */}
-            <View style={s.connectPill}>
-              <Text style={s.connectPillText}>
-                {openToConnect ? 'Open to connect' : 'Connections by Request'}
-              </Text>
+              {/* Gender */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Gender</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'gender' ? (
+                    <>
+                      <TextInput 
+                        style={s.inlineInput} 
+                        value={editValue} 
+                        onChangeText={setEditValue} 
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.gender || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('gender', profile?.gender || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* DOB */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>DOB</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'dateOfBirth' ? (
+                    <>
+                      <TextInput 
+                        style={s.inlineInput} 
+                        value={editValue} 
+                        onChangeText={setEditValue} 
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={C.muted}
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.dateOfBirth || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('dateOfBirth', profile?.dateOfBirth || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* Phone */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Phone</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'phone' ? (
+                    <>
+                      <TextInput 
+                        style={s.inlineInput} 
+                        value={editValue} 
+                        onChangeText={setEditValue} 
+                        keyboardType="phone-pad"
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.phone || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('phone', profile?.phone || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* Access */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Gripcuff Access</Text>
+                <View style={s.basicInfoValueRow}>
+                  {profile?.hasAccess ? (
+                    <View style={s.accessPill}>
+                      <Text style={s.accessPillText}>
+                        {profile.accessType === 'subscription' ? 'Subscription' : 'Product'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={s.accessInactive}>Inactive</Text>
+                  )}
+                </View>
+              </View>
             </View>
           </View>
 
           {/* ── STATS (3 cards) ─────────────────────────────────────────────── */}
           <StatPill streak={streak} workouts={workouts} prs={prs} />
 
+          {/* ── FRIENDS ─────────────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Friends</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')}>
+                <Text style={s.viewAllBtn}>View all</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={s.friendsListRow}>
+              {friends.length > 0 ? (
+                friends.slice(0, 5).map((f, idx) => (
+                  <View key={f.uid} style={[s.friendAvatarBox, { zIndex: 10 - idx }]}>
+                    <Avatar uri={f.profileImageUrl} size={42} />
+                  </View>
+                ))
+              ) : (
+                <Text style={s.bodyText}>No friends yet.</Text>
+              )}
+            </View>
+          </ProfileCard>
+
           {/* ── ABOUT ME ────────────────────────────────────────────────────── */}
           <ProfileCard>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>About me</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen')}>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'about' })}>
                 <Pencil size={16} color={C.muted} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <Text style={s.bodyText}>{bio}</Text>
-          </ProfileCard>
-
-          {/* ── WHAT I DO ───────────────────────────────────────────────────── */}
-          <ProfileCard>
-            <Text style={s.cardTitle}>What I do</Text>
-            <View style={s.inlineRow}>
-              <Dumbbell size={20} color={C.orange} strokeWidth={2.2} />
-              <Text style={s.inlineText}>{whatIDo}</Text>
-            </View>
-          </ProfileCard>
-
-          {/* ── LOOKING TO MEET ─────────────────────────────────────────────── */}
-          <ProfileCard>
-            <TouchableOpacity
-              style={s.cardHeaderRow}
-              onPress={() => navigation.navigate('LookingToMeetEditScreen')}
-              activeOpacity={0.8}
-            >
-              <Text style={s.cardTitle}>Looking to meet</Text>
-              <Pencil size={16} color={C.muted} strokeWidth={2} />
-            </TouchableOpacity>
-            <Text style={[s.bodyText, { marginBottom: 14 }]}>{lookingText}</Text>
-            <View style={s.pillsRow}>
-              <ChipPill icon={Users}    label="Social"       tone="orange" />
-              <ChipPill icon={Briefcase} label="Professional" tone="green"  />
-            </View>
-          </ProfileCard>
-
-          {/* ── 3 LOCATION CARDS ────────────────────────────────────────────── */}
-          <LocationRow
-            cardTitle="Gym I go to"
-            name={gymName}
-            address={gymAddress}
-            iconComponent={MapPin}
-          />
-          <LocationRow
-            cardTitle="Home area"
-            name={homeName}
-            address={homeAddress}
-            iconComponent={Home}
-          />
-          <LocationRow
-            cardTitle="Local park"
-            name={parkName}
-            address={parkAddress}
-            iconComponent={Trees}
-          />
-
-          {/* ── HOBBIES ─────────────────────────────────────────────────────── */}
-          <ProfileCard>
-            <Text style={s.cardTitle}>Hobbies</Text>
-            <View style={s.hobbiesRow}>
-              {hobbyItems.map(hobby => {
-                const meta = HOBBY_META[hobby];
-                const Icon = HOBBY_ICONS[hobby] ?? Dumbbell;
-                return <HobbyCircle key={hobby} icon={Icon} label={meta.label} />;
-              })}
-            </View>
-          </ProfileCard>
-
-          {/* ── COMMUNITY ───────────────────────────────────────────────────── */}
-          <ProfileCard>
-            <Text style={s.cardTitle}>Community</Text>
-            <TouchableOpacity
-              style={s.communityRow}
-              onPress={() => navigation.navigate('CommunityScreen')}
-              activeOpacity={0.8}
-            >
-              <View style={s.communityIconBox}>
-                <HeartHandshake size={22} color={C.orange} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.communityBold}>Volunteer</Text>
-                <Text style={s.communityMuted} numberOfLines={1}>
-                  {social?.communityNote || 'Helping at local fitness events'}
-                </Text>
-              </View>
-              <ChevronRight size={20} color={C.orange} strokeWidth={2} />
-            </TouchableOpacity>
           </ProfileCard>
 
           {/* ── BADGES ──────────────────────────────────────────────────────── */}
@@ -397,19 +570,196 @@ export const ProfileScreen = () => {
                 <Text style={s.viewAllLink}>View all</Text>
               </TouchableOpacity>
             </View>
-            <View style={s.badgesRow}>
-              {visibleBadges.map((badge, i) => (
-                <View key={badge.id} style={[s.badgeShape, i % 2 === 1 && s.badgeShapeAlt]}>
-                  <Text style={s.badgeEmoji}>{badge.emoji}</Text>
-                </View>
-              ))}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={s.badgesScroll}
+            >
+              {visibleBadges.map((badge, i) => {
+                const isEarned = earnedIds.has(badge.id);
+                return (
+                  <View key={badge.id} style={s.badgeItemContainer}>
+                    <View 
+                      style={[
+                        s.badgeShape, 
+                        i % 2 === 1 && s.badgeShapeAlt,
+                        !isEarned && s.badgeShapeLocked
+                      ]}
+                    >
+                      <Text style={[s.badgeEmoji, !isEarned && s.badgeEmojiLocked]}>
+                        {badge.emoji}
+                      </Text>
+                    </View>
+                    <Text style={[s.badgeLabel, !isEarned && s.badgeLabelLocked]} numberOfLines={1}>
+                      {badge.label}
+                    </Text>
+                  </View>
+                );
+              })}
               {extraCount > 0 && (
-                <View style={s.moreBadge}>
-                  <Text style={s.moreBadgeText}>+{extraCount}</Text>
+                <View style={s.moreBadgeContainer}>
+                  <View style={s.moreBadge}>
+                    <Text style={s.moreBadgeText}>+{extraCount}</Text>
+                  </View>
                 </View>
+              )}
+            </ScrollView>
+          </ProfileCard>
+
+          {/* ── WHAT I DO ───────────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>What I do</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'whatIDo' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={s.hobbiesRow}>
+              {whatIDoItems.length > 0 ? (
+                whatIDoItems.map((item, idx) => (
+                  <View key={`${item}-${idx}`} style={s.whatIDoCapsule}>
+                    <Text style={s.whatIDoCapsuleText}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={s.bodyText}>Add what you do</Text>
               )}
             </View>
           </ProfileCard>
+
+          {/* ── HOBBIES ─────────────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Hobbies</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'hobbies' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={s.hobbiesRow}>
+              {hobbyItems.map(hobby => {
+                const meta = HOBBY_META[hobby];
+                const Icon = HOBBY_ICONS[hobby] ?? Dumbbell;
+                return (
+                  <View key={hobby} style={s.hobbyCapsule}>
+                    <Icon size={14} color={C.orange} strokeWidth={2.2} />
+                    <Text style={s.hobbyCapsuleText}>{meta.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </ProfileCard>
+
+          {/* ── LOOKING TO MEET ─────────────────────────────────────────────── */}
+          <ProfileCard>
+            <TouchableOpacity
+              style={s.cardHeaderRow}
+              onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'meet' })}
+              activeOpacity={0.8}
+            >
+              <Text style={s.cardTitle}>Looking to meet</Text>
+              <Pencil size={16} color={C.muted} strokeWidth={2} />
+            </TouchableOpacity>
+            <View style={s.hobbiesRow}>
+              {lookingItems.length > 0 ? (
+                lookingItems.map((item, idx) => (
+                  <View key={`${item}-${idx}`} style={s.meetCapsule}>
+                    <Text style={s.meetCapsuleText}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={s.bodyText}>Not specified</Text>
+              )}
+            </View>
+          </ProfileCard>
+
+          {/* ── LOCATIONS ───────────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Locations</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'locations' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            {gymName ? (
+              <LocationRow
+                cardTitle="Gym I go to"
+                name={gymName}
+                address={gymAddress}
+                iconComponent={MapPin}
+              />
+            ) : null}
+            {homeName ? (
+              <>
+                {gymName ? <View style={{ height: 12 }} /> : null}
+                <LocationRow
+                  cardTitle="Home area"
+                  name={homeName}
+                  address={homeAddress}
+                  iconComponent={Home}
+                />
+              </>
+            ) : null}
+            {parkName ? (
+              <>
+                {(gymName || homeName) ? <View style={{ height: 12 }} /> : null}
+                <LocationRow
+                  cardTitle="Local park"
+                  name={parkName}
+                  address={parkAddress}
+                  iconComponent={Trees}
+                />
+              </>
+            ) : null}
+            {!gymName && !homeName && !parkName && (
+              <Text style={s.bodyText}>Add your favorite locations</Text>
+            )}
+          </ProfileCard>
+
+          {/* ── COMMUNITY SERVICE ───────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Community Service</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'community' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ gap: 12, marginTop: 4 }}>
+              {social?.openToMentor && (
+                <View style={s.inlineRow}>
+                  <HeartHandshake size={18} color={C.orange} strokeWidth={2.2} />
+                  <Text style={s.inlineText}>Open to Mentor (+55)</Text>
+                </View>
+              )}
+              {social?.helpingBeginners && (
+                <View style={s.inlineRow}>
+                  <Users size={18} color={C.green} strokeWidth={2.2} />
+                  <Text style={s.inlineText}>Helping Beginners</Text>
+                </View>
+              )}
+              {!(social?.openToMentor || social?.helpingBeginners) && (
+                <Text style={s.bodyText}>Not specified</Text>
+              )}
+            </View>
+          </ProfileCard>
+
+          {/* ── COMMUNITY NOTE ──────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Community Note</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'community' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ gap: 12, marginTop: 4 }}>
+              {social?.communityNote ? (
+                <Text style={s.bodyText}>{social.communityNote}</Text>
+              ) : (
+                <Text style={s.bodyText}>Add a note about your community involvement.</Text>
+              )}
+            </View>
+          </ProfileCard>
+
+
 
           {/* Bottom spacer */}
           <View style={{ height: 24 }} />
@@ -494,24 +844,122 @@ const s = StyleSheet.create({
     color: C.text,
     fontSize: 22,
     fontWeight: '800',
-    marginTop: 12,
+    marginTop: 4,
   },
   handle: {
+    color: C.muted,
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  email: {
     color: C.muted,
     fontSize: 14,
     marginTop: 2,
   },
-  connectPill: {
-    marginTop: 10,
-    backgroundColor: C.orange,
-    borderRadius: 100,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
   },
-  connectPillText: {
+  privacyPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
+    backgroundColor: C.cardBg,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
+  privacyPillActive: {
+    backgroundColor: C.orange,
+    borderColor: C.orange,
+  },
+  privacyPillText: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  privacyPillTextActive: {
+    color: '#000000',
+    fontWeight: '800',
+  },
+  basicInfoContainer: {
+    marginTop: 20,
+    width: '100%',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  basicInfoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: C.cardBorder,
+  },
+  basicInfoLabel: {
+    color: C.muted,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  basicInfoValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  basicInfoValue: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  inlineInput: {
+    backgroundColor: C.cardBg,
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: C.orange,
+    minWidth: 80,
+    textAlign: 'right',
+  },
+  inlineSaveBtn: {
+    backgroundColor: C.green,
+    padding: 6,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  inlineCancelBtn: {
+    backgroundColor: C.cardBg,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    padding: 5,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  accessActive: {
+    color: C.green,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  accessInactive: {
+    color: C.orange,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  accessPill: {
+    backgroundColor: C.orange,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  accessPillText: {
     color: '#000000',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 
   // Card header
@@ -559,7 +1007,55 @@ const s = StyleSheet.create({
   // Hobbies
   hobbiesRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 14,
+  },
+  hobbyCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: C.accentBorder,
+    backgroundColor: C.accentSoft,
+    gap: 6,
+  },
+  hobbyCapsuleText: {
+    color: C.orange,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  meetCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: C.blueBorder,
+    backgroundColor: C.blueSoft,
+  },
+  meetCapsuleText: {
+    color: C.blue,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  whatIDoCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: C.greenBorder,
+    backgroundColor: C.greenSoft,
+  },
+  whatIDoCapsuleText: {
+    color: C.green,
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Community
@@ -591,16 +1087,22 @@ const s = StyleSheet.create({
   },
 
   // Badges
-  badgesRow: {
+  badgesScroll: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginTop: 10,
+    alignItems: 'flex-start',
+    paddingBottom: 4, // for slight scroll shadow
+  },
+  badgeItemContainer: {
     alignItems: 'center',
+    width: 72,
+    gap: 6,
   },
   badgeShape: {
-    width: 52,
-    height: 52,
-    borderRadius: 13,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,122,0,0.1)',
     borderWidth: 1.5,
     borderColor: C.orange,
@@ -610,8 +1112,33 @@ const s = StyleSheet.create({
   badgeShapeAlt: {
     borderColor: 'rgba(139,92,246,0.7)',
     backgroundColor: 'rgba(139,92,246,0.12)',
+    transform: [{ rotate: '-4deg' }],
   },
-  badgeEmoji: { fontSize: 22 },
+  badgeShapeLocked: {
+    backgroundColor: C.cardBg,
+    borderColor: C.cardBorder,
+    opacity: 0.5,
+  },
+  badgeEmoji: { 
+    fontSize: 30 
+  },
+  badgeEmojiLocked: {
+    opacity: 0.4,
+  },
+  badgeLabel: {
+    color: C.text,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  badgeLabelLocked: {
+    color: C.muted,
+  },
+  moreBadgeContainer: {
+    width: 64,
+    alignItems: 'center',
+    paddingTop: 6, // center it vertically relative to 64px shapes
+  },
   moreBadge: {
     width: 52,
     height: 52,
@@ -637,5 +1164,23 @@ const s = StyleSheet.create({
   },
   skeleton_bone: {
     backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  friendsListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  friendAvatarBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: C.bg,
+    marginRight: -12,
+  },
+  viewAllBtn: {
+    color: C.orange,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
