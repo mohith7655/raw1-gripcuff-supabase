@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Users, UserPlus, X, Search, Check } from 'lucide-react-native';
+import { ArrowLeft, Users, UserPlus, X, Search, Check, MessageSquare } from 'lucide-react-native';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import type { Club } from './ClubsScreen';
@@ -398,6 +398,17 @@ export function ClubDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
           <ArrowLeft size={22} color="#fff" />
         </TouchableOpacity>
+        {/* Club Chat button — visible to all members */}
+        {isMember && (
+          <TouchableOpacity
+            style={styles.chatBtn}
+            onPress={() => navigation.navigate('ClubChatScreen', { clubId: club.id, clubName: club.name })}
+            activeOpacity={0.85}
+          >
+            <MessageSquare size={16} color="#fff" />
+            <Text style={styles.chatBtnText}>Chat</Text>
+          </TouchableOpacity>
+        )}
         {!isOwner && (
           <TouchableOpacity
             style={isMember ? styles.leaveBtn : styles.joinBtnLarge}
@@ -528,6 +539,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginTop: 4,
   },
+  chatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  chatBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   joinBtnLarge: {
     backgroundColor: ORANGE,
     borderRadius: 20,

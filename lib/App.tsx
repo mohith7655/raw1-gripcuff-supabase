@@ -82,6 +82,7 @@ import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { FeedScreen } from './screens/FeedScreen';
 import { ClubsScreen } from './screens/ClubsScreen';
 import { ClubDetailScreen } from './screens/ClubDetailScreen';
+import { ClubChatScreen } from './screens/ClubChatScreen';
 import { StreakService } from './services/streak.service';
 import { TimezoneService } from './services/timezone.service';
 import { initializeCurrentUserOnLeaderboard } from './services/leaderboard.service';
@@ -378,6 +379,7 @@ function AppStack({
         <Stack.Screen name="FeedScreen" component={FeedScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ClubsScreen" component={ClubsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ClubDetailScreen" component={ClubDetailScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ClubChatScreen" component={ClubChatScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="ScannedProfileScreen"
           component={ScannedProfileScreen}

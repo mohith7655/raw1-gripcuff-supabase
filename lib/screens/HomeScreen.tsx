@@ -182,6 +182,34 @@ const HomeScreenInner = () => {
 
   const [buyCreditsVisible, setBuyCreditsVisible] = useState(false);
 
+  // Club memberships for notification sections
+  const [myClubs, setMyClubs] = useState<Array<{ id: string; name: string; avatar_url: string | null; unread: number }>>([]);
+  const [pendingClubInvites, setPendingClubInvites] = useState<Array<{ club_id: string; clubs: { name: string; avatar_url: string | null } | null }>>([]);
+
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    // Fetch clubs the user is a member of
+    supabase
+      .from('club_members')
+      .select('club_id, role, clubs:club_id (id, name, avatar_url)')
+      .eq('user_id', supabaseUserId)
+      .then(({ data }) => {
+        if (!data) return;
+        setMyClubs(
+          data
+            .filter((r: any) => r.clubs)
+            .map((r: any) => ({ id: r.clubs.id, name: r.clubs.name, avatar_url: r.clubs.avatar_url, unread: 0 }))
+        );
+      });
+    // Fetch pending club invites (invited but not yet accepted — role = 'invited')
+    supabase
+      .from('club_members')
+      .select('club_id, clubs:club_id (name, avatar_url)')
+      .eq('user_id', supabaseUserId)
+      .eq('role', 'invited')
+      .then(({ data }) => setPendingClubInvites((data ?? []) as any));
+  }, [supabaseUserId]);
+
   // Handle return from Stripe hosted checkout — grant credits if webhook was missed
   useEffect(() => {
     async function handlePaymentReturn() {
@@ -1318,6 +1346,101 @@ const HomeScreenInner = () => {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.notifViewAllText, { color: '#FF6B00' }]}>View all invites &gt;</Text>
+                </TouchableOpacity>
+              </View>
+
+
+              <View style={styles.notifDivider} />
+
+              {/* ── Club Invites ── */}
+              <View style={styles.notifSection}>
+                <View style={styles.notifSectionHeader}>
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#a78bfa' }]} />
+                  <Text style={styles.notifSectionTitle}>Club Invites</Text>
+                  {pendingClubInvites.length > 0 && (
+                    <View style={[styles.countBadge, { backgroundColor: '#a78bfa', marginLeft: 8 }]}>
+                      <Text style={styles.countBadgeText}>{pendingClubInvites.length}</Text>
+                    </View>
+                  )}
+                </View>
+                {pendingClubInvites.length === 0 ? (
+                  <Text style={styles.notifEmptyText}>No pending club invites.</Text>
+                ) : (
+                  pendingClubInvites.slice(0, 3).map((invite: any) => {
+                    const club = invite.clubs;
+                    if (!club) return null;
+                    return (
+                      <TouchableOpacity
+                        key={invite.club_id}
+                        style={styles.notifRow}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setNotificationModalVisible(false);
+                          navigation.navigate('ClubsScreen');
+                        }}
+                      >
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#a78bfa33', alignItems: 'center', justifyContent: 'center' }}>
+                          {club.avatar_url
+                            ? <Image source={{ uri: club.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                            : <Text style={{ color: '#a78bfa', fontWeight: '800', fontSize: 16 }}>{club.name?.charAt(0)?.toUpperCase()}</Text>
+                          }
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.notifRowName} numberOfLines={1}>{club.name}</Text>
+                          <Text style={styles.notifRowSub}>You've been invited to join</Text>
+                        </View>
+                        <View style={[styles.countBadge, { backgroundColor: '#a78bfa' }]}>
+                          <Text style={styles.countBadgeText}>View</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </View>
+
+              <View style={styles.notifDivider} />
+
+              {/* ── Club Chat ── */}
+              <View style={styles.notifSection}>
+                <View style={styles.notifSectionHeader}>
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#34d399' }]} />
+                  <Text style={styles.notifSectionTitle}>Club Chat</Text>
+                </View>
+                {myClubs.length === 0 ? (
+                  <Text style={styles.notifEmptyText}>Join a club to start chatting.</Text>
+                ) : (
+                  myClubs.slice(0, 3).map(club => (
+                    <TouchableOpacity
+                      key={club.id}
+                      style={styles.notifRow}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setNotificationModalVisible(false);
+                        navigation.navigate('ClubChatScreen', { clubId: club.id, clubName: club.name });
+                      }}
+                    >
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34d39933', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {club.avatar_url
+                          ? <Image source={{ uri: club.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                          : <Text style={{ color: '#34d399', fontWeight: '800', fontSize: 16 }}>{club.name?.charAt(0)?.toUpperCase()}</Text>
+                        }
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.notifRowName} numberOfLines={1}>{club.name}</Text>
+                        <Text style={styles.notifRowSub}>Tap to open club chat</Text>
+                      </View>
+                      <View style={[styles.countBadge, { backgroundColor: '#34d399' }]}>
+                        <Text style={styles.countBadgeText}>Chat</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+                <TouchableOpacity
+                  style={styles.notifViewAll}
+                  onPress={() => { setNotificationModalVisible(false); navigation.navigate('ClubsScreen'); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.notifViewAllText, { color: '#34d399' }]}>View all clubs &gt;</Text>
                 </TouchableOpacity>
               </View>
 
