@@ -86,12 +86,39 @@ export const handler = async (event: any): Promise<any> => {
         if (stripeEvent.type === 'checkout.session.completed') {
             const session = stripeEvent.data.object;
             const userId  = session.metadata?.userId;
+            const type    = session.metadata?.type;
 
             if (!userId) {
                 console.warn('[stripe-webhook] checkout.session.completed: no userId in metadata — skipping');
                 return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ received: true }) };
             }
 
+            // ── Credits purchase ──────────────────────────────────────────────────
+            if (type === 'credits_purchase') {
+                const credits = Number(session.metadata?.credits ?? 0);
+                if (!credits) {
+                    console.warn('[stripe-webhook] credits_purchase: missing credits in metadata');
+                    return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ received: true }) };
+                }
+
+                console.log('[stripe-webhook] granting credits for user:', userId, 'amount:', credits);
+
+                const { error: rpcErr } = await supabase.rpc('increment_credits', {
+                    p_user_id:    userId,
+                    p_amount:     credits,
+                    p_description: `Purchased ${credits} credits (session: ${session.id})`,
+                });
+
+                if (rpcErr) {
+                    console.error('[stripe-webhook] increment_credits failed:', rpcErr.message);
+                    return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: rpcErr.message }) };
+                }
+
+                console.log('[stripe-webhook] ✓ credits granted for user:', userId);
+                return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ received: true }) };
+            }
+
+            // ── Subscription purchase ─────────────────────────────────────────────
             console.log('[stripe-webhook] granting subscription access for user:', userId);
 
             // Write to user_access (source of truth — Realtime notifies the app)

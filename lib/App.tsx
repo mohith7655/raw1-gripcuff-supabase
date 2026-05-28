@@ -79,6 +79,9 @@ import { ScannedProfileScreen } from './screens/ScannedProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AllFavouritesScreen } from './screens/AllFavouritesScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
+import { FeedScreen } from './screens/FeedScreen';
+import { ClubsScreen } from './screens/ClubsScreen';
+import { ClubDetailScreen } from './screens/ClubDetailScreen';
 import { StreakService } from './services/streak.service';
 import { TimezoneService } from './services/timezone.service';
 import { initializeCurrentUserOnLeaderboard } from './services/leaderboard.service';
@@ -372,6 +375,9 @@ function AppStack({
         <Stack.Screen name="LookingToMeetEditScreen" component={LookingToMeetEditScreen} />
         <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
         <Stack.Screen name="BadgesScreen" component={BadgesScreen} />
+        <Stack.Screen name="FeedScreen" component={FeedScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ClubsScreen" component={ClubsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ClubDetailScreen" component={ClubDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="ScannedProfileScreen"
           component={ScannedProfileScreen}

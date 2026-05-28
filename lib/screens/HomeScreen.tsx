@@ -23,7 +23,7 @@ import {
   Dumbbell,
   Video as VideoIcon,
   Users,
-  Coins,
+
   TrendingUp,
   Calendar,
   UserCircle,
@@ -63,6 +63,7 @@ import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderb
 import { DailyReminderCard } from '../components/DailyReminderCard';
 import { msUntilMidnight, getDateKey, buildWeekDates, getLastNDayKeys } from '../utils/streakDate';
 import { getResolvedTimezone } from '../utils/timezone';
+import { BuyCreditsModal } from '../components/credits/BuyCreditsModal';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -176,6 +177,8 @@ const HomeScreenInner = () => {
   const { favorites } = useFavorites();
   const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
   const totalFavouritesCount = favExerciseIds.size + favWorkoutIds.size;
+
+  const [buyCreditsVisible, setBuyCreditsVisible] = useState(false);
 
   // Watch history for resume section
   const [watchHistory, setWatchHistory] = useState<any[]>([]);
@@ -588,12 +591,12 @@ const HomeScreenInner = () => {
                   onPress={() => navigation.navigate('CreditsScreen')}
                   activeOpacity={0.7}
                 >
-                  <Coins color={theme.primaryColor} size={18} />
+                  <View style={styles.rBadge}><Text style={styles.rBadgeText}>R</Text></View>
                   <View style={{ marginLeft: 8 }}>
-                    <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "5"}</Text>
+                    <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "0"}</Text>
                     <Text style={styles.compactStatLabel}>Credits</Text>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('EarnCreditsScreen')}
+                      onPress={() => setBuyCreditsVisible(true)}
                       activeOpacity={0.7}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
@@ -633,6 +636,34 @@ const HomeScreenInner = () => {
                     <Text style={styles.compactStatLabel}>Favorites</Text>
                   </View>
                 </TouchableOpacity>
+              </View>
+
+              {/* ── Feed ── */}
+              <View style={styles.feedSection}>
+                <View style={styles.feedHeader}>
+                  <Text style={styles.feedTitle}>Feed</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('FeedScreen')}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.feedViewAll}>View All →</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.feedPlaceholder}>
+                  <TrendingUp color="#F97316" size={22} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.feedPlaceholderTitle}>Community Updates</Text>
+                    <Text style={styles.feedPlaceholderSub}>Workouts, achievements & more from your network</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.feedViewAllBtn}
+                    onPress={() => navigation.navigate('FeedScreen')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.feedViewAllBtnText}>View All</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Unified streak + leaderboard */}
@@ -1005,12 +1036,12 @@ const HomeScreenInner = () => {
                   onPress={() => navigation.navigate('CreditsScreen')}
                   activeOpacity={0.7}
                 >
-                  <Coins color={theme.primaryColor} size={18} />
+                  <View style={styles.rBadge}><Text style={styles.rBadgeText}>R</Text></View>
                   <View style={{ marginLeft: 8 }}>
-                    <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "5"}</Text>
+                    <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "0"}</Text>
                     <Text style={styles.compactStatLabel}>Credits</Text>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('EarnCreditsScreen')}
+                      onPress={() => setBuyCreditsVisible(true)}
                       activeOpacity={0.7}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
@@ -1312,6 +1343,11 @@ const HomeScreenInner = () => {
         visible={toastVisible}
         onDismiss={() => setToastVisible(false)}
       />
+
+      <BuyCreditsModal
+        visible={buyCreditsVisible}
+        onClose={() => setBuyCreditsVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -1477,6 +1513,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700' as any,
     marginTop: 2,
+  },
+  rBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rBadgeText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   aiButtonContainer: {
     borderRadius: 16,
@@ -1843,6 +1892,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   notifActionBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  feedSection: {
+    marginBottom: 16,
+  },
+  feedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  feedTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  feedViewAll: {
+    color: '#F97316',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  feedPlaceholder: {
+    backgroundColor: '#131f2e',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.15)',
+  },
+  feedPlaceholderTitle: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  feedPlaceholderSub: {
+    color: '#607a94',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  feedViewAllBtn: {
+    backgroundColor: '#F97316',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  feedViewAllBtnText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
