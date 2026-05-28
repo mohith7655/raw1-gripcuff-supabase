@@ -47,11 +47,13 @@ function AgeRangeSlider({
   onChange: (low: number, high: number) => void;
 }) {
   const trackWidth = useRef(0);
-  // Keep low/high in refs so pan handlers always read the latest values
   const lowRef = useRef(low);
   const highRef = useRef(high);
   lowRef.current = low;
   highRef.current = high;
+  // Capture the thumb's position at the moment the gesture starts
+  const lowStartPos = useRef(0);
+  const highStartPos = useRef(0);
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -63,14 +65,15 @@ function AgeRangeSlider({
   const ageFromPos = (pos: number) =>
     Math.round(clamp((pos / trackWidth.current) * (AGE_MAX - AGE_MIN) + AGE_MIN, AGE_MIN, AGE_MAX));
 
-  // Created once — reads lowRef/highRef so they never go stale
   const lowPan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        lowStartPos.current = posFromAge(lowRef.current);
+      },
       onPanResponderMove: (_, gs) => {
-        const basePos = posFromAge(lowRef.current);
-        const newPos = clamp(basePos + gs.dx, 0, trackWidth.current);
+        const newPos = clamp(lowStartPos.current + gs.dx, 0, trackWidth.current);
         const newAge = ageFromPos(newPos);
         onChange(Math.min(newAge, highRef.current - 1), highRef.current);
       },
@@ -81,9 +84,11 @@ function AgeRangeSlider({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        highStartPos.current = posFromAge(highRef.current);
+      },
       onPanResponderMove: (_, gs) => {
-        const basePos = posFromAge(highRef.current);
-        const newPos = clamp(basePos + gs.dx, 0, trackWidth.current);
+        const newPos = clamp(highStartPos.current + gs.dx, 0, trackWidth.current);
         const newAge = ageFromPos(newPos);
         onChange(lowRef.current, Math.max(newAge, lowRef.current + 1));
       },
