@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Users, Plus } from 'lucide-react-native';
+import { Users, Plus, ArrowLeft } from 'lucide-react-native';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { CreateClubModal } from '../components/clubs/CreateClubModal';
@@ -29,7 +29,7 @@ export interface Club {
   avatar_url: string | null;
   member_count: number;
   is_private: boolean;
-  owner_id: string;
+  creator_id: string;
 }
 
 function ClubAvatar({ club, size = 48 }: { club: Club; size?: number }) {
@@ -165,6 +165,9 @@ export function ClubsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+          <ArrowLeft size={22} color="#fff" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Clubs</Text>
         <TouchableOpacity
           style={styles.createClubBtn}
@@ -239,7 +242,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.07)',
   },
-  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  backBtn: { padding: 4, marginRight: 8 },
+  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800', flex: 1 },
   createClubBtn: {
     flexDirection: 'row',
     alignItems: 'center',

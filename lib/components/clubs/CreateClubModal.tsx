@@ -297,7 +297,7 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
         description: description.trim() || null,
         avatar_url: avatarUrl,
         is_private: isPrivate,
-        owner_id: supabaseUserId,
+        creator_id: supabaseUserId,
         member_count: 1,
       };
 
