@@ -180,24 +180,56 @@ function GooglePlaceField({
     zIndex?: number;
 }) {
     const ref = useRef<GooglePlacesAutocompleteRef>(null);
-    const selectedTitle = value.name || value.address;
-    const selectedSubtitle = compactAddress(value.address, value.name);
-
     const hasMap = !!(value.lat && value.lng);
+    const hasSelection = !!(value.name || value.address);
+    const [editing, setEditing] = useState(false);
+    const showSearch = !hasSelection || editing;
 
     useEffect(() => {
-        // If a real place is selected (has coords), clear the input so the map
-        // is the only visual — avoids text overlapping the map label.
-        // If no coords yet, show the saved name so user knows what's stored.
-        if (hasMap) {
+        if (showSearch) {
             ref.current?.setAddressText('');
-        } else {
-            const text = value.name || value.address || '';
-            if (text && ref.current?.getAddressText() !== text) {
-                ref.current?.setAddressText(text);
-            }
+            ref.current?.focus?.();
         }
-    }, [value.name, value.address, hasMap]);
+    }, [editing]);
+
+    if (!showSearch && hasMap) {
+        return (
+            <View style={[s.placeWrap, { zIndex }]}>
+                <FieldLabel text={label} />
+                <TouchableOpacity style={s.selectedPlaceRow} onPress={() => {
+                    onSelect({ placeId: undefined, name: null, address: null, lat: null, lng: null });
+                    setEditing(true);
+                }}>
+                    <MapPin size={14} color={C.accent} />
+                    <Text style={s.selectedPlaceText} numberOfLines={1}>{value.name || value.address}</Text>
+                    <Text style={s.selectedPlaceChange}>Change</Text>
+                </TouchableOpacity>
+                <LocationMapPreview
+                    lat={value.lat!}
+                    lng={value.lng!}
+                    address={value.address || ''}
+                    label=""
+                    isGym={false}
+                />
+            </View>
+        );
+    }
+
+    if (!showSearch && !hasMap && hasSelection) {
+        return (
+            <View style={[s.placeWrap, { zIndex }]}>
+                <FieldLabel text={label} />
+                <TouchableOpacity style={s.selectedPlaceRow} onPress={() => {
+                    onSelect({ placeId: undefined, name: null, address: null, lat: null, lng: null });
+                    setEditing(true);
+                }}>
+                    <MapPin size={14} color={C.accent} />
+                    <Text style={s.selectedPlaceText} numberOfLines={1}>{value.name || value.address}</Text>
+                    <Text style={s.selectedPlaceChange}>Change</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View style={[s.placeWrap, { zIndex }]}>
@@ -220,7 +252,6 @@ function GooglePlaceField({
                 onFail={(error) => console.error('[Places] onFail:', error)}
                 onNotFound={() => console.warn('[Places] onNotFound: no results')}
                 onPress={(data, details) => {
-                    console.log('[Places] selected:', data.description, details?.geometry?.location);
                     const description = data.description || '';
                     const formatted = details?.formatted_address || description;
                     const name = details?.name || description.split(',')[0]?.trim() || formatted;
@@ -231,6 +262,7 @@ function GooglePlaceField({
                         lat: details?.geometry?.location?.lat ?? null,
                         lng: details?.geometry?.location?.lng ?? null,
                     });
+                    setEditing(false);
                 }}
                 styles={{
                     container: s.placesContainer,
@@ -245,48 +277,11 @@ function GooglePlaceField({
                     placeholderTextColor: C.textDim,
                     autoCorrect: false,
                     autoCapitalize: 'none',
-                    onBlur: () => {
-                        const text = ref.current?.getAddressText() || '';
-                        if (text && text !== value.name && text !== value.address) {
-                            onSelect({
-                                placeId: undefined,
-                                name: text,
-                                address: '',
-                                lat: null,
-                                lng: null,
-                            });
-                        }
-                    }
                 }}
                 enablePoweredByContainer={false}
                 keepResultsAfterBlur
-                listEmptyComponent={() => {
-                    console.warn('[Places] listEmptyComponent shown — no suggestions returned');
-                    return null;
-                }}
+                listEmptyComponent={() => null}
             />
-            {value.lat && value.lng ? (
-                <View style={s.mapPreviewWrap}>
-                    <View style={s.mapPlaceName}>
-                        <MapPin size={13} color={C.accent} />
-                        <Text style={s.mapPlaceNameText} numberOfLines={1}>
-                            {value.name || value.address}
-                        </Text>
-                    </View>
-                    <LocationMapPreview
-                        lat={value.lat}
-                        lng={value.lng}
-                        address={value.address || ''}
-                        label=""
-                        isGym={false}
-                    />
-                </View>
-            ) : selectedTitle ? (
-                <View style={s.selectedPlace}>
-                    <MapPin size={13} color={C.accent} />
-                    <Text style={s.selectedSub} numberOfLines={1}>{selectedSubtitle || selectedTitle}</Text>
-                </View>
-            ) : null}
         </View>
     );
 }
@@ -1088,6 +1083,29 @@ const s = StyleSheet.create({
         fontSize: 13,
         fontWeight: '700',
         flex: 1,
+    },
+    selectedPlaceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: C.bgInput,
+        borderRadius: 11,
+        borderWidth: 1,
+        borderColor: C.accentBorder,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 8,
+    },
+    selectedPlaceText: {
+        flex: 1,
+        color: C.text,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    selectedPlaceChange: {
+        color: C.accent,
+        fontSize: 12,
+        fontWeight: '700',
     },
     selectedPlace: {
         flexDirection: 'row',
