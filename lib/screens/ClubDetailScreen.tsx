@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,13 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
-  ScrollView,
+  TextInput,
+  Modal,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Users } from 'lucide-react-native';
+import { ArrowLeft, Users, UserPlus, X, Search, Check } from 'lucide-react-native';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import type { Club } from './ClubsScreen';
@@ -23,6 +24,7 @@ const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
 const COVER_HEIGHT = 200;
+const GREEN = '#22c55e';
 
 type Tab = 'posts' | 'members';
 
@@ -30,6 +32,14 @@ interface Member {
   user_id: string;
   role: 'owner' | 'admin' | 'member';
   profiles: { full_name: string | null; avatar_url: string | null };
+}
+
+interface SearchProfile {
+  id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  email?: string | null;
 }
 
 function RoleBadge({ role }: { role: string }) {
@@ -42,6 +52,227 @@ function RoleBadge({ role }: { role: string }) {
     </View>
   );
 }
+
+// ── Invite Modal ──────────────────────────────────────────────────────────────
+
+function InviteModal({
+  visible,
+  clubId,
+  existingMemberIds,
+  onClose,
+  onInvited,
+}: {
+  visible: boolean;
+  clubId: string;
+  existingMemberIds: string[];
+  onClose: () => void;
+  onInvited: (userId: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchProfile[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [inviting, setInviting] = useState<string | null>(null);
+  const [invited, setInvited] = useState<Set<string>>(new Set());
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!visible) {
+      setQuery(''); setResults([]); setInviting(null); setInvited(new Set());
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) { setResults([]); return; }
+
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
+        .limit(10);
+      setResults((data ?? []) as SearchProfile[]);
+      setSearching(false);
+    }, 300);
+  }, [query]);
+
+  const handleInvite = async (profile: SearchProfile) => {
+    if (inviting || invited.has(profile.id) || existingMemberIds.includes(profile.id)) return;
+    setInviting(profile.id);
+    try {
+      await supabase.from('club_members').insert({
+        club_id: clubId,
+        user_id: profile.id,
+        role: 'member',
+      });
+      setInvited(prev => new Set(prev).add(profile.id));
+      onInvited(profile.id);
+    } catch { /* silent */ }
+    finally { setInviting(null); }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={inviteStyles.container}>
+        {/* Header */}
+        <View style={inviteStyles.header}>
+          <Text style={inviteStyles.title}>Invite Members</Text>
+          <TouchableOpacity onPress={onClose} style={inviteStyles.closeBtn} activeOpacity={0.7}>
+            <X size={22} color={TEXT_SECONDARY} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search input */}
+        <View style={inviteStyles.searchRow}>
+          <Search size={16} color={TEXT_SECONDARY} />
+          <TextInput
+            style={inviteStyles.searchInput}
+            placeholder="Search by name or username…"
+            placeholderTextColor={TEXT_SECONDARY}
+            value={query}
+            onChangeText={setQuery}
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searching && <ActivityIndicator size="small" color={ORANGE} />}
+        </View>
+
+        {/* Results */}
+        <FlatList
+          data={results}
+          keyExtractor={item => item.id}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => {
+            const alreadyMember = existingMemberIds.includes(item.id);
+            const wasInvited = invited.has(item.id);
+            const isLoading = inviting === item.id;
+            const name = item.full_name ?? item.username ?? 'User';
+            const initials = name.charAt(0).toUpperCase();
+
+            return (
+              <View style={inviteStyles.resultRow}>
+                <View style={inviteStyles.avatar}>
+                  {item.avatar_url
+                    ? <Image source={{ uri: item.avatar_url }} style={inviteStyles.avatarImg} />
+                    : <Text style={inviteStyles.avatarInitial}>{initials}</Text>
+                  }
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={inviteStyles.name}>{name}</Text>
+                  {item.username && (
+                    <Text style={inviteStyles.username}>@{item.username}</Text>
+                  )}
+                </View>
+                {alreadyMember ? (
+                  <View style={inviteStyles.alreadyBadge}>
+                    <Text style={inviteStyles.alreadyText}>Member</Text>
+                  </View>
+                ) : wasInvited ? (
+                  <View style={inviteStyles.invitedBadge}>
+                    <Check size={14} color={GREEN} />
+                    <Text style={inviteStyles.invitedText}>Added</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={inviteStyles.inviteBtn}
+                    onPress={() => handleInvite(item)}
+                    disabled={!!inviting}
+                    activeOpacity={0.85}
+                  >
+                    {isLoading
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={inviteStyles.inviteBtnText}>Invite</Text>
+                    }
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          }}
+          ListEmptyComponent={
+            query.length >= 2 && !searching ? (
+              <Text style={inviteStyles.emptyText}>No users found for "{query}"</Text>
+            ) : query.length < 2 ? (
+              <Text style={inviteStyles.hintText}>Type at least 2 characters to search</Text>
+            ) : null
+          }
+          contentContainerStyle={{ paddingBottom: 40 }}
+        />
+      </View>
+    </Modal>
+  );
+}
+
+const inviteStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: BG },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
+  },
+  title: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  closeBtn: { padding: 4 },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    margin: 16,
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  searchInput: { flex: 1, color: '#fff', fontSize: 15 },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  avatar: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#2a3a4a',
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden', flexShrink: 0,
+  },
+  avatarImg: { width: 40, height: 40, borderRadius: 20 },
+  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  name: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  username: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
+  inviteBtn: {
+    backgroundColor: ORANGE,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  inviteBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  invitedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  invitedText: { color: GREEN, fontSize: 13, fontWeight: '600' },
+  alreadyBadge: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  alreadyText: { color: TEXT_SECONDARY, fontSize: 12 },
+  emptyText: { color: TEXT_SECONDARY, fontSize: 14, textAlign: 'center', marginTop: 32 },
+  hintText: { color: TEXT_SECONDARY, fontSize: 13, textAlign: 'center', marginTop: 32 },
+});
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 export function ClubDetailScreen() {
   const navigation = useNavigation<any>();
@@ -56,9 +287,11 @@ export function ClubDetailScreen() {
   const [joining, setJoining] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [inviteVisible, setInviteVisible] = useState(false);
 
   const isMember = myRole !== null;
   const isOwner = myRole === 'owner';
+  const memberIds = members.map(m => m.user_id);
 
   const fetchMyMembership = useCallback(async () => {
     if (!supabaseUserId) return;
@@ -121,6 +354,10 @@ export function ClubDetailScreen() {
       fetchMembers();
     } catch { /* silent */ }
     finally { setJoining(false); }
+  };
+
+  const handleInvited = () => {
+    fetchMembers();
   };
 
   const renderMember = ({ item }: { item: Member }) => {
@@ -216,6 +453,21 @@ export function ClubDetailScreen() {
         ))}
       </View>
 
+      {/* Members tab header with Invite button */}
+      {activeTab === 'members' && isOwner && (
+        <View style={styles.membersHeader}>
+          <Text style={styles.membersCount}>{members.length} member{members.length !== 1 ? 's' : ''}</Text>
+          <TouchableOpacity
+            style={styles.inviteBtn}
+            onPress={() => setInviteVisible(true)}
+            activeOpacity={0.85}
+          >
+            <UserPlus size={15} color="#fff" />
+            <Text style={styles.inviteBtnText}>Invite</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Content */}
       {activeTab === 'posts' ? (
         loadingPosts ? (
@@ -246,6 +498,14 @@ export function ClubDetailScreen() {
           />
         )
       )}
+
+      <InviteModal
+        visible={inviteVisible}
+        clubId={club.id}
+        existingMemberIds={memberIds}
+        onClose={() => setInviteVisible(false)}
+        onInvited={handleInvited}
+      />
     </SafeAreaView>
   );
 }
@@ -320,6 +580,27 @@ const styles = StyleSheet.create({
   tabBtnActive: { borderBottomColor: ORANGE },
   tabBtnText: { color: TEXT_SECONDARY, fontSize: 14, fontWeight: '600' },
   tabBtnTextActive: { color: '#fff' },
+
+  membersHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  membersCount: { color: TEXT_SECONDARY, fontSize: 13 },
+  inviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: ORANGE,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  inviteBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyText: { color: TEXT_SECONDARY, fontSize: 14 },
