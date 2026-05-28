@@ -430,43 +430,45 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
               />
             ))}
 
-            {/* Always-visible search input to add more */}
-            <View style={styles.addLocationRow}>
-              <View style={styles.addLocationIconWrap}>
-                <Plus size={16} color="#fff" />
+            {/* + Add location label + input, grouped so label stays above input */}
+            <View style={styles.addLocationBlock}>
+              <View style={styles.addLocationRow}>
+                <View style={styles.addLocationIconWrap}>
+                  <Plus size={16} color="#fff" />
+                </View>
+                <Text style={styles.addLocationLabel}>Add location</Text>
               </View>
-              <Text style={styles.addLocationLabel}>Add location</Text>
+              <GooglePlacesAutocomplete
+                placeholder="Search city, gym, or address…"
+                fetchDetails
+                minLength={2}
+                debounce={300}
+                query={{ key: PLACES_API_KEY, language: 'en' }}
+                requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
+                onPress={(data, details) => {
+                  const label = details?.name || data.description.split(',')[0]?.trim() || data.description;
+                  addLocation({
+                    label,
+                    address: details?.formatted_address || data.description,
+                    lat: details?.geometry?.location?.lat ?? 0,
+                    lng: details?.geometry?.location?.lng ?? 0,
+                    placeId: data.place_id,
+                  });
+                }}
+                styles={{
+                  container: styles.placesContainer as any,
+                  textInputContainer: styles.placesInputContainer,
+                  textInput: styles.placesInput,
+                  listView: styles.placesListView as any,
+                  row: styles.placesRow,
+                  description: styles.placesDescription,
+                  separator: styles.placesSeparator,
+                }}
+                textInputProps={{ placeholderTextColor: TEXT_SECONDARY }}
+                enablePoweredByContainer={false}
+                keepResultsAfterBlur={false}
+              />
             </View>
-            <GooglePlacesAutocomplete
-              placeholder="Search city, gym, or address…"
-              fetchDetails
-              minLength={2}
-              debounce={300}
-              query={{ key: PLACES_API_KEY, language: 'en' }}
-              requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
-              onPress={(data, details) => {
-                const label = details?.name || data.description.split(',')[0]?.trim() || data.description;
-                addLocation({
-                  label,
-                  address: details?.formatted_address || data.description,
-                  lat: details?.geometry?.location?.lat ?? 0,
-                  lng: details?.geometry?.location?.lng ?? 0,
-                  placeId: data.place_id,
-                });
-              }}
-              styles={{
-                container: styles.placesContainer as any,
-                textInputContainer: styles.placesInputContainer,
-                textInput: styles.placesInput,
-                listView: styles.placesListView as any,
-                row: styles.placesRow,
-                description: styles.placesDescription,
-                separator: styles.placesSeparator,
-              }}
-              textInputProps={{ placeholderTextColor: TEXT_SECONDARY }}
-              enablePoweredByContainer={false}
-              keepResultsAfterBlur={false}
-            />
           </View>
 
           {/* Private toggle */}
@@ -566,12 +568,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   locationSection: { zIndex: 100 } as any,
+  addLocationBlock: {
+    marginTop: 12,
+    zIndex: 100,
+  } as any,
   addLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 12,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   addLocationIconWrap: {
     width: 26,
