@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Check, MapPin, Camera, CircleUserRound, Trash2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
+import { LocationMapPreview } from '../components/profile/LocationMapPreview';
 import { StorageService } from '../services/storage.service';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { useAuth } from '../providers/AuthContext';
@@ -182,12 +183,21 @@ function GooglePlaceField({
     const selectedTitle = value.name || value.address;
     const selectedSubtitle = compactAddress(value.address, value.name);
 
+    const hasMap = !!(value.lat && value.lng);
+
     useEffect(() => {
-        const text = value.name || value.address || '';
-        if (text && ref.current?.getAddressText() !== text) {
-            ref.current?.setAddressText(text);
+        // If a real place is selected (has coords), clear the input so the map
+        // is the only visual — avoids text overlapping the map label.
+        // If no coords yet, show the saved name so user knows what's stored.
+        if (hasMap) {
+            ref.current?.setAddressText('');
+        } else {
+            const text = value.name || value.address || '';
+            if (text && ref.current?.getAddressText() !== text) {
+                ref.current?.setAddressText(text);
+            }
         }
-    }, [value.name, value.address]);
+    }, [value.name, value.address, hasMap]);
 
     return (
         <View style={[s.placeWrap, { zIndex }]}>
@@ -255,17 +265,26 @@ function GooglePlaceField({
                     return null;
                 }}
             />
-            {selectedTitle ? (
+            {value.lat && value.lng ? (
+                <View style={s.mapPreviewWrap}>
+                    <View style={s.mapPlaceName}>
+                        <MapPin size={13} color={C.accent} />
+                        <Text style={s.mapPlaceNameText} numberOfLines={1}>
+                            {value.name || value.address}
+                        </Text>
+                    </View>
+                    <LocationMapPreview
+                        lat={value.lat}
+                        lng={value.lng}
+                        address={value.address || ''}
+                        label=""
+                        isGym={false}
+                    />
+                </View>
+            ) : selectedTitle ? (
                 <View style={s.selectedPlace}>
-                    <View style={s.selectedIcon}>
-                        <MapPin size={16} color={C.accent} />
-                    </View>
-                    <View style={s.selectedTextBlock}>
-                        <Text style={s.selectedTitle} numberOfLines={1}>{selectedTitle}</Text>
-                        {selectedSubtitle ? (
-                            <Text style={s.selectedSub} numberOfLines={1}>{selectedSubtitle}</Text>
-                        ) : null}
-                    </View>
+                    <MapPin size={13} color={C.accent} />
+                    <Text style={s.selectedSub} numberOfLines={1}>{selectedSubtitle || selectedTitle}</Text>
                 </View>
             ) : null}
         </View>
@@ -1055,17 +1074,27 @@ const s = StyleSheet.create({
         height: 1,
         backgroundColor: C.border,
     },
+    mapPreviewWrap: {
+        marginTop: 10,
+    },
+    mapPlaceName: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginBottom: 6,
+    },
+    mapPlaceNameText: {
+        color: C.accent,
+        fontSize: 13,
+        fontWeight: '700',
+        flex: 1,
+    },
     selectedPlace: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        marginTop: 9,
-        backgroundColor: C.accentSoft,
-        borderWidth: 1,
-        borderColor: C.accentBorder,
-        borderRadius: 12,
-        paddingHorizontal: 11,
-        paddingVertical: 10,
+        gap: 6,
+        marginTop: 6,
+        paddingHorizontal: 4,
     },
     selectedIcon: {
         width: 30,
