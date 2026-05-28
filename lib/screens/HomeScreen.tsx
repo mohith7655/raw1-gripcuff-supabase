@@ -11,7 +11,9 @@ import {
   Dimensions,
   Modal,
   AppState,
+  Alert,
 } from 'react-native';
+import * as Linking from 'expo-linking';
 import { BookingBottomSheet, Toast } from '../features/booking/BookingBottomSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -179,6 +181,49 @@ const HomeScreenInner = () => {
   const totalFavouritesCount = favExerciseIds.size + favWorkoutIds.size;
 
   const [buyCreditsVisible, setBuyCreditsVisible] = useState(false);
+
+  // Handle return from Stripe hosted checkout — grant credits if webhook was missed
+  useEffect(() => {
+    async function handlePaymentReturn() {
+      const url = await Linking.getInitialURL();
+      if (!url) return;
+
+      const { queryParams } = Linking.parse(url);
+      if (queryParams?.payment !== 'success' || !queryParams?.credits) return;
+
+      const creditsToAdd = Number(queryParams.credits);
+      if (!creditsToAdd) return;
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const res = await fetch(
+          '/.netlify/functions/verify-and-grant-credits',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              userId: session.user.id,
+              expectedCredits: creditsToAdd,
+            }),
+          }
+        );
+
+        const result = await res.json();
+        if (result.granted) {
+          Alert.alert('Credits added!', `${creditsToAdd} credits have been added to your account.`);
+        }
+      } catch (e) {
+        console.error('[HomeScreen] handlePaymentReturn error:', e);
+      }
+    }
+
+    handlePaymentReturn();
+  }, []);
 
   // Watch history for resume section
   const [watchHistory, setWatchHistory] = useState<any[]>([]);
