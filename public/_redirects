@@ -1,6 +1,6 @@
-# Google Maps API proxy — must come BEFORE the SPA catch-all
-/api/maps/*    https://maps.googleapis.com/maps/api/:splat    200!
-/api/places/*  https://maps.googleapis.com/maps/api/place/:splat  200!
+# Google Maps API proxy → serverless function (true server-side proxy, no CORS)
+/api/maps/*    /.netlify/functions/google-places/:splat    200!
+/api/places/*  /.netlify/functions/google-places/place/:splat  200!
 
 # Profile QR routes → serverless function (instant HTML page + OG tags)
 /u/*    /.netlify/functions/profile   200

@@ -19,16 +19,16 @@
   # Bundle each function independently (required for TypeScript + npm imports)
   node_bundler = "esbuild"
 
-# ── Proxy for Google Maps API (Bypass CORS) ──────────────────────────────────
+# ── Proxy for Google Maps API → serverless function (true server-side proxy, no CORS) ──
 [[redirects]]
   from = "/api/maps/*"
-  to = "https://maps.googleapis.com/maps/api/:splat"
+  to = "/.netlify/functions/google-places/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/api/places/*"
-  to = "https://maps.googleapis.com/maps/api/place/:splat"
+  to = "/.netlify/functions/google-places/place/:splat"
   status = 200
   force = true
 

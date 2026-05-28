@@ -176,6 +176,13 @@ function GooglePlaceField({
     const selectedTitle = value.name || value.address;
     const selectedSubtitle = compactAddress(value.address, value.name);
 
+    useEffect(() => {
+        const text = value.name || value.address || '';
+        if (text && ref.current?.getAddressText() !== text) {
+            ref.current?.setAddressText(text);
+        }
+    }, [value.name, value.address]);
+
     return (
         <View style={s.placeWrap}>
             <FieldLabel text={label} />

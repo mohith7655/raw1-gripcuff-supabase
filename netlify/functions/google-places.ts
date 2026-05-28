@@ -1,57 +1,50 @@
 import { Handler } from '@netlify/functions';
 import fetch from 'node-fetch';
 
-export const handler: Handler = async (event, context) => {
+const GOOGLE_API_BASE = 'https://maps.googleapis.com/maps/api';
+
+export const handler: Handler = async (event) => {
+    const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json',
+    };
+
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 204, headers: corsHeaders, body: '' };
+    }
+
     try {
-        const url = event.queryStringParameters?.url;
-        
-        if (!url) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing url parameter' }),
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                }
-            };
-        }
+        // Strip the function prefix so the path is e.g. /place/autocomplete/json
+        const apiPath = (event.path || '')
+            .replace(/^\/.netlify\/functions\/google-places/, '')
+            .replace(/^\/api\/maps/, '');
 
-        const decodedUrl = decodeURIComponent(url);
-        const urlObj = new URL(decodedUrl);
+        const params = new URLSearchParams(
+            (event.queryStringParameters as Record<string, string>) ?? {}
+        );
 
-        // Add all other query params to the URL
-        if (event.queryStringParameters) {
-            for (const [key, value] of Object.entries(event.queryStringParameters)) {
-                if (key !== 'url' && value) {
-                    urlObj.searchParams.append(key, value);
-                }
-            }
-        }
+        const googleUrl = `${GOOGLE_API_BASE}${apiPath}?${params.toString()}`;
 
-        const response = await fetch(urlObj.toString(), {
-            method: event.httpMethod,
-            headers: {
-                'Accept': 'application/json',
-            }
+        const response = await fetch(googleUrl, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
         });
 
         const data = await response.json();
 
         return {
             statusCode: 200,
+            headers: corsHeaders,
             body: JSON.stringify(data),
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            }
         };
-
     } catch (error) {
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-            }
+            headers: corsHeaders,
+            body: JSON.stringify({
+                error: error instanceof Error ? error.message : 'Unknown error',
+            }),
         };
     }
 };
