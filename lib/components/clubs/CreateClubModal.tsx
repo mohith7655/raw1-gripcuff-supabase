@@ -249,7 +249,7 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images' as any,
       allowsMultipleSelection: false,
       quality: 0.85,
     });
@@ -275,34 +275,66 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
       if (avatarUri) {
         const response = await fetch(avatarUri);
         const blob = await response.blob();
-        const ext = avatarUri.split('.').pop() ?? 'jpg';
+        // Derive extension from mime type so blob: URIs don't produce ".blob"
+        const mime = blob.type || 'image/jpeg';
+        const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
         const path = `${supabaseUserId}/${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from('club-avatars')
-          .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+          .upload(path, blob, { contentType: mime, upsert: false });
         if (!uploadErr) {
           const { data: urlData } = supabase.storage.from('club-avatars').getPublicUrl(path);
           avatarUrl = urlData.publicUrl;
+        } else {
+          console.warn('[CreateClubModal] avatar upload failed:', uploadErr.message);
         }
       }
 
+      // Base insert — columns that always exist
+      const insertPayload: Record<string, any> = {
+        name: name.trim(),
+        category,
+        description: description.trim() || null,
+        avatar_url: avatarUrl,
+        is_private: isPrivate,
+        owner_id: supabaseUserId,
+        member_count: 1,
+      };
+
+      // Extended columns — add only if your DB has them:
+      // ALTER TABLE clubs ADD COLUMN IF NOT EXISTS age_min int;
+      // ALTER TABLE clubs ADD COLUMN IF NOT EXISTS age_max int;
+      // ALTER TABLE clubs ADD COLUMN IF NOT EXISTS locations jsonb;
+      insertPayload.age_min = ageLow;
+      insertPayload.age_max = ageHigh;
+      if (locations.length > 0) insertPayload.locations = locations;
+
       const { data: club, error: clubErr } = await supabase
         .from('clubs')
-        .insert({
-          name: name.trim(),
-          category,
-          description: description.trim() || null,
-          avatar_url: avatarUrl,
-          is_private: isPrivate,
-          owner_id: supabaseUserId,
-          member_count: 1,
-          age_min: ageLow,
-          age_max: ageHigh,
-          locations: locations.length > 0 ? locations : null,
-        })
+        .insert(insertPayload)
         .select()
         .single();
-      if (clubErr || !club) throw clubErr ?? new Error('Failed to create club');
+
+      if (clubErr) {
+        // If extended columns don't exist yet, retry without them
+        if (clubErr.message?.includes('age_min') || clubErr.message?.includes('age_max') || clubErr.message?.includes('locations')) {
+          delete insertPayload.age_min;
+          delete insertPayload.age_max;
+          delete insertPayload.locations;
+          const { data: club2, error: clubErr2 } = await supabase
+            .from('clubs')
+            .insert(insertPayload)
+            .select()
+            .single();
+          if (clubErr2 || !club2) throw clubErr2 ?? new Error('Failed to create club');
+          await supabase.from('club_members').insert({ club_id: club2.id, user_id: supabaseUserId, role: 'owner' });
+          resetForm();
+          onCreated(club2);
+          return;
+        }
+        throw clubErr;
+      }
+      if (!club) throw new Error('Failed to create club');
 
       await supabase.from('club_members').insert({
         club_id: club.id,
