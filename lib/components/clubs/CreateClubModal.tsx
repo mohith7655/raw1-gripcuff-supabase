@@ -4,7 +4,6 @@ import {
   Text,
   Modal,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   StyleSheet,
   Switch,
@@ -13,8 +12,9 @@ import {
   PanResponder,
   LayoutChangeEvent,
 } from 'react-native';
-import { Lock, Image as ImageIcon, Plus, X as XIcon, MapPin } from 'lucide-react-native';
+import { Lock, Image as ImageIcon, X as XIcon, MapPin } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { useAuth } from '../../providers/AuthContext';
 import { supabase } from '../../core/config/supabase';
 
@@ -29,10 +29,16 @@ const AGE_MIN = 13;
 const AGE_MAX = 80;
 const THUMB_SIZE = 26;
 
-interface CreateClubModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onCreated: (club: any) => void;
+const PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
+const PLACES_PROXY =
+  process.env.EXPO_PUBLIC_GOOGLE_PLACES_WEB_PROXY_URL ?? '/api/maps';
+
+export interface ClubLocation {
+  label: string;
+  address: string;
+  lat: number;
+  lng: number;
+  placeId: string;
 }
 
 // ── Dual-handle age range slider ─────────────────────────────────────────────
@@ -51,7 +57,6 @@ function AgeRangeSlider({
   const highRef = useRef(high);
   lowRef.current = low;
   highRef.current = high;
-  // Capture the thumb's position at the moment the gesture starts
   const lowStartPos = useRef(0);
   const highStartPos = useRef(0);
 
@@ -69,13 +74,10 @@ function AgeRangeSlider({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        lowStartPos.current = posFromAge(lowRef.current);
-      },
+      onPanResponderGrant: () => { lowStartPos.current = posFromAge(lowRef.current); },
       onPanResponderMove: (_, gs) => {
         const newPos = clamp(lowStartPos.current + gs.dx, 0, trackWidth.current);
-        const newAge = ageFromPos(newPos);
-        onChange(Math.min(newAge, highRef.current - 1), highRef.current);
+        onChange(Math.min(ageFromPos(newPos), highRef.current - 1), highRef.current);
       },
     })
   ).current;
@@ -84,13 +86,10 @@ function AgeRangeSlider({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        highStartPos.current = posFromAge(highRef.current);
-      },
+      onPanResponderGrant: () => { highStartPos.current = posFromAge(highRef.current); },
       onPanResponderMove: (_, gs) => {
         const newPos = clamp(highStartPos.current + gs.dx, 0, trackWidth.current);
-        const newAge = ageFromPos(newPos);
-        onChange(lowRef.current, Math.max(newAge, lowRef.current + 1));
+        onChange(lowRef.current, Math.max(ageFromPos(newPos), lowRef.current + 1));
       },
     })
   ).current;
@@ -110,29 +109,12 @@ function AgeRangeSlider({
         <Text style={sliderStyles.labelVal}>{high}</Text>
         <Text style={sliderStyles.labelUnit}>yrs</Text>
       </View>
-
       <View style={sliderStyles.trackArea} onLayout={onLayout}>
-        {/* Full track */}
         <View style={sliderStyles.track} />
-        {/* Active range fill */}
-        <View
-          style={[
-            sliderStyles.fill,
-            { left: `${lowPct}%` as any, right: `${100 - highPct}%` as any },
-          ]}
-        />
-        {/* Low thumb */}
-        <View
-          style={[sliderStyles.thumb, { left: `${lowPct}%` as any, marginLeft: -(THUMB_SIZE / 2) }]}
-          {...lowPan.panHandlers}
-        />
-        {/* High thumb */}
-        <View
-          style={[sliderStyles.thumb, { left: `${highPct}%` as any, marginLeft: -(THUMB_SIZE / 2) }]}
-          {...highPan.panHandlers}
-        />
+        <View style={[sliderStyles.fill, { left: `${lowPct}%` as any, right: `${100 - highPct}%` as any }]} />
+        <View style={[sliderStyles.thumb, { left: `${lowPct}%` as any, marginLeft: -(THUMB_SIZE / 2) }]} {...lowPan.panHandlers} />
+        <View style={[sliderStyles.thumb, { left: `${highPct}%` as any, marginLeft: -(THUMB_SIZE / 2) }]} {...highPan.panHandlers} />
       </View>
-
       <View style={sliderStyles.boundRow}>
         <Text style={sliderStyles.boundLabel}>{AGE_MIN}</Text>
         <Text style={sliderStyles.boundLabel}>{AGE_MAX}+</Text>
@@ -153,20 +135,8 @@ const sliderStyles = StyleSheet.create({
     position: 'relative',
     marginHorizontal: THUMB_SIZE / 2,
   },
-  track: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  fill: {
-    position: 'absolute',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: ORANGE,
-  },
+  track: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)' },
+  fill: { position: 'absolute', height: 4, borderRadius: 2, backgroundColor: ORANGE },
   thumb: {
     position: 'absolute',
     width: THUMB_SIZE,
@@ -185,7 +155,64 @@ const sliderStyles = StyleSheet.create({
   boundLabel: { color: TEXT_SECONDARY, fontSize: 11 },
 });
 
+// ── Location card with embedded map ──────────────────────────────────────────
+
+function LocationCard({ loc, onRemove }: { loc: ClubLocation; onRemove: () => void }) {
+  const hasCoords = loc.lat !== 0 && loc.lng !== 0;
+  const embedUrl =
+    `https://www.google.com/maps/embed/v1/place` +
+    `?key=${PLACES_API_KEY}` +
+    `&q=${hasCoords ? `${loc.lat},${loc.lng}` : encodeURIComponent(loc.address)}` +
+    `&zoom=15`;
+
+  return (
+    <View style={locStyles.card}>
+      <View style={locStyles.cardHeader}>
+        <MapPin size={14} color={ORANGE} />
+        <Text style={locStyles.cardLabel} numberOfLines={1}>{loc.label}</Text>
+        <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <XIcon size={16} color={TEXT_SECONDARY} />
+        </TouchableOpacity>
+      </View>
+      <Text style={locStyles.cardAddress} numberOfLines={2}>{loc.address}</Text>
+      <View style={locStyles.mapWrap}>
+        {/* @ts-ignore — iframe is valid on web */}
+        <iframe
+          src={embedUrl}
+          width="100%"
+          height="160"
+          style={{ border: 0, borderRadius: 8, display: 'block' } as any}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </View>
+    </View>
+  );
+}
+
+const locStyles = StyleSheet.create({
+  card: {
+    backgroundColor: 'rgba(255,107,0,0.07)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,0,0.2)',
+    padding: 12,
+    marginTop: 12,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  cardLabel: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '700' },
+  cardAddress: { color: TEXT_SECONDARY, fontSize: 12, marginBottom: 10 },
+  mapWrap: { height: 160, borderRadius: 8, overflow: 'hidden' } as any,
+});
+
 // ── Main modal ────────────────────────────────────────────────────────────────
+
+interface CreateClubModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onCreated: (club: any) => void;
+}
 
 export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModalProps) {
   const { supabaseUserId } = useAuth();
@@ -198,21 +225,17 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Age range
   const [ageLow, setAgeLow] = useState(16);
   const [ageHigh, setAgeHigh] = useState(50);
 
-  // Locations
-  const [locations, setLocations] = useState<string[]>([]);
-  const [locationInput, setLocationInput] = useState('');
+  const [locations, setLocations] = useState<ClubLocation[]>([]);
 
   const canCreate = name.trim().length > 0 && !creating;
 
   const resetForm = () => {
     setName(''); setCategory('General'); setDescription('');
     setAvatarUri(null); setIsPrivate(false); setError(null);
-    setAgeLow(16); setAgeHigh(50);
-    setLocations([]); setLocationInput('');
+    setAgeLow(16); setAgeHigh(50); setLocations([]);
   };
 
   const handleClose = () => {
@@ -229,20 +252,16 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
       allowsMultipleSelection: false,
       quality: 0.85,
     });
-    if (!result.canceled && result.assets[0]) {
-      setAvatarUri(result.assets[0].uri);
-    }
+    if (!result.canceled && result.assets[0]) setAvatarUri(result.assets[0].uri);
   };
 
-  const addLocation = () => {
-    const val = locationInput.trim();
-    if (!val || locations.includes(val)) return;
-    setLocations(prev => [...prev, val]);
-    setLocationInput('');
+  const addLocation = (loc: ClubLocation) => {
+    if (locations.find(l => l.placeId === loc.placeId)) return;
+    setLocations(prev => [...prev, loc]);
   };
 
-  const removeLocation = (loc: string) => {
-    setLocations(prev => prev.filter(l => l !== loc));
+  const removeLocation = (placeId: string) => {
+    setLocations(prev => prev.filter(l => l.placeId !== placeId));
   };
 
   const handleCreate = useCallback(async () => {
@@ -251,7 +270,6 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
     setError(null);
 
     try {
-      // Upload avatar if selected
       let avatarUrl: string | null = null;
       if (avatarUri) {
         const response = await fetch(avatarUri);
@@ -267,7 +285,6 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
         }
       }
 
-      // Insert club
       const { data: club, error: clubErr } = await supabase
         .from('clubs')
         .insert({
@@ -286,7 +303,6 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
         .single();
       if (clubErr || !club) throw clubErr ?? new Error('Failed to create club');
 
-      // Add creator as owner member
       await supabase.from('club_members').insert({
         club_id: club.id,
         user_id: supabaseUserId,
@@ -324,8 +340,13 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          {/* Avatar picker */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+        >
+          {/* Avatar */}
           <TouchableOpacity style={styles.avatarPicker} onPress={pickAvatar} activeOpacity={0.8}>
             {avatarUri
               ? <Image source={{ uri: avatarUri }} style={styles.avatarImg} />
@@ -340,16 +361,30 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
 
           {/* Name */}
           <Text style={styles.fieldLabel}>Club Name *</Text>
-          <TextInput
-            style={styles.input}
+          <GooglePlacesAutocomplete
             placeholder="Enter club name"
-            placeholderTextColor={TEXT_SECONDARY}
-            value={name}
-            onChangeText={setName}
-            maxLength={40}
-            autoFocus
+            fetchDetails={false}
+            query={{ key: PLACES_API_KEY, language: 'en', types: [] }}
+            requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
+            onPress={() => {}}
+            textInputProps={{
+              value: name,
+              onChangeText: setName,
+              maxLength: 40,
+              autoFocus: true,
+              placeholderTextColor: TEXT_SECONDARY,
+              style: styles.input,
+            }}
+            renderRightButton={() => (
+              <Text style={styles.charCount}>{name.length}/40</Text>
+            )}
+            styles={{
+              container: { zIndex: 1 },
+              listView: { display: 'none' },
+              textInputContainer: { backgroundColor: 'transparent' },
+            }}
+            enablePoweredByContainer={false}
           />
-          <Text style={styles.charCount}>{name.length}/40</Text>
 
           {/* Category */}
           <Text style={styles.fieldLabel}>Category</Text>
@@ -370,17 +405,28 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
 
           {/* Description */}
           <Text style={styles.fieldLabel}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
+          <GooglePlacesAutocomplete
             placeholder="What's this club about? (optional)"
-            placeholderTextColor={TEXT_SECONDARY}
-            value={description}
-            onChangeText={setDescription}
-            maxLength={200}
-            multiline
-            textAlignVertical="top"
+            fetchDetails={false}
+            query={{ key: PLACES_API_KEY, language: 'en', types: [] }}
+            requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
+            onPress={() => {}}
+            textInputProps={{
+              value: description,
+              onChangeText: setDescription,
+              maxLength: 200,
+              multiline: true,
+              placeholderTextColor: TEXT_SECONDARY,
+              style: [styles.input, styles.textArea],
+            }}
+            styles={{
+              container: { zIndex: 1 },
+              listView: { display: 'none' },
+              textInputContainer: { backgroundColor: 'transparent' },
+            }}
+            enablePoweredByContainer={false}
           />
-          <Text style={styles.charCount}>{description.length}/200</Text>
+          <Text style={[styles.charCount, { marginTop: 4 }]}>{description.length}/200</Text>
 
           {/* Age Range */}
           <Text style={styles.fieldLabel}>Age Group Allowed</Text>
@@ -392,43 +438,47 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
             />
           </View>
 
-          {/* Locations */}
+          {/* Locations with Google Places autocomplete */}
           <Text style={styles.fieldLabel}>Locations</Text>
-          <View style={styles.sectionCard}>
-            <View style={styles.locationInputRow}>
-              <MapPin size={16} color={TEXT_SECONDARY} style={{ marginRight: 8 }} />
-              <TextInput
-                style={styles.locationInput}
-                placeholder="Add a city or location"
-                placeholderTextColor={TEXT_SECONDARY}
-                value={locationInput}
-                onChangeText={setLocationInput}
-                onSubmitEditing={addLocation}
-                returnKeyType="done"
-              />
-              <TouchableOpacity
-                onPress={addLocation}
-                style={[styles.addLocBtn, !locationInput.trim() && styles.addLocBtnDisabled]}
-                disabled={!locationInput.trim()}
-                activeOpacity={0.8}
-              >
-                <Plus size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.locationSection}>
+            <GooglePlacesAutocomplete
+              placeholder="Search for a location…"
+              fetchDetails
+              minLength={2}
+              debounce={300}
+              query={{ key: PLACES_API_KEY, language: 'en' }}
+              requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
+              onPress={(data, details) => {
+                const label = details?.name || data.description.split(',')[0]?.trim() || data.description;
+                addLocation({
+                  label,
+                  address: details?.formatted_address || data.description,
+                  lat: details?.geometry?.location?.lat ?? 0,
+                  lng: details?.geometry?.location?.lng ?? 0,
+                  placeId: data.place_id,
+                });
+              }}
+              styles={{
+                container: styles.placesContainer as any,
+                textInputContainer: styles.placesInputContainer,
+                textInput: styles.placesInput,
+                listView: styles.placesListView as any,
+                row: styles.placesRow,
+                description: styles.placesDescription,
+                separator: styles.placesSeparator,
+              }}
+              textInputProps={{ placeholderTextColor: TEXT_SECONDARY }}
+              enablePoweredByContainer={false}
+              keepResultsAfterBlur={false}
+            />
 
-            {locations.length > 0 && (
-              <View style={styles.locationTags}>
-                {locations.map(loc => (
-                  <View key={loc} style={styles.locationTag}>
-                    <MapPin size={12} color={ORANGE} />
-                    <Text style={styles.locationTagText}>{loc}</Text>
-                    <TouchableOpacity onPress={() => removeLocation(loc)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                      <XIcon size={13} color={TEXT_SECONDARY} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
+            {locations.map(loc => (
+              <LocationCard
+                key={loc.placeId}
+                loc={loc}
+                onRemove={() => removeLocation(loc.placeId)}
+              />
+            ))}
           </View>
 
           {/* Private toggle */}
@@ -475,28 +525,18 @@ const styles = StyleSheet.create({
   createBtnDisabled: { opacity: 0.4 },
   createBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
-  scrollContent: { padding: 16, paddingBottom: 48 },
+  scrollContent: { padding: 16, paddingBottom: 60 },
 
   avatarPicker: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    alignSelf: 'center',
-    marginBottom: 20,
-    overflow: 'hidden',
+    width: 90, height: 90, borderRadius: 45,
+    alignSelf: 'center', marginBottom: 20, overflow: 'hidden',
   },
   avatarImg: { width: 90, height: 90, borderRadius: 45 },
   avatarPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 90, height: 90, borderRadius: 45,
     backgroundColor: CARD_BG,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)', borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center', gap: 4,
   },
   avatarPlaceholderText: { color: TEXT_SECONDARY, fontSize: 11 },
 
@@ -512,81 +552,64 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  charCount: { color: TEXT_SECONDARY, fontSize: 11, textAlign: 'right', marginTop: 4 },
+  charCount: { color: TEXT_SECONDARY, fontSize: 11, textAlign: 'right' },
+
   categoryRow: { marginBottom: 4 },
   categoryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: CARD_BG,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    marginRight: 8,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: CARD_BG, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginRight: 8,
   },
   categoryPillActive: { backgroundColor: ORANGE, borderColor: ORANGE },
   categoryPillText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
   categoryPillTextActive: { color: '#fff' },
 
   sectionCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    backgroundColor: CARD_BG, borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 16, paddingVertical: 16,
   },
 
-  // Location
-  locationInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationInput: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 14,
-    paddingVertical: 4,
-  },
-  addLocBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  addLocBtnDisabled: { opacity: 0.35 },
-  locationTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  locationTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255,107,0,0.12)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  locationTagText: { color: '#fff', fontSize: 13 },
+  // Locations section
+  locationSection: { zIndex: 100 } as any,
 
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 20,
+  placesContainer: {
+    zIndex: 100,
+    backgroundColor: 'transparent',
+  },
+  placesInputContainer: {
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+  },
+  placesInput: {
     backgroundColor: CARD_BG,
     borderRadius: 10,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    color: '#fff',
+    fontSize: 14,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+    height: 44,
+    outlineStyle: 'none',
+  } as any,
+  placesListView: {
+    backgroundColor: '#1a2740',
+    borderRadius: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#1e2d40',
+    zIndex: 200,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+  } as any,
+  placesRow: { backgroundColor: 'transparent', paddingVertical: 12, paddingHorizontal: 14 },
+  placesDescription: { color: '#fff', fontSize: 14 },
+  placesSeparator: { height: 1, backgroundColor: '#1e2d40' },
+
+  toggleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
+    backgroundColor: CARD_BG, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
   toggleLabel: { flex: 1, color: '#fff', fontSize: 15 },
   errorText: { color: RED, fontSize: 13, marginTop: 12, textAlign: 'center' },
