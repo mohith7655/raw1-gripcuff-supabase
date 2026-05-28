@@ -4,6 +4,7 @@ import {
   Text,
   Modal,
   TouchableOpacity,
+  TextInput,
   ScrollView,
   StyleSheet,
   Switch,
@@ -12,7 +13,7 @@ import {
   PanResponder,
   LayoutChangeEvent,
 } from 'react-native';
-import { Lock, Image as ImageIcon, X as XIcon, MapPin } from 'lucide-react-native';
+import { Lock, Image as ImageIcon, X as XIcon, MapPin, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { useAuth } from '../../providers/AuthContext';
@@ -24,7 +25,7 @@ const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
 const RED = '#ef4444';
 
-const CATEGORIES = ['Powerlifting', 'Calisthenics', 'Running', 'CrossFit', 'Martial Arts', 'Yoga', 'General'];
+const CATEGORIES = ['Walking', 'Jogging', 'Running', 'Stretching', 'Injury Rehab', 'Yoga', 'Pilates', 'Swimming', 'Cycling', 'CrossFit', 'Calisthenics', 'Martial Arts', 'Weight Lifting'];
 const AGE_MIN = 13;
 const AGE_MAX = 80;
 const THUMB_SIZE = 26;
@@ -361,30 +362,16 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
 
           {/* Name */}
           <Text style={styles.fieldLabel}>Club Name *</Text>
-          <GooglePlacesAutocomplete
+          <TextInput
+            style={styles.input}
             placeholder="Enter club name"
-            fetchDetails={false}
-            query={{ key: PLACES_API_KEY, language: 'en', types: [] }}
-            requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
-            onPress={() => {}}
-            textInputProps={{
-              value: name,
-              onChangeText: setName,
-              maxLength: 40,
-              autoFocus: true,
-              placeholderTextColor: TEXT_SECONDARY,
-              style: styles.input,
-            }}
-            renderRightButton={() => (
-              <Text style={styles.charCount}>{name.length}/40</Text>
-            )}
-            styles={{
-              container: { zIndex: 1 },
-              listView: { display: 'none' },
-              textInputContainer: { backgroundColor: 'transparent' },
-            }}
-            enablePoweredByContainer={false}
+            placeholderTextColor={TEXT_SECONDARY}
+            value={name}
+            onChangeText={setName}
+            maxLength={40}
+            autoFocus
           />
+          <Text style={styles.charCount}>{name.length}/40</Text>
 
           {/* Category */}
           <Text style={styles.fieldLabel}>Category</Text>
@@ -405,28 +392,17 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
 
           {/* Description */}
           <Text style={styles.fieldLabel}>Description</Text>
-          <GooglePlacesAutocomplete
+          <TextInput
+            style={[styles.input, styles.textArea]}
             placeholder="What's this club about? (optional)"
-            fetchDetails={false}
-            query={{ key: PLACES_API_KEY, language: 'en', types: [] }}
-            requestUrl={{ useOnPlatform: 'web', url: PLACES_PROXY }}
-            onPress={() => {}}
-            textInputProps={{
-              value: description,
-              onChangeText: setDescription,
-              maxLength: 200,
-              multiline: true,
-              placeholderTextColor: TEXT_SECONDARY,
-              style: [styles.input, styles.textArea],
-            }}
-            styles={{
-              container: { zIndex: 1 },
-              listView: { display: 'none' },
-              textInputContainer: { backgroundColor: 'transparent' },
-            }}
-            enablePoweredByContainer={false}
+            placeholderTextColor={TEXT_SECONDARY}
+            value={description}
+            onChangeText={setDescription}
+            maxLength={200}
+            multiline
+            textAlignVertical="top"
           />
-          <Text style={[styles.charCount, { marginTop: 4 }]}>{description.length}/200</Text>
+          <Text style={styles.charCount}>{description.length}/200</Text>
 
           {/* Age Range */}
           <Text style={styles.fieldLabel}>Age Group Allowed</Text>
@@ -438,11 +414,31 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
             />
           </View>
 
-          {/* Locations with Google Places autocomplete */}
-          <Text style={styles.fieldLabel}>Locations</Text>
+          {/* Locations */}
+          <View style={styles.locationHeader}>
+            <MapPin size={14} color={TEXT_SECONDARY} />
+            <Text style={styles.fieldLabel}>Locations</Text>
+          </View>
+
           <View style={styles.locationSection}>
+            {/* Added location cards */}
+            {locations.map(loc => (
+              <LocationCard
+                key={loc.placeId}
+                loc={loc}
+                onRemove={() => removeLocation(loc.placeId)}
+              />
+            ))}
+
+            {/* Always-visible search input to add more */}
+            <View style={styles.addLocationRow}>
+              <View style={styles.addLocationIconWrap}>
+                <Plus size={16} color="#fff" />
+              </View>
+              <Text style={styles.addLocationLabel}>Add location</Text>
+            </View>
             <GooglePlacesAutocomplete
-              placeholder="Search for a location…"
+              placeholder="Search city, gym, or address…"
               fetchDetails
               minLength={2}
               debounce={300}
@@ -471,14 +467,6 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
               enablePoweredByContainer={false}
               keepResultsAfterBlur={false}
             />
-
-            {locations.map(loc => (
-              <LocationCard
-                key={loc.placeId}
-                loc={loc}
-                onRemove={() => removeLocation(loc.placeId)}
-              />
-            ))}
           </View>
 
           {/* Private toggle */}
@@ -570,7 +558,34 @@ const styles = StyleSheet.create({
   },
 
   // Locations section
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    marginBottom: 6,
+  },
   locationSection: { zIndex: 100 } as any,
+  addLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  addLocationIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addLocationLabel: {
+    color: ORANGE,
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
   placesContainer: {
     zIndex: 100,
