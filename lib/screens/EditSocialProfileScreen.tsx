@@ -53,6 +53,9 @@ const C = {
 
 console.log('ENV key:', process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY);
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
+const GOOGLE_PLACES_WEB_URL =
+    process.env.EXPO_PUBLIC_GOOGLE_PLACES_WEB_PROXY_URL ??
+    (Platform.OS === 'web' ? '/api/maps' : 'https://maps.googleapis.com/maps/api');
 console.log('[Places] API key:', GOOGLE_PLACES_KEY ? 'Present' : 'Missing');
 
 function compactAddress(address?: string | null, name?: string | null) {
@@ -199,7 +202,7 @@ function GooglePlaceField({
                 }}
                 requestUrl={{
                     useOnPlatform: 'web',
-                    url: Platform.OS === 'web' ? '/api/maps' : 'https://maps.googleapis.com/maps/api',
+                    url: GOOGLE_PLACES_WEB_URL,
                 }}
                 onPress={(data, details) => {
                     const description = data.description || '';
