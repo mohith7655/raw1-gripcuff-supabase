@@ -65,7 +65,7 @@ export const BodyPartVideosScreen = () => {
         <SafeAreaView style={styles.safeArea}>
             {/* Breadcrumb Row 1 - Go back to all videos */}
             <TouchableOpacity
-                onPress={() => navigation.popToTop()}
+                onPress={() => navigation.goBack()}
                 style={styles.breadcrumbRow}
             >
                 <Ionicons name="chevron-back" size={16} color="#888888" />

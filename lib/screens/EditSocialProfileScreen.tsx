@@ -192,7 +192,7 @@ function GooglePlaceField({
                 }}
                 requestUrl={{
                     useOnPlatform: 'web',
-                    url: 'https://corsproxy.org/https://maps.googleapis.com/maps/api',
+                    url: Platform.OS === 'web' ? '/api/maps' : 'https://maps.googleapis.com/maps/api',
                 }}
                 onPress={(data, details) => {
                     const description = data.description || '';
@@ -507,7 +507,7 @@ export function EditSocialProfileScreen() {
     return (
         <SafeAreaView style={s.safe} edges={['top']}>
             <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')} style={s.iconBtn}>
+                <TouchableOpacity onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('ProfileScreen'))} style={s.iconBtn}>
                     <ArrowLeft size={22} color={C.text} />
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Edit Profile</Text>

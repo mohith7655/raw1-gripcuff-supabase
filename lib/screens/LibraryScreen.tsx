@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NotificationBell } from '../components/NotificationBell';
 import { AccessBadge } from '../components/AccessBadge';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import {
   Animated,
   FlatList,
   Switch,
-  BackHandler,
   Platform,
   LayoutAnimation,
 } from 'react-native';
@@ -39,16 +38,6 @@ export const LibraryScreen = () => {
   const navigation = useNavigation<any>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        navigation.navigate('HomeTab');
-        return true;
-      };
-      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => sub.remove();
-    }, [navigation])
-  );
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
   const [showRecommended, setShowRecommended] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('large');

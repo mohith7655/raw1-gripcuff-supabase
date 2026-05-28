@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { NotificationBell } from '../components/NotificationBell';
 import { AccessBadge } from '../components/AccessBadge';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Search, ChevronRight,
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '../providers/UserContext';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { AppTheme, CoachingTheme } from '../core/theme/app_theme';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
 
@@ -20,17 +20,6 @@ export const WorkoutsScreen = () => {
     const { appMode } = useUser();
     const navigation = useNavigation<any>();
     const [activeTab, setActiveTab] = useState<'programs' | 'ai'>('programs');
-
-    useFocusEffect(
-        useCallback(() => {
-            const onBackPress = () => {
-                navigation.navigate('HomeTab');
-                return true;
-            };
-            const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-            return () => sub.remove();
-        }, [navigation])
-    );
 
     const CategoryRow = ({ title, subtitle, IconName, color, onPress }: {
         title: string; subtitle: string; IconName: any; color: string; onPress?: () => void;

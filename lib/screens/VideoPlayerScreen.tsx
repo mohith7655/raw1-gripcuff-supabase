@@ -1262,7 +1262,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             <TouchableOpacity
                                 key={item.programId}
                                 onPress={() =>
-                                    navigation.navigate('VideoPlayer', {
+                                    navigation.push('VideoPlayer', {
                                         videoId: item.firstVideoId,
                                         title: item.title,
                                         videoUrl: item.firstVideoUrl,

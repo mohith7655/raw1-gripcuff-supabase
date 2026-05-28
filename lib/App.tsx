@@ -249,6 +249,7 @@ function HomeTabs() {
 
   return (
     <Tab.Navigator
+      backBehavior="history"
       screenOptions={{
         tabBarStyle: {
           backgroundColor: theme.background,
@@ -647,23 +648,8 @@ function MainApp() {
     (navigationRef as any).navigate('ScannedProfileScreen', initialPublicProfile);
   }, [initialPublicProfile, supabaseUserId, authLoading, bootLoading, accessLoading]);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-
-    window.history.pushState({ page: 1 }, '');
-
-    const handlePopState = () => {
-      if (navigationRef.isReady() && navigationRef.canGoBack()) {
-        navigationRef.goBack();
-      }
-      window.history.pushState({ page: 1 }, '');
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [navigationRef]);
+  // Web back navigation is handled entirely by React Navigation's internal
+  // popstate listener (createMemoryHistory). No custom handler needed here.
 
   // Listen for recurring reminder notifications and refresh schedules when fired
   useEffect(() => {

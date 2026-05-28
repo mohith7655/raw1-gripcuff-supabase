@@ -142,7 +142,7 @@ export function BadgesScreen() {
 
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')} style={s.iconBtn}>
+        <TouchableOpacity onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('ProfileScreen'))} style={s.iconBtn}>
           <ArrowLeft size={22} color={C.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Badges</Text>

@@ -46,6 +46,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { useFriend } from '../providers/FriendContext';
 import { useFavorites } from '../providers/FavoritesContext';
+import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
@@ -173,6 +174,8 @@ const HomeScreenInner = () => {
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
   const { incomingRequests, friends, acceptRequest, declineRequest } = useFriend();
   const { favorites } = useFavorites();
+  const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
+  const totalFavouritesCount = favExerciseIds.size + favWorkoutIds.size;
 
   // Watch history for resume section
   const [watchHistory, setWatchHistory] = useState<any[]>([]);
@@ -236,7 +239,18 @@ const HomeScreenInner = () => {
 
   // Notification Center State
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const reopenNotificationModalRef = useRef(false);
   const totalNotificationsBadge = pendingInvites.length + incomingRequests.length + unreadChatCount;
+
+  // Re-open the notification modal when returning from a screen launched from it
+  useFocusEffect(
+    useCallback(() => {
+      if (reopenNotificationModalRef.current) {
+        reopenNotificationModalRef.current = false;
+        setNotificationModalVisible(true);
+      }
+    }, [])
+  );
 
   // ── Streak data ─────────────────────────────────────────────────────────
   // Derived directly from `profile` (UserContext), which already has a
@@ -615,7 +629,7 @@ const HomeScreenInner = () => {
                 >
                   <Heart color={theme.primaryColor} size={18} />
                   <View style={{ marginLeft: 8 }}>
-                    <Text style={styles.compactStatValue}>{favorites.length.toString()}</Text>
+                    <Text style={styles.compactStatValue}>{totalFavouritesCount.toString()}</Text>
                     <Text style={styles.compactStatLabel}>Favorites</Text>
                   </View>
                 </TouchableOpacity>
@@ -1140,6 +1154,7 @@ const HomeScreenInner = () => {
                           style={styles.notifRow}
                           activeOpacity={0.7}
                           onPress={() => {
+                            reopenNotificationModalRef.current = true;
                             setNotificationModalVisible(false);
                             navigation.navigate('ChatRoom', {
                               friendUid: friend.uid,
@@ -1172,7 +1187,7 @@ const HomeScreenInner = () => {
                 )}
                 <TouchableOpacity
                   style={styles.notifViewAll}
-                  onPress={() => { setNotificationModalVisible(false); navigation.navigate('FriendsScreen'); }}
+                  onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('FriendsScreen'); }}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.notifViewAllText, { color: '#4FC3F7' }]}>View all messages &gt;</Text>
@@ -1200,7 +1215,7 @@ const HomeScreenInner = () => {
                       key={invite.id}
                       style={styles.notifRow}
                       activeOpacity={0.7}
-                      onPress={() => { setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
+                      onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                     >
                       <WebSafeAvatar
                         uri={invite.hostAvatarUrl}
@@ -1223,7 +1238,7 @@ const HomeScreenInner = () => {
                 )}
                 <TouchableOpacity
                   style={styles.notifViewAll}
-                  onPress={() => { setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
+                  onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.notifViewAllText, { color: '#FF6B00' }]}>View all invites &gt;</Text>

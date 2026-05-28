@@ -21,6 +21,12 @@
 
 # ── Proxy for Google Maps API (Bypass CORS) ──────────────────────────────────
 [[redirects]]
+  from = "/api/maps/*"
+  to = "https://maps.googleapis.com/maps/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/places/*"
   to = "https://maps.googleapis.com/maps/api/place/:splat"
   status = 200
