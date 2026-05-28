@@ -51,12 +51,13 @@ const C = {
     border: 'rgba(255,255,255,0.08)',
 };
 
-console.log('ENV key:', process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY);
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 const GOOGLE_PLACES_WEB_URL =
     process.env.EXPO_PUBLIC_GOOGLE_PLACES_WEB_PROXY_URL ??
     (Platform.OS === 'web' ? '/api/maps' : 'https://maps.googleapis.com/maps/api');
-console.log('[Places] API key:', GOOGLE_PLACES_KEY ? 'Present' : 'Missing');
+console.log('[Places] API key:', GOOGLE_PLACES_KEY ? `Present (${GOOGLE_PLACES_KEY.slice(0, 8)}...)` : 'MISSING');
+console.log('[Places] Proxy URL:', GOOGLE_PLACES_WEB_URL);
+console.log('[Places] Platform:', Platform.OS);
 
 function compactAddress(address?: string | null, name?: string | null) {
     if (!address) return '';
@@ -168,12 +169,14 @@ function GooglePlaceField({
     queryTypes,
     value,
     onSelect,
+    zIndex = 9999,
 }: {
     label: string;
     placeholder: string;
     queryTypes?: string;
     value: ProfilePlace;
     onSelect: (place: ProfilePlace) => void;
+    zIndex?: number;
 }) {
     const ref = useRef<GooglePlacesAutocompleteRef>(null);
     const selectedTitle = value.name || value.address;
@@ -187,7 +190,7 @@ function GooglePlaceField({
     }, [value.name, value.address]);
 
     return (
-        <View style={s.placeWrap}>
+        <View style={[s.placeWrap, { zIndex }]}>
             <FieldLabel text={label} />
             <GooglePlacesAutocomplete
                 ref={ref}
@@ -204,7 +207,10 @@ function GooglePlaceField({
                     useOnPlatform: 'web',
                     url: GOOGLE_PLACES_WEB_URL,
                 }}
+                onFail={(error) => console.error('[Places] onFail:', error)}
+                onNotFound={() => console.warn('[Places] onNotFound: no results')}
                 onPress={(data, details) => {
+                    console.log('[Places] selected:', data.description, details?.geometry?.location);
                     const description = data.description || '';
                     const formatted = details?.formatted_address || description;
                     const name = details?.name || description.split(',')[0]?.trim() || formatted;
@@ -244,6 +250,10 @@ function GooglePlaceField({
                 }}
                 enablePoweredByContainer={false}
                 keepResultsAfterBlur
+                listEmptyComponent={() => {
+                    console.warn('[Places] listEmptyComponent shown — no suggestions returned');
+                    return null;
+                }}
             />
             {selectedTitle ? (
                 <View style={s.selectedPlace}>
@@ -751,6 +761,7 @@ export function EditSocialProfileScreen() {
                                 queryTypes="establishment"
                                 value={gymPlace}
                                 onSelect={setGymPlace}
+                                zIndex={9003}
                             />
                             <GooglePlaceField
                                 label="House Location"
@@ -758,6 +769,7 @@ export function EditSocialProfileScreen() {
                                 queryTypes="geocode"
                                 value={housePlace}
                                 onSelect={setHousePlace}
+                                zIndex={9002}
                             />
                             <GooglePlaceField
                                 label="Local Park"
@@ -765,6 +777,7 @@ export function EditSocialProfileScreen() {
                                 queryTypes="establishment"
                                 value={parkPlace}
                                 onSelect={setParkPlace}
+                                zIndex={9001}
                             />
                         </Card>
                     </>
@@ -950,8 +963,9 @@ const s = StyleSheet.create({
         boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
     },
     placesCard: {
-        zIndex: 50,
+        zIndex: 9999,
         overflow: 'visible',
+        elevation: 9999,
     } as any,
     fieldLabel: {
         fontSize: 11,
@@ -988,13 +1002,15 @@ const s = StyleSheet.create({
         marginBottom: 4,
     },
     placeWrap: {
-        zIndex: 999,
+        zIndex: 9999,
         marginTop: -4,
         marginBottom: 12,
+        overflow: 'visible',
     } as any,
     placesContainer: {
         flex: 0,
-        zIndex: 999,
+        zIndex: 9999,
+        overflow: 'visible',
     } as any,
     placesInputContainer: {
         backgroundColor: 'transparent',
@@ -1014,13 +1030,17 @@ const s = StyleSheet.create({
         outlineStyle: 'none',
     } as any,
     placesList: {
-        backgroundColor: '#132231',
+        position: 'absolute',
+        top: 50,
+        left: 0,
+        right: 0,
+        backgroundColor: '#1a1a1a',
         borderRadius: 12,
-        marginTop: 7,
         borderWidth: 1,
         borderColor: C.border,
-        zIndex: 1000,
-        boxShadow: '0 16px 30px rgba(0,0,0,0.24)',
+        zIndex: 9999,
+        elevation: 9999,
+        boxShadow: '0 16px 30px rgba(0,0,0,0.5)',
     } as any,
     placesRow: {
         backgroundColor: 'transparent',
