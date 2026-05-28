@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, ExternalLink } from 'lucide-react-native';
 import { useUser } from '../../providers/UserContext';
+import { useAuth } from '../../providers/AuthContext';
 import { supabase } from '../../core/config/supabase';
 
 const ORANGE = '#FF6B00';
@@ -28,6 +29,8 @@ const TIERS = [
   { id: 't140', label: 'Elite',   credits: 140, price: 85, bonus: 40 },
 ];
 const POPULAR_ID = 't30';
+const POLL_INTERVAL_MS = 3000;
+const POLL_MAX = 10;
 
 function RBadge({ size = 24 }: { size?: number }) {
   return (
@@ -45,11 +48,107 @@ interface BuyCreditsModalProps {
 
 export function BuyCreditsModal({ visible, onClose, onPurchased }: BuyCreditsModalProps) {
   const { profile } = useUser();
+  const { supabaseUserId } = useAuth();
   const [selectedId, setSelectedId] = useState(POPULAR_ID);
   const [buying, setBuying] = useState(false);
+  const [waitingForPayment, setWaitingForPayment] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
+  const pollAbortRef = useRef(false);
 
   const selected = TIERS.find(t => t.id === selectedId)!;
-  const credits = profile?.credits ?? 0;
+  const currentCredits = profile?.credits ?? 0;
+
+  // Reset when modal closes
+  useEffect(() => {
+    if (!visible) {
+      pollAbortRef.current = true;
+      setWaitingForPayment(false);
+      setPollCount(0);
+      setBuying(false);
+    }
+  }, [visible]);
+
+  const refreshCredits = useCallback(() => {
+    onPurchased?.(0);
+  }, [onPurchased]);
+
+  const manualGrantCredits = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch('/.netlify/functions/verify-and-grant-credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          userId: session.user.id,
+          expectedCredits: selected.credits,
+        }),
+      });
+
+      const result = await res.json();
+      if (result.granted) {
+        Alert.alert('✅ Credits added!', `${selected.credits} credits have been added to your account.`);
+        refreshCredits();
+        onClose();
+      } else {
+        Alert.alert('No payment found', 'Contact support if you were charged.');
+      }
+    } catch (e) {
+      console.error('[BuyCreditsModal] manualGrantCredits error:', e);
+    }
+  }, [selected, refreshCredits, onClose]);
+
+  const pollForCredits = useCallback(async (creditsAtStart: number) => {
+    pollAbortRef.current = false;
+
+    for (let i = 0; i < POLL_MAX; i++) {
+      if (pollAbortRef.current) return;
+
+      await new Promise<void>(r => setTimeout(r, POLL_INTERVAL_MS));
+      setPollCount(i + 1);
+
+      if (pollAbortRef.current) return;
+
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('credits')
+          .eq('id', supabaseUserId)
+          .single();
+
+        if (data && (data as any).credits > creditsAtStart) {
+          setWaitingForPayment(false);
+          refreshCredits();
+          Alert.alert('🎉 Success!', `${selected.credits} credits added to your account!`);
+          onClose();
+          return;
+        }
+      } catch { /* network hiccup — keep polling */ }
+    }
+
+    // All polls exhausted — offer manual grant
+    setWaitingForPayment(false);
+    Alert.alert(
+      'Payment received?',
+      'If you completed payment, tap "Add Credits" to manually apply them.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Add Credits', onPress: manualGrantCredits },
+      ]
+    );
+  }, [supabaseUserId, selected, refreshCredits, onClose, manualGrantCredits]);
+
+  // Start polling as soon as waitingForPayment flips true
+  useEffect(() => {
+    if (waitingForPayment) {
+      pollForCredits(currentCredits);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingForPayment]);
 
   const handleBuy = useCallback(async () => {
     if (buying) return;
@@ -77,103 +176,160 @@ export function BuyCreditsModal({ visible, onClose, onPurchased }: BuyCreditsMod
       const json = await res.json();
       if (json.error) throw new Error(json.error);
 
-      // Open Stripe's hosted checkout in a new tab
       if (typeof window !== 'undefined' && json.checkoutUrl) {
         window.open(json.checkoutUrl, '_blank');
       }
 
-      onClose();
+      // Switch to waiting state — start polling instead of closing
+      setWaitingForPayment(true);
     } catch (e: any) {
       Alert.alert('Error', e?.message ?? 'Could not start checkout. Please try again.');
     } finally {
       setBuying(false);
     }
-  }, [buying, selected, onClose]);
+  }, [buying, selected]);
+
+  const handleDonePaying = useCallback(() => {
+    // User says they're done — abort current slow poll and start fresh immediately
+    pollAbortRef.current = true;
+    setPollCount(0);
+    setTimeout(() => {
+      pollAbortRef.current = false;
+      pollForCredits(currentCredits);
+    }, 100);
+  }, [currentCredits, pollForCredits]);
+
+  const handleCancel = useCallback(() => {
+    pollAbortRef.current = true;
+    setWaitingForPayment(false);
+    onClose();
+  }, [onClose]);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleCancel}>
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ width: 36 }} />
-          <Text style={styles.headerTitle}>Get Credits</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-            <X size={22} color={TEXT_SECONDARY} />
-          </TouchableOpacity>
-        </View>
 
-        {/* Balance row */}
-        <View style={styles.balanceRow}>
-          <RBadge />
-          <Text style={styles.balanceText}>
-            You have <Text style={styles.balanceCount}>{credits}</Text> credits
-          </Text>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {TIERS.map(tier => {
-            const isSelected = selectedId === tier.id;
-            const isPopular = tier.id === POPULAR_ID;
-            return (
-              <TouchableOpacity
-                key={tier.id}
-                style={[
-                  styles.tierCard,
-                  isPopular && styles.tierCardPopular,
-                  isSelected && styles.tierCardSelected,
-                ]}
-                onPress={() => setSelectedId(tier.id)}
-                activeOpacity={0.85}
-              >
-                {isSelected && (
-                  <View style={styles.checkBadge}>
-                    <Check size={12} color="#fff" />
-                  </View>
-                )}
-                {isPopular && !isSelected && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularBadgeText}>Popular</Text>
-                  </View>
-                )}
-                <View style={styles.tierLeft}>
-                  <RBadge size={28} />
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={styles.tierCredits}>{tier.credits} credits</Text>
-                    <Text style={styles.tierLabel}>{tier.label}</Text>
-                  </View>
-                </View>
-                <View style={styles.tierRight}>
-                  <Text style={styles.tierPrice}>${tier.price}</Text>
-                  {tier.bonus > 0 && (
-                    <View style={styles.bonusBadge}>
-                      <Text style={styles.bonusText}>+{tier.bonus}% free</Text>
-                    </View>
-                  )}
-                </View>
+        {/* ── Waiting for payment screen ── */}
+        {waitingForPayment ? (
+          <>
+            <View style={styles.header}>
+              <View style={{ width: 36 }} />
+              <Text style={styles.headerTitle}>Waiting for Payment</Text>
+              <TouchableOpacity onPress={handleCancel} style={styles.closeBtn} activeOpacity={0.7}>
+                <X size={22} color={TEXT_SECONDARY} />
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            </View>
 
-        {/* Buy button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.buyBtn, buying && styles.buyBtnDisabled]}
-            onPress={handleBuy}
-            disabled={buying}
-            activeOpacity={0.88}
-          >
-            {buying
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.buyBtnText}>
-                  Buy {selected.credits} Credits for ${selected.price}
-                </Text>
-            }
-          </TouchableOpacity>
-        </View>
+            <View style={styles.waitingBody}>
+              <ActivityIndicator size="large" color={ORANGE} style={{ marginBottom: 24 }} />
 
+              <View style={styles.waitingIconRow}>
+                <ExternalLink size={20} color={ORANGE} />
+                <Text style={styles.waitingTitle}>Complete payment in the tab that just opened</Text>
+              </View>
+
+              <Text style={styles.waitingSubtext}>
+                Checking for payment confirmation…{' '}
+                {pollCount > 0 && <Text style={styles.pollCount}>({pollCount}/{POLL_MAX})</Text>}
+              </Text>
+
+              <View style={styles.waitingBtnStack}>
+                <TouchableOpacity
+                  style={styles.donePaying}
+                  onPress={handleDonePaying}
+                  activeOpacity={0.88}
+                >
+                  <Text style={styles.donePayingText}>✓  Done paying?</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleCancel} style={styles.cancelLink} activeOpacity={0.7}>
+                  <Text style={styles.cancelLinkText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* ── Tier selection screen ── */}
+            <View style={styles.header}>
+              <View style={{ width: 36 }} />
+              <Text style={styles.headerTitle}>Get Credits</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+                <X size={22} color={TEXT_SECONDARY} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Balance row */}
+            <View style={styles.balanceRow}>
+              <RBadge />
+              <Text style={styles.balanceText}>
+                You have <Text style={styles.balanceCount}>{currentCredits}</Text> credits
+              </Text>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              {TIERS.map(tier => {
+                const isSelected = selectedId === tier.id;
+                const isPopular = tier.id === POPULAR_ID;
+                return (
+                  <TouchableOpacity
+                    key={tier.id}
+                    style={[
+                      styles.tierCard,
+                      isPopular && styles.tierCardPopular,
+                      isSelected && styles.tierCardSelected,
+                    ]}
+                    onPress={() => setSelectedId(tier.id)}
+                    activeOpacity={0.85}
+                  >
+                    {isSelected && (
+                      <View style={styles.checkBadge}>
+                        <Check size={12} color="#fff" />
+                      </View>
+                    )}
+                    {isPopular && !isSelected && (
+                      <View style={styles.popularBadge}>
+                        <Text style={styles.popularBadgeText}>Popular</Text>
+                      </View>
+                    )}
+                    <View style={styles.tierLeft}>
+                      <RBadge size={28} />
+                      <View style={{ marginLeft: 10 }}>
+                        <Text style={styles.tierCredits}>{tier.credits} credits</Text>
+                        <Text style={styles.tierLabel}>{tier.label}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.tierRight}>
+                      <Text style={styles.tierPrice}>${tier.price}</Text>
+                      {tier.bonus > 0 && (
+                        <View style={styles.bonusBadge}>
+                          <Text style={styles.bonusText}>+{tier.bonus}% free</Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.buyBtn, buying && styles.buyBtnDisabled]}
+                onPress={handleBuy}
+                disabled={buying}
+                activeOpacity={0.88}
+              >
+                {buying
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.buyBtnText}>
+                      Buy {selected.credits} Credits for ${selected.price}
+                    </Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
-
     </Modal>
   );
 }
@@ -191,6 +347,50 @@ const styles = StyleSheet.create({
   },
   closeBtn: { padding: 4 },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+
+  // Waiting screen
+  waitingBody: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 0,
+  },
+  waitingIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  waitingTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    flex: 1,
+  },
+  waitingSubtext: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 36,
+  },
+  pollCount: { color: TEXT_SECONDARY, fontSize: 12 },
+  waitingBtnStack: { gap: 14, alignItems: 'center', width: '100%' },
+  donePaying: {
+    backgroundColor: ORANGE,
+    borderRadius: 14,
+    height: 52,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  donePayingText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  cancelLink: { paddingVertical: 4 },
+  cancelLinkText: { color: TEXT_SECONDARY, fontSize: 14 },
+
+  // Tier selection
   balanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -268,18 +468,6 @@ const styles = StyleSheet.create({
   },
   buyBtnDisabled: { opacity: 0.5 },
   buyBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  toast: {
-    position: 'absolute',
-    bottom: 90,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(15,25,35,0.95)',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.3)',
-  },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   rBadge: {
     backgroundColor: ORANGE,
     alignItems: 'center',
