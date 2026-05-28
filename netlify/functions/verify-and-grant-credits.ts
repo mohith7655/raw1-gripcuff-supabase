@@ -1,6 +1,6 @@
 // Netlify env vars required:
 // STRIPE_SECRET_KEY        = sk_test_...
-// SUPABASE_URL             = https://dyjfzuzrjgwjmhojhmjj.supabase.co
+// SUPABASE_URL             = (set in Netlify Dashboard — same value as EXPO_PUBLIC_SUPABASE_URL)
 // SUPABASE_SERVICE_ROLE_KEY = eyJ...
 
 /**
