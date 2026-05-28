@@ -47,6 +47,11 @@ function AgeRangeSlider({
   onChange: (low: number, high: number) => void;
 }) {
   const trackWidth = useRef(0);
+  // Keep low/high in refs so pan handlers always read the latest values
+  const lowRef = useRef(low);
+  const highRef = useRef(high);
+  lowRef.current = low;
+  highRef.current = high;
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -58,24 +63,32 @@ function AgeRangeSlider({
   const ageFromPos = (pos: number) =>
     Math.round(clamp((pos / trackWidth.current) * (AGE_MAX - AGE_MIN) + AGE_MIN, AGE_MIN, AGE_MAX));
 
-  const makePan = (which: 'low' | 'high') =>
+  // Created once — reads lowRef/highRef so they never go stale
+  const lowPan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gs) => {
-        const basePos = posFromAge(which === 'low' ? low : high);
+        const basePos = posFromAge(lowRef.current);
         const newPos = clamp(basePos + gs.dx, 0, trackWidth.current);
         const newAge = ageFromPos(newPos);
-        if (which === 'low') {
-          onChange(Math.min(newAge, high - 1), high);
-        } else {
-          onChange(low, Math.max(newAge, low + 1));
-        }
+        onChange(Math.min(newAge, highRef.current - 1), highRef.current);
       },
-    });
+    })
+  ).current;
 
-  const lowPan = useRef(makePan('low')).current;
-  const highPan = useRef(makePan('high')).current;
+  const highPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gs) => {
+        const basePos = posFromAge(highRef.current);
+        const newPos = clamp(basePos + gs.dx, 0, trackWidth.current);
+        const newAge = ageFromPos(newPos);
+        onChange(lowRef.current, Math.max(newAge, lowRef.current + 1));
+      },
+    })
+  ).current;
 
   const onLayout = (e: LayoutChangeEvent) => {
     trackWidth.current = e.nativeEvent.layout.width;
