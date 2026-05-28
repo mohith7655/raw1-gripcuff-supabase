@@ -68,3 +68,7 @@ yarn-error.*
 # Backend secrets — NEVER commit these
 server/.env
 server/node_modules/
+
+# Scratch / one-off scripts that may contain hardcoded secrets
+scratch_*.js
+scratch_*.ts
