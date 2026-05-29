@@ -65,6 +65,7 @@ import { SyncedVideoPlayerScreen } from './screens/SyncedVideoPlayerScreen';
 import { InviteFriendsFlow } from './screens/InviteFriendsFlow';
 import RecommendationScreen from './screens/RecommendationScreen';
 import { AgoraVideoRoom } from './screens/AgoraVideoRoom';
+import { ChallengeVideoRoom } from './screens/ChallengeVideoRoom';
 import { ChatInboxScreen } from './screens/ChatInboxScreen';
 import { ChatRoomScreen } from './screens/ChatRoomScreen';
 import { ChatFriendProfileScreen } from './screens/ChatFriendProfileScreen';
@@ -355,6 +356,11 @@ function AppStack({
           name="AgoraVideoRoom"
           component={AgoraVideoRoom}
           options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="ChallengeVideoRoom"
+          component={ChallengeVideoRoom}
+          options={{ headerShown: false, gestureEnabled: false }}
         />
         <Stack.Screen name="ChatInbox" component={ChatInboxScreen} />
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />

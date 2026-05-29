@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -9,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, CircleUserRound } from 'lucide-react-native';
 import { useUser } from '../providers/UserContext';
 import { SCREEN_PADDING } from '../constants/theme';
 import { AppTheme } from '../core/theme/app_theme';
@@ -61,6 +62,24 @@ const SAMPLE_TRANSACTIONS = [
   },
 ];
 
+function SmallAvatar({ uri, size }: { uri?: string | null; size: number }) {
+  const [err, setErr] = useState(false);
+  if (uri && !err) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        onError={() => setErr(true)}
+      />
+    );
+  }
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
+      <CircleUserRound size={Math.round(size * 0.5)} color="#ff7a00" strokeWidth={1.8} />
+    </View>
+  );
+}
+
 export const CreditsScreen = () => {
   const navigation = useNavigation<any>();
   const { profile } = useUser();
@@ -68,6 +87,7 @@ export const CreditsScreen = () => {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   const currentBalance = profile?.credits ?? 5;
+  const displayName = profile?.fullName || profile?.username || 'User';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -88,12 +108,12 @@ export const CreditsScreen = () => {
           <View style={{ width: 40 }} />
         </View>
 
-        {/* Balance Card */}
+        {/* Balance Card — centered with profile */}
         <View style={styles.balanceCard}>
-          <View style={styles.balanceContent}>
-            <Text style={styles.balanceLabel}>Current Balance</Text>
-            <Text style={styles.balanceAmount}>💎 {currentBalance} Credits</Text>
-          </View>
+          <SmallAvatar uri={profile?.profileImageUrl} size={52} />
+          <Text style={styles.profileName}>{displayName}</Text>
+          <Text style={styles.balanceLabel}>Current Balance</Text>
+          <Text style={styles.balanceAmount}>💎 {currentBalance} Credits</Text>
           <TouchableOpacity
             style={styles.buyButton}
             onPress={() => setShowBuyModal(true)}
@@ -200,7 +220,6 @@ export const CreditsScreen = () => {
                     { icon: '🩷', label: 'Favourite an Exercise', amount: '+20 credits' },
                     { icon: '📷', label: 'Upload a Photo or Video', amount: '+30 credits' },
                     { icon: '👥', label: 'Refer a Friend', amount: '+100 credits' },
-                    { icon: '✅', label: 'Complete a Workout', amount: '+10 credits' },
                   ].map((item, idx) => (
                     <View key={idx} style={styles.hiwRow}>
                       <View style={styles.hiwRowLeft}>
@@ -351,32 +370,34 @@ const styles = StyleSheet.create({
   balanceCard: {
     backgroundColor: '#131f2e',
     borderRadius: 16,
-    padding: 20,
+    padding: 24,
     marginBottom: 32,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  balanceContent: {
-    flex: 1,
+  profileName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: 10,
+    marginBottom: 16,
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#888888',
     fontWeight: '500',
     marginBottom: 4,
   },
   balanceAmount: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#ffffff',
+    marginBottom: 16,
   },
   buyButton: {
     backgroundColor: '#D4622A',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 32,
+    paddingVertical: 11,
     borderRadius: 20,
-    marginLeft: 16,
   },
   buyButtonText: {
     color: '#ffffff',

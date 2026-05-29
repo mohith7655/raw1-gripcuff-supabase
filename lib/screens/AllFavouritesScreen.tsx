@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    FlatList,
     ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,11 +14,12 @@ import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { useLibrary } from '../providers/LibraryContext';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { AppTheme } from '../core/theme/app_theme';
-import { getAllPrograms } from '../data/preRecordedPrograms';
 import { SCREEN_PADDING } from '../constants/theme';
+import { useFloatingToggle, FloatingTabToggle } from '../components/FloatingTabToggle';
+import { SubTab } from '../models/Video';
 
 type RouteParams = {
-    type?: 'exercises' | 'workouts' | 'all';
+    type?: 'exercises' | 'all';
 };
 
 export function AllFavouritesScreen() {
@@ -27,25 +27,18 @@ export function AllFavouritesScreen() {
     const route = useRoute();
     const { type = 'all' } = (route.params as RouteParams) ?? {};
     const { isPinned, pinFavorite } = useFavorites();
+    const { setSubTab, allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
+    const { translateY: floatTranslateY, onScroll: onFloatScroll } = useFloatingToggle();
 
     // Supabase-backed favourites
-    const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
-    const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
+    const { exerciseIds: favExerciseIds } = useFavouritedVideos();
 
     const exerciseCatalog = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
     const exerciseFavorites = exerciseCatalog.filter((v) => favExerciseIds.has(v.id));
 
-    const workoutCatalog = getAllPrograms().flatMap((p) => p.videos);
-    const workoutFavorites = workoutCatalog.filter((v) => favWorkoutIds.has(v.id));
+    const title = type === 'exercises' ? 'Favourite Exercises' : 'Favourites';
 
-    const showExercises = type === 'all' || type === 'exercises';
-    const showWorkouts = type === 'all' || type === 'workouts';
-
-    const title = type === 'exercises' ? 'Favourite Exercises'
-        : type === 'workouts' ? 'Favourite Workouts'
-        : 'Favourites';
-
-    const totalCount = (showExercises ? exerciseFavorites.length : 0) + (showWorkouts ? workoutFavorites.length : 0);
+    const totalCount = exerciseFavorites.length;
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -58,17 +51,21 @@ export function AllFavouritesScreen() {
                 <View style={{ width: 56 }} />
             </View>
 
-            {totalCount === 0 ? (
-                <View style={styles.emptyState}>
-                    <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
-                    <Text style={styles.emptyText}>
-                        No favourites yet.{'\n'}Tap ♡ on any video to save it.
-                    </Text>
-                </View>
-            ) : (
-                <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-                    {/* Exercises section */}
-                    {showExercises && (
+            <View style={{ flex: 1 }}>
+                {totalCount === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
+                        <Text style={styles.emptyText}>
+                            No favourites yet.{'\n'}Tap ♡ on any video to save it.
+                        </Text>
+                    </View>
+                ) : (
+                    <ScrollView
+                        contentContainerStyle={{ paddingBottom: 100 }}
+                        onScroll={onFloatScroll}
+                        scrollEventThrottle={16}
+                    >
+                        {/* Exercises section */}
                         <View style={{ marginTop: 20 }}>
                             <View style={styles.sectionHeader}>
                                 <Text style={styles.sectionTitle}>Exercises</Text>
@@ -106,51 +103,17 @@ export function AllFavouritesScreen() {
                                 </View>
                             )}
                         </View>
-                    )}
-
-                    {/* Workouts section */}
-                    {showWorkouts && (
-                        <View style={{ marginTop: 28 }}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Workouts</Text>
-                                <Text style={styles.sectionCount}>{workoutFavorites.length}</Text>
-                            </View>
-                            {workoutFavorites.length === 0 ? (
-                                <Text style={styles.emptySection}>No favourite workouts yet.</Text>
-                            ) : (
-                                <View style={styles.grid}>
-                                    {workoutFavorites.map((video: any, index: number) => {
-                                        const pinned = isPinned(video.id);
-                                        const isLastOdd = workoutFavorites.length % 2 !== 0 && index === workoutFavorites.length - 1;
-                                        return (
-                                            <View key={video.id} style={[styles.gridItem, isLastOdd && styles.gridItemLastOdd]}>
-                                                <GridVideoCard
-                                                    video={video as any}
-                                                    index={index}
-                                                    onPress={() => navigation.navigate('VideoPlayer', {
-                                                        title: video.title,
-                                                        videoId: video.id,
-                                                        videoUrl: video.videoUrl,
-                                                        videoType: 'premade_workout',
-                                                        allowInvite: true,
-                                                    })}
-                                                />
-                                                <TouchableOpacity
-                                                    onPress={() => pinFavorite(video.id)}
-                                                    style={[styles.pinBtn, pinned && styles.pinBtnActive]}
-                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                                >
-                                                    <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
-                                                </TouchableOpacity>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </ScrollView>
-            )}
+                    </ScrollView>
+                )}
+                <FloatingTabToggle
+                    activeTab="all"
+                    onTabChange={(tab: SubTab) => {
+                        setSubTab(tab);
+                        navigation.goBack();
+                    }}
+                    translateY={floatTranslateY}
+                />
+            </View>
         </SafeAreaView>
     );
 }

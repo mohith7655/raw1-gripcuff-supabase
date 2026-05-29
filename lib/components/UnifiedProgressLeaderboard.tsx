@@ -10,8 +10,14 @@ import {
   Image,
   PanResponder,
   Platform,
+  Modal,
+  ScrollView,
+  Alert,
 } from 'react-native';
-import { ChevronRight, Zap } from 'lucide-react-native';
+import { ChevronRight, Zap, Clock } from 'lucide-react-native';
+import { TimeArrowPicker } from './TimeArrowPicker';
+import { useNavigation } from '@react-navigation/native';
+import { useInvite } from '../hooks/useInvite';
 import { BADGE_FAMILIES, TIER_COLORS, computeTier } from '../services/badge.types';
 import { supabase } from '../core/config/supabase';
 import { StreakData } from '../services/streak.service';
@@ -28,9 +34,9 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 type Tab = 'streak' | 'weekly' | 'alltime';
 const TABS: Tab[] = ['streak', 'weekly', 'alltime'];
 const TAB_LABELS: Record<Tab, string> = {
-  streak: 'Daily Streak',
+  streak: 'Streak',
   weekly: 'Weekly',
-  alltime: 'All Time',
+  alltime: 'Challenge',
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -347,9 +353,189 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
   );
 }
 
+// ── Challenge Invite Modal ──────────────────────────────────────────────────
+function getLocalNow() {
+  const now = new Date();
+  const h24 = now.getHours();
+  const rawMin = now.getMinutes();
+  const minute = Math.round(rawMin / 5) * 5 % 60;
+  const period: 'AM' | 'PM' = h24 >= 12 ? 'PM' : 'AM';
+  const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return { displayHour: hour12, amPm: period, selectedMinute: minute };
+}
+
+function buildDates(count = 14): Date[] {
+  const result: Date[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < count; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    result.push(d);
+  }
+  return result;
+}
+
+interface ChallengeInviteModalProps {
+  visible: boolean;
+  targetName: string;
+  targetUid: string;
+  currentUserId: string;
+  onClose: () => void;
+}
+
+function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, onClose }: ChallengeInviteModalProps) {
+  const navigation = useNavigation<any>();
+  const { sendInvite, loading } = useInvite();
+  const now = getLocalNow();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [displayHour, setDisplayHour] = useState(now.displayHour);
+  const [amPm, setAmPm] = useState<'AM' | 'PM'>(now.amPm);
+  const [selectedMinute, setSelectedMinute] = useState(now.selectedMinute);
+  const dates = useMemo(() => buildDates(14), []);
+
+  const fmtPickerTime = `${displayHour}:${String(selectedMinute).padStart(2, '0')} ${amPm}`;
+  const dateLabel = (d: Date, i: number) =>
+    i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+
+  const buildScheduledAt = () => {
+    const h24 = amPm === 'AM'
+      ? (displayHour === 12 ? 0 : displayHour)
+      : (displayHour === 12 ? 12 : displayHour + 12);
+    const d = new Date(selectedDate);
+    d.setHours(h24, selectedMinute, 0, 0);
+    return d;
+  };
+
+  const handleStartNow = async () => {
+    const result = await sendInvite({
+      toUid: targetUid,
+      toName: targetName,
+      videoId: 'challenge',
+      videoTitle: '🔥 Live Challenge',
+      scheduledAt: new Date(),
+      inviteType: 'instant',
+      category: 'Challenge',
+    });
+    if (result.success) {
+      onClose();
+      const channelName = `challenge_${[currentUserId, targetUid].sort().join('_')}`;
+      navigation.navigate('ChallengeVideoRoom', {
+        channelName,
+        opponentName: targetName,
+        opponentUid: targetUid,
+      });
+    } else {
+      Alert.alert('Error', result.error ?? 'Failed to send challenge.');
+    }
+  };
+
+  const handleSendChallenge = async () => {
+    const scheduledAt = buildScheduledAt();
+    const result = await sendInvite({
+      toUid: targetUid,
+      toName: targetName,
+      videoId: 'challenge',
+      videoTitle: '🔥 Challenge',
+      scheduledAt,
+      inviteType: 'scheduled',
+      category: 'Challenge',
+    });
+    if (result.success) {
+      Alert.alert('Challenge Sent! 🔥', `${targetName} has been challenged.`);
+      onClose();
+    } else {
+      Alert.alert('Error', result.error ?? 'Failed to send challenge.');
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+        <View style={{ backgroundColor: '#0d1520', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 48 }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>🔥 Challenge {targetName}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={{ color: '#607a94', fontSize: 20, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Start Now */}
+          <TouchableOpacity
+            onPress={handleStartNow}
+            disabled={loading}
+            style={{ backgroundColor: loading ? '#7a3a00' : '#FF6B00', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 20 }}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
+              {loading ? 'Sending…' : '⚡ Start Now'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={{ color: '#607a94', textAlign: 'center', marginBottom: 20, fontSize: 13 }}>— or schedule —</Text>
+
+          {/* Date */}
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Date</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+            {dates.map((d, i) => {
+              const isSelected = selectedDate.toDateString() === d.toDateString();
+              return (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => setSelectedDate(d)}
+                  style={{ paddingHorizontal: 18, paddingVertical: 10, backgroundColor: isSelected ? '#FF6B00' : '#131f2e', borderRadius: 22, marginRight: 10, borderWidth: 1, borderColor: isSelected ? '#FF6B00' : 'rgba(255,255,255,0.06)' }}
+                >
+                  <Text style={{ color: isSelected ? '#fff' : '#8899aa', fontWeight: isSelected ? '700' : '500', fontSize: 13 }}>{dateLabel(d, i)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Time */}
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Time</Text>
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <TimeArrowPicker
+              hour={displayHour}
+              minute={selectedMinute}
+              amPm={amPm}
+              onHourChange={setDisplayHour}
+              onMinuteChange={setSelectedMinute}
+              onAmPmChange={setAmPm}
+              minuteStep={5}
+            />
+          </View>
+
+          {/* Summary */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#131f2e', borderRadius: 10, padding: 12, marginBottom: 20 }}>
+            <Clock color="#FF6B00" size={14} />
+            <Text style={{ color: '#FF6B00', fontSize: 14, fontWeight: '600' }}>
+              {dateLabel(selectedDate, dates.findIndex(d => d.toDateString() === selectedDate.toDateString()))} at {fmtPickerTime}
+            </Text>
+          </View>
+
+          {/* Send Challenge */}
+          <TouchableOpacity
+            onPress={handleSendChallenge}
+            disabled={loading}
+            style={{ backgroundColor: '#131f2e', borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: loading ? '#7a3a00' : '#FF6B00' }}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: loading ? '#7a3a00' : '#FF6B00', fontSize: 15, fontWeight: '700' }}>
+              {loading ? 'Sending…' : '🔥 Send Challenge'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime'; currentUserId?: string }) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [challengeTarget, setChallengeTarget] = useState<LeaderboardEntry | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -411,12 +597,32 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
                 );
               })()}
             </View>
-            <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
-              {formatWatchTime(entry.score ?? 0)}
-            </Text>
+            {isMe ? (
+              <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
+                {formatWatchTime(entry.score ?? 0)}
+              </Text>
+            ) : (
+              <TouchableOpacity
+                onPress={() => setChallengeTarget(entry)}
+                style={{ backgroundColor: 'rgba(255,107,0,0.12)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)', flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 12 }}>🔥</Text>
+                <Text style={{ color: '#FF6B00', fontSize: 11, fontWeight: '700' }}>Challenge</Text>
+              </TouchableOpacity>
+            )}
           </View>
         );
       })}
+      {challengeTarget && (
+        <ChallengeInviteModal
+          visible={!!challengeTarget}
+          targetName={challengeTarget.displayName ?? 'User'}
+          targetUid={challengeTarget.uid}
+          currentUserId={currentUserId ?? ''}
+          onClose={() => setChallengeTarget(null)}
+        />
+      )}
     </View>
   );
 }
@@ -471,10 +677,10 @@ export function UnifiedProgressLeaderboard({ streakData, currentUserId, onViewAl
         {visibleTab !== 'streak' && (
           <>
             <LeaderboardTab
-              period={visibleTab}
+              period={visibleTab as 'weekly' | 'alltime'}
               currentUserId={currentUserId}
             />
-            {onViewAll && (
+            {onViewAll && visibleTab === 'weekly' && (
               <TouchableOpacity style={s.viewAllRow} onPress={onViewAll} activeOpacity={0.7}>
                 <Text style={s.viewAllText}>View full leaderboard</Text>
                 <ChevronRight color={ACCENT} size={14} />

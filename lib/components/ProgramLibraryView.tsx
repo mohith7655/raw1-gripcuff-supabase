@@ -13,12 +13,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 import { useFavorites } from '../hooks/useFavorites';
+import { useLibrary } from '../providers/LibraryContext';
 import {
     getProgramsByCategory,
     PreRecordedProgram,
     ProgramCategoryKey,
     ProgramVideo,
 } from '../data/preRecordedPrograms';
+import { useFloatingToggle, FloatingTabToggle } from './FloatingTabToggle';
+import { SubTab } from '../models/Video';
 
 const THUMBNAIL_COLORS = ['#FF6B00', '#7C3AED', '#3B82F6', '#10B981'];
 
@@ -31,6 +34,8 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const { favorites, toggleFavorite } = useFavorites();
+    const { setSubTab } = useLibrary();
+    const { translateY: floatTranslateY, onScroll: onFloatScroll } = useFloatingToggle();
     const allowInvite = route?.params?.allowInvite === true;
     const mode = route?.params?.mode;
     const inviteTarget = route?.params?.inviteTarget ?? 'WorkoutWithFriendFlow';
@@ -249,6 +254,11 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
         </View>
     );
 
+    const handleFloatTabChange = (tab: SubTab) => {
+        setSubTab(tab);
+        navigation.goBack();
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
@@ -262,9 +272,17 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
             <ScrollView
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
+                onScroll={onFloatScroll}
+                scrollEventThrottle={16}
             >
                 {programs.map(renderProgramSection)}
             </ScrollView>
+
+            <FloatingTabToggle
+                activeTab="workouts"
+                onTabChange={handleFloatTabChange}
+                translateY={floatTranslateY}
+            />
         </SafeAreaView>
     );
 }

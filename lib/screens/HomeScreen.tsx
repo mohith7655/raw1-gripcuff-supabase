@@ -56,7 +56,6 @@ import { RecommendedProgram } from '../services/recommendation.service';
 import { LiveSessionService, LiveSession } from '../services/liveSession.service';
 import { Ionicons } from '@expo/vector-icons';
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
-import { TodaysChallengeCard } from '../components/TodaysChallengeCard';
 import { StreakService, StreakData } from '../services/streak.service';
 import { DailyActivityService } from '../services/dailyActivity.service';
 import { supabase } from '../core/config/supabase';
@@ -157,7 +156,7 @@ function RecommendationSection({
               <Text numberOfLines={2} style={{ color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 16 }}>
                 {item.title}
               </Text>
-              <Text numberOfLines={1} style={{ color: AppTheme.primaryColor, fontSize: 10, marginTop: 4 }}>
+              <Text numberOfLines={1} style={{ color: '#C26A2D', fontSize: 10, marginTop: 4 }}>
                 {item.reason}
               </Text>
             </View>
@@ -556,7 +555,7 @@ const HomeScreenInner = () => {
             activeOpacity={0.8}
           >
             <View>
-              <Bell color={AppTheme.primaryColor} size={26} />
+              <Bell color="#C26A2D" size={26} />
               {totalNotificationsBadge > 0 && (
                 <View style={styles.bellBadge}>
                   <Text style={styles.bellBadgeText}>
@@ -633,34 +632,42 @@ const HomeScreenInner = () => {
           ) : appMode === 'ai' ? (
             /* ── Mode 1: AI Personal Trainer ── */
             <>
-              {/* Profile section */}
-              <TouchableOpacity
-                style={styles.profileSection}
-                onPress={() => navigation.navigate('ProfileScreen')}
-                activeOpacity={0.85}
-              >
-                <View style={styles.profileAvatarRing}>
-                  <View style={styles.profileAvatarInner}>
-                    <WebSafeAvatar
-                      uri={profile?.profileImageUrl}
-                      size={96}
-                      fallback={<CircleUserRound color={AppTheme.primaryColor} size={76} />}
-                    />
-                  </View>
-                </View>
+              {/* Greeting */}
+              <View style={styles.greetingRow}>
                 <Text style={styles.profileName}>{displayName}</Text>
                 <Text style={styles.profileSubtitle}>Continue your fitness journey</Text>
-              </TouchableOpacity>
+              </View>
 
-              {/* Quick Stats */}
+              {/* Quick Stats — Profile | Credits | Favourites */}
               <View style={styles.compactStatsCard}>
+                {/* Profile cell */}
+                <TouchableOpacity
+                  style={styles.compactStatCell}
+                  onPress={() => navigation.navigate('ProfileScreen')}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.profileAvatarRing}>
+                    <View style={styles.profileAvatarInner}>
+                      <WebSafeAvatar
+                        uri={profile?.profileImageUrl}
+                        size={42}
+                        fallback={<CircleUserRound color="#C26A2D" size={32} />}
+                      />
+                    </View>
+                  </View>
+                  <Text style={[styles.compactStatLabel, { marginTop: 4, color: AppTheme.textGrey }]}>Profile</Text>
+                </TouchableOpacity>
+
+                <View style={styles.compactDivider} />
+
+                {/* Credits cell — center */}
                 <TouchableOpacity
                   style={styles.compactStatCell}
                   onPress={() => navigation.navigate('CreditsScreen')}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.rBadge}><Text style={styles.rBadgeText}>R</Text></View>
-                  <View style={{ marginLeft: 8 }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={styles.rBadge}><Text style={styles.rBadgeText}>R</Text></View>
                     <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "0"}</Text>
                     <Text style={styles.compactStatLabel}>Credits</Text>
                     <TouchableOpacity
@@ -675,27 +682,14 @@ const HomeScreenInner = () => {
 
                 <View style={styles.compactDivider} />
 
-                <TouchableOpacity
-                  style={styles.compactStatCell}
-                  onPress={() => navigation.navigate('UpcomingSessionsScreen')}
-                  activeOpacity={0.7}
-                >
-                  <Dumbbell color={theme.primaryColor} size={18} />
-                  <View style={{ marginLeft: 8 }}>
-                    <Text style={styles.compactStatValue}>{(completedSessions.length + upcomingSessions.length).toString()}</Text>
-                    <Text style={styles.compactStatLabel}>Workouts</Text>
-                  </View>
-                </TouchableOpacity>
-
-                <View style={styles.compactDivider} />
-
+                {/* Favourites cell */}
                 <TouchableOpacity
                   style={styles.compactStatCell}
                   onPress={() => navigation.navigate('AllFavourites', { type: 'all' })}
                   activeOpacity={0.7}
                 >
-                  <Heart color={theme.primaryColor} size={18} />
-                  <View style={{ marginLeft: 8 }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Heart color="#C26A2D" size={22} />
                     <Text style={styles.compactStatValue}>{totalFavouritesCount.toString()}</Text>
                     <Text style={styles.compactStatLabel}>Favorites</Text>
                   </View>
@@ -715,7 +709,7 @@ const HomeScreenInner = () => {
                   </TouchableOpacity>
                 </View>
                 <View style={styles.feedPlaceholder}>
-                  <TrendingUp color="#F97316" size={22} />
+                  <TrendingUp color="#C26A2D" size={22} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.feedPlaceholderTitle}>Community Updates</Text>
                     <Text style={styles.feedPlaceholderSub}>Workouts, achievements & more from your network</Text>
@@ -745,37 +739,54 @@ const HomeScreenInner = () => {
 
               {/* GripCuff Training Progress Card */}
               <View style={styles.gripCuffCard}>
-                {/* Top row: title + badge */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={styles.gripCuffTitle}>GripCuff Training</Text>
-                  <View style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 }}>
-                    <Text style={{ color: '#4FC3F7', fontSize: 11, fontWeight: '700' }}>STARTER</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  {/* Left: title + badge + buttons */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <Text style={styles.gripCuffTitle}>GripCuff Training</Text>
+                      <View style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 }}>
+                        <Text style={{ color: '#4FC3F7', fontSize: 10, fontWeight: '700' }}>STARTER</Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <TouchableOpacity
+                        style={styles.gripCuffBtn}
+                        onPress={() => navigation.navigate('GripCuffVideos')}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.gripCuffBtnText}>Get Started</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setShowTiersModal(true)}
+                        style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' }}>Upgrade</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
 
-                {/* Level bars — bar chart style, centered */}
-                <View style={{ alignItems: 'center', marginBottom: 18 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>The Bigger The Better</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+                  {/* Right: compact bar chart */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5 }}>
                     {[1, 2, 3, 4].map((lvl) => {
                       const active = lvl === 1;
-                      const barHeight = lvl * 14 + 10;
+                      const barHeight = lvl * 8 + 8;
                       return (
-                        <View key={lvl} style={{ alignItems: 'center', gap: 5 }}>
+                        <View key={lvl} style={{ alignItems: 'center', gap: 3 }}>
                           <View
                             style={{
-                              width: 36,
+                              width: 20,
                               height: barHeight,
-                              borderRadius: 6,
-                              backgroundColor: active ? '#D4622A' : 'rgba(255,255,255,0.1)',
-                              shadowColor: active ? '#FF6B00' : 'transparent',
+                              borderRadius: 4,
+                              backgroundColor: active ? '#C26A2D' : 'rgba(255,255,255,0.1)',
+                              shadowColor: active ? '#C26A2D' : 'transparent',
                               shadowOffset: { width: 0, height: 0 },
-                              shadowOpacity: active ? 0.9 : 0,
-                              shadowRadius: 8,
-                              elevation: active ? 6 : 0,
+                              shadowOpacity: active ? 0.6 : 0,
+                              shadowRadius: 4,
+                              elevation: active ? 3 : 0,
                             }}
                           />
-                          <Text style={{ color: active ? '#D4622A' : 'rgba(255,255,255,0.25)', fontSize: 10, fontWeight: active ? '700' : '500' }}>
+                          <Text style={{ color: active ? '#C26A2D' : 'rgba(255,255,255,0.25)', fontSize: 9, fontWeight: active ? '700' : '500' }}>
                             {lvl}
                           </Text>
                         </View>
@@ -783,31 +794,9 @@ const HomeScreenInner = () => {
                     })}
                   </View>
                 </View>
-
-                {/* Bottom row: Get Started + Upgrade */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                  <TouchableOpacity
-                    style={styles.gripCuffBtn}
-                    onPress={() => navigation.navigate('GripCuffVideos')}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.gripCuffBtnText}>Get Started</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setShowTiersModal(true)}
-                    style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20 }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600' }}>Upgrade</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
 
 
-              {/* Today's Challenge */}
-              <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
-                <TodaysChallengeCard timezone={streakData?.timezone} />
-              </View>
 
 
               {/* ── Recommendation Sections ── */}
@@ -909,7 +898,7 @@ const HomeScreenInner = () => {
                               resizeMode="cover"
                             />
                           ) : (
-                            <Ionicons name="play-circle" size={36} color={AppTheme.primaryColor} />
+                            <Ionicons name="play-circle" size={36} color="#C26A2D" />
                           )}
                         </View>
                         <View style={{ padding: 8 }}>
@@ -933,7 +922,7 @@ const HomeScreenInner = () => {
                           >
                             {item.title}
                           </Text>
-                          <Text style={{ color: AppTheme.primaryColor, fontSize: 10, marginTop: 3 }}>
+                          <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>
                             Continue watching →
                           </Text>
                         </View>
@@ -1040,7 +1029,7 @@ const HomeScreenInner = () => {
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 12 }}>
                       <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Upcoming</Text>
                       <TouchableOpacity onPress={() => navigation.navigate('UpcomingSessionsScreen')}>
-                        <Text style={{ color: AppTheme.primaryColor, fontSize: 13, fontWeight: '600' }}>View All →</Text>
+                        <Text style={{ color: '#C26A2D', fontSize: 13, fontWeight: '600' }}>View All →</Text>
                       </TouchableOpacity>
                     </View>
                     {upcomingItems.slice(0, 3).map((session) => {
@@ -1325,10 +1314,10 @@ const HomeScreenInner = () => {
               {/* ── Workout Invites ── */}
               <View style={styles.notifSection}>
                 <View style={styles.notifSectionHeader}>
-                  <View style={[styles.notifSectionDot, { backgroundColor: '#FF6B00' }]} />
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#C26A2D' }]} />
                   <Text style={styles.notifSectionTitle}>Workout Invites</Text>
                   {pendingInvites.length > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#FF6B00', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#C26A2D', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{pendingInvites.length}</Text>
                     </View>
                   )}
@@ -1347,8 +1336,8 @@ const HomeScreenInner = () => {
                         uri={invite.hostAvatarUrl}
                         size={36}
                         fallback={
-                          <View style={{ flex: 1, backgroundColor: 'rgba(255,107,0,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                            <VideoIcon color="#FF6B00" size={18} />
+                          <View style={{ flex: 1, backgroundColor: 'rgba(194,106,45,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                            <VideoIcon color="#C26A2D" size={18} />
                           </View>
                         }
                       />
@@ -1356,7 +1345,7 @@ const HomeScreenInner = () => {
                         <Text style={styles.notifRowName} numberOfLines={1}>{invite.hostName || 'Friend'}</Text>
                         <Text style={styles.notifRowSub} numberOfLines={1}>{invite.videoTitle || 'Workout invite'}</Text>
                       </View>
-                      <View style={[styles.countBadge, { backgroundColor: '#FF6B00' }]}>
+                      <View style={[styles.countBadge, { backgroundColor: '#C26A2D' }]}>
                         <Text style={styles.countBadgeText}>View</Text>
                       </View>
                     </TouchableOpacity>
@@ -1367,7 +1356,7 @@ const HomeScreenInner = () => {
                   onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.notifViewAllText, { color: '#FF6B00' }]}>View all invites &gt;</Text>
+                  <Text style={[styles.notifViewAllText, { color: '#C26A2D' }]}>View all invites &gt;</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1570,7 +1559,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: AppTheme.primaryColor,
+    backgroundColor: '#C26A2D',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 2,
@@ -1666,28 +1655,28 @@ const styles = StyleSheet.create({
     color: AppTheme.textGrey,
     marginTop: 8,
   },
-  profileSection: {
+  greetingRow: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 16,
     paddingTop: 8,
   },
   profileAvatarRing: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    borderWidth: 3,
-    borderColor: '#FF6B00',
-    padding: 4,
-    shadowColor: '#FF6B00',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: '#C26A2D',
+    padding: 2,
+    shadowColor: '#C26A2D',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   profileAvatarInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 52,
+    borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: '#131f2e',
     alignItems: 'center',
@@ -1697,7 +1686,6 @@ const styles = StyleSheet.create({
     color: AppTheme.textWhite,
     fontSize: 22,
     fontWeight: '700' as any,
-    marginTop: 14,
     letterSpacing: 0.3,
   },
   profileSubtitle: {
@@ -1716,11 +1704,12 @@ const styles = StyleSheet.create({
   },
   compactStatCell: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 24,
     paddingHorizontal: 8,
+    gap: 5,
   },
   compactDivider: {
     width: StyleSheet.hairlineWidth,
@@ -1738,7 +1727,7 @@ const styles = StyleSheet.create({
     color: AppTheme.textGrey,
   },
   compactEarnText: {
-    color: '#D4622A',
+    color: '#C26A2D',
     fontSize: 9,
     fontWeight: '700' as any,
     marginTop: 2,
@@ -1782,8 +1771,8 @@ const styles = StyleSheet.create({
   gripCuffCard: {
     backgroundColor: '#131f2e',
     borderRadius: 12,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     marginBottom: CARD_GAP,
   },
   gripCuffLeft: {
@@ -1910,7 +1899,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FF6B00',
+    borderColor: '#C26A2D',
   },
   joinNowText: {
     color: '#FFFFFF',
@@ -2038,7 +2027,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(46,204,113,0.3)',
   },
   countBadge: {
-    backgroundColor: AppTheme.primaryColor,
+    backgroundColor: '#C26A2D',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -2137,7 +2126,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   feedViewAll: {
-    color: '#F97316',
+    color: '#C26A2D',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -2150,7 +2139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(249,115,22,0.15)',
+    borderColor: 'rgba(194,106,45,0.15)',
   },
   feedPlaceholderTitle: {
     color: '#fff',

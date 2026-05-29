@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NotificationBell } from '../components/NotificationBell';
 import { AccessBadge } from '../components/AccessBadge';
 import { useNavigation } from '@react-navigation/native';
@@ -33,6 +33,8 @@ import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
+
+import { useFloatingToggle, FloatingTabToggle } from '../components/FloatingTabToggle';
 
 const WorkoutsTabContent = () => {
   const navigation = useNavigation<any>();
@@ -159,6 +161,7 @@ export const LibraryScreen = () => {
   const [showRecommended, setShowRecommended] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('large');
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { translateY: floatTranslateY, onScroll: onFloatScroll } = useFloatingToggle();
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -224,7 +227,9 @@ export const LibraryScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        onScroll={onFloatScroll}
+        scrollEventThrottle={16}
       >
       {/* Header */}
       <View style={{
@@ -276,66 +281,23 @@ export const LibraryScreen = () => {
         </View>
       </View>
 
-      {/* Sub Tabs — All / Favorites / Goals / Recommendations */}
-      <View style={[styles.tabContainer, { flexDirection: 'row', backgroundColor: '#131f2e', borderRadius: 12, padding: 4, marginHorizontal: 16, marginVertical: 12 }]}>
 
-        {/* All Exercises */}
+      {/* Sub Tabs — Exercises / Workouts */}
+      <View style={{ flexDirection: 'row', backgroundColor: '#131f2e', borderRadius: 12, padding: 4, marginHorizontal: 16, marginVertical: 12 }}>
         <TouchableOpacity
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingVertical: 10,
-            borderRadius: 10,
-            backgroundColor: subTab === 'all' ? '#000000' : 'transparent',
-          }}
-          onPress={() => {
-            setSubTab('all');
-
-          }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: subTab === 'all' ? '#000000' : 'transparent' }}
+          onPress={() => setSubTab('all')}
         >
           <LayoutGrid size={13} color={subTab === 'all' ? AppTheme.primaryColor : '#607a94'} />
-          <Text
-            numberOfLines={1}
-            style={{
-              color: subTab === 'all' ? '#ffffff' : '#607a94',
-              fontSize: 11,
-              fontWeight: subTab === 'all' ? '700' : '500',
-            }}
-          >
-            All Exercises
-          </Text>
+          <Text numberOfLines={1} style={{ color: subTab === 'all' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: subTab === 'all' ? '700' : '500' }}>All Exercises</Text>
         </TouchableOpacity>
-
-        {/* Workouts */}
         <TouchableOpacity
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingVertical: 10,
-            borderRadius: 10,
-            backgroundColor: subTab === 'workouts' ? '#000000' : 'transparent',
-          }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: subTab === 'workouts' ? '#000000' : 'transparent' }}
           onPress={() => setSubTab('workouts')}
         >
           <Dumbbell size={13} color={subTab === 'workouts' ? AppTheme.primaryColor : '#607a94'} />
-          <Text
-            numberOfLines={1}
-            style={{
-              color: subTab === 'workouts' ? '#ffffff' : '#607a94',
-              fontSize: 11,
-              fontWeight: subTab === 'workouts' ? '700' : '500',
-            }}
-          >
-            Workouts
-          </Text>
+          <Text numberOfLines={1} style={{ color: subTab === 'workouts' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: subTab === 'workouts' ? '700' : '500' }}>Workouts</Text>
         </TouchableOpacity>
-
       </View>
 
       {/* RECOMMENDED SECTION */}
@@ -454,6 +416,12 @@ export const LibraryScreen = () => {
         viewMode={viewMode}
       />
       </ScrollView>
+
+      <FloatingTabToggle
+        activeTab={subTab}
+        onTabChange={setSubTab}
+        translateY={floatTranslateY}
+      />
 
       {/* Customize Modal */}
       {showCustomizeModal && (
