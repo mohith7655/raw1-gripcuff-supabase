@@ -1,6 +1,6 @@
 export type VideoCategory = 'Strength' | 'HIIT' | 'Cardio' | 'Recovery' | 'Mobility' | 'Tutorial' | 'All' | 'GripCuff' | 'MuscleGrowth' | 'Stretching' | 'AthleticPerformance' | 'InjuryRehab';
 export type VideoType = 'All' | 'GripCuff' | 'Trainer';
-export type SubTab = 'all' | 'favorites' | 'goals';
+export type SubTab = 'all' | 'workouts' | 'goals';
 
 export interface Video {
   id: string;

@@ -283,21 +283,13 @@ function HomeTabs() {
         name="LibraryTab"
         component={LibraryScreen}
         options={{
-          tabBarLabel: appMode === 'coaching' ? 'Explore Coaches' : 'Exercise Library',
+          tabBarLabel: appMode === 'coaching' ? 'Explore Coaches' : 'Workouts',
           tabBarIcon: ({ color, size }) =>
             appMode === 'coaching' ? (
               <Users color={color} size={size} />
             ) : (
-              <Video color={color} size={size} />
+              <Dumbbell color={color} size={size} />
             ),
-        }}
-      />
-      <Tab.Screen
-        name="WorkoutsTab"
-        component={WorkoutsScreen}
-        options={{
-          tabBarLabel: appMode === 'coaching' ? 'Previous Sessions' : 'Workouts',
-          tabBarIcon: ({ color, size }) => <Dumbbell color={color} size={size} />,
         }}
       />
     </Tab.Navigator>

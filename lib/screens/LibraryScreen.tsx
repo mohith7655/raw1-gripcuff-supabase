@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles } from 'lucide-react-native';
+import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, Flame, Zap, HeartPulse, PersonStanding, PlusCircle, Users, ChevronRight } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
@@ -33,6 +33,123 @@ import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
+
+const WorkoutsTabContent = () => {
+  const navigation = useNavigation<any>();
+  const [activeTab, setActiveTab] = useState<'programs' | 'ai'>('programs');
+
+  const CategoryRow = ({ title, subtitle, IconName, color, onPress }: {
+    title: string; subtitle: string; IconName: any; color: string; onPress?: () => void;
+  }) => (
+    <TouchableOpacity
+      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16 }}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${color}20`, alignItems: 'center', justifyContent: 'center' }}>
+        <IconName color={color} size={20} />
+      </View>
+      <View style={{ flex: 1, marginLeft: 14 }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 }}>{title}</Text>
+        <Text style={{ fontSize: 12, color: '#888' }}>{subtitle}</Text>
+      </View>
+      <ChevronRight color="#e46600" size={18} />
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Pill toggle */}
+      <View style={{ flexDirection: 'row', backgroundColor: '#131f2e', borderRadius: 12, padding: 4, marginHorizontal: 16, marginBottom: 4 }}>
+        <TouchableOpacity
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: activeTab === 'programs' ? '#000000' : 'transparent' }}
+          onPress={() => setActiveTab('programs')}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: activeTab === 'programs' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: activeTab === 'programs' ? '700' : '500' }}>
+            Pre-Recorded Programs
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: activeTab === 'ai' ? '#000000' : 'transparent' }}
+          onPress={() => setActiveTab('ai')}
+          activeOpacity={0.8}
+        >
+          <Sparkles size={13} color={activeTab === 'ai' ? AppTheme.primaryColor : '#607a94'} />
+          <Text style={{ color: activeTab === 'ai' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: activeTab === 'ai' ? '700' : '500' }}>
+            AI Personal Trainer
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingTop: 16, paddingBottom: 40 }}>
+        {activeTab === 'programs' && (
+          <>
+            {/* Workout with a Friend */}
+            <TouchableOpacity
+              style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}
+              onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={['#1a1a1a', '#000000']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 12 }}
+              >
+                <Users color="#fff" size={20} style={{ marginRight: 10 }} />
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Workout with a Friend</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Category rows */}
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: CARD_BORDER_RADIUS, borderWidth: 1, borderColor: 'rgba(228,102,0,0.15)', overflow: 'hidden' }}>
+              <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#f44336" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+              <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" IconName={PersonStanding} color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+              <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#FFD600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+              <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#66BB6A" onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+            </View>
+          </>
+        )}
+
+        {activeTab === 'ai' && (
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: CARD_BORDER_RADIUS, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', padding: 18, marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18 }}>
+              <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(249,115,22,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                <Sparkles color={AppTheme.primaryColor} size={24} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 14 }}>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 3 }}>AI Personal Trainer</Text>
+                <Text style={{ color: '#888', fontSize: 13 }}>Generate custom workouts</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={{ borderRadius: 12, overflow: 'hidden', width: '100%' }}
+              onPress={() => navigation.navigate('AITrainerScreen')}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={[AppTheme.primaryColor, '#ff8534']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 12 }}
+              >
+                <PlusCircle color="#fff" size={20} style={{ marginRight: 10 }} />
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Start AI Workout</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('UpcomingSessionsScreen')} style={{ marginTop: 14, alignItems: 'center' }}>
+              <Text style={{ color: AppTheme.primaryColor, fontSize: 13, fontWeight: '600' }}>View All Sessions →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+};
 
 export const LibraryScreen = () => {
   const navigation = useNavigation<any>();
@@ -192,7 +309,7 @@ export const LibraryScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Favorites */}
+        {/* Workouts */}
         <TouchableOpacity
           style={{
             flex: 1,
@@ -202,23 +319,20 @@ export const LibraryScreen = () => {
             gap: 6,
             paddingVertical: 10,
             borderRadius: 10,
-            backgroundColor: subTab === 'favorites' ? '#000000' : 'transparent',
+            backgroundColor: subTab === 'workouts' ? '#000000' : 'transparent',
           }}
-          onPress={() => {
-            setSubTab('favorites');
-
-          }}
+          onPress={() => setSubTab('workouts')}
         >
-          <Heart size={13} color={subTab === 'favorites' ? AppTheme.primaryColor : '#607a94'} />
+          <Dumbbell size={13} color={subTab === 'workouts' ? AppTheme.primaryColor : '#607a94'} />
           <Text
             numberOfLines={1}
             style={{
-              color: subTab === 'favorites' ? '#ffffff' : '#607a94',
+              color: subTab === 'workouts' ? '#ffffff' : '#607a94',
               fontSize: 11,
-              fontWeight: subTab === 'favorites' ? '700' : '500',
+              fontWeight: subTab === 'workouts' ? '700' : '500',
             }}
           >
-            Favorites
+            Workouts
           </Text>
         </TouchableOpacity>
 
@@ -699,10 +813,7 @@ const VideoContent = ({
     return videos;
   };
 
-  const filteredVideos =
-    subTab === 'favorites'
-      ? videos.filter((v) => v.isCompleted)
-      : videos;
+  const filteredVideos = videos;
 
   // Grouped layout only for "All Videos" tab (subTab === 'all')
   const isGroupedView = subTab === 'all';
@@ -716,201 +827,8 @@ const VideoContent = ({
       ? <ScrollView contentContainerStyle={styles.contentContainer}>{children}</ScrollView>
       : <View style={styles.contentContainer}>{children}</View>;
 
-  if (subTab === 'favorites') {
-    // Map favourited video_ids to full video metadata from the same sources
-    // the "All Exercises" / "Premade Workouts" lists draw from.
-    const exerciseCatalog: Video[] = [
-      ...allVideos,
-      ...gripCuffVideos,
-      ...trainerVideos,
-      ...bodyPartVideos,
-    ];
-    const exerciseFavorites: Video[] = exerciseCatalog.filter((v) => favExerciseIds.has(v.id));
-
-    const workoutCatalog = getAllPrograms().flatMap((p) => p.videos);
-    const workoutFavorites = workoutCatalog
-        .filter((v) => favWorkoutIds.has(v.id))
-        .map((v) => ({
-            ...v,
-            category: v.category as any,
-            videoType: 'All' as const,
-        })) as unknown as Video[];
-
-    const totalFavorites = exerciseFavorites.length + workoutFavorites.length;
-
-    if (totalFavorites === 0) {
-      return (
-        <Outer>
-          <View style={styles.emptyVisibilityState}>
-            <Text style={styles.emptyVisibilityText}>
-              No favorites yet. Tap ♡ on any video to save it.
-            </Text>
-          </View>
-        </Outer>
-      );
-    }
-
-    return (
-      <Outer>
-        {/* Exercises Section */}
-        <View style={styles.favSectionHeader}>
-          <Text style={styles.favSectionTitle}>Exercises</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'exercises' })}>
-            <Text style={styles.favViewAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
-        {exerciseFavorites.length === 0 ? (
-          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-            <Text style={styles.emptyVisibilityText}>No favourite exercises yet.</Text>
-          </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScrollRow}
-          >
-            {exerciseFavorites.map((video: any, index: number) => (
-              <VideoTile
-                key={video.id}
-                video={video}
-                index={index}
-                showCheckbox={false}
-                onToggle={() => onToggle(video.id)}
-                onPress={() => navigation.navigate('VideoPlayer', { title: video.title, videoId: video.id, videoUrl: EXERCISE_LIBRARY_VIDEO_URL, youtubeId: null, videoType: 'exercise_library' })}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Pre-made Workouts Section */}
-        <View style={styles.favSectionHeader}>
-          <Text style={styles.favSectionTitle}>Workouts</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'workouts' })}>
-            <Text style={styles.favViewAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
-        {workoutFavorites.length === 0 ? (
-          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-            <Text style={styles.emptyVisibilityText}>No favourite workouts yet.</Text>
-          </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScrollRow}
-          >
-            {workoutFavorites.map((video: any, index: number) => (
-              <VideoTile
-                key={video.id}
-                video={video}
-                index={index}
-                showCheckbox={false}
-                onToggle={() => onToggle(video.id)}
-                onPress={() => navigation.navigate('VideoPlayer', {
-                  title: video.title,
-                  videoId: video.id,
-                  videoUrl: video.videoUrl,
-                  videoType: 'premade_workout',
-                  allowInvite: true,
-                })}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Goal Recommendation */}
-        <View style={styles.favSectionHeader}>
-          <Text style={styles.favSectionTitle}>Goal Recommendation</Text>
-        </View>
-
-        {/* Find Your Perfect Exercise card */}
-        <View style={{
-          backgroundColor: '#131f2e',
-          borderRadius: 16,
-          padding: 24,
-          marginHorizontal: 16,
-          marginBottom: 20,
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: '#1c3a56',
-        }}>
-          <Text style={{
-            color: '#ffffff',
-            fontSize: 20,
-            fontWeight: '800',
-            marginBottom: 10,
-            textAlign: 'center',
-          }}>Find Your Perfect Exercise</Text>
-          <Text style={{
-            color: '#607a94',
-            fontSize: 13,
-            textAlign: 'center',
-            lineHeight: 20,
-            marginBottom: 20,
-          }}>
-            Answer a few questions to get personalized{'\n'}
-            exercise recommendations
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Recommendation')}
-            style={{
-              backgroundColor: '#D4622A',
-              borderRadius: 25,
-              paddingVertical: 14,
-              paddingHorizontal: 32,
-            }}
-          >
-            <Text style={{
-              color: '#ffffff',
-              fontSize: 15,
-              fontWeight: '700',
-            }}>Get Started →</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Locked message */}
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingHorizontal: 16,
-          marginBottom: 14,
-        }}>
-          <Text style={{ fontSize: 16 }}>🔒</Text>
-          <Text style={{ color: '#607a94', fontSize: 13 }}>
-            Complete the quiz to unlock your personalized videos
-          </Text>
-        </View>
-
-        {/* Locked video grid */}
-        <View style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          paddingHorizontal: 16,
-          gap: 12,
-          marginBottom: 32,
-        }}>
-          {[1, 2, 3, 4].map(i => (
-            <TouchableOpacity
-              key={i}
-              onPress={() => navigation.navigate('Recommendation')}
-              style={{
-                width: '47%',
-                aspectRatio: 1,
-                backgroundColor: '#131f2e',
-                borderRadius: 12,
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: '#1c3a56',
-              }}
-            >
-              <Text style={{ fontSize: 32 }}>🔒</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Outer>
-    );
+  if (subTab === 'workouts') {
+    return <WorkoutsTabContent />;
   }
 
   if (isGroupedView && !showProgress) {

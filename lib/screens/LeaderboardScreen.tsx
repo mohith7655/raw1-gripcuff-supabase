@@ -18,6 +18,7 @@ import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.se
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { User } from '../models/User';
+import { TIER_COLORS, BADGE_FAMILIES, computeTier } from '../services/badge.types';
 
 type Tab = 'self' | 'weekly' | 'alltime';
 
@@ -26,6 +27,30 @@ function formatWatchTime(seconds: number): string {
     if (secs < 60) return `${Math.round(secs)}s`;
     if (secs < 3600) return `${(secs / 60).toFixed(1)}m`;
     return `${(secs / 3600).toFixed(1)}h`;
+}
+
+// Derives the highest badge tier a user has from leaderboard entry stats.
+function getHighestBadgePip(entry: LeaderboardEntry): { emoji: string; color: string; tierName: string } | null {
+    const candidates = [
+        { family: BADGE_FAMILIES.find(f => f.key === 'streak')!,         value: entry.bestStreak || 0 },
+        { family: BADGE_FAMILIES.find(f => f.key === 'consistency')!,    value: entry.workoutsCompleted || entry.workouts || 0 },
+        { family: BADGE_FAMILIES.find(f => f.key === 'transformation')!, value: Math.floor((entry.totalMinutes || 0)) },
+        { family: BADGE_FAMILIES.find(f => f.key === 'social')!,         value: entry.liveSessions || 0 },
+    ].filter(c => c.family);
+
+    let best: { tier: number; emoji: string; color: string; tierName: string } | null = null;
+    for (const { family, value } of candidates) {
+        const tier = computeTier(family, value);
+        if (tier > 0 && (!best || tier > best.tier)) {
+            best = {
+                tier,
+                emoji: family.emoji,
+                color: TIER_COLORS[tier - 1],
+                tierName: family.tiers[tier - 1].name,
+            };
+        }
+    }
+    return best;
 }
 
 const LeaderboardRow = memo(function LeaderboardRow({
@@ -95,6 +120,16 @@ const LeaderboardRow = memo(function LeaderboardRow({
                         {item.displayName || 'User'}
                     </Text>
                     {isMe && <View style={styles.youBadge}><Text style={styles.youBadgeText}>YOU</Text></View>}
+                    {(() => {
+                        const pip = getHighestBadgePip(item);
+                        if (!pip) return null;
+                        return (
+                            <View style={[styles.badgePip, { backgroundColor: pip.color + '22', borderColor: pip.color + '66' }]}>
+                                <Text style={{ fontSize: 9 }}>{pip.emoji}</Text>
+                                <Text style={[styles.badgePipText, { color: pip.color }]}>{pip.tierName}</Text>
+                            </View>
+                        );
+                    })()}
                 </View>
                 <Text style={styles.subText}>
                     💪 {item.workoutsCompleted || 0} workouts · 🔥 {item.currentStreak || 0} day streak
@@ -429,6 +464,12 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: 0.5,
     },
+    badgePip: {
+        flexDirection: 'row', alignItems: 'center', gap: 3,
+        borderRadius: 6, borderWidth: 1,
+        paddingHorizontal: 5, paddingVertical: 2,
+    },
+    badgePipText: { fontSize: 9, fontWeight: '700' },
     subText: { color: '#8899aa', fontSize: 11, marginTop: 2 },
     scoreText: { fontSize: 13, fontWeight: '700', minWidth: 50, textAlign: 'right' },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },

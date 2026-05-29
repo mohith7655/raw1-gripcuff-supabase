@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronRight, Zap } from 'lucide-react-native';
+import { BADGE_FAMILIES, TIER_COLORS, computeTier } from '../services/badge.types';
 import { supabase } from '../core/config/supabase';
 import { StreakData } from '../services/streak.service';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
@@ -37,6 +38,23 @@ const TAB_LABELS: Record<Tab, string> = {
 // todayWeekdayIndex / buildWeekKeys / getWeekDates are now timezone-aware.
 // They receive `timezone` from StreakTab (which receives it via streakData.timezone).
 // Falls back to device timezone when timezone is empty (e.g., data not yet loaded).
+
+function getEntryBadgePip(entry: LeaderboardEntry): { emoji: string; color: string; name: string } | null {
+  const checks = [
+    { family: BADGE_FAMILIES.find(f => f.key === 'streak')!,         value: entry.bestStreak || 0 },
+    { family: BADGE_FAMILIES.find(f => f.key === 'consistency')!,    value: entry.workouts || 0 },
+    { family: BADGE_FAMILIES.find(f => f.key === 'transformation')!, value: Math.floor((entry.totalMinutes || 0)) },
+    { family: BADGE_FAMILIES.find(f => f.key === 'social')!,         value: entry.liveSessions || 0 },
+  ].filter(c => c.family);
+  let best: { tier: number; emoji: string; color: string; name: string } | null = null;
+  for (const { family, value } of checks) {
+    const tier = computeTier(family, value);
+    if (tier > 0 && (!best || tier > best.tier)) {
+      best = { tier, emoji: family.emoji, color: TIER_COLORS[tier - 1], name: family.tiers[tier - 1].name };
+    }
+  }
+  return best;
+}
 
 function motivationText(streak: number): string {
   if (streak <= 2) return 'Start your comeback';
@@ -382,6 +400,16 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
             <View style={s.lbNameRow}>
               <Text style={[s.lbName, isMe && s.lbNameMe]} numberOfLines={1}>{entry.displayName ?? 'Unknown'}</Text>
               {isMe && <View style={s.lbYouBadge}><Text style={s.lbYouBadgeText}>YOU</Text></View>}
+              {(() => {
+                const pip = getEntryBadgePip(entry);
+                if (!pip) return null;
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: pip.color + '22', borderRadius: 5, borderWidth: 1, borderColor: pip.color + '55', paddingHorizontal: 4, paddingVertical: 1 }}>
+                    <Text style={{ fontSize: 8 }}>{pip.emoji}</Text>
+                    <Text style={{ color: pip.color, fontSize: 8, fontWeight: '700' }}>{pip.name}</Text>
+                  </View>
+                );
+              })()}
             </View>
             <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
               {formatWatchTime(entry.score ?? 0)}

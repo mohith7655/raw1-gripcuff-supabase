@@ -48,6 +48,8 @@ import { useFriend } from '../providers/FriendContext';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { StreakService, StreakData } from '../services/streak.service';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
+import { BADGE_FAMILIES, TIER_COLORS, getTierName } from '../services/badge.types';
+import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 import { SocialProfile, HOBBY_META, Hobby } from '../models/SocialProfile';
 import { StatPill } from '../components/profile/StatPill';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
@@ -115,11 +117,23 @@ function splitAddress(address?: string | null, fallbackSub = '') {
 function deriveBadges(streakData: StreakData | null): Badge[] {
   if (!streakData) return [];
   const ids = new Set(streakData.badges ?? []);
-  if (streakData.totalWorkouts >= 1)    ids.add('first_workout');
-  if (streakData.bestStreak >= 7)       ids.add('7_day_streak');
-  if (streakData.bestStreak >= 14)      ids.add('14_day_streak');
+  if (streakData.totalWorkouts >= 1)     ids.add('first_workout');
+  if (streakData.bestStreak >= 7)        ids.add('7_day_streak');
+  if (streakData.bestStreak >= 14)       ids.add('14_day_streak');
   if (streakData.totalLiveSessions >= 1) ids.add('first_live_session');
   return ALL_BADGES.filter(b => ids.has(b.id));
+}
+
+function buildBadgeStatsFromStreak(streakData: StreakData | null): UserBadgeStats {
+  return {
+    bestStreak:        streakData?.bestStreak ?? 0,
+    totalWorkouts:     streakData?.totalWorkouts ?? 0,
+    totalLiveSessions: streakData?.totalLiveSessions ?? 0,
+    totalViewers:      0,
+    coachSessions:     0,
+    totalWatchMinutes: Math.floor(((streakData as any)?.watchedSeconds ?? 0) / 60),
+    founderTier:       0,
+  };
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -242,11 +256,13 @@ export const ProfileScreen = () => {
     : ['gym', 'cycling', 'photography', 'reading']) as Hobby[]
   ).filter(h => !!HOBBY_META[h]);
 
-  // Badges
-  const earned       = deriveBadges(streakData);
-  const earnedIds    = new Set(earned.map(b => b.id));
-  const visibleBadges = ALL_BADGES.slice(0, 8);
-  const extraCount   = Math.max(0, ALL_BADGES.length - 8);
+  // Badges — new tier system
+  const badgeStats    = buildBadgeStatsFromStreak(streakData);
+  const badgeStates   = deriveBadgeStates(badgeStats);
+  const earnedFamilies = badgeStates.filter(b => b.currentTier > 0);
+  // Legacy earnedIds kept for any remaining legacy references
+  const earned        = deriveBadges(streakData);
+  const earnedIds     = new Set(earned.map(b => b.id));
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
@@ -575,39 +591,39 @@ export const ProfileScreen = () => {
                 <Text style={s.viewAllLink}>View all</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.badgesScroll}
             >
-              {visibleBadges.map((badge, i) => {
-                const isEarned = earnedIds.has(badge.id);
+              {BADGE_FAMILIES.map(family => {
+                const state = badgeStates.find(bs => bs.familyKey === family.key);
+                const tier  = state?.currentTier ?? 0;
+                const color = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
+                const name  = tier > 0 ? getTierName(family, tier) : 'Locked';
+                const locked = tier === 0;
                 return (
-                  <View key={badge.id} style={s.badgeItemContainer}>
-                    <View 
-                      style={[
-                        s.badgeShape, 
-                        i % 2 === 1 && s.badgeShapeAlt,
-                        !isEarned && s.badgeShapeLocked
-                      ]}
-                    >
-                      <Text style={[s.badgeEmoji, !isEarned && s.badgeEmojiLocked]}>
-                        {badge.emoji}
+                  <TouchableOpacity
+                    key={family.key}
+                    style={s.badgeItemContainer}
+                    onPress={() => navigation.navigate('BadgesScreen')}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[
+                      s.badgeShape,
+                      { borderColor: locked ? 'rgba(255,255,255,0.1)' : color + '88',
+                        backgroundColor: locked ? 'rgba(255,255,255,0.04)' : color + '22' },
+                    ]}>
+                      <Text style={[s.badgeEmoji, locked && s.badgeEmojiLocked]}>
+                        {family.emoji}
                       </Text>
                     </View>
-                    <Text style={[s.badgeLabel, !isEarned && s.badgeLabelLocked]} numberOfLines={1}>
-                      {badge.label}
+                    <Text style={[s.badgeLabel, locked && s.badgeLabelLocked]} numberOfLines={1}>
+                      {name}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
-              {extraCount > 0 && (
-                <View style={s.moreBadgeContainer}>
-                  <View style={s.moreBadge}>
-                    <Text style={s.moreBadgeText}>+{extraCount}</Text>
-                  </View>
-                </View>
-              )}
             </ScrollView>
           </ProfileCard>
 

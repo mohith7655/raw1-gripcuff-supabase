@@ -41,7 +41,6 @@ import { Raw1Logo } from '../raw1_logo';
 import { AccessBadge } from '../components/AccessBadge';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
-import { useLibrary } from '../providers/LibraryContext';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { AppTheme, CoachingTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -173,7 +172,6 @@ const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
-  const { setSubTab, setIsGripCuffActive } = useLibrary();
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
   const { incomingRequests, friends, acceptRequest, declineRequest } = useFriend();
   const { favorites } = useFavorites();
@@ -552,35 +550,22 @@ const HomeScreenInner = () => {
           <View style={{ flex: 1, alignItems: 'center' }}>
             <AccessBadge />
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={() => navigation.navigate('ProfileScreen')}
-              activeOpacity={0.8}
-            >
-              <WebSafeAvatar
-                uri={profile?.profileImageUrl}
-                size={40}
-                fallback={<CircleUserRound color={AppTheme.primaryColor} size={32} />}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={() => setNotificationModalVisible(true)}
-              activeOpacity={0.8}
-            >
-              <View>
-                <Bell color={AppTheme.primaryColor} size={26} />
-                {totalNotificationsBadge > 0 && (
-                  <View style={styles.bellBadge}>
-                    <Text style={styles.bellBadgeText}>
-                      {totalNotificationsBadge > 99 ? '99+' : totalNotificationsBadge}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => setNotificationModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <View>
+              <Bell color={AppTheme.primaryColor} size={26} />
+              {totalNotificationsBadge > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>
+                    {totalNotificationsBadge > 99 ? '99+' : totalNotificationsBadge}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Mode Toggle ── */}
@@ -648,14 +633,24 @@ const HomeScreenInner = () => {
           ) : appMode === 'ai' ? (
             /* ── Mode 1: AI Personal Trainer ── */
             <>
-              <View style={styles.welcomeBlock}>
-                <Text style={styles.welcomeText}>
-                  Welcome back, {displayName}!
-                </Text>
-                <Text style={styles.subtitleText}>
-                  Continue your fitness journey
-                </Text>
-              </View>
+              {/* Profile section */}
+              <TouchableOpacity
+                style={styles.profileSection}
+                onPress={() => navigation.navigate('ProfileScreen')}
+                activeOpacity={0.85}
+              >
+                <View style={styles.profileAvatarRing}>
+                  <View style={styles.profileAvatarInner}>
+                    <WebSafeAvatar
+                      uri={profile?.profileImageUrl}
+                      size={96}
+                      fallback={<CircleUserRound color={AppTheme.primaryColor} size={76} />}
+                    />
+                  </View>
+                </View>
+                <Text style={styles.profileName}>{displayName}</Text>
+                <Text style={styles.profileSubtitle}>Continue your fitness journey</Text>
+              </TouchableOpacity>
 
               {/* Quick Stats */}
               <View style={styles.compactStatsCard}>
@@ -696,11 +691,7 @@ const HomeScreenInner = () => {
 
                 <TouchableOpacity
                   style={styles.compactStatCell}
-                  onPress={() => {
-                    setIsGripCuffActive(false);
-                    setSubTab('favorites');
-                    navigation.navigate('LibraryTab');
-                  }}
+                  onPress={() => navigation.navigate('AllFavourites', { type: 'all' })}
                   activeOpacity={0.7}
                 >
                   <Heart color={theme.primaryColor} size={18} />
@@ -754,22 +745,47 @@ const HomeScreenInner = () => {
 
               {/* GripCuff Training Progress Card */}
               <View style={styles.gripCuffCard}>
-                <View style={styles.gripCuffLeft}>
+                {/* Top row: title + badge */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <Text style={styles.gripCuffTitle}>GripCuff Training</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <View style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 }}>
-                      <Text style={{ color: '#4FC3F7', fontSize: 11, fontWeight: '700' }}>STARTER</Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => setShowTiersModal(true)}
-                      style={{ backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 6 }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' }}>Upgrade</Text>
-                    </TouchableOpacity>
+                  <View style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 }}>
+                    <Text style={{ color: '#4FC3F7', fontSize: 11, fontWeight: '700' }}>STARTER</Text>
                   </View>
                 </View>
-                <View style={styles.gripCuffRight}>
+
+                {/* Level bars — bar chart style, centered */}
+                <View style={{ alignItems: 'center', marginBottom: 18 }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>The Bigger The Better</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+                    {[1, 2, 3, 4].map((lvl) => {
+                      const active = lvl === 1;
+                      const barHeight = lvl * 14 + 10;
+                      return (
+                        <View key={lvl} style={{ alignItems: 'center', gap: 5 }}>
+                          <View
+                            style={{
+                              width: 36,
+                              height: barHeight,
+                              borderRadius: 6,
+                              backgroundColor: active ? '#D4622A' : 'rgba(255,255,255,0.1)',
+                              shadowColor: active ? '#FF6B00' : 'transparent',
+                              shadowOffset: { width: 0, height: 0 },
+                              shadowOpacity: active ? 0.9 : 0,
+                              shadowRadius: 8,
+                              elevation: active ? 6 : 0,
+                            }}
+                          />
+                          <Text style={{ color: active ? '#D4622A' : 'rgba(255,255,255,0.25)', fontSize: 10, fontWeight: active ? '700' : '500' }}>
+                            {lvl}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {/* Bottom row: Get Started + Upgrade */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                   <TouchableOpacity
                     style={styles.gripCuffBtn}
                     onPress={() => navigation.navigate('GripCuffVideos')}
@@ -777,7 +793,13 @@ const HomeScreenInner = () => {
                   >
                     <Text style={styles.gripCuffBtnText}>Get Started</Text>
                   </TouchableOpacity>
-                  <Text style={{ color: '#607a94', fontSize: 12, fontWeight: '600', marginTop: 6, marginRight: 8 }}>Level 1 / 4</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowTiersModal(true)}
+                    style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20 }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600' }}>Upgrade</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -1644,6 +1666,45 @@ const styles = StyleSheet.create({
     color: AppTheme.textGrey,
     marginTop: 8,
   },
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 28,
+    paddingTop: 8,
+  },
+  profileAvatarRing: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 3,
+    borderColor: '#FF6B00',
+    padding: 4,
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  profileAvatarInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 52,
+    overflow: 'hidden',
+    backgroundColor: '#131f2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileName: {
+    color: AppTheme.textWhite,
+    fontSize: 22,
+    fontWeight: '700' as any,
+    marginTop: 14,
+    letterSpacing: 0.3,
+  },
+  profileSubtitle: {
+    color: AppTheme.textGrey,
+    fontSize: 13,
+    marginTop: 4,
+  },
   compactStatsCard: {
     flexDirection: 'row',
     backgroundColor: '#131f2e',
@@ -1721,11 +1782,8 @@ const styles = StyleSheet.create({
   gripCuffCard: {
     backgroundColor: '#131f2e',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 18,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: CARD_GAP,
   },
   gripCuffLeft: {

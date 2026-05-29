@@ -5,41 +5,51 @@ import {
     StyleSheet,
     TouchableOpacity,
     FlatList,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Pin } from 'lucide-react-native';
+import { Pin, Heart } from 'lucide-react-native';
 import { useFavorites } from '../hooks/useFavorites';
+import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
+import { useLibrary } from '../providers/LibraryContext';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { AppTheme } from '../core/theme/app_theme';
+import { getAllPrograms } from '../data/preRecordedPrograms';
+import { SCREEN_PADDING } from '../constants/theme';
 
 type RouteParams = {
-    type: 'exercises' | 'workouts';
+    type?: 'exercises' | 'workouts' | 'all';
 };
-
-const isExercise = (video: any): boolean => {
-    const idStr = String(video.id);
-    return idStr.startsWith('bp-') || idStr.startsWith('all-') || idStr.startsWith('gc_');
-};
-
-
 
 export function AllFavouritesScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute();
-    const { type } = (route.params as RouteParams) ?? { type: 'exercises' };
-    const { favorites, isPinned, pinFavorite } = useFavorites();
+    const { type = 'all' } = (route.params as RouteParams) ?? {};
+    const { isPinned, pinFavorite } = useFavorites();
 
-    const filtered = favorites.filter((v: any) =>
-        type === 'exercises' ? isExercise(v) : !isExercise(v)
-    );
+    // Supabase-backed favourites
+    const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
+    const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
 
-    const title = type === 'exercises' ? 'Favourite Exercises' : 'Favourite Workouts';
+    const exerciseCatalog = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
+    const exerciseFavorites = exerciseCatalog.filter((v) => favExerciseIds.has(v.id));
 
-    const isEmpty = filtered.length === 0;
+    const workoutCatalog = getAllPrograms().flatMap((p) => p.videos);
+    const workoutFavorites = workoutCatalog.filter((v) => favWorkoutIds.has(v.id));
+
+    const showExercises = type === 'all' || type === 'exercises';
+    const showWorkouts = type === 'all' || type === 'workouts';
+
+    const title = type === 'exercises' ? 'Favourite Exercises'
+        : type === 'workouts' ? 'Favourite Workouts'
+        : 'Favourites';
+
+    const totalCount = (showExercises ? exerciseFavorites.length : 0) + (showWorkouts ? workoutFavorites.length : 0);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Text style={styles.backBtn}>‹ Back</Text>
@@ -48,50 +58,98 @@ export function AllFavouritesScreen() {
                 <View style={{ width: 56 }} />
             </View>
 
-            {isEmpty ? (
+            {totalCount === 0 ? (
                 <View style={styles.emptyState}>
+                    <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
                     <Text style={styles.emptyText}>
-                        No {type === 'exercises' ? 'exercises' : 'pre-made workouts'} saved yet.{'\n'}
-                        Tap ♡ on any video to save it.
+                        No favourites yet.{'\n'}Tap ♡ on any video to save it.
                     </Text>
                 </View>
             ) : (
-                // 2-column grid for both exercises and workouts
-                <FlatList
-                    data={filtered}
-                    numColumns={2}
-                    keyExtractor={(item: any) => String(item.id)}
-                    columnWrapperStyle={{ paddingHorizontal: 20, gap: 12, marginBottom: 12 }}
-                    contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
-                    renderItem={({ item, index }: { item: any; index: number }) => {
-                        const isLastOdd = filtered.length % 2 !== 0 && index === filtered.length - 1;
-                        const pinned = isPinned(item.id);
-                        return (
-                            <View style={isLastOdd ? { flex: 1, maxWidth: '50%', paddingRight: 6 } : { flex: 1 }}>
-                                <View style={{ position: 'relative' }}>
-                                    <GridVideoCard
-                                        video={item}
-                                        index={index}
-                                        onPress={() =>
-                                            navigation.navigate('VideoPlayer', {
-                                                title: item.title,
-                                                videoId: item.id,
-                                                videoUrl: item.videoUrl,
-                                            })
-                                        }
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => pinFavorite(item.id)}
-                                        style={[styles.pinBtn, pinned && styles.pinBtnActive]}
-                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    >
-                                        <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
-                                    </TouchableOpacity>
-                                </View>
+                <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+                    {/* Exercises section */}
+                    {showExercises && (
+                        <View style={{ marginTop: 20 }}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionTitle}>Exercises</Text>
+                                <Text style={styles.sectionCount}>{exerciseFavorites.length}</Text>
                             </View>
-                        );
-                    }}
-                />
+                            {exerciseFavorites.length === 0 ? (
+                                <Text style={styles.emptySection}>No favourite exercises yet.</Text>
+                            ) : (
+                                <View style={styles.grid}>
+                                    {exerciseFavorites.map((video: any, index: number) => {
+                                        const pinned = isPinned(video.id);
+                                        const isLastOdd = exerciseFavorites.length % 2 !== 0 && index === exerciseFavorites.length - 1;
+                                        return (
+                                            <View key={video.id} style={[styles.gridItem, isLastOdd && styles.gridItemLastOdd]}>
+                                                <GridVideoCard
+                                                    video={video}
+                                                    index={index}
+                                                    onPress={() => navigation.navigate('VideoPlayer', {
+                                                        title: video.title,
+                                                        videoId: video.id,
+                                                        videoUrl: video.videoUrl,
+                                                        videoType: 'exercise_library',
+                                                    })}
+                                                />
+                                                <TouchableOpacity
+                                                    onPress={() => pinFavorite(video.id)}
+                                                    style={[styles.pinBtn, pinned && styles.pinBtnActive]}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                >
+                                                    <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
+                                                </TouchableOpacity>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            )}
+                        </View>
+                    )}
+
+                    {/* Workouts section */}
+                    {showWorkouts && (
+                        <View style={{ marginTop: 28 }}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionTitle}>Workouts</Text>
+                                <Text style={styles.sectionCount}>{workoutFavorites.length}</Text>
+                            </View>
+                            {workoutFavorites.length === 0 ? (
+                                <Text style={styles.emptySection}>No favourite workouts yet.</Text>
+                            ) : (
+                                <View style={styles.grid}>
+                                    {workoutFavorites.map((video: any, index: number) => {
+                                        const pinned = isPinned(video.id);
+                                        const isLastOdd = workoutFavorites.length % 2 !== 0 && index === workoutFavorites.length - 1;
+                                        return (
+                                            <View key={video.id} style={[styles.gridItem, isLastOdd && styles.gridItemLastOdd]}>
+                                                <GridVideoCard
+                                                    video={video as any}
+                                                    index={index}
+                                                    onPress={() => navigation.navigate('VideoPlayer', {
+                                                        title: video.title,
+                                                        videoId: video.id,
+                                                        videoUrl: video.videoUrl,
+                                                        videoType: 'premade_workout',
+                                                        allowInvite: true,
+                                                    })}
+                                                />
+                                                <TouchableOpacity
+                                                    onPress={() => pinFavorite(video.id)}
+                                                    style={[styles.pinBtn, pinned && styles.pinBtnActive]}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                >
+                                                    <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
+                                                </TouchableOpacity>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </ScrollView>
             )}
         </SafeAreaView>
     );
@@ -135,6 +193,44 @@ const styles = StyleSheet.create({
         fontSize: 15,
         textAlign: 'center',
         lineHeight: 22,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: SCREEN_PADDING,
+        marginBottom: 14,
+        gap: 8,
+    },
+    sectionTitle: {
+        color: '#ffffff',
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    sectionCount: {
+        color: '#607a94',
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    emptySection: {
+        color: '#607a94',
+        fontSize: 13,
+        paddingHorizontal: SCREEN_PADDING,
+        paddingBottom: 8,
+    },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: SCREEN_PADDING,
+        gap: 12,
+    },
+    gridItem: {
+        flex: 1,
+        minWidth: '45%',
+        position: 'relative',
+    },
+    gridItemLastOdd: {
+        maxWidth: '50%',
+        paddingRight: 6,
     },
     pinBtn: {
         position: 'absolute',

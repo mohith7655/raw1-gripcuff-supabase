@@ -43,6 +43,8 @@ import QRCode from 'react-native-qrcode-svg';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { HOBBY_META } from '../models/SocialProfile';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
+import { BADGE_FAMILIES, TIER_COLORS, getTierName } from '../services/badge.types';
+import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -450,40 +452,46 @@ export function QRCodeScreen() {
 
           {/* Badges */}
           <SectionCard title="Badges">
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              contentContainerStyle={s.badgesScroll}
-            >
-              {ALL_BADGES.slice(0, 8).map((badge, i) => {
-                const isEarned = (earnedBadges ?? []).includes(badge.id);
-                return (
-                  <View key={badge.id} style={s.badgeItemContainer}>
-                    <View 
-                      style={[
-                        s.badgeShape, 
-                        i % 2 === 1 && s.badgeShapeAlt,
-                        !isEarned && s.badgeShapeLocked
-                      ]}
-                    >
-                      <Text style={[s.badgeEmoji, !isEarned && s.badgeEmojiLocked]}>
-                        {badge.emoji}
-                      </Text>
-                    </View>
-                    <Text style={[s.badgeLabel, !isEarned && s.badgeLabelLocked]} numberOfLines={1}>
-                      {badge.label}
-                    </Text>
-                  </View>
-                );
-              })}
-              {Math.max(0, ALL_BADGES.length - 8) > 0 && (
-                <View style={s.moreBadgeContainer}>
-                  <View style={s.moreBadge}>
-                    <Text style={s.moreBadgeText}>+{Math.max(0, ALL_BADGES.length - 8)}</Text>
-                  </View>
-                </View>
-              )}
-            </ScrollView>
+            {(() => {
+              const stats: UserBadgeStats = {
+                bestStreak:        streak ?? 0,
+                totalWorkouts:     workouts ?? 0,
+                totalLiveSessions: 0,
+                totalViewers:      0,
+                coachSessions:     0,
+                totalWatchMinutes: 0,
+                founderTier:       0,
+              };
+              const badgeStates = deriveBadgeStates(stats);
+              return (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.badgesScroll}
+                >
+                  {BADGE_FAMILIES.map(family => {
+                    const state  = badgeStates.find(bs => bs.familyKey === family.key);
+                    const tier   = state?.currentTier ?? 0;
+                    const color  = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
+                    const name   = tier > 0 ? getTierName(family, tier) : 'Locked';
+                    const locked = tier === 0;
+                    return (
+                      <View key={family.key} style={s.badgeItemContainer}>
+                        <View style={[
+                          s.badgeShape,
+                          { borderColor: locked ? 'rgba(255,255,255,0.1)' : color + '88',
+                            backgroundColor: locked ? 'rgba(255,255,255,0.04)' : color + '22' },
+                          locked && s.badgeShapeLocked,
+                        ]}>
+                          <Text style={[s.badgeEmoji, locked && s.badgeEmojiLocked]}>{family.emoji}</Text>
+                        </View>
+                        <Text style={[s.badgeLabel, locked && s.badgeLabelLocked]} numberOfLines={1}>{name}</Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              );
+            })()}
           </SectionCard>
 
         </View>

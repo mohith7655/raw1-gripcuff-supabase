@@ -43,6 +43,8 @@ import { SocialProfileService } from '../services/socialProfile.service';
 import { FriendService } from '../services/friend.service';
 import { StreakService, StreakData } from '../services/streak.service';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
+import { BADGE_FAMILIES, TIER_COLORS, getTierName } from '../services/badge.types';
+import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 import { User } from '../models/User';
 import { SocialProfile, HOBBY_META, Hobby } from '../models/SocialProfile';
 import { RelationshipStatus } from '../models/Friend';
@@ -134,6 +136,18 @@ function deriveBadges(streakData: StreakData | null): Badge[] {
   if (streakData.bestStreak >= 14)       ids.add('14_day_streak');
   if (streakData.totalLiveSessions >= 1) ids.add('first_live_session');
   return ALL_BADGES.filter(b => ids.has(b.id));
+}
+
+function buildBadgeStats(streakData: StreakData | null): UserBadgeStats {
+  return {
+    bestStreak:        streakData?.bestStreak ?? 0,
+    totalWorkouts:     streakData?.totalWorkouts ?? 0,
+    totalLiveSessions: streakData?.totalLiveSessions ?? 0,
+    totalViewers:      0,
+    coachSessions:     0,
+    totalWatchMinutes: Math.floor(((streakData as any)?.watchedSeconds ?? 0) / 60),
+    founderTier:       0,
+  };
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -327,9 +341,9 @@ export function ScannedProfileScreen() {
   const hobbyItems = ((social?.hobbies?.length ? social.hobbies : []) as Hobby[])
     .filter(h => !!HOBBY_META[h]).slice(0, 4);
 
-  const earnedBadges = deriveBadges(streakData);
-  const visibleBadges = earnedBadges.slice(0, 4);
-  const extraCount   = Math.max(0, earnedBadges.length - 4);
+  const earnedBadges  = deriveBadges(streakData);
+  const badgeStats    = buildBadgeStats(streakData);
+  const badgeStates   = deriveBadgeStates(badgeStats);
 
   const isOwnProfile  = supabaseUserId === targetUid;
   const bottomPadding = Platform.OS === 'ios' ? 110 : 90;
@@ -546,40 +560,35 @@ export function ScannedProfileScreen() {
           <View style={s.cardHeaderRow}>
             <Text style={s.cardTitle}>Badges</Text>
           </View>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={s.badgesScroll}
           >
-            {ALL_BADGES.slice(0, 8).map((badge, i) => {
-              const earnedIds = new Set(earnedBadges.map(b => b.id));
-              const isEarned = earnedIds.has(badge.id);
+            {BADGE_FAMILIES.map(family => {
+              const state  = badgeStates.find(bs => bs.familyKey === family.key);
+              const tier   = state?.currentTier ?? 0;
+              const color  = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
+              const name   = tier > 0 ? getTierName(family, tier) : 'Locked';
+              const locked = tier === 0;
               return (
-                <View key={badge.id} style={s.badgeItemContainer}>
-                  <View 
-                    style={[
-                      s.badgeShape, 
-                      i % 2 === 1 && s.badgeShapeAlt,
-                      !isEarned && s.badgeShapeLocked
-                    ]}
-                  >
-                    <Text style={[s.badgeEmoji, !isEarned && s.badgeEmojiLocked]}>
-                      {badge.emoji}
+                <View key={family.key} style={s.badgeItemContainer}>
+                  <View style={[
+                    s.badgeShape,
+                    { borderColor: locked ? 'rgba(255,255,255,0.1)' : color + '88',
+                      backgroundColor: locked ? 'rgba(255,255,255,0.04)' : color + '22' },
+                    locked && s.badgeShapeLocked,
+                  ]}>
+                    <Text style={[s.badgeEmoji, locked && s.badgeEmojiLocked]}>
+                      {family.emoji}
                     </Text>
                   </View>
-                  <Text style={[s.badgeLabel, !isEarned && s.badgeLabelLocked]} numberOfLines={1}>
-                    {badge.label}
+                  <Text style={[s.badgeLabel, locked && s.badgeLabelLocked]} numberOfLines={1}>
+                    {name}
                   </Text>
                 </View>
               );
             })}
-            {Math.max(0, ALL_BADGES.length - 8) > 0 && (
-              <View style={s.moreBadgeContainer}>
-                <View style={s.moreBadge}>
-                  <Text style={s.moreBadgeText}>+{Math.max(0, ALL_BADGES.length - 8)}</Text>
-                </View>
-              </View>
-            )}
           </ScrollView>
         </ProfileCard>
 
