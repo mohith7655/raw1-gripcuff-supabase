@@ -94,7 +94,7 @@ export function AllFavouritesScreen() {
     const route = useRoute();
     const { type = 'all' } = (route.params as RouteParams) ?? {};
     const { isPinned, pinFavorite } = useFavorites();
-    const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
+    const { allVideos, gripCuffVideos, trainerVideos, bodyPartVideos, setSubTab: setLibSubTab } = useLibrary();
 
     const [activeTab, setActiveTab] = useState<ActiveTab>(
         type === 'workouts' ? 'workouts' : 'exercises'
@@ -195,6 +195,13 @@ export function AllFavouritesScreen() {
                                     );
                                 })}
                             </View>
+                            <TouchableOpacity
+                                style={styles.allBtn}
+                                onPress={() => { setLibSubTab('all'); navigation.navigate('HomeTabs', { screen: 'LibraryTab' }); }}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.allBtnText}>All Exercises →</Text>
+                            </TouchableOpacity>
                         </ScrollView>
                     )
                 ) : (
@@ -254,6 +261,13 @@ export function AllFavouritesScreen() {
                                     );
                                 })}
                             </View>
+                            <TouchableOpacity
+                                style={styles.allBtn}
+                                onPress={() => { setLibSubTab('workouts'); navigation.navigate('HomeTabs', { screen: 'LibraryTab' }); }}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.allBtnText}>All Workouts →</Text>
+                            </TouchableOpacity>
                         </ScrollView>
                     )
                 )}
@@ -373,6 +387,20 @@ const styles = StyleSheet.create({
     },
     pinBtnActive: {
         backgroundColor: AppTheme.primaryColor,
+    },
+    allBtn: {
+        marginTop: 20,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: AppTheme.primaryColor,
+        borderRadius: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    allBtnText: {
+        color: AppTheme.primaryColor,
+        fontSize: 14,
+        fontWeight: '700',
     },
     thumbnail: {
         width: '100%',

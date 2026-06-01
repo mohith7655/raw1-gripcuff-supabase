@@ -25,7 +25,7 @@ interface VideoData {
 }
 
 const VIDEO_DATA: VideoData[] = [
-    { id: '1', level: 1, title: 'Introduction to GripCuff', subtitle: 'What is GripCuff and how it works', duration: '15:00', cost: 0, unlockedByDefault: true },
+    { id: '1', level: 1, title: 'Introduction to Gripcuff', subtitle: 'What is Gripcuff and how it works', duration: '15:00', cost: 0, unlockedByDefault: true },
     { id: '2', level: 2, title: 'Basic Grip Techniques', subtitle: 'Foundation grip positions', duration: '15:00', cost: 5, unlockedByDefault: false },
     { id: '3', level: 3, title: 'Wrist Strength Training', subtitle: 'Build wrist endurance', duration: '15:00', cost: 5, unlockedByDefault: false },
     { id: '4', level: 4, title: 'Forearm Activation', subtitle: 'Activate deep forearm muscles', duration: '15:00', cost: 10, unlockedByDefault: false },
@@ -34,7 +34,7 @@ const VIDEO_DATA: VideoData[] = [
     { id: '7', level: 7, title: 'Finger Isolation Drills', subtitle: 'Individual finger strength', duration: '15:00', cost: 15, unlockedByDefault: false },
     { id: '8', level: 8, title: 'Dynamic Grip Training', subtitle: 'Explosive grip movements', duration: '15:00', cost: 20, unlockedByDefault: false },
     { id: '9', level: 9, title: 'Grip Endurance Protocol', subtitle: 'Long duration grip training', duration: '15:00', cost: 20, unlockedByDefault: false },
-    { id: '10', level: 10, title: 'Elite GripCuff Master', subtitle: 'Full program integration', duration: '15:00', cost: 30, unlockedByDefault: false },
+    { id: '10', level: 10, title: 'Elite Gripcuff Master', subtitle: 'Full program integration', duration: '15:00', cost: 30, unlockedByDefault: false },
 ];
 
 export const GripCuffTrainingScreen = () => {
@@ -82,7 +82,7 @@ export const GripCuffTrainingScreen = () => {
                     <ArrowLeft color="#ffffff" size={24} />
                 </TouchableOpacity>
                 <View style={styles.headerTitles}>
-                    <Text style={styles.headerTitle}>GripCuff Training</Text>
+                    <Text style={styles.headerTitle}>Gripcuff Training</Text>
                     <Text style={styles.headerSubtitle}>Beginner · 10 Levels</Text>
                 </View>
                 <View style={{ width: 40 }} />

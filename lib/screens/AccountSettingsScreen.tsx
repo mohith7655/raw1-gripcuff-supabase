@@ -388,9 +388,9 @@ export const AccountSettingsScreen = () => {
                     {accessType === 'gripcuff' && (
                         <TouchableOpacity style={styles.accessCard} activeOpacity={1}>
                             <View style={styles.gripcuffBadge}>
-                                <Text style={styles.gripcuffText}>🔗 GripCuff Activated</Text>
+                                <Text style={styles.gripcuffText}>🔗 Gripcuff Activated</Text>
                             </View>
-                            <Text style={styles.accessDesc}>Access granted via GripCuff order</Text>
+                            <Text style={styles.accessDesc}>Access granted via Gripcuff order</Text>
                         </TouchableOpacity>
                     )}
                     {!accessType && (
@@ -398,7 +398,7 @@ export const AccountSettingsScreen = () => {
                             <View style={styles.inactiveBadge}>
                                 <Text style={styles.inactiveText}>🔒 Not Activated</Text>
                             </View>
-                            <Text style={styles.accessDesc}>Tap to subscribe or enter GripCuff order</Text>
+                            <Text style={styles.accessDesc}>Tap to subscribe or enter Gripcuff order</Text>
                         </TouchableOpacity>
                     )}
                     {!!gripcuffStatus && (

@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, Animated, Platform } from 'react-native';
 import { Play } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme } from '../core/theme/app_theme';
 import { useFavorites } from '../hooks/useFavorites';
@@ -106,20 +107,18 @@ export function MultiColVideoCard({
                 <View style={{ width: playSize, height: playSize, borderRadius: playSize / 2, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
                     <Play color="#fff" size={iconSize} fill="#fff" />
                 </View>
+                <View style={{ position: 'absolute', top: 4, left: 4 }}>
+                    <Raw1Logo fontSize={7} />
+                </View>
                 <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
                     <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
             </LinearGradient>
 
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingTop: 4, paddingHorizontal: 1 }}>
-                <Text style={{ flex: 1, color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
+            <View style={{ paddingTop: 4, paddingHorizontal: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
                     {displayTitle}
                 </Text>
-                <TouchableOpacity onPress={handleFav} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-                        <Ionicons name={fav ? 'heart' : 'heart-outline'} size={13} color={fav ? AppTheme.primaryColor : '#607a94'} />
-                    </Animated.View>
-                </TouchableOpacity>
             </View>
         </TouchableOpacity>
     );
@@ -165,6 +164,9 @@ export function ListVideoCard({
                 <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
                     <Play color="#fff" size={10} fill="#fff" />
                 </View>
+                <View style={{ position: 'absolute', top: 3, left: 3 }}>
+                    <Raw1Logo fontSize={6} />
+                </View>
                 <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
                     <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
@@ -179,11 +181,6 @@ export function ListVideoCard({
                 </Text>
             </View>
 
-            <TouchableOpacity onPress={handleFav} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-                    <Ionicons name={fav ? 'heart' : 'heart-outline'} size={20} color={fav ? AppTheme.primaryColor : '#607a94'} />
-                </Animated.View>
-            </TouchableOpacity>
         </TouchableOpacity>
     );
 }

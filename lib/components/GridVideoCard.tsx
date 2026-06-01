@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Image, Platform } from 'react-native';
 import { Play } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Raw1Logo } from '../raw1_logo';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
@@ -53,6 +54,9 @@ export const GridVideoCard = ({
                         resizeMode="cover"
                     />
                 )}
+                <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                    <Raw1Logo fontSize={8} />
+                </View>
                 <View style={styles.playIconContainer}>
                     <Play color="#fff" size={16} fill="#fff" />
                 </View>
@@ -62,20 +66,9 @@ export const GridVideoCard = ({
             </View>
 
             <View style={styles.infoContainer}>
-                <View style={styles.titleRow}>
-                    <Text style={styles.videoTitle} numberOfLines={2}>
-                        {video.title}
-                    </Text>
-                    <TouchableOpacity onPress={handleFavoritePress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-                            <Ionicons
-                                name={fav ? "heart" : "heart-outline"}
-                                size={20}
-                                color={fav ? AppTheme.primaryColor : AppTheme.textGrey}
-                            />
-                        </Animated.View>
-                    </TouchableOpacity>
-                </View>
+                <Text style={styles.videoTitle} numberOfLines={2}>
+                    {video.title}
+                </Text>
             </View>
         </TouchableOpacity>
     );

@@ -56,7 +56,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   const setTab = (tab: VideoType) => {
     // Don't allow accessing Trainer tab if not unlocked
     if (tab === 'Trainer' && isTrainerListLocked) {
-      setError('Complete all GripCuff training videos to unlock Trainer content.');
+      setError('Complete all Gripcuff training videos to unlock Trainer content.');
       return;
     }
     setSelectedTab(tab);
@@ -174,29 +174,29 @@ function getMockAllVideos(): Video[] {
   }));
 }
 
-// Mock data for GripCuff videos
+// Mock data for Gripcuff videos
 function getMockGripCuffVideos(): Video[] {
   const videos: { title: string; duration: number; category: string; difficulty: string; purpose: any }[] = [
-    { title: 'Introduction to GripCuff', duration: 225, category: 'GripCuff', difficulty: 'Beginner',
-      purpose: { summary: 'This foundational session familiarises you with the GripCuff device and its resistance mechanism, setting the correct movement patterns before progressive loading begins.', benefits: ['Establishes safe device handling to prevent early wrist strain', 'Builds proprioceptive awareness of forearm tension during resistance work', 'Creates a baseline grip strength measurement to track future progress'] } },
-    { title: 'Proper Strap Placement', duration: 312, category: 'GripCuff', difficulty: 'Beginner',
+    { title: 'Introduction to Gripcuff', duration: 225, category: 'Gripcuff', difficulty: 'Beginner',
+      purpose: { summary: 'This foundational session familiarises you with the Gripcuff device and its resistance mechanism, setting the correct movement patterns before progressive loading begins.', benefits: ['Establishes safe device handling to prevent early wrist strain', 'Builds proprioceptive awareness of forearm tension during resistance work', 'Creates a baseline grip strength measurement to track future progress'] } },
+    { title: 'Proper Strap Placement', duration: 312, category: 'Gripcuff', difficulty: 'Beginner',
       purpose: { summary: 'Learning exact strap placement ensures even load distribution across the wrist and forearm, making every subsequent session safer and more effective.', benefits: ['Prevents pressure-point discomfort that limits training duration', 'Optimises force transfer from the cuff to the target forearm muscles', 'Reduces risk of wrist impingement during loaded flexion and extension'] } },
-    { title: 'Wrist Curl Fundamentals', duration: 270, category: 'GripCuff', difficulty: 'Intermediate',
+    { title: 'Wrist Curl Fundamentals', duration: 270, category: 'Gripcuff', difficulty: 'Intermediate',
       purpose: { summary: 'Wrist curls directly isolate the wrist flexors and build the foundational strength that underpins all gripping, carrying, and pulling movements.', benefits: ['Strengthens the flexor carpi radialis and ulnaris for powerful grip closure', 'Increases wrist stability under load to protect the joint during lifting', 'Develops the forearm belly thickness associated with visible arm strength'] } },
-    { title: 'Reverse Wrist Curls', duration: 360, category: 'GripCuff', difficulty: 'Intermediate',
+    { title: 'Reverse Wrist Curls', duration: 360, category: 'Gripcuff', difficulty: 'Intermediate',
       purpose: { summary: 'Reverse wrist curls train the often-neglected extensor muscles of the forearm, correcting the muscular imbalance that leads to tennis elbow and repetitive strain injuries.', benefits: ['Strengthens wrist extensors to counterbalance heavy flexor training', 'Reduces risk of lateral epicondylitis by equalising forearm muscle tension', 'Improves wrist control during the release phase of gripping movements'] } },
-    { title: 'Finger Extension Drills', duration: 255, category: 'GripCuff', difficulty: 'Intermediate',
+    { title: 'Finger Extension Drills', duration: 255, category: 'Gripcuff', difficulty: 'Intermediate',
       purpose: { summary: 'Finger extension work builds the opening muscles of the hand — chronically weak in most people — restoring balance that directly enhances closing grip strength.', benefits: ['Develops extensor digitorum strength for a fuller range of grip motion', 'Alleviates finger flexor tightness that restricts hand dexterity', 'Improves grip endurance by reducing antagonist muscle fatigue during holds'] } },
-    { title: 'Grip Squeeze Technique', duration: 345, category: 'GripCuff', difficulty: 'Advanced',
-      purpose: { summary: 'This session teaches maximal voluntary contraction technique against GripCuff resistance, producing peak motor unit recruitment and rapid hand-strength gains.', benefits: ['Maximises fast-twitch motor unit activation in the intrinsic hand muscles', 'Builds crushing grip force directly applicable to deadlifts and pull-ups', 'Improves neuromuscular efficiency so strength gains outpace hypertrophy'] } },
-    { title: 'Pronation & Supination', duration: 430, category: 'GripCuff', difficulty: 'Advanced',
+    { title: 'Grip Squeeze Technique', duration: 345, category: 'Gripcuff', difficulty: 'Advanced',
+      purpose: { summary: 'This session teaches maximal voluntary contraction technique against Gripcuff resistance, producing peak motor unit recruitment and rapid hand-strength gains.', benefits: ['Maximises fast-twitch motor unit activation in the intrinsic hand muscles', 'Builds crushing grip force directly applicable to deadlifts and pull-ups', 'Improves neuromuscular efficiency so strength gains outpace hypertrophy'] } },
+    { title: 'Pronation & Supination', duration: 430, category: 'Gripcuff', difficulty: 'Advanced',
       purpose: { summary: 'Rotational forearm training develops the pronator and supinator muscles that stabilise the elbow and wrist under twisting loads encountered in throwing, racket sports, and bar work.', benefits: ['Strengthens pronator teres and supinator for rotational wrist control', 'Protects the elbow joint during forearm rotation under resistance', 'Transfers directly to bat speed, racket power, and bar-spin strength'] } },
-    { title: 'Endurance Hold Training', duration: 500, category: 'GripCuff', difficulty: 'Advanced',
+    { title: 'Endurance Hold Training', duration: 500, category: 'Gripcuff', difficulty: 'Advanced',
       purpose: { summary: 'Sustained-hold training shifts adaptation toward slow-twitch endurance fibres in the forearm, allowing you to maintain grip force over extended periods without early fatigue.', benefits: ['Develops forearm slow-twitch endurance for long carries and climbing holds', 'Increases capillary density in forearm muscles for faster metabolite clearance', 'Delays grip failure during high-rep pulling and rowing movements'] } },
-    { title: 'Advanced Pinch Grips', duration: 415, category: 'GripCuff', difficulty: 'Advanced',
+    { title: 'Advanced Pinch Grips', duration: 415, category: 'Gripcuff', difficulty: 'Advanced',
       purpose: { summary: 'Pinch grip training isolates the thumb and thenar muscles — the primary drivers of object-control strength — producing grip capability that crush-only training cannot replicate.', benefits: ['Strengthens flexor pollicis longus and thenar eminence for thumb power', 'Improves object-control precision needed in lifting straps and equipment', 'Builds the index-thumb pinch strength used in every tool-based sport'] } },
-    { title: 'Full Recovery Routine', duration: 240, category: 'GripCuff', difficulty: 'Beginner',
-      purpose: { summary: 'This active recovery session promotes blood flow through the forearm muscles, flushing metabolic waste and restoring full range of motion between hard training days.', benefits: ['Reduces delayed-onset muscle soreness in the flexors and extensors', 'Restores wrist and finger range of motion lost through training-induced tightness', 'Prepares connective tissue for the next high-intensity GripCuff session'] } },
+    { title: 'Full Recovery Routine', duration: 240, category: 'Gripcuff', difficulty: 'Beginner',
+      purpose: { summary: 'This active recovery session promotes blood flow through the forearm muscles, flushing metabolic waste and restoring full range of motion between hard training days.', benefits: ['Reduces delayed-onset muscle soreness in the flexors and extensors', 'Restores wrist and finger range of motion lost through training-induced tightness', 'Prepares connective tissue for the next high-intensity Gripcuff session'] } },
   ];
 
   return videos.map((v, i) => ({
@@ -207,7 +207,7 @@ function getMockGripCuffVideos(): Video[] {
     thumbnail: '',
     description: v.title,
     difficulty: v.difficulty as any,
-    videoType: 'GripCuff' as const,
+    videoType: 'Gripcuff' as const,
     isCompleted: false,
     videoUrl: EXERCISE_LIBRARY_VIDEO_URL,
     purpose: v.purpose,

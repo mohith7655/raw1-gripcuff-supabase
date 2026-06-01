@@ -72,6 +72,37 @@ import { getAllPrograms } from '../data/preRecordedPrograms';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
+// Pulsing fire-glow border pill for the streak badge
+function FireGlowPill({ children, style }: { children: React.ReactNode; style?: any }) {
+  const glow = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, { toValue: 1, duration: 900, useNativeDriver: false }),
+        Animated.timing(glow, { toValue: 0, duration: 900, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(255,107,0,0.7)', 'rgba(255,160,0,1)'] });
+  const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.0] });
+  const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [6, 20] });
+  return (
+    <Animated.View style={[style, {
+      borderWidth: 2,
+      borderColor,
+      shadowColor: '#FF8C00',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: shadowOpacity as any,
+      shadowRadius: shadowRadius as any,
+      elevation: 10,
+    }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 // ── Recommendation card row ────────────────────────────────────────────────────
 function RecommendationSection({
   title,
@@ -125,6 +156,10 @@ function RecommendationSection({
               }}
             >
               <Text style={{ fontSize: 34 }}>{item.categoryEmoji}</Text>
+              {/* RAW1 logo watermark */}
+              <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                <Raw1Logo fontSize={8} />
+              </View>
               {/* difficulty badge */}
               <View
                 style={{
@@ -724,7 +759,7 @@ const HomeScreenInner = () => {
                       <WebSafeAvatar
                         uri={profile?.profileImageUrl}
                         size={72}
-                        fallback={<CircleUserRound color="#C26A2D" size={52} />}
+                        fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
                       />
                     </View>
                   </View>
@@ -736,15 +771,26 @@ const HomeScreenInner = () => {
                         <Text style={styles.profileStatPillText}>🏅 No badges yet</Text>
                       </View>
                     ) : (
-                      earnedBadges.map((b, i) => (
-                        <View key={i} style={styles.profileStatPill}>
-                          <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
-                        </View>
-                      ))
+                      earnedBadges.map((b, i) =>
+                        b.label === 'Streak' ? (
+                          <FireGlowPill key={i} style={styles.profileStatPill}>
+                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                          </FireGlowPill>
+                        ) : (
+                          <View key={i} style={styles.profileStatPill}>
+                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                          </View>
+                        )
+                      )
                     )}
-                    <View style={styles.profileStatPill}>
-                      <Text style={styles.profileStatPillText}>🏋️ GripCuff Lv.{gripCuffLevel}</Text>
-                    </View>
+                    <TouchableOpacity
+                      style={styles.profileStatPill}
+                      onPress={() => setShowTiersModal(true)}
+                      activeOpacity={0.75}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.profileStatPillText}>🏋️ Gripcuff Lv.{gripCuffLevel}</Text>
+                    </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
 
@@ -801,13 +847,13 @@ const HomeScreenInner = () => {
 
 
 
-              {/* GripCuff Training Progress Card */}
+              {/* Gripcuff Training Progress Card */}
               <View style={styles.gripCuffCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   {/* Left: title + badge + buttons */}
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <Text style={styles.gripCuffTitle}>GripCuff Training</Text>
+                      <Text style={styles.gripCuffTitle}>Gripcuff Training</Text>
                       <View style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 }}>
                         <Text style={{ color: '#4FC3F7', fontSize: 10, fontWeight: '700' }}>STARTER</Text>
                       </View>
@@ -1552,7 +1598,7 @@ const HomeScreenInner = () => {
         </TouchableOpacity>
       </Modal>
 
-      {/* GripCuff Tiers Modal */}
+      {/* Gripcuff Tiers Modal */}
       <Modal
         visible={showTiersModal}
         transparent={true}
@@ -1562,7 +1608,7 @@ const HomeScreenInner = () => {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: '#12122A', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxHeight: '85%' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>GripCuff Memberships</Text>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Gripcuff Memberships</Text>
               <TouchableOpacity onPress={() => setShowTiersModal(false)}>
                 <Ionicons name="close-circle" size={28} color="#666" />
               </TouchableOpacity>
@@ -1573,14 +1619,14 @@ const HomeScreenInner = () => {
                   <View style={[styles.tierBadge, { backgroundColor: '#1E3A5F' }]}><Text style={styles.tierBadgeText}>STARTER</Text></View>
                   <Text style={styles.tierPrice}>Free</Text>
                 </View>
-                <Text style={styles.tierDesc}>Get started with GripCuff basics. Access the first introductory video, track your progress, and explore the app.</Text>
+                <Text style={styles.tierDesc}>Get started with Gripcuff basics. Access the first introductory video, track your progress, and explore the app.</Text>
                 <Text style={styles.tierFeatures}>{'✓ Access to 1 free video\n✓ Progress tracking\n✓ Community access\n✗ Locked advanced content'}</Text>
               </View>
               <View style={styles.tierCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <View style={[styles.tierBadge, { backgroundColor: '#7C3AED' }]}><Text style={styles.tierBadgeText}>LIFTER</Text></View>
                 </View>
-                <Text style={styles.tierDesc}>Unlock the full GripCuff training library. Follow structured programs and track strength gains.</Text>
+                <Text style={styles.tierDesc}>Unlock the full Gripcuff training library. Follow structured programs and track strength gains.</Text>
                 <Text style={styles.tierFeatures}>{'✓ Full video library access\n✓ Structured training programs\n✓ Progress analytics\n✓ Live workout sessions\n✗ Upload access'}</Text>
               </View>
               <View style={styles.tierCard}>
@@ -1594,7 +1640,7 @@ const HomeScreenInner = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <View style={[styles.tierBadge, { backgroundColor: '#D4AF37' }]}><Text style={styles.tierBadgeText}>INFLUENCER</Text></View>
                 </View>
-                <Text style={styles.tierDesc}>The ultimate GripCuff tier. Get featured, access exclusive partnerships, and earn commission on referred members.</Text>
+                <Text style={styles.tierDesc}>The ultimate Gripcuff tier. Get featured, access exclusive partnerships, and earn commission on referred members.</Text>
                 <Text style={styles.tierFeatures}>{'✓ Everything in Trainer\n✓ Featured homepage placement\n✓ Affiliate commission program\n✓ Priority support\n✓ Brand partnership access\n✓ Custom profile banner'}</Text>
               </View>
             </ScrollView>

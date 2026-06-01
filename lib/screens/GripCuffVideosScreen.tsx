@@ -74,7 +74,7 @@ const BG_COLORS = [
 ] as const;
 
 const VIDEOS = [
-    { id: 1, level: "Level 1", title: "Introduction to GripCuff", desc: "What is GripCuff and how it works", duration: "15:00", credits: 0, locked: false },
+    { id: 1, level: "Level 1", title: "Introduction to Gripcuff", desc: "What is Gripcuff and how it works", duration: "15:00", credits: 0, locked: false },
     { id: 2, level: "Level 2", title: "Basic Grip Techniques", desc: "Foundation grip positions", duration: "18:00", credits: 5, locked: true },
     { id: 3, level: "Level 3", title: "Wrist Strength Training", desc: "Build wrist endurance", duration: "20:00", credits: 5, locked: true },
     { id: 4, level: "Level 4", title: "Forearm Activation", desc: "Activate deep forearm muscles", duration: "22:00", credits: 10, locked: true },
@@ -83,7 +83,7 @@ const VIDEOS = [
     { id: 7, level: "Level 7", title: "Finger Isolation Drills", desc: "Individual finger strength", duration: "30:00", credits: 15, locked: true },
     { id: 8, level: "Level 8", title: "Dynamic Grip Training", desc: "Explosive grip movements", duration: "32:00", credits: 20, locked: true },
     { id: 9, level: "Level 9", title: "Grip Endurance Protocol", desc: "Long duration grip training", duration: "35:00", credits: 20, locked: true },
-    { id: 10, level: "Level 10", title: "Elite GripCuff Master", desc: "Full program integration", duration: "40:00", credits: 30, locked: true },
+    { id: 10, level: "Level 10", title: "Elite Gripcuff Master", desc: "Full program integration", duration: "40:00", credits: 30, locked: true },
 ];
 
 export const GripCuffVideosScreen = () => {
@@ -127,7 +127,7 @@ export const GripCuffVideosScreen = () => {
                     <Text style={styles.headerBackText}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitleText}>
-                    GripCuff Training
+                    Gripcuff Training
                 </Text>
             </View>
             <Text style={styles.headerSubtitleText}>
@@ -251,7 +251,7 @@ export const GripCuffVideosScreen = () => {
                         {/* Header */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>
-                                GripCuff Memberships
+                                Gripcuff Memberships
                             </Text>
                             <TouchableOpacity onPress={() => setShowTiersModal(false)}>
                                 <Ionicons name="close-circle" size={28} color="#666" />
@@ -268,7 +268,7 @@ export const GripCuffVideosScreen = () => {
                                     <Text style={tierPrice}>Free</Text>
                                 </View>
                                 <Text style={tierDesc}>
-                                    Get started with GripCuff basics. Access the first introductory video, track your progress, and explore the app. Perfect for beginners who want to experience GripCuff before committing to a plan.
+                                    Get started with Gripcuff basics. Access the first introductory video, track your progress, and explore the app. Perfect for beginners who want to experience Gripcuff before committing to a plan.
                                 </Text>
                                 <Text style={tierFeatures}>
                                     ✓ Access to 1 free video{'\n'}
@@ -286,7 +286,7 @@ export const GripCuffVideosScreen = () => {
                                     </View>
                                 </View>
                                 <Text style={tierDesc}>
-                                    Unlock the full GripCuff training library. Follow structured programs, track strength gains, and access all beginner to advanced workout videos. Built for serious athletes who train regularly.
+                                    Unlock the full Gripcuff training library. Follow structured programs, track strength gains, and access all beginner to advanced workout videos. Built for serious athletes who train regularly.
                                 </Text>
                                 <Text style={tierFeatures}>
                                     ✓ Full video library access{'\n'}
@@ -305,7 +305,7 @@ export const GripCuffVideosScreen = () => {
                                     </View>
                                 </View>
                                 <Text style={tierDesc}>
-                                    Everything in Lifter, plus the ability to upload your own workout videos to the app. Build your personal brand, grow a following, and coach clients directly through the GripCuff platform.
+                                    Everything in Lifter, plus the ability to upload your own workout videos to the app. Build your personal brand, grow a following, and coach clients directly through the Gripcuff platform.
                                 </Text>
                                 <Text style={tierFeatures}>
                                     ✓ Everything in Lifter{'\n'}
@@ -324,7 +324,7 @@ export const GripCuffVideosScreen = () => {
                                     </View>
                                 </View>
                                 <Text style={tierDesc}>
-                                    The ultimate GripCuff tier. Designed for content creators and fitness influencers who want maximum visibility. Get featured on the home page, access exclusive partnership deals, and earn commission on referred members.
+                                    The ultimate Gripcuff tier. Designed for content creators and fitness influencers who want maximum visibility. Get featured on the home page, access exclusive partnership deals, and earn commission on referred members.
                                 </Text>
                                 <Text style={tierFeatures}>
                                     ✓ Everything in Trainer{'\n'}

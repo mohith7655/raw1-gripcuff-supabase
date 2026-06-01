@@ -27,7 +27,7 @@ const EARN_TASKS = [
   },
   {
     id: 'watch-intro',
-    title: 'Watch GripCuff Training Intro',
+    title: 'Watch Gripcuff Training Intro',
     description: 'Learn the basics of proper grip training technique',
     reward: 50,
     icon: '🎬',
@@ -48,7 +48,7 @@ const EARN_TASKS = [
 const SAMPLE_TRANSACTIONS = [
   {
     id: '1',
-    description: 'Watched GripCuff Training Intro',
+    description: 'Watched Gripcuff Training Intro',
     date: '2026-03-04',
     time: '2:30 PM',
     amount: 50,
@@ -216,7 +216,7 @@ export const CreditsScreen = () => {
                     <Text style={styles.hiwSectionTitle}>💎 EARN CREDITS</Text>
                   </View>
                   {[
-                    { icon: '🎬', label: 'Watch GripCuff Training Intro', amount: '+50 credits' },
+                    { icon: '🎬', label: 'Watch Gripcuff Training Intro', amount: '+50 credits' },
                     { icon: '🩷', label: 'Favourite an Exercise', amount: '+20 credits' },
                     { icon: '📷', label: 'Upload a Photo or Video', amount: '+30 credits' },
                     { icon: '👥', label: 'Refer a Friend', amount: '+100 credits' },

@@ -35,11 +35,10 @@ import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
 
 import { useFloatingToggle, FloatingTabToggle } from '../components/FloatingTabToggle';
+import { Raw1Logo } from '../raw1_logo';
 
 const WorkoutsTabContent = () => {
   const navigation = useNavigation<any>();
-  const [activeTab, setActiveTab] = useState<'programs' | 'ai'>('programs');
-
   const CategoryRow = ({ title, subtitle, IconName, color, onPress }: {
     title: string; subtitle: string; IconName: any; color: string; onPress?: () => void;
   }) => (
@@ -61,93 +60,36 @@ const WorkoutsTabContent = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Pill toggle */}
-      <View style={{ flexDirection: 'row', backgroundColor: '#131f2e', borderRadius: 12, padding: 4, marginHorizontal: 16, marginBottom: 4 }}>
-        <TouchableOpacity
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: activeTab === 'programs' ? '#000000' : 'transparent' }}
-          onPress={() => setActiveTab('programs')}
-          activeOpacity={0.8}
-        >
-          <Text style={{ color: activeTab === 'programs' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: activeTab === 'programs' ? '700' : '500' }}>
-            Pre-Recorded Programs
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: activeTab === 'ai' ? '#000000' : 'transparent' }}
-          onPress={() => setActiveTab('ai')}
-          activeOpacity={0.8}
-        >
-          <Sparkles size={13} color={activeTab === 'ai' ? AppTheme.primaryColor : '#607a94'} />
-          <Text style={{ color: activeTab === 'ai' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: activeTab === 'ai' ? '700' : '500' }}>
-            AI Personal Trainer
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       <ScrollView contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingTop: 16, paddingBottom: 40 }}>
-        {activeTab === 'programs' && (
-          <>
-            {/* Workout with a Friend */}
-            <TouchableOpacity
-              style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}
-              onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={['#1a1a1a', '#000000']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 12 }}
-              >
-                <Users color="#fff" size={20} style={{ marginRight: 10 }} />
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Workout with a Friend</Text>
-              </LinearGradient>
-            </TouchableOpacity>
 
-            {/* Category rows */}
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: CARD_BORDER_RADIUS, borderWidth: 1, borderColor: 'rgba(228,102,0,0.15)', overflow: 'hidden' }}>
-              <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#f44336" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
-              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
-              <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" IconName={PersonStanding} color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
-              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
-              <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#FFD600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
-              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
-              <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#66BB6A" onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
-            </View>
-          </>
-        )}
+        {/* Category rows */}
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: CARD_BORDER_RADIUS, borderWidth: 1, borderColor: 'rgba(228,102,0,0.15)', overflow: 'hidden', marginBottom: 16 }}>
+          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#f44336" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
+          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+          <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" IconName={PersonStanding} color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
+          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+          <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#FFD600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
+          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#66BB6A" onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+        </View>
 
-        {activeTab === 'ai' && (
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: CARD_BORDER_RADIUS, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', padding: 18, marginTop: 4 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18 }}>
-              <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(249,115,22,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles color={AppTheme.primaryColor} size={24} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 14 }}>
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 3 }}>AI Personal Trainer</Text>
-                <Text style={{ color: '#888', fontSize: 13 }}>Generate custom workouts</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={{ borderRadius: 12, overflow: 'hidden', width: '100%' }}
-              onPress={() => navigation.navigate('AITrainerScreen')}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={[AppTheme.primaryColor, '#ff8534']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 12 }}
-              >
-                <PlusCircle color="#fff" size={20} style={{ marginRight: 10 }} />
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Start AI Workout</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('UpcomingSessionsScreen')} style={{ marginTop: 14, alignItems: 'center' }}>
-              <Text style={{ color: AppTheme.primaryColor, fontSize: 13, fontWeight: '600' }}>View All Sessions →</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Workout with a Friend */}
+        <TouchableOpacity
+          style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}
+          onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={['#1a1a1a', '#000000']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 12 }}
+          >
+            <Users color="#fff" size={20} style={{ marginRight: 10 }} />
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Workout with a Friend</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
       </ScrollView>
     </View>
   );
@@ -343,27 +285,14 @@ export const LibraryScreen = () => {
                       }}>
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{video.duration}</Text>
                       </View>
+                      <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                        <Raw1Logo fontSize={8} />
+                      </View>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 8, paddingRight: 2 }}>
                       <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', flex: 1, lineHeight: 18 }} numberOfLines={2}>
                         {video.title}
                       </Text>
-                      <TouchableOpacity
-                        style={{ marginLeft: 6, marginTop: 2 }}
-                        onPress={() => toggleFavorite({
-                          id: String(video.id),
-                          title: video.title,
-                          duration: video.duration,
-                          category: 'Recommended',
-                        })}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Ionicons
-                          name={isFavorite(String(video.id)) ? 'heart' : 'heart-outline'}
-                          size={20}
-                          color={isFavorite(String(video.id)) ? AppTheme.primaryColor : AppTheme.textGrey}
-                        />
-                      </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -551,7 +480,7 @@ const SECTIONS = [
 ];
 
 const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; icon: string }[] = [
-  { key: 'GripCuff', label: 'GripCuff Training', mappingKey: 'gripcuff', icon: '🤜' },
+  { key: 'Gripcuff', label: 'Gripcuff Training', mappingKey: 'gripcuff', icon: '🤜' },
   { key: 'MuscleGrowth', label: 'Muscle Growth', mappingKey: 'muscle', icon: '🏋️' },
   { key: 'Stretching', label: 'Stretching', mappingKey: 'stretching', icon: '🧘' },
   { key: 'AthleticPerformance', label: 'Athletic Performance', mappingKey: 'athletic', icon: '🏃' },
@@ -797,7 +726,7 @@ const VideoContent = ({
           if (hiddenSections?.includes(section.mappingKey)) return null;
 
           const handleSeeAll = () => {
-            if (section.key === 'GripCuff') {
+            if (section.key === 'Gripcuff') {
               navigation.navigate('GripCuffVideos');
             } else {
               navigation.navigate('CategoryVideos', { categoryKey: section.key, categoryLabel: section.label });
@@ -930,7 +859,7 @@ const VideoContent = ({
             <View style={styles.completeMessage}>
               <Text style={styles.completeEmoji}>🎉</Text>
               <Text style={styles.completeText}>
-                All GripCuff training videos completed!
+                All Gripcuff training videos completed!
               </Text>
             </View>
           )}
@@ -1043,6 +972,11 @@ const VideoTile = ({
           </Text>
         </View>
 
+        {/* RAW1 logo watermark */}
+        <View style={{ position: 'absolute', top: 6, left: 6 }}>
+          <Raw1Logo fontSize={8} />
+        </View>
+
         {/* Completion Checkbox - Tappable independently */}
         {showCheckbox && (
           <TouchableOpacity
@@ -1089,15 +1023,6 @@ const VideoTile = ({
             </Text>
             <Text style={styles.videoCategory}>{video.category} • {video.difficulty}</Text>
           </View>
-          <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleFavoritePress(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <Ionicons
-                name={fav ? "heart" : "heart-outline"}
-                size={22}
-                color={fav ? AppTheme.primaryColor : AppTheme.textGrey}
-              />
-            </Animated.View>
-          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -1163,7 +1088,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* ── GripCuff Card (Compact) ── */
+  /* ── Gripcuff Card (Compact) ── */
   gripCuffCard: {
     backgroundColor: AppTheme.cardColor,
     borderRadius: 14,
@@ -1851,7 +1776,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  /* ── GripCuff Dynamic Section Styles ── */
+  /* ── Gripcuff Dynamic Section Styles ── */
   gripCuffSection: {
     marginBottom: 24,
   },

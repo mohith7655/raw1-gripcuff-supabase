@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Heart, BookOpen, Lock } from 'lucide-react-native';
+import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
@@ -159,6 +160,9 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                     <View style={styles.introIconWrap}>
                         <BookOpen color="#F97316" size={28} />
                     </View>
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                        <Raw1Logo fontSize={8} />
+                    </View>
                 </LinearGradient>
                 <View style={styles.videoInfo}>
                     <View style={styles.titleRow}>
@@ -186,32 +190,15 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                     <View style={styles.durationBadge}>
                         <Text style={styles.durationText}>{formatDuration(video.duration)}</Text>
                     </View>
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                        <Raw1Logo fontSize={8} />
+                    </View>
                 </LinearGradient>
 
                 <View style={styles.videoInfo}>
-                    <View style={styles.titleRow}>
-                        <Text style={styles.videoTitle} numberOfLines={1}>
-                            {video.title}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => toggleFavorite({
-                                id: String(video.id),
-                                title: video.title,
-                                duration: formatDuration(video.duration),
-                                category: categoryKey,
-                                difficulty: video.difficulty,
-                                videoUrl: video.videoUrl,
-                                type: 'video',
-                            })}
-                            style={styles.heartIcon}
-                        >
-                            <Heart
-                                color={isFavorite ? AppTheme.primaryColor : AppTheme.textGrey}
-                                size={14}
-                                fill={isFavorite ? AppTheme.primaryColor : 'none'}
-                            />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={styles.videoTitle} numberOfLines={1}>
+                        {video.title}
+                    </Text>
                 </View>
             </View>
         );

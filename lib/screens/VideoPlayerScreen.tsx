@@ -127,6 +127,7 @@ const engagementStyles = StyleSheet.create({
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: 'rgba(255,255,255,0.06)',
         flexWrap: 'wrap',
+        justifyContent: 'center',
     },
     pill: {
         flexDirection: 'row',
@@ -161,15 +162,15 @@ const PANEL_BG = '#1a1a2e';
 
 const FAQ_ITEMS = [
     {
-        question: 'How long should I wear GripCuff?',
+        question: 'How long should I wear Gripcuff?',
         answer: 'We recommend 20\u201330 minutes per session, 3\u20134 times a week for best results.',
     },
     {
-        question: 'Is GripCuff suitable for beginners?',
+        question: 'Is Gripcuff suitable for beginners?',
         answer: 'Yes! Start with lighter resistance and increase gradually.',
     },
     {
-        question: 'How do I clean my GripCuff?',
+        question: 'How do I clean my Gripcuff?',
         answer: 'Wipe with a damp cloth after each use. Do not submerge in water.',
     },
     {
@@ -185,8 +186,8 @@ const FAQ_ITEMS = [
 type Tab = 'social' | 'requirements' | 'faq-qa';
 
 const EQUIPMENT_BY_CATEGORY: Record<string, { equipment: string; description: string }[]> = {
-    GripCuff: [
-        { equipment: 'GripCuff Device', description: 'Adjustable resistance cuff for grip training' },
+    Gripcuff: [
+        { equipment: 'Gripcuff Device', description: 'Adjustable resistance cuff for grip training' },
         { equipment: 'Wrist Wraps', description: 'Optional support for heavy grip sessions' },
     ],
     MuscleGrowth: [
@@ -366,7 +367,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
             const srcType: WorkoutSourceType = params.isChallengeVideo
                 ? 'daily_challenge'
-                : params.category === 'GripCuff'
+                : params.category === 'Gripcuff'
                     ? 'gripcuff'
                     : 'workout_program';
 
@@ -560,7 +561,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
             const category = sourceVideo?.category as string | undefined;
             const sourceType: WorkoutSourceType = isChallengeVideo
                 ? 'daily_challenge'
-                : category === 'GripCuff'
+                : category === 'Gripcuff'
                     ? 'gripcuff'
                     : 'workout_program';
 
@@ -1208,6 +1209,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                     {(['Beginner', 'Intermediate', 'Advanced'] as const).map((lvl) => {
                         const active = reqData.experienceLevel === lvl;
+                        const label = lvl === 'Beginner' ? 'Simple' : lvl === 'Intermediate' ? 'Complex' : 'Hard';
                         return (
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
@@ -1215,7 +1217,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                 backgroundColor: active ? 'rgba(249,115,22,0.15)' : 'transparent',
                             }}>
                                 <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
-                                    {lvl}
+                                    {label}
                                 </Text>
                             </View>
                         );

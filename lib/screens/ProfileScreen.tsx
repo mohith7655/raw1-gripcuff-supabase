@@ -64,6 +64,45 @@ import { ChipPill } from '../components/profile/ChipPill';
 import { LocationRow } from '../components/profile/LocationRow';
 import { ProfileCard } from '../components/profile/ProfileCard';
 
+// ── Fire glow badge wrapper (streak only) ─────────────────────────────────────
+function FireGlowBadge({ color, children }: { color: string; children: React.ReactNode }) {
+  const glow = useRef(new RNAnimated.Value(0)).current;
+  useEffect(() => {
+    const loop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(glow, { toValue: 1, duration: 900, useNativeDriver: false }),
+        RNAnimated.timing(glow, { toValue: 0, duration: 900, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: [color + '55', color + 'ff'] });
+  const bgColor = glow.interpolate({ inputRange: [0, 1], outputRange: [color + '15', color + '35'] });
+  const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.0] });
+  const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [4, 18] });
+
+  return (
+    <RNAnimated.View style={{
+      width: 64, height: 64, borderRadius: 18,
+      borderWidth: 2,
+      borderColor,
+      backgroundColor: bgColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'visible',
+      shadowColor: color,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: shadowOpacity as any,
+      shadowRadius: shadowRadius as any,
+      elevation: 8,
+    }}>
+      {children}
+    </RNAnimated.View>
+  );
+}
+
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
   orange:       '#ff7a00',
@@ -109,7 +148,9 @@ function Avatar({ uri, size }: { uri?: string | null; size: number }) {
       backgroundColor: '#0f2030',
       alignItems: 'center', justifyContent: 'center',
     }}>
-      <CircleUserRound size={Math.round(size * 0.45)} color={C.orange} strokeWidth={1.8} />
+      <Text style={{ color: C.orange, fontSize: size * 0.12, fontWeight: '700', textAlign: 'center', lineHeight: size * 0.15 }}>
+        Profile{'\n'}Picture
+      </Text>
     </View>
   );
 }
@@ -549,6 +590,20 @@ export const ProfileScreen = () => {
                 const tier  = state?.currentTier ?? 0;
                 const color = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
                 const locked = tier === 0;
+                const isStreak = family.key === 'streak' && !locked;
+                const badgeInner = (
+                  <>
+                    <Text style={[s.badgeEmoji, locked && s.badgeEmojiLocked]}>
+                      {family.emoji}
+                    </Text>
+                    {!locked && (
+                      <View style={[s.badgeLevelChip, { backgroundColor: color }]}>
+                        <Text style={s.badgeLevelChipText}>Lv.{tier}</Text>
+                      </View>
+                    )}
+                  </>
+                );
+
                 return (
                   <TouchableOpacity
                     key={family.key}
@@ -556,20 +611,17 @@ export const ProfileScreen = () => {
                     onPress={() => navigation.navigate('BadgesScreen')}
                     activeOpacity={0.8}
                   >
-                    <View style={[
-                      s.badgeShape,
-                      { borderColor: locked ? 'rgba(255,255,255,0.1)' : color + '88',
-                        backgroundColor: locked ? 'rgba(255,255,255,0.04)' : color + '22' },
-                    ]}>
-                      <Text style={[s.badgeEmoji, locked && s.badgeEmojiLocked]}>
-                        {family.emoji}
-                      </Text>
-                      {!locked && (
-                        <View style={[s.badgeLevelChip, { backgroundColor: color }]}>
-                          <Text style={s.badgeLevelChipText}>Lv.{tier}</Text>
-                        </View>
-                      )}
-                    </View>
+                    {isStreak ? (
+                      <FireGlowBadge color={color}>{badgeInner}</FireGlowBadge>
+                    ) : (
+                      <View style={[
+                        s.badgeShape,
+                        { borderColor: locked ? 'rgba(255,255,255,0.1)' : color + '88',
+                          backgroundColor: locked ? 'rgba(255,255,255,0.04)' : color + '22' },
+                      ]}>
+                        {badgeInner}
+                      </View>
+                    )}
                     <Text style={[s.badgeLabel, locked && s.badgeLabelLocked]} numberOfLines={1}>
                       {locked ? '—' : family.label}
                     </Text>
@@ -775,7 +827,7 @@ export const ProfileScreen = () => {
                 </View>
               </View>
 
-              {/* GripCuff Access */}
+              {/* Gripcuff Access */}
               <View style={[s.basicInfoItem, { borderBottomWidth: 0 }]}>
                 <Text style={s.basicInfoLabel}>Gripcuff Access</Text>
                 <View style={s.basicInfoValueRow}>

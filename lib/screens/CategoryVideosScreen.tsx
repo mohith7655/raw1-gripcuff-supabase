@@ -27,8 +27,8 @@ import { getWorkoutVideoUrl } from '../constants/videoUrls';
 const EXERCISE_LIBRARY_VIDEO_URL = getWorkoutVideoUrl('exercise');
 
 const EXERCISE_DATA_RAW: Record<string, DummyVideo[]> = {
-    GripCuff: [
-        { id: 'gc1', title: 'Introduction to GripCuff', duration: '3:45' },
+    Gripcuff: [
+        { id: 'gc1', title: 'Introduction to Gripcuff', duration: '3:45' },
         { id: 'gc2', title: 'Reverse Wrist Curl', duration: '5:00' },
         { id: 'gc3', title: 'Proper Strap Placement', duration: '5:12' },
         { id: 'gc4', title: 'Finger Extension Drill', duration: '4:30' },
