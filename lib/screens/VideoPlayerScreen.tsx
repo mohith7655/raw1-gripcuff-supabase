@@ -56,6 +56,7 @@ import { deriveAgoraUid } from '../utils/agoraUid';
 import { CoWorkoutCameraTiles } from '../components/CoWorkoutCameraTiles';
 import { PlaybackSyncService } from '../services/playbackSync.service';
 import { useVideoInteractions } from '../hooks/useVideoInteractions';
+import { recordVideoWatch } from '../hooks/useRecentlyWatched';
 import { LiveViewersModal } from '../components/LiveViewersModal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -626,8 +627,16 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     // HOST: wrap setLightsOut to also emit play/pause sync events.
     // If not a session host (or no sessionId), this is identical to setLightsOut.
+    const hasRecordedWatchRef = useRef(false);
     const handlePlayStateChange = useCallback((playing: boolean) => {
         setLightsOut(playing);
+
+        // Record watch on first play
+        if (playing && !hasRecordedWatchRef.current && supabaseUserId && videoId) {
+            hasRecordedWatchRef.current = true;
+            const vType = allowInvite ? 'premade_workout' : 'exercise_library';
+            recordVideoWatch(supabaseUserId, videoId, vType).catch(() => {});
+        }
 
         if (!isHost || !syncSessionId || !supabaseUserId) return;
 

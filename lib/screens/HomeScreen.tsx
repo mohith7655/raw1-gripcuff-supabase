@@ -69,6 +69,7 @@ import { useLibrary } from '../providers/LibraryContext';
 import { deriveBadgeStates } from '../services/badge.service';
 import { BADGE_FAMILIES, getTierName } from '../services/badge.types';
 import { getAllPrograms } from '../data/preRecordedPrograms';
+import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -338,8 +339,8 @@ const HomeScreenInner = () => {
     handlePaymentReturn();
   }, []);
 
-  // Watch history for resume section
-  const [watchHistory, setWatchHistory] = useState<any[]>([]);
+  // Recently watched videos
+  const { videos: recentlyWatched } = useRecentlyWatched(10);
 
 
   // Personalized recommendations
@@ -906,7 +907,50 @@ const HomeScreenInner = () => {
                 </View>
               </View>
 
-
+              {/* ── Recently Watched ── */}
+              {recentlyWatched.length > 0 && (() => {
+                const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
+                const allProgs = getAllPrograms();
+                const COLORS = ['#FF6B35', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
+                return (
+                  <View style={{ marginBottom: 16, backgroundColor: '#131f2e', borderRadius: 12, paddingVertical: 14 }}>
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', paddingHorizontal: 16, marginBottom: 12 }}>
+                      Recently Watched
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+                      {recentlyWatched.map((item, idx) => {
+                        const localVideo = allVids.find(v => v.id === item.videoId);
+                        const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
+                        const title = localVideo?.title ?? program?.title ?? item.videoId;
+                        const color = COLORS[idx % COLORS.length];
+                        return (
+                          <TouchableOpacity
+                            key={item.videoId}
+                            style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
+                            activeOpacity={0.85}
+                            onPress={() => navigation.navigate('VideoPlayer', {
+                              videoId: item.videoId,
+                              title,
+                              videoUrl: localVideo?.videoUrl ?? program?.videos?.[0]?.videoUrl,
+                              videoType: item.videoType,
+                            })}
+                          >
+                            <View style={{ width: '100%', height: 80, backgroundColor: color, justifyContent: 'center', alignItems: 'center' }}>
+                              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
+                              </View>
+                            </View>
+                            <View style={{ padding: 8 }}>
+                              <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
+                              <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>Continue →</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                );
+              })()}
 
 
               {/* ── Recommendation Sections ── */}
@@ -950,99 +994,6 @@ const HomeScreenInner = () => {
                 </>
               )}
 
-              {/* Resume */}
-              {watchHistory.length > 0 && (
-                <View style={{ marginTop: 20, marginBottom: 20, backgroundColor: '#131f2e', borderRadius: 12, paddingVertical: 14 }}>
-                  <Text style={{
-                    color: '#fff', fontSize: 18, fontWeight: '700',
-                    paddingHorizontal: 16, marginBottom: 12,
-                  }}>
-                    Resume
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-                  >
-                    {watchHistory.map((item: any) => (
-                      (() => {
-                        const inferredProgram = getProgramByVideoId(item.videoId ?? '');
-                        const routeWorkoutTitle =
-                          item.workoutTitle ||
-                          item.programName ||
-                          inferredProgram?.title ||
-                          item.category ||
-                          null;
-                        const routeWorkoutId =
-                          item.workoutId ||
-                          inferredProgram?.id ||
-                          null;
-                        return (
-                      <TouchableOpacity
-                        key={item.videoId}
-                        onPress={() => navigation.navigate('VideoPlayer', {
-                          videoId: item.videoId,
-                          title: item.title,
-                          videoUrl: item.videoUrl || undefined,
-                          youtubeId: item.youtubeId || undefined,
-                          workoutId: routeWorkoutId || undefined,
-                          workoutTitle: routeWorkoutTitle || undefined,
-                          programName: routeWorkoutTitle || undefined,
-                          category: item.category || undefined,
-                          allowInvite: item.allowInvite === true,
-                          videoType: item.allowInvite === true ? 'premade_workout' : 'exercise_library',
-                        })}
-                        style={{
-                          width: 160, borderRadius: 12, overflow: 'hidden',
-                          backgroundColor: AppTheme.cardColor,
-                        }}
-                      >
-                        <View style={{
-                          width: '100%', height: 95, backgroundColor: '#222',
-                          justifyContent: 'center', alignItems: 'center',
-                        }}>
-                          {item.thumbnail ? (
-                            <Image
-                              source={{ uri: item.thumbnail }}
-                              style={{ width: '100%', height: '100%' }}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <Ionicons name="play-circle" size={36} color="#C26A2D" />
-                          )}
-                        </View>
-                        <View style={{ padding: 8 }}>
-                          {(() => {
-                            const label = item.programName
-                              ?? item.category
-                              ?? getProgramByVideoId(item.videoId ?? '')?.title
-                              ?? null;
-                            return label ? (
-                              <Text
-                                numberOfLines={1}
-                                style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 }}
-                              >
-                                {label}
-                              </Text>
-                            ) : null;
-                          })()}
-                          <Text
-                            numberOfLines={2}
-                            style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}
-                          >
-                            {item.title}
-                          </Text>
-                          <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>
-                            Continue watching →
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                        );
-                      })()
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
 
               {/* Live Now — active stranger calls */}
               {(() => {
