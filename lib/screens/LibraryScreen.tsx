@@ -282,23 +282,6 @@ export const LibraryScreen = () => {
       </View>
 
 
-      {/* Sub Tabs — Exercises / Workouts */}
-      <View style={{ flexDirection: 'row', backgroundColor: '#131f2e', borderRadius: 12, padding: 4, marginHorizontal: 16, marginVertical: 12 }}>
-        <TouchableOpacity
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: subTab === 'all' ? '#000000' : 'transparent' }}
-          onPress={() => setSubTab('all')}
-        >
-          <LayoutGrid size={13} color={subTab === 'all' ? AppTheme.primaryColor : '#607a94'} />
-          <Text numberOfLines={1} style={{ color: subTab === 'all' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: subTab === 'all' ? '700' : '500' }}>All Exercises</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: subTab === 'workouts' ? '#000000' : 'transparent' }}
-          onPress={() => setSubTab('workouts')}
-        >
-          <Dumbbell size={13} color={subTab === 'workouts' ? AppTheme.primaryColor : '#607a94'} />
-          <Text numberOfLines={1} style={{ color: subTab === 'workouts' ? '#ffffff' : '#607a94', fontSize: 11, fontWeight: subTab === 'workouts' ? '700' : '500' }}>Workouts</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* RECOMMENDED SECTION */}
       {subTab === 'all' && (

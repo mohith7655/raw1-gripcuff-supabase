@@ -26,6 +26,8 @@ export interface User {
   completedVideos: number;
   totalVideos: number;
   credits: number;
+  dailyCredits?: number;
+  dailyCreditsGrantedAt?: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;

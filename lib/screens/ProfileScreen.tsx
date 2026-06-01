@@ -8,6 +8,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Animated as RNAnimated,
   Image,
   Platform,
@@ -41,7 +43,12 @@ import {
   Users,
   Check,
   X,
+  Trash2,
+  RefreshCw,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { StorageService } from '../services/storage.service';
+import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useFriend } from '../providers/FriendContext';
@@ -201,6 +208,56 @@ export const ProfileScreen = () => {
 
   const [editingField, setEditingField] = useState<'age' | 'gender' | 'dateOfBirth' | 'phone' | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleReplaceAvatar = async () => {
+    if (!supabaseUserId) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setAvatarUploading(true);
+    try {
+      const url = await StorageService.uploadProfilePicture(supabaseUserId, result.assets[0].uri, () => {});
+      await updateProfile(supabaseUserId, { profileImageUrl: url });
+    } catch (e: any) {
+      Alert.alert('Upload failed', e?.message ?? 'Could not upload photo.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!supabaseUserId || !profile?.profileImageUrl) return;
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm('Remove your profile photo?')
+      : true;
+    if (!confirmed) return;
+    setAvatarUploading(true);
+    try {
+      const currentUrl = profile.profileImageUrl;
+      await updateProfile(supabaseUserId, { profileImageUrl: null as any });
+      const marker = '/object/public/avatars/';
+      const urlPath = currentUrl.includes(marker)
+        ? currentUrl.split(marker)[1]
+        : currentUrl.split('/avatars/').pop();
+      if (urlPath) {
+        await supabase.storage.from('avatars').remove([urlPath]);
+      }
+    } catch (e: any) {
+      console.warn('[DeleteAvatar] error:', e?.message);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleEditClick = (field: 'age' | 'gender' | 'dateOfBirth' | 'phone', initialValue: string) => {
     setEditingField(field);
@@ -256,8 +313,16 @@ export const ProfileScreen = () => {
     : ['gym', 'cycling', 'photography', 'reading']) as Hobby[]
   ).filter(h => !!HOBBY_META[h]);
 
-  // Badges — new tier system
-  const badgeStats    = buildBadgeStatsFromStreak(streakData);
+  // Badges — new tier system, built from profile + streakData for accuracy
+  const badgeStats: UserBadgeStats = {
+    bestStreak:        profile?.bestStreak ?? streakData?.bestStreak ?? 0,
+    totalWorkouts:     profile?.completedWorkouts ?? streakData?.totalWorkouts ?? 0,
+    totalLiveSessions: profile?.totalLiveSessions ?? streakData?.totalLiveSessions ?? 0,
+    totalViewers:      0,
+    coachSessions:     0,
+    totalWatchMinutes: Math.floor((profile?.watchedSeconds ?? 0) / 60),
+    founderTier:       0,
+  };
   const badgeStates   = deriveBadgeStates(badgeStats);
   const earnedFamilies = badgeStates.filter(b => b.currentTier > 0);
   // Legacy earnedIds kept for any remaining legacy references
@@ -366,16 +431,35 @@ export const ProfileScreen = () => {
 
           {/* ── HERO ───────────────────────────────────────────────────────── */}
           <View style={s.hero}>
-            <TouchableOpacity 
-              style={s.avatarRing}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'hero' })}
-            >
-              <Avatar uri={profile?.profileImageUrl} size={134} />
-              <View style={s.editBadge}>
-                <Camera size={14} color="#fff" strokeWidth={2.5} />
-              </View>
-            </TouchableOpacity>
+            <View style={s.avatarRing}>
+              {avatarUploading ? (
+                <View style={{ width: 134, height: 134, borderRadius: 67, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator color={C.orange} size="large" />
+                </View>
+              ) : (
+                <Avatar uri={profile?.profileImageUrl} size={134} />
+              )}
+            </View>
+
+            {/* Avatar action icons — below picture, always visible */}
+            <View style={s.avatarActions}>
+              {profile?.profileImageUrl ? (
+                <>
+                  <TouchableOpacity style={s.avatarActionBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
+                    <RefreshCw size={15} color="#fff" strokeWidth={2.2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[s.avatarActionBtn, s.avatarActionDelete]} onPress={handleDeleteAvatar} activeOpacity={0.75}>
+                    <Trash2 size={15} color="#fff" strokeWidth={2.2} />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity style={s.avatarUploadBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
+                  <Camera size={15} color="#fff" strokeWidth={2.2} />
+                  <Text style={s.avatarUploadBtnText}>Upload Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
 
             <Text style={s.handle}>@{username}</Text>
             <Text style={s.name} numberOfLines={1}>{displayName}</Text>
@@ -404,148 +488,6 @@ export const ProfileScreen = () => {
               })}
             </View>
 
-            {/* Basic Info List */}
-            <View style={s.basicInfoContainer}>
-              {/* Age */}
-              <View style={s.basicInfoItem}>
-                <Text style={s.basicInfoLabel}>Age</Text>
-                <View style={s.basicInfoValueRow}>
-                  {editingField === 'age' ? (
-                    <>
-                      <TextInput 
-                        style={s.inlineInput} 
-                        value={editValue} 
-                        onChangeText={setEditValue} 
-                        keyboardType="numeric"
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
-                        <Check size={16} color="#000" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={s.basicInfoValue}>{profile?.age ? `${profile.age} yrs` : '—'}</Text>
-                      <TouchableOpacity onPress={() => handleEditClick('age', profile?.age?.toString() || '')}>
-                        <Pencil size={14} color={C.muted} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Gender */}
-              <View style={s.basicInfoItem}>
-                <Text style={s.basicInfoLabel}>Gender</Text>
-                <View style={s.basicInfoValueRow}>
-                  {editingField === 'gender' ? (
-                    <>
-                      <TextInput 
-                        style={s.inlineInput} 
-                        value={editValue} 
-                        onChangeText={setEditValue} 
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
-                        <Check size={16} color="#000" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={s.basicInfoValue}>{profile?.gender || '—'}</Text>
-                      <TouchableOpacity onPress={() => handleEditClick('gender', profile?.gender || '')}>
-                        <Pencil size={14} color={C.muted} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* DOB */}
-              <View style={s.basicInfoItem}>
-                <Text style={s.basicInfoLabel}>DOB</Text>
-                <View style={s.basicInfoValueRow}>
-                  {editingField === 'dateOfBirth' ? (
-                    <>
-                      <TextInput 
-                        style={s.inlineInput} 
-                        value={editValue} 
-                        onChangeText={setEditValue} 
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor={C.muted}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
-                        <Check size={16} color="#000" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={s.basicInfoValue}>{profile?.dateOfBirth || '—'}</Text>
-                      <TouchableOpacity onPress={() => handleEditClick('dateOfBirth', profile?.dateOfBirth || '')}>
-                        <Pencil size={14} color={C.muted} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Phone */}
-              <View style={s.basicInfoItem}>
-                <Text style={s.basicInfoLabel}>Phone</Text>
-                <View style={s.basicInfoValueRow}>
-                  {editingField === 'phone' ? (
-                    <>
-                      <TextInput 
-                        style={s.inlineInput} 
-                        value={editValue} 
-                        onChangeText={setEditValue} 
-                        keyboardType="phone-pad"
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
-                        <Check size={16} color="#000" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={s.basicInfoValue}>{profile?.phone || '—'}</Text>
-                      <TouchableOpacity onPress={() => handleEditClick('phone', profile?.phone || '')}>
-                        <Pencil size={14} color={C.muted} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-
-              {/* Access */}
-              <View style={s.basicInfoItem}>
-                <Text style={s.basicInfoLabel}>Gripcuff Access</Text>
-                <View style={s.basicInfoValueRow}>
-                  {profile?.hasAccess ? (
-                    <View style={s.accessPill}>
-                      <Text style={s.accessPillText}>
-                        {profile.accessType === 'subscription' ? 'Subscription' : 'Product'}
-                      </Text>
-                    </View>
-                  ) : (
-                    <Text style={s.accessInactive}>Inactive</Text>
-                  )}
-                </View>
-              </View>
-            </View>
           </View>
 
           {/* ── STATS (3 cards) ─────────────────────────────────────────────── */}
@@ -596,11 +538,16 @@ export const ProfileScreen = () => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.badgesScroll}
             >
-              {BADGE_FAMILIES.map(family => {
+              {[...BADGE_FAMILIES]
+                .sort((a, b) => {
+                  const tA = badgeStates.find(bs => bs.familyKey === a.key)?.currentTier ?? 0;
+                  const tB = badgeStates.find(bs => bs.familyKey === b.key)?.currentTier ?? 0;
+                  return tB - tA;
+                })
+                .map(family => {
                 const state = badgeStates.find(bs => bs.familyKey === family.key);
                 const tier  = state?.currentTier ?? 0;
                 const color = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
-                const name  = tier > 0 ? getTierName(family, tier) : 'Locked';
                 const locked = tier === 0;
                 return (
                   <TouchableOpacity
@@ -617,9 +564,14 @@ export const ProfileScreen = () => {
                       <Text style={[s.badgeEmoji, locked && s.badgeEmojiLocked]}>
                         {family.emoji}
                       </Text>
+                      {!locked && (
+                        <View style={[s.badgeLevelChip, { backgroundColor: color }]}>
+                          <Text style={s.badgeLevelChipText}>Lv.{tier}</Text>
+                        </View>
+                      )}
                     </View>
                     <Text style={[s.badgeLabel, locked && s.badgeLabelLocked]} numberOfLines={1}>
-                      {name}
+                      {locked ? '—' : family.label}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -690,6 +642,154 @@ export const ProfileScreen = () => {
               ) : (
                 <Text style={s.bodyText}>Not specified</Text>
               )}
+            </View>
+          </ProfileCard>
+
+          {/* ── PERSONAL INFO ───────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Personal Info</Text>
+            </View>
+            <View style={s.basicInfoContainer}>
+              {/* Age */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Age</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'age' ? (
+                    <>
+                      <TextInput
+                        style={s.inlineInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        keyboardType="numeric"
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.age ? `${profile.age} yrs` : '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('age', profile?.age?.toString() || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* Gender */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Gender</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'gender' ? (
+                    <>
+                      <TextInput
+                        style={s.inlineInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.gender || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('gender', profile?.gender || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* DOB */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>DOB</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'dateOfBirth' ? (
+                    <>
+                      <TextInput
+                        style={s.inlineInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={C.muted}
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.dateOfBirth || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('dateOfBirth', profile?.dateOfBirth || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* Phone */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Phone</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'phone' ? (
+                    <>
+                      <TextInput
+                        style={s.inlineInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        keyboardType="phone-pad"
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.phone || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('phone', profile?.phone || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* GripCuff Access */}
+              <View style={[s.basicInfoItem, { borderBottomWidth: 0 }]}>
+                <Text style={s.basicInfoLabel}>Gripcuff Access</Text>
+                <View style={s.basicInfoValueRow}>
+                  {profile?.hasAccess ? (
+                    <View style={s.accessPill}>
+                      <Text style={s.accessPillText}>
+                        {profile.accessType === 'subscription' ? 'Subscription' : 'Product'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={s.accessInactive}>Inactive</Text>
+                  )}
+                </View>
+              </View>
             </View>
           </ProfileCard>
 
@@ -838,6 +938,37 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  avatarActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  avatarActionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,122,0,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarActionDelete: {
+    backgroundColor: 'rgba(239,68,68,0.85)',
+  },
+  avatarUploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.orange,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  avatarUploadBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   avatarRing: {
     width: 146,
     height: 146,
@@ -906,9 +1037,7 @@ const s = StyleSheet.create({
     fontWeight: '800',
   },
   basicInfoContainer: {
-    marginTop: 20,
     width: '100%',
-    paddingHorizontal: 16,
     gap: 12,
   },
   basicInfoItem: {
@@ -1118,7 +1247,7 @@ const s = StyleSheet.create({
   badgeItemContainer: {
     alignItems: 'center',
     width: 72,
-    gap: 6,
+    gap: 14,
   },
   badgeShape: {
     width: 64,
@@ -1129,6 +1258,7 @@ const s = StyleSheet.create({
     borderColor: C.orange,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
   badgeShapeAlt: {
     borderColor: 'rgba(139,92,246,0.7)',
@@ -1140,11 +1270,25 @@ const s = StyleSheet.create({
     borderColor: C.cardBorder,
     opacity: 0.5,
   },
-  badgeEmoji: { 
-    fontSize: 30 
+  badgeEmoji: {
+    fontSize: 28,
   },
   badgeEmojiLocked: {
     opacity: 0.4,
+  },
+  badgeLevelChip: {
+    position: 'absolute',
+    bottom: -6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  badgeLevelChipText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
   },
   badgeLabel: {
     color: C.text,

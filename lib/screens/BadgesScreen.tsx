@@ -95,7 +95,7 @@ function TierPips({ currentTier, family }: { currentTier: number; family: BadgeF
         const color  = earned ? TIER_COLORS[t.tier - 1] : 'rgba(255,255,255,0.1)';
         return (
           <View key={t.tier} style={[s.pip, { backgroundColor: color }]}>
-            {t.tier === 5 && earned && (
+            {t.tier === 10 && earned && (
               <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: 4, backgroundColor: '#FF6B00', opacity: 0.4 }]} />
             )}
           </View>
@@ -117,8 +117,8 @@ function BadgeFamilyCard({
 }) {
   const { currentTier, currentProgress, nextThreshold } = state;
   const hasAny  = currentTier > 0;
-  const isMaxed = currentTier === 5;
-  const isMythic = currentTier === 5;
+  const isMaxed = currentTier === 10;
+  const isMythic = currentTier === 10;
   const color   = hasAny ? TIER_COLORS[currentTier - 1] : C.muted;
   const tierName = getTierName(family, currentTier);
   const pct = hasAny
@@ -147,7 +147,7 @@ function BadgeFamilyCard({
           <Text style={s.familyLabel}>{family.label}</Text>
           {hasAny && (
             <View style={[s.tierBadge, { backgroundColor: color + '22', borderColor: color + '66' }]}>
-              <Text style={[s.tierBadgeText, { color }]}>{tierName}</Text>
+              <Text style={[s.tierBadgeText, { color }]}>Lv.{currentTier} {tierName}</Text>
             </View>
           )}
         </View>
@@ -160,7 +160,7 @@ function BadgeFamilyCard({
               : 'Admin granted'}
           </Text>
         ) : isMaxed ? (
-          <Text style={[s.lockedText, { color }]}>Max tier reached — Mythic 🏅</Text>
+          <Text style={[s.lockedText, { color }]}>Max level reached — Legacy 🏅</Text>
         ) : (
           <Text style={s.lockedText}>
             {nextTierName} at {nextThreshold ?? '?'} {family.unit}
@@ -226,7 +226,7 @@ function BadgeDetailModal({
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[s.tierRowName, { color: earned ? '#fff' : C.muted }]}>
-                    {t.name}
+                    Level {t.tier} — {t.name}
                     {active && <Text style={{ color, fontSize: 10 }}>  ← Current</Text>}
                   </Text>
                   {t.threshold > 0 && (
@@ -328,7 +328,13 @@ export function BadgesScreen() {
         <ActivityIndicator color="#FF6B00" style={{ marginTop: 60 }} />
       ) : (
         <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
-          {BADGE_FAMILIES.map(family => {
+          {[...BADGE_FAMILIES]
+            .sort((a, b) => {
+              const tA = states.find(s => s.familyKey === a.key)?.currentTier ?? 0;
+              const tB = states.find(s => s.familyKey === b.key)?.currentTier ?? 0;
+              return tB - tA;
+            })
+            .map(family => {
             const state = states.find(s => s.familyKey === family.key) ?? {
               familyKey: family.key,
               currentTier: 0,
@@ -395,8 +401,8 @@ const s = StyleSheet.create({
   barBg:   { height: 5, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 3, marginTop: 6, marginBottom: 8, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 3 },
 
-  pipsRow: { flexDirection: 'row', gap: 5 },
-  pip:     { width: 18, height: 6, borderRadius: 3 },
+  pipsRow: { flexDirection: 'row', gap: 3 },
+  pip:     { width: 12, height: 6, borderRadius: 3 },
 
   // Detail modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },

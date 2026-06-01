@@ -4,13 +4,11 @@ import { LayoutGrid, Dumbbell } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SubTab } from '../models/Video';
 
-const TOP_TOGGLE_THRESHOLD = 110;
 
 export function useFloatingToggle() {
-  const translateY = useRef(new Animated.Value(120)).current;
-  const scrollY = useRef(0);
+  const translateY = useRef(new Animated.Value(0)).current;
+  const isVisible = useRef(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isVisible = useRef(false);
 
   const show = useCallback(() => {
     if (isVisible.current) return;
@@ -18,7 +16,7 @@ export function useFloatingToggle() {
     Animated.spring(translateY, {
       toValue: 0,
       useNativeDriver: true,
-      bounciness: 10,
+      bounciness: 8,
       speed: 14,
     }).start();
   }, [translateY]);
@@ -33,15 +31,10 @@ export function useFloatingToggle() {
     }).start();
   }, [translateY]);
 
-  const onScroll = useCallback((e: any) => {
-    scrollY.current = e.nativeEvent.contentOffset.y;
+  const onScroll = useCallback(() => {
     hide();
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => {
-      if (scrollY.current > TOP_TOGGLE_THRESHOLD) {
-        show();
-      }
-    }, 300);
+    hideTimer.current = setTimeout(() => show(), 600);
   }, [hide, show]);
 
   return { translateY, onScroll };

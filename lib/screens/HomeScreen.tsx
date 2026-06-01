@@ -64,6 +64,11 @@ import { DailyReminderCard } from '../components/DailyReminderCard';
 import { msUntilMidnight, getDateKey, buildWeekDates, getLastNDayKeys } from '../utils/streakDate';
 import { getResolvedTimezone } from '../utils/timezone';
 import { BuyCreditsModal } from '../components/credits/BuyCreditsModal';
+import { useAccess } from '../providers/AccessContext';
+import { useLibrary } from '../providers/LibraryContext';
+import { deriveBadgeStates } from '../services/badge.service';
+import { BADGE_FAMILIES, getTierName } from '../services/badge.types';
+import { getAllPrograms } from '../data/preRecordedPrograms';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -171,13 +176,61 @@ const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
+  const { accessType } = useAccess();
+  const { completedCount, totalGripCuff, allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
   const { incomingRequests, friends, acceptRequest, declineRequest } = useFriend();
   const { favorites } = useFavorites();
   const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
-  const totalFavouritesCount = favExerciseIds.size + favWorkoutIds.size;
+  const exerciseCatalog = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
+  const matchedExercises = exerciseCatalog.filter(v => favExerciseIds.has(v.id)).length;
+  const allPrograms = getAllPrograms();
+  const matchedWorkouts = Array.from(new Map(
+    allPrograms
+      .filter(p => favWorkoutIds.has(p.id) || p.videos.some(v => favWorkoutIds.has(v.id)))
+      .map(p => [p.id, p])
+  ).values()).length;
+  const totalFavouritesCount = matchedExercises + matchedWorkouts;
 
   const [buyCreditsVisible, setBuyCreditsVisible] = useState(false);
+
+  // Daily credits countdown — "expires in Xhr Ym"
+  const [dailyCreditsExpiry, setDailyCreditsExpiry] = useState('');
+  useEffect(() => {
+    const computeExpiry = () => {
+      const tz = getResolvedTimezone();
+      const now = new Date();
+      // Next 12:00 in the user's local timezone
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      const parts = formatter.formatToParts(now);
+      const get = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0);
+      const localH = get('hour');
+      const localM = get('minute');
+      const localS = now.getSeconds();
+      // Seconds elapsed since last 12:00
+      let elapsedSecs: number;
+      if (localH >= 12) {
+        elapsedSecs = (localH - 12) * 3600 + localM * 60 + localS;
+      } else {
+        elapsedSecs = (localH + 12) * 3600 + localM * 60 + localS;
+      }
+      const remainingSecs = 86400 - elapsedSecs;
+      const h = Math.floor(remainingSecs / 3600);
+      const m = Math.floor((remainingSecs % 3600) / 60);
+      setDailyCreditsExpiry(`${h}h ${m}m`);
+    };
+    computeExpiry();
+    const interval = setInterval(computeExpiry, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Club memberships for notification sections
   const [myClubs, setMyClubs] = useState<Array<{ id: string; name: string; avatar_url: string | null; unread: number }>>([]);
@@ -509,11 +562,37 @@ const HomeScreenInner = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showTiersModal, setShowTiersModal] = useState(false);
+  const [earnedBadges, setEarnedBadges] = useState<{ emoji: string; name: string; level: number; label: string }[]>([]);
 
   const theme = appMode === 'coaching' ? CoachingTheme : AppTheme;
   const isCoaching = appMode === 'coaching';
 
   const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
+
+  const gripCuffLevel = completedCount === 0 ? 1
+    : completedCount <= 3 ? 2
+    : completedCount <= 6 ? 3
+    : 4;
+
+  useEffect(() => {
+    if (!supabaseUserId || !profile) return;
+    const states = deriveBadgeStates({
+      bestStreak: profile.bestStreak ?? 0,
+      totalWorkouts: profile.completedWorkouts ?? 0,
+      totalLiveSessions: profile.totalLiveSessions ?? 0,
+      totalViewers: 0,
+      coachSessions: 0,
+      totalWatchMinutes: 0,
+      founderTier: 0,
+    });
+    const earned = states
+      .filter(s => s.currentTier > 0)
+      .map(s => {
+        const family = BADGE_FAMILIES.find(f => f.key === s.familyKey)!;
+        return { emoji: family.emoji, name: getTierName(family, s.currentTier), level: s.currentTier, label: family.label };
+      });
+    setEarnedBadges(earned);
+  }, [supabaseUserId, profile?.bestStreak, profile?.completedWorkouts, profile?.totalLiveSessions]);
 
   // Animation for toggle indicator
   const toggleAnim = useRef(new Animated.Value(0)).current;
@@ -632,44 +711,54 @@ const HomeScreenInner = () => {
           ) : appMode === 'ai' ? (
             /* ── Mode 1: AI Personal Trainer ── */
             <>
-              {/* Greeting */}
-              <View style={styles.greetingRow}>
-                <Text style={styles.profileName}>{displayName}</Text>
-                <Text style={styles.profileSubtitle}>Continue your fitness journey</Text>
-              </View>
-
-              {/* Quick Stats — Profile | Credits | Favourites */}
+              {/* Quick Stats — Profile | Credits | Favourites (stacked vertically, centered) */}
               <View style={styles.compactStatsCard}>
-                {/* Profile cell */}
+                {/* Profile row */}
                 <TouchableOpacity
-                  style={styles.compactStatCell}
+                  style={[styles.compactStatRow, { flexDirection: 'column', paddingVertical: 18 }]}
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
-                  <View style={styles.profileAvatarRing}>
-                    <View style={styles.profileAvatarInner}>
+                  <View style={styles.profileAvatarRingLarge}>
+                    <View style={styles.profileAvatarInnerLarge}>
                       <WebSafeAvatar
                         uri={profile?.profileImageUrl}
-                        size={42}
-                        fallback={<CircleUserRound color="#C26A2D" size={32} />}
+                        size={72}
+                        fallback={<CircleUserRound color="#C26A2D" size={52} />}
                       />
                     </View>
                   </View>
-                  <Text style={[styles.compactStatLabel, { marginTop: 4, color: AppTheme.textGrey }]}>Profile</Text>
+                  <Text style={[styles.compactStatRowLabel, { marginTop: 10, fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
+                  {/* Badge pills only */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {earnedBadges.length === 0 ? (
+                      <View style={styles.profileStatPill}>
+                        <Text style={styles.profileStatPillText}>🏅 No badges yet</Text>
+                      </View>
+                    ) : (
+                      earnedBadges.map((b, i) => (
+                        <View key={i} style={styles.profileStatPill}>
+                          <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                        </View>
+                      ))
+                    )}
+                    <View style={styles.profileStatPill}>
+                      <Text style={styles.profileStatPillText}>🏋️ GripCuff Lv.{gripCuffLevel}</Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
 
-                <View style={styles.compactDivider} />
+                <View style={styles.compactHorizontalDivider} />
 
-                {/* Credits cell — center */}
+                {/* Credits row */}
                 <TouchableOpacity
-                  style={styles.compactStatCell}
+                  style={[styles.compactStatRow, { gap: 0 }]}
                   onPress={() => navigation.navigate('CreditsScreen')}
                   activeOpacity={0.7}
                 >
-                  <View style={{ alignItems: 'center' }}>
-                    <View style={styles.rBadge}><Text style={styles.rBadgeText}>R</Text></View>
-                    <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "0"}</Text>
-                    <Text style={styles.compactStatLabel}>Credits</Text>
+                  {/* Left: permanent credits */}
+                  <View style={{ flex: 1, alignItems: 'center', borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: 'rgba(255,255,255,0.12)', paddingRight: 12 }}>
+                    <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "0"} Credits</Text>
                     <TouchableOpacity
                       onPress={() => setBuyCreditsVisible(true)}
                       activeOpacity={0.7}
@@ -678,50 +767,25 @@ const HomeScreenInner = () => {
                       <Text style={styles.compactEarnText}>+ Earn credits</Text>
                     </TouchableOpacity>
                   </View>
+                  {/* Right: daily credits */}
+                  <View style={{ flex: 1, alignItems: 'center', paddingLeft: 12 }}>
+                    <Text style={styles.compactStatValue}>{profile?.dailyCredits?.toString() ?? "109"} Daily</Text>
+                    <Text style={styles.compactEarnText}>Expires in {dailyCreditsExpiry}</Text>
+                  </View>
                 </TouchableOpacity>
 
-                <View style={styles.compactDivider} />
+                <View style={styles.compactHorizontalDivider} />
 
-                {/* Favourites cell */}
+                {/* Favourites row */}
                 <TouchableOpacity
-                  style={styles.compactStatCell}
+                  style={styles.compactStatRow}
                   onPress={() => navigation.navigate('AllFavourites', { type: 'all' })}
                   activeOpacity={0.7}
                 >
-                  <View style={{ alignItems: 'center' }}>
-                    <Heart color="#C26A2D" size={22} />
-                    <Text style={styles.compactStatValue}>{totalFavouritesCount.toString()}</Text>
-                    <Text style={styles.compactStatLabel}>Favorites</Text>
-                  </View>
+                  <Heart color="#C26A2D" size={22} />
+                  <Text style={[styles.compactStatValue, { marginLeft: 12 }]}>{totalFavouritesCount.toString()} Favorites</Text>
                 </TouchableOpacity>
-              </View>
 
-              {/* ── Feed ── */}
-              <View style={styles.feedSection}>
-                <View style={styles.feedHeader}>
-                  <Text style={styles.feedTitle}>Feed</Text>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('FeedScreen')}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={styles.feedViewAll}>View All →</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.feedPlaceholder}>
-                  <TrendingUp color="#C26A2D" size={22} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.feedPlaceholderTitle}>Community Updates</Text>
-                    <Text style={styles.feedPlaceholderSub}>Workouts, achievements & more from your network</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.feedViewAllBtn}
-                    onPress={() => navigation.navigate('FeedScreen')}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.feedViewAllBtnText}>View All</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
 
               {/* Unified streak + leaderboard */}
@@ -1099,6 +1163,34 @@ const HomeScreenInner = () => {
                 );
               })()}
 
+
+              {/* ── Feed ── */}
+              <View style={styles.feedSection}>
+                <View style={styles.feedHeader}>
+                  <Text style={styles.feedTitle}>Feed</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('FeedScreen')}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.feedViewAll}>View All →</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.feedPlaceholder}>
+                  <TrendingUp color="#C26A2D" size={22} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.feedPlaceholderTitle}>Community Updates</Text>
+                    <Text style={styles.feedPlaceholderSub}>Workouts, achievements & more from your network</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.feedViewAllBtn}
+                    onPress={() => navigation.navigate('FeedScreen')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.feedViewAllBtnText}>View All</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
             </>
           ) : (
@@ -1682,6 +1774,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  profileAvatarRingLarge: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 2,
+    borderColor: '#C26A2D',
+    padding: 2,
+    shadowColor: '#C26A2D',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  profileAvatarInnerLarge: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+    overflow: 'hidden',
+    backgroundColor: '#131f2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileName: {
     color: AppTheme.textWhite,
     fontSize: 22,
@@ -1694,7 +1808,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   compactStatsCard: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     backgroundColor: '#131f2e',
     borderRadius: 12,
     borderWidth: 1,
@@ -1711,10 +1825,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 5,
   },
+  compactStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  compactStatRowLabel: {
+    fontSize: 14,
+    color: AppTheme.textGrey,
+    fontWeight: '500' as any,
+  },
+  profileStatPill: {
+    backgroundColor: 'rgba(194,106,45,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(194,106,45,0.3)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  profileStatPillText: {
+    color: AppTheme.textWhite,
+    fontSize: 11,
+    fontWeight: '600' as any,
+  },
   compactDivider: {
     width: StyleSheet.hairlineWidth,
     backgroundColor: 'rgba(255,255,255,0.12)',
     marginVertical: 10,
+  },
+  compactHorizontalDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    marginHorizontal: 16,
   },
   compactStatValue: {
     fontSize: 16,

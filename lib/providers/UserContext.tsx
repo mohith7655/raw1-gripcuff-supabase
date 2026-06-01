@@ -154,6 +154,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               bestStreak: Number(row.best_streak ?? prev.bestStreak ?? 0),
               lastWorkoutDate: row.last_workout_date ?? prev.lastWorkoutDate,
               credits: Number(row.credits ?? prev.credits ?? 0),
+              dailyCredits: Number(row.daily_credits ?? prev.dailyCredits ?? 109),
+              dailyCreditsGrantedAt: row.daily_credits_granted_at ?? prev.dailyCreditsGrantedAt ?? null,
               completedWorkouts: Number(row.completed_workouts ?? prev.completedWorkouts ?? 0),
               weeklyActivity: row.weekly_activity != null
                 ? (typeof row.weekly_activity === 'string'

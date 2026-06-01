@@ -2,6 +2,11 @@ export type VideoCategory = 'Strength' | 'HIIT' | 'Cardio' | 'Recovery' | 'Mobil
 export type VideoType = 'All' | 'GripCuff' | 'Trainer';
 export type SubTab = 'all' | 'workouts' | 'goals';
 
+export type VideoPurpose = {
+  summary: string;
+  benefits: [string, string, string];
+};
+
 export interface Video {
   id: string;
   title: string;
@@ -24,6 +29,7 @@ export interface Video {
   exerciseType?: 'General' | 'Strength' | 'Stretching' | 'Injury' | 'Athletic';
   experienceLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
   youtubeId?: string;
+  purpose?: VideoPurpose;
 }
 
 export type CreateVideoInput = Omit<Video, 'id' | 'createdAt' | 'isCompleted'>;

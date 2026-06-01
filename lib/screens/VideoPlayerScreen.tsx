@@ -25,6 +25,7 @@ import { WorkoutTogetherModal } from '../components/WorkoutTogetherModal';
 import { SharedVideoPlayer, SharedVideoPlayerRef } from '../components/SharedVideoPlayer';
 import { WorkoutStartModal } from '../components/WorkoutStartModal';
 import MuscleVisualizer from '../components/MuscleVisualizer';
+import { PurposeSection } from '../components/PurposeSection';
 import { WorkoutCompletionModal } from '../components/workout/WorkoutCompletionModal';
 import { ExerciseListTab } from '../components/workout/ExerciseListTab';
 import { InviteStrangerModal } from '../components/workout/InviteStrangerModal';
@@ -1144,16 +1145,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}
             showsVerticalScrollIndicator={false}
         >
-            {/* Equipment & Muscles */}
+            {/* Purpose */}
+            <PurposeSection purpose={(sourceVideo as any)?.purpose ?? activeProgram?.purpose} />
+
+            {/* Muscles */}
             <View style={reqStyles.sectionRow}>
-                <View style={reqStyles.metaCard}>
-                    <View style={reqStyles.iconRow}>
-                        <Ionicons name="barbell-outline" size={18} color={ACCENT} />
-                        <Text style={reqStyles.metaLabel}>Equipment</Text>
-                    </View>
-                    <Text style={reqStyles.metaValue}>{reqData.equipment}</Text>
-                </View>
-                <View style={reqStyles.metaCard}>
+                <View style={[reqStyles.metaCard, { flex: 1 }]}>
                     <View style={reqStyles.iconRow}>
                         <Ionicons name="body-outline" size={18} color={ACCENT} />
                         <Text style={reqStyles.metaLabel}>Muscles Targeted</Text>
@@ -1245,6 +1242,15 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
             <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
                 <MuscleVisualizer targetedMuscles={targetedMuscles} />
+            </View>
+
+            {/* Equipment Needed */}
+            <View style={reqStyles.sectionCard}>
+                <View style={reqStyles.iconRow}>
+                    <Ionicons name="barbell-outline" size={18} color={ACCENT} />
+                    <Text style={reqStyles.metaLabel}>Equipment Needed</Text>
+                </View>
+                <Text style={[reqStyles.metaValue, { marginTop: 6 }]}>{reqData.equipment}</Text>
             </View>
 
             {/* Similar Workouts */}
