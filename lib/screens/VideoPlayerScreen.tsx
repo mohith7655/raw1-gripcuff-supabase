@@ -600,6 +600,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
         sharedPlayerRef.current?.resumeVideo();
     };
 
+    // Shrink video height when scrolling down in tab content
+    const videoScrollY = useRef(new Animated.Value(0)).current;
+    const videoHeight = videoScrollY.interpolate({
+        inputRange: [0, 60],
+        outputRange: [Dimensions.get('window').height * 0.42, 160],
+        extrapolate: 'clamp',
+    });
+    const handleTabScroll = Animated.event(
+        [{ nativeEvent: { contentOffset: { y: videoScrollY } } }],
+        { useNativeDriver: false }
+    );
+
     // Lights-out: dim the panel when the video is actively playing
     const panelDimAnim = useRef(new Animated.Value(1)).current;
     const setLightsOut = useCallback((playing: boolean) => {
@@ -1050,6 +1062,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 style={panelStyles.scrollArea}
                 contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 }}
                 showsVerticalScrollIndicator={false}
+                onScroll={handleTabScroll}
+                scrollEventThrottle={16}
             >
                 {/* Scheduled Today */}
                 <View style={socialStyles.sectionCard}>
@@ -1144,6 +1158,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
             style={panelStyles.scrollArea}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}
             showsVerticalScrollIndicator={false}
+            onScroll={handleTabScroll}
+            scrollEventThrottle={16}
         >
             {/* Purpose */}
             <PurposeSection purpose={(sourceVideo as any)?.purpose ?? activeProgram?.purpose} />
@@ -1338,6 +1354,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
             style={panelStyles.scrollArea}
             contentContainerStyle={{ paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
+            onScroll={handleTabScroll}
+            scrollEventThrottle={16}
         >
             {/* \u2500\u2500 Q&A Section \u2500\u2500 */}
             <Text style={panelStyles.sectionHeading}>Q & A</Text>
@@ -1523,8 +1541,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
         >
             <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-            {/* Video player — top half */}
-            <View style={s.playerSection}>
+            {/* Video player — shrinks when tab content is scrolled */}
+            <Animated.View style={[s.playerSection, { height: videoHeight }]}>
                 {isYT ? (
                     <View style={{ width: '100%', height: 220, backgroundColor: '#000' }}>
                         <WebYouTubePlayer videoId={youtubeId} />
@@ -1582,7 +1600,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         </TouchableOpacity>
                     </View>
                 )}
-            </View>
+            </Animated.View>
 
             {allowInvite && (() => {
                 const ytId = sourceVideo?.youtubeId;
@@ -1790,7 +1808,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     cameraPermissionDenied={cameraPermissionDenied}
                 />
             ) : (
-            <View style={panelStyles.panel}>
+            <View style={[panelStyles.panel, { flex: 1 }]}>
 
                 {/* Reaction buttons — always full opacity, never dims during playback.
                     Active state and persistence are driven by useVideoInteractions
@@ -1891,9 +1909,9 @@ const s = StyleSheet.create({
         backgroundColor: '#000',
     },
     playerSection: {
-        flex: 1,
-        minHeight: 260,
+        width: '100%',
         backgroundColor: '#000',
+        overflow: 'hidden',
     },
     missingVideo: {
         flex: 1,
