@@ -60,7 +60,7 @@ export function ExerciseListTab({ videoId, programId, exercises: propExercises }
     };
 
     if (loading) {
-        return <ActivityIndicator color="#F97316" style={{ marginTop: 24 }} />;
+        return <ActivityIndicator color="#E89951" style={{ marginTop: 24 }} />;
     }
 
     return (
@@ -100,7 +100,7 @@ export function ExerciseListTab({ videoId, programId, exercises: propExercises }
                                 >
                                     <Timer
                                         size={16}
-                                        color={hasTimer ? '#F97316' : '#4B5563'}
+                                        color={hasTimer ? '#E89951' : '#4B5563'}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
         width: 7,
         height: 7,
         borderRadius: 3.5,
-        backgroundColor: '#F97316',
+        backgroundColor: '#E89951',
         flexShrink: 0,
     },
     info: { flex: 1 },
@@ -159,12 +159,12 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     timerBadge: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 11,
         marginTop: 2,
     },
     reps: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 12,
         fontWeight: '600',
         flexShrink: 0,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
         flexShrink: 0,
     },
     timerBtnActive: {
-        backgroundColor: 'rgba(249,115,22,0.12)',
-        borderColor: '#F97316',
+        backgroundColor: 'rgba(232,153,81,0.12)',
+        borderColor: '#E89951',
     },
 });

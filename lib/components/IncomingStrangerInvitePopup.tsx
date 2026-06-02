@@ -12,7 +12,7 @@ import {
 import { Dumbbell, Clock } from 'lucide-react-native';
 import { StrangerInvite } from '../services/StrangerInviteService';
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const TIMEOUT_SEC = 10;
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.35)',
+        borderColor: 'rgba(232,153,81,0.35)',
         boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
         elevation: 20,
     },
@@ -302,17 +302,17 @@ const styles = StyleSheet.create({
         gap: 12,
         marginHorizontal: 16,
         marginBottom: 14,
-        backgroundColor: 'rgba(249,115,22,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.15)',
+        borderColor: 'rgba(232,153,81,0.15)',
     },
     workoutIconWrap: {
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: 'rgba(249,115,22,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
         paddingVertical: 13,
         borderRadius: 14,
         alignItems: 'center',
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
     },
     acceptBtnText: {
         color: '#fff',

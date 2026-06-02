@@ -1,3 +1,13 @@
+// ── Brand accent system ──────────────────────────────────────────────
+// BRAND_ACCENT (warm orange #E89951) is the general brand accent: secondary buttons,
+// selected pills/chips, toggles, sliders, text/number accents, icons, borders, glows.
+// CTA_ORANGE (bright orange #FF6B00) is reserved ONLY for primary-action buttons that
+// commit something (Save, Update, Post, Buy, Start Workout, Send Invite, Challenge, Join, Schedule…).
+export const BRAND_ACCENT = '#E89951';
+export const CTA_ORANGE = '#FF6B00';
+// Translucent accent for soft backgrounds / borders / glows.
+export const accentAlpha = (a: number) => `rgba(232,153,81,${a})`;
+
 // Theme colors and styles matching Flutter app exactly
 export const AppTheme = {
   // Colors

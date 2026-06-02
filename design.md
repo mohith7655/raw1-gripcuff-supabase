@@ -21,7 +21,7 @@ Theme definitions live in [lib/core/theme/app_theme.ts](lib/core/theme/app_theme
 |-------|-------|-------|
 | `background` | `#0F172A` | Screen backgrounds |
 | `cardColor` | `#1E293B` | Card surfaces |
-| `primaryColor` | `#F97316` | Buttons, icons, active states |
+| `primaryColor` | `#F97316` | Legacy token — superseded by CTA `#FF6B00` + accent `#E89951`. Still used for: tab-bar active tint, the "Trainer" badge tier, and thumbnail/program color palettes |
 | `textWhite` | `#FFFFFF` | Primary text |
 | `textGrey` | `#94A3B8` | Secondary / muted text |
 | `inactiveColor` | `#334155` | Inactive tabs, borders |
@@ -43,7 +43,8 @@ Theme definitions live in [lib/core/theme/app_theme.ts](lib/core/theme/app_theme
 
 | Name | Value | Usage |
 |------|-------|-------|
-| Orange primary | `#FF6B00` | Buttons, badges, active tabs |
+| CTA orange | `#FF6B00` | **Primary-action buttons only** (Save, Post, Buy, Start, Send, Join, Schedule, Challenge) |
+| Accent orange | `#E89951` | General accent: secondary buttons, pills, toggles, sliders, icons, borders, number/text accents |
 | Orange warm | `#FF7A00` | Profile ring, icons |
 | Orange dark | `#D4622A` | Credits screen buttons |
 | Green | `#22c55e` | Success, completed states |
@@ -368,11 +369,16 @@ Standard card: `rgba(255,255,255,0.04)` background, `1px rgba(255,255,255,0.06)`
 
 ### Buttons
 
-**Primary (orange fill)**
+**Primary / CTA (bright orange fill)** — reserved for commit/submit actions
 - Background: `#FF6B00`
+- Used for: Save, Post, Buy, Start Workout, Send Invite, Join, Schedule, Challenge, Create, Connect
 - Text: black or white, 700–800 weight, 14px
 - Radius: 12px (square) or 100 (pill)
 - Padding: ~12px horizontal, 10–11px vertical
+
+**Secondary / accent (warm orange `#E89951`)** — everything that isn't a commit action
+- Used for: selectors, pills, toggles, non-commit buttons, icons, sliders, number accents, borders
+- Translucent form: `rgba(232,153,81,a)`
 
 **Secondary (outlined)**
 - Border: `1px rgba(255,255,255,0.2)`

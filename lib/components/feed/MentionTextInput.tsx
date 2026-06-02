@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const CARD_BG = '#1A2332';
 const DROPDOWN_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -287,19 +287,19 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   resultRowHovered: {
-    backgroundColor: 'rgba(255,107,0,0.1)',
+    backgroundColor: 'rgba(232,153,81,0.1)',
   },
   resultAvatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 8,
     backgroundColor: '#2a3a4a',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     flexShrink: 0,
   },
-  resultAvatarImg: { width: 36, height: 36, borderRadius: 18 },
+  resultAvatarImg: { width: 36, height: 36, borderRadius: 8 },
   resultAvatarInitial: { color: '#fff', fontSize: 14, fontWeight: '700' },
   resultName: { color: '#fff', fontSize: 14, fontWeight: '700' },
   resultUsername: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   skeletonAvatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.1)',
     flexShrink: 0,
   },

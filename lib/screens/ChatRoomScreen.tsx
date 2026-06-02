@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: 'rgba(255,107,0,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,107,0,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 6,
@@ -325,6 +325,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     sendButtonDisabled: {
-        backgroundColor: 'rgba(255,107,0,0.35)',
+        backgroundColor: 'rgba(232,153,81,0.35)',
     },
 });

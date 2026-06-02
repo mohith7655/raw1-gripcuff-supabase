@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     placeLabel: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 14,
         fontWeight: '700',
         marginBottom: 6,

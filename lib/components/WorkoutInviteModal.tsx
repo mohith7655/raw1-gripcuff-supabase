@@ -19,7 +19,7 @@ import { useAuth } from '../providers/AuthContext';
 import { SessionService } from '../services/session.service';
 import { WorkoutSession } from '../models/WorkoutSession';
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const NAVY   = '#0F172A';
 const CARD   = '#111827';
 
@@ -375,7 +375,7 @@ const s = StyleSheet.create({
         backgroundColor: CARD,
         borderRadius: 28,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.30)',
+        borderColor: 'rgba(232,153,81,0.30)',
         paddingHorizontal: 24,
         paddingTop: 20,
         paddingBottom: 24,
@@ -397,9 +397,9 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: 'rgba(249,115,22,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.28)',
+        borderColor: 'rgba(232,153,81,0.28)',
         borderRadius: 20,
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -458,10 +458,10 @@ const s = StyleSheet.create({
     // ── Session card ──
     sessionCard: {
         width: '100%',
-        backgroundColor: 'rgba(249,115,22,0.07)',
+        backgroundColor: 'rgba(232,153,81,0.07)',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.15)',
+        borderColor: 'rgba(232,153,81,0.15)',
         paddingHorizontal: 14,
         paddingVertical: 12,
         gap: 8,
@@ -476,7 +476,7 @@ const s = StyleSheet.create({
         width: 26,
         height: 26,
         borderRadius: 8,
-        backgroundColor: 'rgba(249,115,22,0.10)',
+        backgroundColor: 'rgba(232,153,81,0.10)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -502,7 +502,7 @@ const s = StyleSheet.create({
         flex: 1,
     },
     acceptBtn: {
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 14,
         paddingVertical: 14,
         flexDirection: 'row',

@@ -19,7 +19,7 @@ import { useAuth } from '../providers/AuthContext';
 import type { Club } from './ClubsScreen';
 
 const { width: SW } = Dimensions.get('window');
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -251,7 +251,7 @@ const inviteStyles = StyleSheet.create({
   name: { color: '#fff', fontSize: 14, fontWeight: '600' },
   username: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
   inviteBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   },
   chatBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   joinBtnLarge: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 8,
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   clubName: { color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 6 },
   clubMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   categoryPill: {
-    backgroundColor: 'rgba(255,107,0,0.15)',
+    backgroundColor: 'rgba(232,153,81,0.15)',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabBtnActive: { borderBottomColor: ORANGE },
+  tabBtnActive: { borderBottomColor: '#E89951' },
   tabBtnText: { color: TEXT_SECONDARY, fontSize: 14, fontWeight: '600' },
   tabBtnTextActive: { color: '#fff' },
 
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -638,12 +638,12 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   memberAvatar: {
-    width: 38, height: 38, borderRadius: 19,
+    width: 38, height: 38, borderRadius: 8,
     backgroundColor: '#2a3a4a',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', flexShrink: 0,
   },
-  memberAvatarImg: { width: 38, height: 38, borderRadius: 19 },
+  memberAvatarImg: { width: 38, height: 38, borderRadius: 8 },
   memberAvatarInitial: { color: '#fff', fontSize: 15, fontWeight: '700' },
   memberName: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '600' },
   roleBadge: {
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  roleBadgeOwner: { backgroundColor: 'rgba(255,107,0,0.2)' },
+  roleBadgeOwner: { backgroundColor: 'rgba(232,153,81,0.2)' },
   roleBadgeText: { color: ORANGE, fontSize: 11, fontWeight: '700' },
 
   postCard: {

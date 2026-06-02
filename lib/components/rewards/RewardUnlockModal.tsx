@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 import { ALL_BADGES, Badge } from '../../services/rewards.service';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 
 type Props = {
     visible: boolean;
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.3)',
+        borderColor: 'rgba(232,153,81,0.3)',
     },
     headline: {
         color: '#ffffff',
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
         width: 88,
         height: 88,
         borderRadius: 44,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         borderWidth: 2,
         borderColor: ACCENT,
         justifyContent: 'center',
@@ -149,17 +149,17 @@ const styles = StyleSheet.create({
     badgeLabel: { color: '#ffffff', fontSize: 18, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
     badgeDesc: { color: '#607a94', fontSize: 13, textAlign: 'center', marginBottom: 12 },
     creditPill: {
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 6,
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.4)',
+        borderColor: 'rgba(232,153,81,0.4)',
     },
     creditPillText: { color: ACCENT, fontSize: 14, fontWeight: '700' },
     extraBadges: { color: '#8aaccc', fontSize: 13, marginBottom: 16 },
     dismissBtn: {
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 48,

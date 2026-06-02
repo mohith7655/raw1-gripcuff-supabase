@@ -6,9 +6,9 @@ import { MoveReminder, MoveReminderService, formatMoveTime12h } from '../service
 import { MoveReminderModal } from './MoveReminderModal';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const CARD_BG = '#111d2e';
-const BORDER = 'rgba(255,107,0,0.18)';
+const BORDER = 'rgba(232,153,81,0.18)';
 
 interface Props {
     userId?: string;
@@ -151,8 +151,8 @@ const s = StyleSheet.create({
         flexShrink: 0,
     },
     iconWrapOn: {
-        backgroundColor: 'rgba(255,107,0,0.12)',
-        borderColor: 'rgba(255,107,0,0.35)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
+        borderColor: 'rgba(232,153,81,0.35)',
     },
     textBlock: { flex: 1 },
     cardTitle: {
@@ -186,9 +186,9 @@ const s = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.25)',
+        borderColor: 'rgba(232,153,81,0.25)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -203,8 +203,8 @@ const s = StyleSheet.create({
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: ACCENT,
-        borderColor: ACCENT,
+        backgroundColor: '#E89951',
+        borderColor: '#E89951',
     },
     toggleThumb: {
         width: 20,

@@ -17,6 +17,6 @@ export const ChallengeVideoRoom: React.FC = () => {
 const styles = StyleSheet.create({
     root: { flex: 1, backgroundColor: '#0a0f1a', alignItems: 'center', justifyContent: 'center', padding: 32 },
     text: { color: '#607a94', fontSize: 15, textAlign: 'center', marginBottom: 24 },
-    btn: { backgroundColor: '#FF6B00', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
+    btn: { backgroundColor: '#E89951', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
     btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

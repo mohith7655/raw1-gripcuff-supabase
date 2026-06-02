@@ -137,14 +137,14 @@ function Avatar({ uri, size }: { uri?: string | null; size: number }) {
     return (
       <Image
         source={{ uri }}
-        style={{ width: size, height: size, borderRadius: size / 2 }}
+        style={{ width: size, height: size, borderRadius: Math.round(size * 0.22) }}
         onError={() => setErr(true)}
       />
     );
   }
   return (
     <View style={{
-      width: size, height: size, borderRadius: size / 2,
+      width: size, height: size, borderRadius: Math.round(size * 0.22),
       backgroundColor: '#0f2030',
       alignItems: 'center', justifyContent: 'center',
     }}>
@@ -383,7 +383,7 @@ export const ProfileScreen = () => {
                   opacity: pulse,
                   height: h,
                   width: i === 0 ? 140 : i < 3 ? 200 - i * 30 : '100%',
-                  borderRadius: i === 0 ? 70 : 14,
+                  borderRadius: i === 0 ? 22 : 14,
                 }]}
               />
             ))}
@@ -1024,7 +1024,7 @@ const s = StyleSheet.create({
   avatarRing: {
     width: 146,
     height: 146,
-    borderRadius: 73,
+    borderRadius: 28,
     borderWidth: 3,
     borderColor: C.orange,
     alignItems: 'center',
@@ -1076,8 +1076,8 @@ const s = StyleSheet.create({
     borderColor: C.cardBorder,
   },
   privacyPillActive: {
-    backgroundColor: C.orange,
-    borderColor: C.orange,
+    backgroundColor: '#E89951',
+    borderColor: '#E89951',
   },
   privacyPillText: {
     color: C.muted,

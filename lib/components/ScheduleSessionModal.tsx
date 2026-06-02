@@ -18,7 +18,7 @@ import { useFriend } from '../providers/FriendContext';
 import { useInvite } from '../hooks/useInvite';
 import type { User } from '../models/User';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 
 type Step = 'datetime' | 'friends' | 'sending' | 'done' | 'error';
 
@@ -445,9 +445,9 @@ const s = StyleSheet.create({
     workoutBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.2)',
+        borderColor: 'rgba(232,153,81,0.2)',
         borderRadius: 12,
         padding: 12,
         marginBottom: 16,
@@ -462,13 +462,13 @@ const s = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 8,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(255,107,0,0.7)',
+        color: 'rgba(232,153,81,0.7)',
         fontSize: 10,
         fontWeight: '600',
         letterSpacing: 0.4,
@@ -509,7 +509,7 @@ const s = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.08)',
     },
     chipActive: {
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         borderColor: ACCENT,
     },
     chipTopText: {
@@ -533,7 +533,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         borderRadius: 10,
         paddingHorizontal: 14,
         paddingVertical: 10,
@@ -547,7 +547,7 @@ const s = StyleSheet.create({
         flex: 1,
     },
     primaryBtn: {
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 14,
         paddingVertical: 14,
         alignItems: 'center',
@@ -561,7 +561,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 8,
@@ -590,7 +590,7 @@ const s = StyleSheet.create({
     avatar: {
         width: 38,
         height: 38,
-        borderRadius: 19,
+        borderRadius: 8,
     },
     friendInfo: {
         flex: 1,

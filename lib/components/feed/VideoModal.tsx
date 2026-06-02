@@ -12,7 +12,7 @@ import {
 import { X, Video } from 'lucide-react-native';
 
 const { height: SH } = Dimensions.get('window');
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
 
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,107,0,0.12)',
+    backgroundColor: 'rgba(232,153,81,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },

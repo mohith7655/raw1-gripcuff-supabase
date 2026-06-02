@@ -44,7 +44,7 @@ export function WebSafeAvatar({
         return () => clearTimeout(t);
     }, [uri, loaded, error, timeoutMs]);
 
-    const radius = borderRadius ?? size / 2;
+    const radius = borderRadius ?? Math.round(size * 0.22);
     const containerStyle = [styles.container, { width: size, height: size, borderRadius: radius }, style];
 
     if (!uri || error) {
@@ -56,7 +56,7 @@ export function WebSafeAvatar({
             <View style={containerStyle}>
                 {!loaded && (
                     <View style={[StyleSheet.absoluteFillObject, styles.loadingOverlay, { borderRadius: radius }]}>
-                        <ActivityIndicator color="#FF6B00" size="small" />
+                        <ActivityIndicator color="#E89951" size="small" />
                     </View>
                 )}
                 {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
@@ -84,7 +84,7 @@ export function WebSafeAvatar({
         <View style={containerStyle}>
             {!loaded && (
                 <View style={[StyleSheet.absoluteFillObject, styles.loadingOverlay, { borderRadius: radius }]}>
-                    <ActivityIndicator color="#FF6B00" size="small" />
+                    <ActivityIndicator color="#E89951" size="small" />
                 </View>
             )}
             <Image

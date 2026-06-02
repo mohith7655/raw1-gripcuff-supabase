@@ -12,7 +12,7 @@ import {
 import { X, Timer, BedDouble } from 'lucide-react-native';
 import { TimerConfig, TimerMode, useWorkoutTimer } from '../hooks/useWorkoutTimer';
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const BG = '#0f1923';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER = 'rgba(255,255,255,0.1)';
@@ -213,7 +213,7 @@ function ToggleRow({
             <Switch
                 value={value}
                 onValueChange={onToggle}
-                trackColor={{ false: '#334155', true: 'rgba(249,115,22,0.4)' }}
+                trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
                 thumbColor={value ? ACCENT : '#94A3B8'}
             />
         </View>
@@ -251,7 +251,7 @@ const s = StyleSheet.create({
         gap: 6, paddingVertical: 12, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    modeBtnActive: { borderColor: ACCENT, backgroundColor: 'rgba(249,115,22,0.1)' },
+    modeBtnActive: { borderColor: ACCENT, backgroundColor: 'rgba(232,153,81,0.1)' },
     modeTxt: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
     modeTxtAccent: { color: ACCENT },
     modeTxtIndigo: { color: '#818CF8' },
@@ -260,7 +260,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    presetChipActive: { backgroundColor: 'rgba(249,115,22,0.15)', borderColor: ACCENT },
+    presetChipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
     presetTxt: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
     presetTxtActive: { color: ACCENT },
     toggleRow: {
@@ -277,7 +277,7 @@ const s = StyleSheet.create({
     startNowTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
     saveBtn: {
         flex: 1, paddingVertical: 14, borderRadius: 14,
-        alignItems: 'center', backgroundColor: ACCENT,
+        alignItems: 'center', backgroundColor: '#FF6B00',
     },
     saveTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });
@@ -310,7 +310,7 @@ const at = StyleSheet.create({
     resetTxt: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
     playBtn: {
         paddingHorizontal: 36, paddingVertical: 12,
-        borderRadius: 12, backgroundColor: ACCENT,
+        borderRadius: 12, backgroundColor: '#FF6B00',
     },
     pauseBtn: { backgroundColor: '#1d4ed8' },
     playTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },

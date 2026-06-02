@@ -18,7 +18,7 @@ import { EditPostModal } from './EditPostModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
 
@@ -218,7 +218,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
     ? [
         {
           label: 'Edit tweet',
-          icon: <Pencil size={18} color="#FF6B00" />,
+          icon: <Pencil size={18} color="#E89951" />,
           onPress: () => setEditTweetVisible(true),
         },
         {
@@ -237,7 +237,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
     : [
         {
           label: 'Edit caption',
-          icon: <Pencil size={18} color="#FF6B00" />,
+          icon: <Pencil size={18} color="#E89951" />,
           onPress: () => setEditPostVisible(true),
         },
         {
@@ -414,13 +414,13 @@ const styles = StyleSheet.create({
   avatar: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 8,
     backgroundColor: '#2a3a4a',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  avatarImg: { width: 38, height: 38, borderRadius: 19 },
+  avatarImg: { width: 38, height: 38, borderRadius: 8 },
   avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
   displayName: { color: '#fff', fontSize: 14, fontWeight: '700' },
   timestamp: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
@@ -481,13 +481,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.2)',
+    borderColor: 'rgba(232,153,81,0.2)',
   },
   linkIcon: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,107,0,0.15)',
+    backgroundColor: 'rgba(232,153,81,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },

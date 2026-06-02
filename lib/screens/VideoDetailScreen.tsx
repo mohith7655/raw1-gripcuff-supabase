@@ -26,7 +26,7 @@ const BG = '#0d1520';
 const CARD_BG = '#111e2e';
 const TEAL = '#14b8a6';
 const FRIEND_GREEN = '#22c55e';
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const MUTED = '#607a94';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

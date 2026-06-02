@@ -11,10 +11,10 @@ import { AlarmConfig, formatMoveTime12h } from '../services/moveReminder.service
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 import { getUserDateKey } from '../utils/userDate';
 
-const ACCENT   = '#FF6B00';
+const ACCENT   = '#E89951';
 const BG       = '#0d1825';
 const CARD     = '#111d2e';
-const BORDER   = 'rgba(255,107,0,0.2)';
+const BORDER   = 'rgba(232,153,81,0.2)';
 const SNOOZE_OPTIONS = [
     { label: 'Skip today',  mins: 0,  color: '#f87171' },
     { label: '+15 min',     mins: 15, color: '#f59e0b' },
@@ -268,7 +268,7 @@ const ss = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 8,

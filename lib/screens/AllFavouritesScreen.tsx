@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
         borderBottomColor: 'rgba(255,255,255,0.06)',
     },
     backBtn: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 17,
         fontWeight: '600',
         width: 56,

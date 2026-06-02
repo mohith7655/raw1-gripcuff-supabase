@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.03)',
     },
-    avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+    avatar: { width: 40, height: 40, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     contactInfo: { flex: 1, justifyContent: 'center' },
     contactName: { color: THEME.textMain, fontSize: 16, fontWeight: 'bold', marginBottom: 2 },

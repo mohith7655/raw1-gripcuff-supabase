@@ -21,7 +21,7 @@ import { useAuth } from '../providers/AuthContext';
 
 import { getWorkoutVideoUrl } from '../constants/videoUrls';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG_VIDEO_URL = getWorkoutVideoUrl('welcome');
 
 type ModalType = 'login' | 'signup' | null;
@@ -340,7 +340,7 @@ export const WelcomeScreen = () => {
           <button
             onClick={() => openModal('signup')}
             style={({
-              backgroundColor: ORANGE,
+              backgroundColor: '#FF6B00',
               border: 'none',
               borderRadius: 14,
               padding: '16px',
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   signUpBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     borderColor: ORANGE,
   },
   submitBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

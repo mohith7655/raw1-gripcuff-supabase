@@ -386,7 +386,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
             {/* Programme video banner - shown throughout the flow when coming from a programme */}
             {isFromProgramme && (
                 <View style={styles.programmeBanner}>
-                    <PlayCircle color="#FF6B00" size={16} />
+                    <PlayCircle color="#E89951" size={16} />
                     <Text style={styles.programmeBannerText} numberOfLines={1}>
                         {preselectedVideoTitle ?? selectedVideo?.title ?? 'Selected workout'}
                     </Text>
@@ -565,7 +565,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             />
                         </View>
                         <View style={styles.summaryBox}>
-                            <Clock color="#FF6B00" size={14} />
+                            <Clock color="#E89951" size={14} />
                             <Text style={styles.summaryBoxText}>{fmtPickerTime}</Text>
                         </View>
                     </View>
@@ -589,7 +589,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             {
                                                 marginBottom: 0,
                                                 borderColor: isSelected ? AppTheme.primaryColor : 'rgba(255,255,255,0.06)',
-                                                backgroundColor: isSelected ? 'rgba(255,107,0,0.08)' : AppTheme.cardColor,
+                                                backgroundColor: isSelected ? 'rgba(232,153,81,0.08)' : AppTheme.cardColor,
                                             }
                                         ]}
                                         onPress={() => openInviteCategory(category.key)}
@@ -615,7 +615,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                     const programs = getProgramsByCategory(selectedCategory!);
                     const catInfo = CATEGORY_OPTIONS.find(c => c.key === selectedCategory);
                     const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-                    const COLORS = ['#FF6B00', '#7C3AED', '#3B82F6', '#10B981'];
+                    const COLORS = ['#E89951', '#7C3AED', '#3B82F6', '#10B981'];
 
                     const handlePickVideo = (video: ProgramVideo, program: PreRecordedProgram) => {
                         setSelectedVideo({
@@ -782,7 +782,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                 marginTop: 24,
                                 borderWidth: 1.5,
                                 borderColor: betAmount > 0
-                                    ? 'rgba(249,115,22,0.4)'
+                                    ? 'rgba(232,153,81,0.4)'
                                     : 'rgba(255,255,255,0.07)',
                             }}>
 
@@ -792,12 +792,12 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                         🏆 Bet Credits
                                     </Text>
                                     <View style={{
-                                        backgroundColor: 'rgba(249,115,22,0.15)',
+                                        backgroundColor: 'rgba(232,153,81,0.15)',
                                         borderRadius: 20,
                                         paddingHorizontal: 10,
                                         paddingVertical: 3,
                                     }}>
-                                        <Text style={{ color: '#F97316', fontSize: 11, fontWeight: '700' }}>OPTIONAL</Text>
+                                        <Text style={{ color: '#E89951', fontSize: 11, fontWeight: '700' }}>OPTIONAL</Text>
                                     </View>
                                 </View>
 
@@ -822,13 +822,13 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             borderRadius: 12,
                                             backgroundColor: betAmount === MIN_BET
                                                 ? 'rgba(255,255,255,0.05)'
-                                                : 'rgba(249,115,22,0.15)',
+                                                : 'rgba(232,153,81,0.15)',
                                             justifyContent: 'center',
                                             alignItems: 'center',
                                         }}
                                     >
                                         <Text style={{
-                                            color: betAmount === MIN_BET ? '#3a5a7a' : '#F97316',
+                                            color: betAmount === MIN_BET ? '#3a5a7a' : '#E89951',
                                             fontSize: 24, fontWeight: '700', lineHeight: 28,
                                         }}>−</Text>
                                     </TouchableOpacity>
@@ -836,7 +836,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                     {/* Amount display */}
                                     <View style={{ flex: 1, alignItems: 'center' }}>
                                         <Text style={{
-                                            color: betAmount > 0 ? '#F97316' : '#ffffff',
+                                            color: betAmount > 0 ? '#E89951' : '#ffffff',
                                             fontSize: 32, fontWeight: '800', letterSpacing: -1,
                                         }}>
                                             {betAmount}
@@ -853,13 +853,13 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             borderRadius: 12,
                                             backgroundColor: betAmount === MAX_BET
                                                 ? 'rgba(255,255,255,0.05)'
-                                                : 'rgba(249,115,22,0.15)',
+                                                : 'rgba(232,153,81,0.15)',
                                             justifyContent: 'center',
                                             alignItems: 'center',
                                         }}
                                     >
                                         <Text style={{
-                                            color: betAmount === MAX_BET ? '#3a5a7a' : '#F97316',
+                                            color: betAmount === MAX_BET ? '#3a5a7a' : '#E89951',
                                             fontSize: 24, fontWeight: '700', lineHeight: 28,
                                         }}>+</Text>
                                     </TouchableOpacity>
@@ -881,11 +881,11 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                                 paddingVertical: 7,
                                                 borderRadius: 20,
                                                 backgroundColor: betAmount === amount
-                                                    ? '#F97316'
+                                                    ? '#E89951'
                                                     : 'rgba(255,255,255,0.06)',
                                                 borderWidth: 1,
                                                 borderColor: betAmount === amount
-                                                    ? '#F97316'
+                                                    ? '#E89951'
                                                     : 'rgba(255,255,255,0.08)',
                                             }}
                                         >
@@ -941,7 +941,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             onPress={handleSubmit}
                             disabled={isSubmitting || !selectedFriend || !selectedDate || !selectedVideo}
                             style={{
-                                backgroundColor: (selectedFriend && selectedDate && selectedVideo) ? '#F97316' : '#7c7c7c',
+                                backgroundColor: (selectedFriend && selectedDate && selectedVideo) ? '#FF6B00' : '#7c7c7c',
                                 borderRadius: 30,
                                 padding: 18,
                                 alignItems: 'center',
@@ -1002,11 +1002,11 @@ const styles = StyleSheet.create({
     // Step 1
     emptyContainer: { alignItems: 'center', padding: 40, backgroundColor: AppTheme.cardColor, borderRadius: 16 },
     emptyText: { color: AppTheme.textGrey, marginBottom: 16 },
-    goAddFriendBtn: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: 'rgba(255,107,0,0.1)', borderRadius: 20 },
+    goAddFriendBtn: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: 'rgba(232,153,81,0.1)', borderRadius: 20 },
 
     friendCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: AppTheme.cardColor, padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: 'transparent' },
-    friendCardSelected: { borderColor: AppTheme.primaryColor, backgroundColor: 'rgba(255,107,0,0.05)' },
-    avatar: { width: 44, height: 44, borderRadius: 22 },
+    friendCardSelected: { borderColor: AppTheme.primaryColor, backgroundColor: 'rgba(232,153,81,0.05)' },
+    avatar: { width: 44, height: 44, borderRadius: 10 },
     friendName: { color: 'white', fontSize: 16, fontWeight: '600' },
     friendUsername: { color: AppTheme.textGrey, fontSize: 13, marginTop: 2 },
     iconContainerMini: {
@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
     },
     categoryVideoRowSelected: {
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
     },
     categoryVideoThumb: {
         width: 90,
@@ -1070,11 +1070,11 @@ const styles = StyleSheet.create({
     pickerWrap: { marginVertical: 16, alignItems: 'center' },
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.08)', borderRadius: 10,
+        backgroundColor: 'rgba(232,153,81,0.08)', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 10, marginTop: 4, marginBottom: 12,
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)',
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
     },
-    summaryBoxText: { color: '#FF6B00', fontSize: 14, fontWeight: '600', flex: 1 },
+    summaryBoxText: { color: '#E89951', fontSize: 14, fontWeight: '600', flex: 1 },
 
     // Video cards - library-style
     videoCard: {
@@ -1157,15 +1157,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,107,0,0.25)',
+        borderBottomColor: 'rgba(232,153,81,0.25)',
         paddingHorizontal: 16,
         paddingVertical: 10,
     },
     programmeBannerText: {
         flex: 1,
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 13,
         fontWeight: '600',
     },
@@ -1173,7 +1173,7 @@ const styles = StyleSheet.create({
     inviteCtaGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 56, borderRadius: 16 },
     inviteCtaText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 
-    pendingBadge: { backgroundColor: 'rgba(255, 107, 0, 0.15)', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: AppTheme.primaryColor },
+    pendingBadge: { backgroundColor: 'rgba(232,153,81, 0.15)', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: AppTheme.primaryColor },
     pendingBadgeText: { color: 'white', fontWeight: 'bold', flex: 1 },
 
     sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -1279,8 +1279,8 @@ const styles = StyleSheet.create({
     contactInitialCircle: {
         width: 44,
         height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(249,115,22,0.15)',
+        borderRadius: 10,
+        backgroundColor: 'rgba(232,153,81,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,

@@ -17,11 +17,11 @@ import { ArrowLeft, Send } from 'lucide-react-native';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
-const MY_BUBBLE = '#FF6B00';
+const MY_BUBBLE = '#E89951';
 const OTHER_BUBBLE = '#1A2332';
 
 interface ClubMessage {
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     alignItems: 'center', justifyContent: 'center',
   },
   sendBtnDisabled: { opacity: 0.4 },

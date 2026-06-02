@@ -72,7 +72,7 @@ export function CityPickerField({ value, onChange }: Props) {
             />
             {!!value && (
                 <View style={styles.selected}>
-                    <MapPin color="#F97316" size={14} />
+                    <MapPin color="#E89951" size={14} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.selectedTitle} numberOfLines={1}>{value.city}</Text>
                         <Text style={styles.selectedSub} numberOfLines={1}>
@@ -140,10 +140,10 @@ const styles = StyleSheet.create({
         marginTop: 8,
         paddingHorizontal: 10,
         paddingVertical: 8,
-        backgroundColor: 'rgba(249,115,22,0.11)',
+        backgroundColor: 'rgba(232,153,81,0.11)',
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.24)',
+        borderColor: 'rgba(232,153,81,0.24)',
     },
     selectedTitle: {
         color: '#fff',

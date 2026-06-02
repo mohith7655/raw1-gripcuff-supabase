@@ -18,7 +18,7 @@ import { FeedService, Post } from '../../services/feed.service';
 import { MentionTextInput } from './MentionTextInput';
 
 const { height: SH } = Dimensions.get('window');
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4 },
   headerTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
   postBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,
@@ -223,14 +223,14 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 9,
     backgroundColor: '#2a3a4a',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     flexShrink: 0,
   },
-  avatarImg: { width: 40, height: 40, borderRadius: 20 },
+  avatarImg: { width: 40, height: 40, borderRadius: 9 },
   avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
   input: {
     flex: 1,

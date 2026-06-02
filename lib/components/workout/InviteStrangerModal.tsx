@@ -10,7 +10,7 @@ import {
 import { Calendar, Dumbbell, UserPlus, X } from 'lucide-react-native';
 import { SocialOpenEntry, SocialScheduledEntry } from '../../hooks/useWorkoutSocialHub';
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 
 type SocialUser = {
     uid: string;
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 4,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.4)',
+        borderColor: 'rgba(232,153,81,0.4)',
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 6,
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 8,
         paddingHorizontal: 9,
         paddingVertical: 6,

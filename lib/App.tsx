@@ -83,6 +83,7 @@ import { LookingToMeetEditScreen } from './screens/LookingToMeetEditScreen';
 import { ScannedProfileScreen } from './screens/ScannedProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AllFavouritesScreen } from './screens/AllFavouritesScreen';
+import { AllRecentlyWatchedScreen } from './screens/AllRecentlyWatchedScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { FeedScreen } from './screens/FeedScreen';
 import { ClubsScreen } from './screens/ClubsScreen';
@@ -356,6 +357,7 @@ function AppStack({
         <Stack.Screen name="InviteFriendsFlow" component={InviteFriendsFlow} />
         <Stack.Screen name="Recommendation" component={RecommendationScreen} options={{ headerShown: false }} />
         <Stack.Screen name="AllFavourites" component={AllFavouritesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AllRecentlyWatched" component={AllRecentlyWatchedScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="AgoraVideoRoom"
           component={AgoraVideoRoom}
@@ -448,8 +450,8 @@ const challengeAlertStyles = StyleSheet.create({
   card: {
     position: 'absolute', bottom: 120, left: 16, right: 16, zIndex: 9999,
     backgroundColor: '#0d1825', borderRadius: 18, padding: 20,
-    borderWidth: 1, borderColor: 'rgba(255,107,0,0.35)',
-    shadowColor: '#FF6B00', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10,
+    borderWidth: 1, borderColor: 'rgba(232,153,81,0.35)',
+    shadowColor: '#E89951', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10,
   },
   title: { color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 4 },
   body:  { color: 'rgba(150,180,210,0.7)', fontSize: 13, marginBottom: 16 },

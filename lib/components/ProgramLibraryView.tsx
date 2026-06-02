@@ -24,7 +24,7 @@ import {
 import { useFloatingToggle, FloatingTabToggle } from './FloatingTabToggle';
 import { SubTab } from '../models/Video';
 
-const THUMBNAIL_COLORS = ['#FF6B00', '#7C3AED', '#3B82F6', '#10B981'];
+const THUMBNAIL_COLORS = ['#E89951', '#7C3AED', '#3B82F6', '#10B981'];
 
 type Props = {
     categoryKey: ProgramCategoryKey;
@@ -154,11 +154,11 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                     style={styles.videoThumbnail}
                 >
                     <View style={styles.introBadge}>
-                        <Lock color="#F97316" size={10} />
+                        <Lock color="#E89951" size={10} />
                         <Text style={styles.introBadgeText}>MANDATORY</Text>
                     </View>
                     <View style={styles.introIconWrap}>
-                        <BookOpen color="#F97316" size={28} />
+                        <BookOpen color="#E89951" size={28} />
                     </View>
                     <View style={{ position: 'absolute', top: 6, left: 6 }}>
                         <Raw1Logo fontSize={8} />
@@ -166,7 +166,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                 </LinearGradient>
                 <View style={styles.videoInfo}>
                     <View style={styles.titleRow}>
-                        <Text style={[styles.videoTitle, { color: '#F97316' }]} numberOfLines={1}>
+                        <Text style={[styles.videoTitle, { color: '#E89951' }]} numberOfLines={1}>
                             Introduction
                         </Text>
                     </View>
@@ -359,16 +359,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 3,
         alignSelf: 'flex-end',
-        backgroundColor: 'rgba(249,115,22,0.18)',
+        backgroundColor: 'rgba(232,153,81,0.18)',
         paddingHorizontal: 6,
         paddingVertical: 3,
         borderRadius: 4,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.4)',
+        borderColor: 'rgba(232,153,81,0.4)',
     },
     introBadgeText: {
         fontSize: 9,
-        color: '#F97316',
+        color: '#E89951',
         fontWeight: '700',
         letterSpacing: 0.5,
     },

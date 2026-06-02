@@ -53,7 +53,7 @@ export function CityPickerField({ value, onChange }: Props) {
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.7}
             >
-                <MapPin color={value ? '#F97316' : '#6B7280'} size={16} />
+                <MapPin color={value ? '#E89951' : '#6B7280'} size={16} />
                 <View style={{ flex: 1 }}>
                     <Text style={[styles.fieldText, !value && styles.placeholder]} numberOfLines={1}>
                         {value ? value.city : 'Search your city'}

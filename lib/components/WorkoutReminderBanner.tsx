@@ -74,7 +74,7 @@ export function WorkoutReminderBanner({ visible, videoTitle, countdown, onPress,
                 }}
             >
                 <View style={styles.iconWrap}>
-                    <Bell size={20} color="#FF6B00" />
+                    <Bell size={20} color="#E89951" />
                 </View>
                 <View style={styles.textWrap}>
                     <Text style={styles.title} numberOfLines={1}>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 14,
         borderWidth: 1,
-        borderColor: '#FF6B0040',
+        borderColor: '#E8995140',
         boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
         elevation: 8,
     },
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
         width: 38,
         height: 38,
         borderRadius: 10,
-        backgroundColor: '#FF6B0020',
+        backgroundColor: '#E8995120',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 12,
         fontWeight: '700',
         textTransform: 'uppercase',

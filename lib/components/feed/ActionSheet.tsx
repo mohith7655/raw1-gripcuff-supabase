@@ -14,7 +14,7 @@ const { height: SH } = Dimensions.get('window');
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
 const RED = '#FF4444';
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 
 export interface ActionSheetOption {
   label: string;

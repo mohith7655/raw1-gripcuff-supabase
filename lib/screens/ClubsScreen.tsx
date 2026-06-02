@@ -32,7 +32,7 @@ import { CreateClubModal } from '../components/clubs/CreateClubModal';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const ORANGE = '#F97316';
+const ORANGE = '#E89951';
 const BG = '#051424';
 const CARD_BG = '#1E293B';
 const TEXT = '#D4E4FA';
@@ -58,10 +58,10 @@ export interface Club {
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 function ClubAvatar({ club, size = 48 }: { club: Club; size?: number }) {
   if (club.avatar_url) {
-    return <Image source={{ uri: club.avatar_url }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+    return <Image source={{ uri: club.avatar_url }} style={{ width: size, height: size, borderRadius: Math.round(size * 0.22) }} />;
   }
   return (
-    <View style={[s.clubAvatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View style={[s.clubAvatarFallback, { width: size, height: size, borderRadius: Math.round(size * 0.22) }]}>
       <Text style={{ color: '#fff', fontSize: size * 0.38, fontWeight: '800' }}>
         {club.name.charAt(0).toUpperCase()}
       </Text>
@@ -715,7 +715,7 @@ const s = StyleSheet.create({
   headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800', flex: 1, marginLeft: 8 },
   createBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: ORANGE, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: '#FF6B00', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
   },
   createBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
@@ -742,9 +742,9 @@ const s = StyleSheet.create({
   clubInfo: { flex: 1 },
   clubName: { color: '#fff', fontSize: 14, fontWeight: '700' },
   clubMeta: { color: TEXT_SUB, fontSize: 12, marginTop: 2 },
-  joinBtn: { backgroundColor: ORANGE, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, minWidth: 54, alignItems: 'center' },
+  joinBtn: { backgroundColor: '#FF6B00', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, minWidth: 54, alignItems: 'center' },
   joinBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  joinedPill: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(249,115,22,0.4)' },
+  joinedPill: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(232,153,81,0.4)' },
   joinedText: { color: ORANGE, fontSize: 12, fontWeight: '600' },
 
   // Empty states
@@ -769,7 +769,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER,
   },
   pillBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999 },
-  pillBtnActive: { backgroundColor: ORANGE },
+  pillBtnActive: { backgroundColor: '#E89951' },
   pillBtnText: { color: TEXT_SUB, fontSize: 13, fontWeight: '700' },
   pillBtnTextActive: { color: '#fff' },
 
@@ -785,7 +785,7 @@ const s = StyleSheet.create({
   calCell: { flex: 1, alignItems: 'center', paddingVertical: 2 },
   calDayLabel: { color: TEXT_SUB, fontSize: 11, fontWeight: '700', paddingBottom: 6 },
   calDayBtn: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  calDayToday: { backgroundColor: 'rgba(249,115,22,0.2)' },
+  calDayToday: { backgroundColor: 'rgba(232,153,81,0.2)' },
   calDayNum: { color: TEXT_SUB, fontSize: 13 },
   calDayNumToday: { color: ORANGE, fontWeight: '800' },
   calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: ORANGE, marginTop: 1 },
@@ -804,9 +804,9 @@ const s = StyleSheet.create({
   eventMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   eventMetaText: { color: TEXT_SUB, fontSize: 13 },
   eventActions: { flexDirection: 'row', gap: 10, marginTop: 2 },
-  eventBtnPrimary: { flex: 1, backgroundColor: ORANGE, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  eventBtnPrimary: { flex: 1, backgroundColor: '#FF6B00', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   eventBtnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  eventBtnOutline: { flex: 1, borderWidth: 1, borderColor: 'rgba(249,115,22,0.5)', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  eventBtnOutline: { flex: 1, borderWidth: 1, borderColor: 'rgba(232,153,81,0.5)', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   eventBtnOutlineText: { color: ORANGE, fontSize: 13, fontWeight: '700' },
   eventBtnMuted: { flex: 1, backgroundColor: SURFACE_VAR, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   eventBtnMutedText: { color: TEXT, fontSize: 13, fontWeight: '700' },
@@ -819,7 +819,7 @@ const s = StyleSheet.create({
   },
   lbSelfInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   lbAvatarWrap: { position: 'relative' },
-  lbSelfAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: ORANGE },
+  lbSelfAvatar: { width: 56, height: 56, borderRadius: 12, borderWidth: 2, borderColor: ORANGE },
   lbSelfAvatarFallback: { backgroundColor: SURFACE_VAR, alignItems: 'center', justifyContent: 'center' },
   lbSelfAvatarLetter: { color: '#fff', fontSize: 22, fontWeight: '800' },
   lbRankBubble: {
@@ -835,7 +835,7 @@ const s = StyleSheet.create({
   lbFilterScroll: { marginBottom: 16 },
   lbFilterContent: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
   lbFilterBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: SURFACE_VAR },
-  lbFilterBtnActive: { backgroundColor: ORANGE, borderColor: ORANGE },
+  lbFilterBtnActive: { backgroundColor: '#E89951', borderColor: '#E89951' },
   lbFilterText: { color: TEXT_SUB, fontSize: 13, fontWeight: '700' },
   lbFilterTextActive: { color: '#fff' },
 
@@ -845,9 +845,9 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER,
   },
   lbRowTop: { borderLeftWidth: 3, borderLeftColor: ORANGE },
-  lbRowMe: { borderColor: 'rgba(249,115,22,0.4)' },
+  lbRowMe: { borderColor: 'rgba(232,153,81,0.4)' },
   lbRank: { width: 28, textAlign: 'center', fontSize: 16, fontWeight: '800' },
-  lbAvatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: BORDER },
+  lbAvatar: { width: 44, height: 44, borderRadius: 10, borderWidth: 1, borderColor: BORDER },
   lbAvatarFallback: { backgroundColor: SURFACE_VAR, alignItems: 'center', justifyContent: 'center' },
   lbAvatarLetter: { color: '#fff', fontSize: 17, fontWeight: '800' },
   lbName: { color: TEXT, fontSize: 13, fontWeight: '700' },
@@ -860,7 +860,7 @@ const s = StyleSheet.create({
     alignItems: 'center', gap: 12, marginTop: 8,
     borderWidth: 1, borderColor: BORDER,
   },
-  profileAvatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: ORANGE },
+  profileAvatar: { width: 80, height: 80, borderRadius: 18, borderWidth: 2, borderColor: ORANGE },
   profileAvatarFallback: { backgroundColor: SURFACE_VAR, alignItems: 'center', justifyContent: 'center' },
   profileAvatarLetter: { color: '#fff', fontSize: 32, fontWeight: '800' },
   profileName: { color: '#fff', fontSize: 20, fontWeight: '800' },
@@ -870,7 +870,7 @@ const s = StyleSheet.create({
   profileStatLabel: { color: TEXT_SUB, fontSize: 12, marginTop: 2 },
   profileStatDivider: { width: 1, height: 36, backgroundColor: BORDER },
   profileEditBtn: {
-    marginTop: 8, borderWidth: 1, borderColor: 'rgba(249,115,22,0.5)',
+    marginTop: 8, borderWidth: 1, borderColor: 'rgba(232,153,81,0.5)',
     borderRadius: 20, paddingHorizontal: 28, paddingVertical: 10,
   },
   profileEditBtnText: { color: ORANGE, fontSize: 14, fontWeight: '700' },
@@ -883,5 +883,5 @@ const s = StyleSheet.create({
   },
   tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   tabBarLabel: { color: TEXT_SUB, fontSize: 10, fontWeight: '700' },
-  tabBarLabelActive: { color: ORANGE },
+  tabBarLabelActive: { color: '#E89951' },
 });

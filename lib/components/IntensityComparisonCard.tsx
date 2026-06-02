@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MovementEquivalenceCard } from './MovementEquivalenceCard';
 
-export type ExerciseName = 'Squats' | 'Wall Sits' | 'Standing Glute Kickbacks';
+export type ExerciseName = 'Squats' | 'Leaning Pullups';
 
 interface Props {
     workoutDurationMin: number;
@@ -30,17 +30,11 @@ const EXERCISE_CONFIG: Record<ExerciseName, {
         rates: [10, 15, 25],
         multipliers: [1.10, 1.27, 1.24],
     },
-    'Wall Sits': {
-        unit: 'holds',
-        headerLabel: 'WALL SITS',
-        rates: [1, 2, 3],
-        multipliers: [1.05, 1.18, 1.35],
-    },
-    'Standing Glute Kickbacks': {
-        unit: 'kicks',
-        headerLabel: 'GLUTE KICKBACKS',
-        rates: [15, 25, 40],
-        multipliers: [0.90, 1.05, 1.20],
+    'Leaning Pullups': {
+        unit: 'reps',
+        headerLabel: 'LEANING PULLUPS',
+        rates: [8, 12, 20],
+        multipliers: [1.15, 1.30, 1.40],
     },
 };
 

@@ -19,7 +19,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { useAuth } from '../../providers/AuthContext';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -194,10 +194,10 @@ function LocationCard({ loc, onRemove }: { loc: ClubLocation; onRemove: () => vo
 
 const locStyles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,107,0,0.07)',
+    backgroundColor: 'rgba(232,153,81,0.07)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.2)',
+    borderColor: 'rgba(232,153,81,0.2)',
     padding: 12,
     marginTop: 12,
   },
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   cancelText: { color: TEXT_SECONDARY, fontSize: 15 },
   headerTitle: { color: '#fff', fontSize: 17, fontWeight: '800' },
   createBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
     backgroundColor: CARD_BG, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginRight: 8,
   },
-  categoryPillActive: { backgroundColor: ORANGE, borderColor: ORANGE },
+  categoryPillActive: { backgroundColor: '#E89951', borderColor: '#E89951' },
   categoryPillText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
   categoryPillTextActive: { color: '#fff' },
 

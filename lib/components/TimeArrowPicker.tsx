@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
 
-const ACCENT = '#FF6B00';
-const BORDER = 'rgba(255,107,0,0.2)';
+const ACCENT = '#E89951';
+const BORDER = 'rgba(232,153,81,0.2)';
 
 interface Props {
     hour: number;       // 1–12
@@ -138,8 +138,8 @@ const s = StyleSheet.create({
         minWidth: 38,
     },
     ampmOptionActive: {
-        backgroundColor: ACCENT,
-        borderColor: ACCENT,
+        backgroundColor: '#E89951',
+        borderColor: '#E89951',
     },
     ampmText: {
         color: '#4a6480',

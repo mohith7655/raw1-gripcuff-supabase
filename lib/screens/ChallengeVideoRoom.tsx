@@ -260,7 +260,7 @@ export const ChallengeVideoRoom: React.FC = () => {
 
                             {iMeReady && !opponentReady && (
                                 <View style={st.waitingForOpponent}>
-                                    <ActivityIndicator color="#FF6B00" size="small" />
+                                    <ActivityIndicator color="#E89951" size="small" />
                                     <Text style={st.waitingForText}>Waiting for {opponentName}…</Text>
                                 </View>
                             )}
@@ -352,7 +352,7 @@ export const ChallengeVideoRoom: React.FC = () => {
 
                 {isConnecting && Platform.OS !== 'web' && (
                     <View style={st.connectingBadge}>
-                        <ActivityIndicator color="#FF6B00" size="small" />
+                        <ActivityIndicator color="#E89951" size="small" />
                         <Text style={st.connectingText}>Connecting voice…</Text>
                     </View>
                 )}
@@ -361,7 +361,7 @@ export const ChallengeVideoRoom: React.FC = () => {
     );
 };
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 
 const st = StyleSheet.create({
     root:      { flex: 1, backgroundColor: '#080e18' },
@@ -375,9 +375,9 @@ const st = StyleSheet.create({
     },
     challengePill: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: 'rgba(255,107,0,0.15)', borderRadius: 20,
+        backgroundColor: 'rgba(232,153,81,0.15)', borderRadius: 20,
         paddingHorizontal: 12, paddingVertical: 6,
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)',
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.3)',
     },
     fireEmoji: { fontSize: 14 },
     challengeLabel: { color: ORANGE, fontSize: 13, fontWeight: '700' },
@@ -401,7 +401,7 @@ const st = StyleSheet.create({
     readyStatusText: { color: 'rgba(150,180,210,0.5)', fontSize: 12 },
     readyBtn: {
         marginTop: 24,
-        backgroundColor: ORANGE, borderRadius: 16,
+        backgroundColor: '#FF6B00', borderRadius: 16,
         paddingHorizontal: 36, paddingVertical: 16,
     },
     readyBtnText: { color: '#fff', fontSize: 18, fontWeight: '800' },
@@ -456,7 +456,7 @@ const st = StyleSheet.create({
     },
     endWorkoutBtn: {
         marginTop: 20, flexDirection: 'row', alignItems: 'center', gap: 10,
-        backgroundColor: ORANGE, borderRadius: 16,
+        backgroundColor: '#FF6B00', borderRadius: 16,
         paddingHorizontal: 36, paddingVertical: 16,
     },
     endWorkoutBtnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
@@ -471,7 +471,7 @@ const st = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.1)',
         alignItems: 'center', justifyContent: 'center',
     },
-    ctrlBtnActive: { backgroundColor: 'rgba(255,107,0,0.3)' },
+    ctrlBtnActive: { backgroundColor: 'rgba(232,153,81,0.3)' },
     endBtn: {
         width: 64, height: 64, borderRadius: 32,
         backgroundColor: '#e53935',

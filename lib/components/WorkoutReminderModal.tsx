@@ -292,7 +292,7 @@ const s = StyleSheet.create({
   countdownContainer: {
     alignItems: 'center',
     paddingVertical: 16,
-    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    backgroundColor: 'rgba(232,153,81, 0.1)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: `${ACCENT}20`,
@@ -312,7 +312,7 @@ const s = StyleSheet.create({
     marginTop: 14,
   },
   startBtn: {
-    backgroundColor: ACCENT,
+    backgroundColor: '#FF6B00',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,
@@ -325,7 +325,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   snoozeBtn: {
-    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+    backgroundColor: 'rgba(232,153,81, 0.15)',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,

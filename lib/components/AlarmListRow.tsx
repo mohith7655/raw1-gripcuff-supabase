@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
 import { Edit2 } from 'lucide-react-native';
 import { AlarmConfig } from '../services/moveReminder.service';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 
 interface Props {
     alarm: AlarmConfig;
@@ -97,9 +97,9 @@ const r = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.25)',
+        borderColor: 'rgba(232,153,81,0.25)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 10,

@@ -1146,9 +1146,9 @@ const styles = StyleSheet.create({
 
   /* ── AI Personalized Workout CTA ── */
   aiCtaCard: {
-    backgroundColor: 'rgba(255, 107, 0, 0.12)',
+    backgroundColor: 'rgba(232,153,81, 0.12)',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 107, 0, 0.35)',
+    borderColor: 'rgba(232,153,81, 0.35)',
     borderRadius: 14,
     marginHorizontal: SCREEN_PADDING,
     marginBottom: 16,
@@ -1280,7 +1280,7 @@ const styles = StyleSheet.create({
   },
   favViewAll: {
     fontSize: 13,
-    color: '#FF6B00',
+    color: '#E89951',
     fontWeight: '600',
   },
   emptyVisibilityState: {
@@ -1562,7 +1562,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.cardColor,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: `rgba(255, 107, 0, 0.2)`,
+    borderColor: `rgba(232,153,81, 0.2)`,
     padding: 24,
     marginBottom: 24,
     marginHorizontal: SCREEN_PADDING,
@@ -1603,7 +1603,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.cardColor,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: `rgba(255, 107, 0, 0.2)`,
+    borderColor: `rgba(232,153,81, 0.2)`,
     padding: 24,
     marginBottom: 24,
     marginHorizontal: SCREEN_PADDING,
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quizChoiceButtonSelected: {
-    backgroundColor: `rgba(255, 107, 0, 0.15)`,
+    backgroundColor: `rgba(232,153,81, 0.15)`,
     borderColor: AppTheme.primaryColor,
   },
   quizChoiceEmoji: {

@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     gymName: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 14,
         fontWeight: '700',
         marginBottom: 6,

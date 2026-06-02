@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { X, PlayCircle } from 'lucide-react-native';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 
 interface Props {
     visible: boolean;
@@ -68,7 +68,7 @@ export function InviteTypeSelectorModal({
 
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
                     <TouchableOpacity
-                        style={[s.compactBtn, { backgroundColor: 'rgba(249,115,22,0.15)', borderColor: 'rgba(249,115,22,0.4)' }]}
+                        style={[s.compactBtn, { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: 'rgba(232,153,81,0.4)' }]}
                         onPress={onStartNow}
                         activeOpacity={0.82}
                     >
@@ -128,9 +128,9 @@ const s = StyleSheet.create({
     workoutBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.2)',
+        borderColor: 'rgba(232,153,81,0.2)',
         borderRadius: 12,
         padding: 12,
         marginBottom: 20,
@@ -146,14 +146,14 @@ const s = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 8,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
     bannerText: { flex: 1 },
     bannerMeta: {
-        color: 'rgba(255,107,0,0.7)',
+        color: 'rgba(232,153,81,0.7)',
         fontSize: 11,
         fontWeight: '600',
         letterSpacing: 0.4,

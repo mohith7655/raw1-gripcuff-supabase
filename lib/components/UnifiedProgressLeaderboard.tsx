@@ -24,10 +24,10 @@ import { StreakData } from '../services/streak.service';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const CARD_BG = '#111d2e';
 const STRIP_BG = '#0a1628';
-const BORDER = 'rgba(255,107,0,0.18)';
+const BORDER = 'rgba(232,153,81,0.18)';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -485,7 +485,7 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
                 <TouchableOpacity
                   key={i}
                   onPress={() => setSelectedDate(d)}
-                  style={{ paddingHorizontal: 18, paddingVertical: 10, backgroundColor: isSelected ? '#FF6B00' : '#131f2e', borderRadius: 22, marginRight: 10, borderWidth: 1, borderColor: isSelected ? '#FF6B00' : 'rgba(255,255,255,0.06)' }}
+                  style={{ paddingHorizontal: 18, paddingVertical: 10, backgroundColor: isSelected ? '#E89951' : '#131f2e', borderRadius: 22, marginRight: 10, borderWidth: 1, borderColor: isSelected ? '#E89951' : 'rgba(255,255,255,0.06)' }}
                 >
                   <Text style={{ color: isSelected ? '#fff' : '#8899aa', fontWeight: isSelected ? '700' : '500', fontSize: 13 }}>{dateLabel(d, i)}</Text>
                 </TouchableOpacity>
@@ -509,8 +509,8 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
 
           {/* Summary */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#131f2e', borderRadius: 10, padding: 12, marginBottom: 20 }}>
-            <Clock color="#FF6B00" size={14} />
-            <Text style={{ color: '#FF6B00', fontSize: 14, fontWeight: '600' }}>
+            <Clock color="#E89951" size={14} />
+            <Text style={{ color: '#E89951', fontSize: 14, fontWeight: '600' }}>
               {dateLabel(selectedDate, dates.findIndex(d => d.toDateString() === selectedDate.toDateString()))} at {fmtPickerTime}
             </Text>
           </View>
@@ -943,9 +943,9 @@ const s = StyleSheet.create({
   lbAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 7,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.4)',
+    borderColor: 'rgba(232,153,81,0.4)',
   },
   lbAvatarMe: {
     borderWidth: 2,

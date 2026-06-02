@@ -21,7 +21,7 @@ import { getCroppedImg, PixelCrop } from '../../utils/cropImage';
 import { MentionTextInput } from './MentionTextInput';
 
 const { width: SW, height: SH } = Dimensions.get('window');
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   nextText: { color: ORANGE, fontSize: 15, fontWeight: '700', textAlign: 'right' },
   headerTitle: { color: '#fff', fontSize: 17, fontWeight: '800' },
   postBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   postBtnDisabled: { opacity: 0.4 },
   postBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-  progressBar: { height: 3, backgroundColor: 'rgba(255,107,0,0.2)' },
+  progressBar: { height: 3, backgroundColor: 'rgba(232,153,81,0.2)' },
   progressFill: { height: 3, backgroundColor: ORANGE },
 
   // ── Step 2 ──
@@ -487,8 +487,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   aspectPillActive: {
-    backgroundColor: ORANGE,
-    borderColor: ORANGE,
+    backgroundColor: '#E89951',
+    borderColor: '#E89951',
   },
   aspectPillText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
   aspectPillTextActive: { color: '#fff' },
@@ -510,9 +510,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  filterThumbActive: { borderColor: ORANGE },
+  filterThumbActive: { borderColor: '#E89951' },
   filterLabel: { color: TEXT_SECONDARY, fontSize: 10, fontWeight: '600' },
-  filterLabelActive: { color: ORANGE },
+  filterLabelActive: { color: '#E89951' },
 
   // ── Step 3 ──
   captionRow: {
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.25)',
+    borderColor: 'rgba(232,153,81,0.25)',
     borderStyle: 'dashed',
     marginBottom: 16,
   },

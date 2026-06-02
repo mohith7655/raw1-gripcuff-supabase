@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { X, Clock, CheckCircle, XCircle } from 'lucide-react-native';
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const TIMEOUT_SEC = 10;
 
 type Phase = 'sending' | 'waiting' | 'accepted' | 'declined' | 'expired' | 'error';
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.2)',
+        borderColor: 'rgba(232,153,81,0.2)',
     },
     header: {
         flexDirection: 'row',

@@ -493,7 +493,7 @@ export const AccountSettingsScreen = () => {
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -532,12 +532,12 @@ const styles = StyleSheet.create({
     },
     avatarContainer: {
         width: 100, height: 100,
-        borderRadius: 50,
+        borderRadius: 20,
         position: 'relative',
     },
     avatarPlaceholder: {
         width: 100, height: 100,
-        borderRadius: 50,
+        borderRadius: 20,
         backgroundColor: AppTheme.cardColor,
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 2, borderColor: 'rgba(228,102,0,0.3)',
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     avatarOverlay: {
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
-        borderRadius: 50,
+        borderRadius: 20,
         backgroundColor: 'rgba(0,0,0,0.55)',
         alignItems: 'center', justifyContent: 'center',
     },
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     },
     genderBtnSelected: {
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(249,115,22,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
     },
     genderBtnText: {
         fontSize: 13, color: '#9CA3AF', fontWeight: '600',
@@ -660,14 +660,14 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     subscriberBadge: {
-        backgroundColor: '#FF6B00', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
+        backgroundColor: '#E89951', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
     },
     subscriberText: { color: '#fff', fontSize: 11, fontWeight: '600' },
     gripcuffBadge: {
         backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
-        borderWidth: 1, borderColor: '#FF6B00',
+        borderWidth: 1, borderColor: '#E89951',
     },
-    gripcuffText: { color: '#FF6B00', fontSize: 11, fontWeight: '600' },
+    gripcuffText: { color: '#E89951', fontSize: 11, fontWeight: '600' },
     inactiveBadge: {
         backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
         borderWidth: 1, borderColor: '#666',
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     gcStatusCard: {
         backgroundColor: '#242424', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 11,
-        borderWidth: 1.5, borderColor: '#FF6B00',
+        borderWidth: 1.5, borderColor: '#E89951',
         marginTop: 4,
     },
     gcStatusText: { color: '#fff', fontSize: 13, fontWeight: '600' },
@@ -697,11 +697,11 @@ const styles = StyleSheet.create({
         borderWidth: 1.5, borderColor: '#2a3a4a',
         alignItems: 'center',
     },
-    locTabActive:   { backgroundColor: '#FF6B00', borderColor: '#FF6B00' },
-    locTabHasData:  { backgroundColor: 'rgba(255,107,0,0.1)', borderColor: 'rgba(255,107,0,0.5)' },
+    locTabActive:   { backgroundColor: '#E89951', borderColor: '#E89951' },
+    locTabHasData:  { backgroundColor: 'rgba(232,153,81,0.1)', borderColor: 'rgba(232,153,81,0.5)' },
     locTabText:     { color: '#8899aa', fontSize: 12, fontWeight: '600', textAlign: 'center' },
     locTabTextActive:   { color: '#ffffff', fontWeight: '700' },
-    locTabTextHasData:  { color: '#FF6B00', fontWeight: '600' },
+    locTabTextHasData:  { color: '#E89951', fontWeight: '600' },
     locTabSub:          { fontSize: 9, color: '#8899aa', textAlign: 'center', marginTop: 2 },
     locTabSubActive:    { color: 'rgba(255,255,255,0.75)' },
     mapPlaceholder: {

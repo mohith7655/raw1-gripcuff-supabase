@@ -10,7 +10,7 @@ import { ChallengeSessionService } from '../services/challengeSession.service';
 import { NotificationService } from '../services/notification.service';
 import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const BG     = '#0d1825';
 const CARD   = '#111d2e';
 
@@ -192,7 +192,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 8,

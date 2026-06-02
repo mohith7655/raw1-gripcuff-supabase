@@ -192,9 +192,9 @@ export const CategoryVideosScreen = () => {
                                 }}
                             >
                                 <View style={introStyles.thumbnail}>
-                                    <BookOpen color="#F97316" size={26} />
+                                    <BookOpen color="#E89951" size={26} />
                                     <View style={introStyles.badge}>
-                                        <Lock color="#F97316" size={9} />
+                                        <Lock color="#E89951" size={9} />
                                         <Text style={introStyles.badgeText}>MANDATORY</Text>
                                     </View>
                                     <View style={introStyles.durationBadge}>
@@ -283,7 +283,7 @@ const introStyles = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: '#1a1a2e',
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.3)',
+        borderColor: 'rgba(232,153,81,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 6,
@@ -296,16 +296,16 @@ const introStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: 'rgba(249,115,22,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         paddingHorizontal: 6,
         paddingVertical: 3,
         borderRadius: 4,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.4)',
+        borderColor: 'rgba(232,153,81,0.4)',
     },
     badgeText: {
         fontSize: 9,
-        color: '#F97316',
+        color: '#E89951',
         fontWeight: '700',
         letterSpacing: 0.5,
     },
@@ -323,7 +323,7 @@ const introStyles = StyleSheet.create({
         fontSize: 10,
     },
     label: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 12,
         fontWeight: '600',
         marginTop: 8,

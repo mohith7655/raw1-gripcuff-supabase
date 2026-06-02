@@ -9,7 +9,7 @@ export const TIER_COLORS = [
   '#60A5FA', // L6
   '#8B5CF6', // L7 — purple
   '#A78BFA', // L8
-  '#FF6B00', // L9 — orange
+  '#E89951', // L9 — orange
   '#FFD700', // L10 — gold / Mythic
 ] as const;
 

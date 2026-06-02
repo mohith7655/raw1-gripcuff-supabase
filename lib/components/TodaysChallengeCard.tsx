@@ -159,14 +159,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#0f1923',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: '#FF6B00',
+        borderColor: '#E89951',
         flexDirection: 'row',
         overflow: 'hidden',
         minHeight: 110,
     },
     challengeAccent: {
         width: 4,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#E89951',
     },
     challengeContent: {
         flex: 1,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     challengeBadge: {
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         borderRadius: 4,
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     challengeBadgeText: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#FF6B00',
+        color: '#E89951',
         letterSpacing: 0.5,
     },
     challengeDuration: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     },
     challengeProgramName: {
         fontSize: 11,
-        color: '#FF6B00',
+        color: '#E89951',
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -222,6 +222,6 @@ const styles = StyleSheet.create({
     challengeStart: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#FF6B00',
+        color: '#E89951',
     },
 });

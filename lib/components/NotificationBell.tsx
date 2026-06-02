@@ -158,10 +158,10 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
               {/* Workout Invites */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <View style={[styles.dot, { backgroundColor: '#FF6B00' }]} />
+                  <View style={[styles.dot, { backgroundColor: '#E89951' }]} />
                   <Text style={styles.sectionTitle}>Workout Invites</Text>
                   {pendingInvites.length > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#FF6B00', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#E89951', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{pendingInvites.length}</Text>
                     </View>
                   )}
@@ -179,15 +179,15 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
                       {invite.hostAvatarUrl ? (
                         <Image source={{ uri: invite.hostAvatarUrl }} style={styles.avatar} />
                       ) : (
-                        <View style={[styles.avatar, { backgroundColor: 'rgba(255,107,0,0.12)', justifyContent: 'center', alignItems: 'center' }]}>
-                          <VideoIcon color="#FF6B00" size={18} />
+                        <View style={[styles.avatar, { backgroundColor: 'rgba(232,153,81,0.12)', justifyContent: 'center', alignItems: 'center' }]}>
+                          <VideoIcon color="#E89951" size={18} />
                         </View>
                       )}
                       <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.rowName} numberOfLines={1}>{invite.hostName || 'Friend'}</Text>
                         <Text style={styles.rowSub} numberOfLines={1}>{invite.videoTitle || 'Workout invite'}</Text>
                       </View>
-                      <View style={[styles.countBadge, { backgroundColor: '#FF6B00' }]}>
+                      <View style={[styles.countBadge, { backgroundColor: '#E89951' }]}>
                         <Text style={styles.countBadgeText}>View</Text>
                       </View>
                     </TouchableOpacity>
@@ -198,7 +198,7 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
                   onPress={() => { setModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.viewAllText, { color: '#FF6B00' }]}>View all invites &gt;</Text>
+                  <Text style={[styles.viewAllText, { color: '#E89951' }]}>View all invites &gt;</Text>
                 </TouchableOpacity>
               </View>
 
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 8,
   },
   rowName: {
     color: '#fff',
@@ -395,8 +395,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   moveTimePillStop: {
-    backgroundColor: 'rgba(255,107,0,0.08)',
-    borderColor: 'rgba(255,107,0,0.3)',
+    backgroundColor: 'rgba(232,153,81,0.08)',
+    borderColor: 'rgba(232,153,81,0.3)',
   },
   moveTimePillText: {
     color: '#4ade80',
@@ -407,14 +407,14 @@ const styles = StyleSheet.create({
     color: 'rgba(150,180,210,0.5)',
   },
   moveTimePillTextStop: {
-    color: '#FF6B00',
+    color: '#E89951',
   },
   moveStopBadge: {
-    color: '#FF6B00',
+    color: '#E89951',
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
-    backgroundColor: 'rgba(255,107,0,0.15)',
+    backgroundColor: 'rgba(232,153,81,0.15)',
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,

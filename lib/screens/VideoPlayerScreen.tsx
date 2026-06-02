@@ -143,8 +143,8 @@ const engagementStyles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     pillActive: {
-        backgroundColor: 'rgba(249,115,22,0.15)',
-        borderColor: '#F97316',
+        backgroundColor: 'rgba(232,153,81,0.15)',
+        borderColor: '#E89951',
     },
     pillIcon: {
         fontSize: 13,
@@ -155,11 +155,11 @@ const engagementStyles = StyleSheet.create({
         fontWeight: '600',
     },
     pillLabelActive: {
-        color: '#F97316',
+        color: '#E89951',
     },
 });
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const PANEL_BG = '#1a1a2e';
 
 const FAQ_ITEMS = [
@@ -1214,7 +1214,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             <View key={type} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
                                 borderColor: active ? ACCENT : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? 'rgba(249,115,22,0.15)' : 'transparent',
+                                backgroundColor: active ? 'rgba(232,153,81,0.15)' : 'transparent',
                             }}>
                                 <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
                                     {type}
@@ -1239,7 +1239,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
                                 borderColor: active ? ACCENT : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? 'rgba(249,115,22,0.15)' : 'transparent',
+                                backgroundColor: active ? 'rgba(232,153,81,0.15)' : 'transparent',
                             }}>
                                 <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
                                     {label}
@@ -1597,7 +1597,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onDurationChange={handleDurationChange}
                         inviteCta={allowInvite ? {
                             title: 'Workout Together',
-                            subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F97316' }}>your way.</Text></Text>,
+                            subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#E89951' }}>your way.</Text></Text>,
                             onWorkoutTogether: () => setShowWorkoutTogetherModal(true),
                             onStartNow: () => setShowInviteModal(true),
                             viewerCount: (() => {
@@ -2036,7 +2036,7 @@ const panelStyles = StyleSheet.create({
         borderRadius: 10,
     },
     tabActive: {
-        backgroundColor: ACCENT,
+        backgroundColor: '#E89951',
     },
     tabText: {
         color: '#94A3B8',
@@ -2050,7 +2050,7 @@ const panelStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: 'rgba(255,107,0,0.2)',
+        backgroundColor: 'rgba(232,153,81,0.2)',
         paddingHorizontal: 5,
         paddingVertical: 2,
         borderRadius: 6,
@@ -2062,14 +2062,14 @@ const panelStyles = StyleSheet.create({
         backgroundColor: '#22c55e',
     },
     socialLiveChipText: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 10,
         fontWeight: '700',
     },
     sectionHeading: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#FF6B00',
+        color: '#E89951',
         textTransform: 'uppercase',
         letterSpacing: 1,
         paddingHorizontal: 16,
@@ -2149,7 +2149,7 @@ const commentStyles = StyleSheet.create({
         fontSize: 14,
     },
     postBtn: {
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -2236,7 +2236,7 @@ const commentStyles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     typeChipActive: {
-        backgroundColor: 'rgba(249,115,22,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         borderColor: ACCENT,
     },
     typeChipText: {
@@ -2301,7 +2301,7 @@ const socialStyles = StyleSheet.create({
         alignItems: 'center',
         gap: 4,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.4)',
+        borderColor: 'rgba(232,153,81,0.4)',
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 6,
@@ -2311,7 +2311,7 @@ const socialStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 8,
         paddingHorizontal: 9,
         paddingVertical: 6,

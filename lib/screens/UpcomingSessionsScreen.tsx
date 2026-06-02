@@ -625,7 +625,7 @@ export const UpcomingSessionsScreen = () => {
                                     <View key={session.id} style={styles.pastCard}>
                                         <Text style={styles.sessionTypeLabel}>Pre-Made Workout</Text>
                                         <View style={styles.cardHeader}>
-                                            <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
+                                            <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(232,153,81,0.1)' }]}>
                                                 <Play color={AppTheme.primaryColor} size={20} />
                                             </View>
                                             <View style={[styles.headerText, { marginLeft: 12 }]}>
@@ -778,8 +778,8 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.05)',
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-    avatar: { width: 44, height: 44, borderRadius: 22 },
-    avatarPlaceholder: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,107,0,0.1)', alignItems: 'center', justifyContent: 'center' },
+    avatar: { width: 44, height: 44, borderRadius: 10 },
+    avatarPlaceholder: { width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(232,153,81,0.1)', alignItems: 'center', justifyContent: 'center' },
     headerText: { marginLeft: 12, flex: 1 },
     userName: { fontSize: 16, fontWeight: 'bold', color: 'white' },
     actionText: { fontSize: 13, color: AppTheme.textGrey, marginTop: 2 },
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
     },
     resendBtnText: {
         color: AppTheme.primaryColor,

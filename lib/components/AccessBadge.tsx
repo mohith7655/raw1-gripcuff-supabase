@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useAccess } from '../providers/AccessContext';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const GREEN  = '#22C55E';
 
 interface AccessBadgeProps {

@@ -121,7 +121,7 @@ export function WorkoutCompletionModal({
                         <>
                             <Text style={styles.title}>When should we remind you?</Text>
                             {scheduling ? (
-                                <ActivityIndicator color="#F97316" style={{ marginTop: 20 }} />
+                                <ActivityIndicator color="#E89951" style={{ marginTop: 20 }} />
                             ) : (
                                 <>
                                     {REMINDER_OPTIONS.map((opt) => (
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     primaryBtn: {
-        backgroundColor: '#F97316',
+        backgroundColor: '#FF6B00',
         borderRadius: 10,
         paddingVertical: 14,
         alignItems: 'center',
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     ghostBtnText: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 14,
         fontWeight: '500',
     },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     confirmedText: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 18,
         fontWeight: '700',
     },

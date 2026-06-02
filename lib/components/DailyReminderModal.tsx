@@ -18,10 +18,10 @@ import {
     DailyReminderService,
 } from '../services/dailyReminder.service';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const BG = '#0d1825';
 const CARD = '#111d2e';
-const BORDER = 'rgba(255,107,0,0.2)';
+const BORDER = 'rgba(232,153,81,0.2)';
 
 const REMINDERS_PER_DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10];
 const INTERVAL_OPTIONS = [
@@ -383,7 +383,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 5,
@@ -401,7 +401,7 @@ const s = StyleSheet.create({
     },
     saveBtn: {
         marginTop: 24,
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: 'center',
@@ -423,8 +423,8 @@ const s = StyleSheet.create({
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: ACCENT,
-        borderColor: ACCENT,
+        backgroundColor: '#E89951',
+        borderColor: '#E89951',
     },
     toggleThumb: {
         width: 22,

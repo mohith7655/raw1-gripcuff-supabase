@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GripcuffStatus, useAccess } from '../providers/AccessContext';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 
 const OPTIONS: { value: NonNullable<GripcuffStatus>; label: string }[] = [
   { value: 'has_gripcuff', label: 'I have the Gripcuff' },
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   optionRowSelected: {
-    borderColor: ORANGE,
+    borderColor: '#E89951',
     backgroundColor: '#1f1408',
   },
   radio: {
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
 
   continueBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',

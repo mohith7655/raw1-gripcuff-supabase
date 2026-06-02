@@ -831,7 +831,7 @@ export function EditSocialProfileScreen() {
                                 <Switch
                                     value={helpingBeginners}
                                     onValueChange={setHelpBeginners}
-                                    trackColor={{ false: '#2a3a4a', true: C.accent }}
+                                    trackColor={{ false: '#2a3a4a', true: '#E89951' }}
                                     thumbColor="#fff"
                                 />
                             </View>
@@ -849,7 +849,7 @@ export function EditSocialProfileScreen() {
                                             setAgeGroups(new Set(['seniors']));
                                         }
                                     }}
-                                    trackColor={{ false: '#2a3a4a', true: C.accent }}
+                                    trackColor={{ false: '#2a3a4a', true: '#E89951' }}
                                     thumbColor="#fff"
                                 />
                             </View>
@@ -890,10 +890,10 @@ const s = StyleSheet.create({
 
     // Avatar Section
     avatarSection: { alignItems: 'center', paddingVertical: 12, gap: 12 },
-    avatarWrap: { width: 110, height: 110, borderRadius: 55, position: 'relative' },
-    avatarImg: { width: 110, height: 110, borderRadius: 55, overflow: 'hidden' },
+    avatarWrap: { width: 110, height: 110, borderRadius: 22, position: 'relative' },
+    avatarImg: { width: 110, height: 110, borderRadius: 22, overflow: 'hidden' },
     avatarPlaceholder: { backgroundColor: C.bgCard, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.accentBorder },
-    uploadOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 55, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+    uploadOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
     uploadText: { color: '#fff', fontSize: 13, fontWeight: '700', marginTop: 4 },
     avatarActions: { flexDirection: 'row', gap: 10 },
     photoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: C.bgCard, borderWidth: 1, borderColor: C.accentBorder },
@@ -1186,7 +1186,7 @@ const s = StyleSheet.create({
         borderColor: C.border,
     },
     pillActive: {
-        backgroundColor: C.accentSoft,
+        backgroundColor: 'rgba(232,153,81,0.15)',
         borderColor: C.accentBorder,
     },
     pillText: {
@@ -1195,7 +1195,7 @@ const s = StyleSheet.create({
         fontWeight: '700',
     },
     pillTextActive: {
-        color: C.accent,
+        color: '#E89951',
         fontWeight: '800',
     },
     chipWrap: {

@@ -219,7 +219,7 @@ const s = StyleSheet.create({
     gap: 12,
   },
   startBtn: {
-    backgroundColor: ACCENT,
+    backgroundColor: '#FF6B00',
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 10,

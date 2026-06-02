@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   equipmentCardSelected: {
     borderColor: AppTheme.primaryColor,
-    backgroundColor: `rgba(249, 115, 22, 0.1)`,
+    backgroundColor: `rgba(232,153,81, 0.1)`,
   },
   equipmentText: {
     color: AppTheme.textWhite,
@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   optionButtonSelected: {
-    borderColor: AppTheme.primaryColor,
-    backgroundColor: `rgba(249, 115, 22, 0.2)`,
+    borderColor: '#E89951',
+    backgroundColor: `rgba(232,153,81, 0.2)`,
   },
   optionText: {
     color: AppTheme.textWhite,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold as any,
   },
   optionTextSelected: {
-    color: AppTheme.primaryColor,
+    color: '#E89951',
   },
   footer: {
     position: 'absolute',

@@ -82,7 +82,7 @@ export class WorkoutReminderService {
             name: 'Workout Reminders',
             importance: Notifications.AndroidImportance.HIGH,
             vibrationPattern: [0, 300, 150, 300],
-            lightColor: '#FF6B00',
+            lightColor: '#E89951',
             sound: 'default',
         });
     }

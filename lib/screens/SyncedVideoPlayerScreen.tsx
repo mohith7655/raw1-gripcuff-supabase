@@ -558,7 +558,7 @@ export const SyncedVideoPlayerScreen = () => {
                                 />
                                 {(!isLoaded || isBuffering) && (
                                     <View style={styles.loadingOverlay}>
-                                        <ActivityIndicator size="large" color="#FF6B00" />
+                                        <ActivityIndicator size="large" color="#E89951" />
                                         <Text style={styles.loadingText}>Buffering video...</Text>
                                     </View>
                                 )}
@@ -612,7 +612,7 @@ export const SyncedVideoPlayerScreen = () => {
                                 top: 4,
                                 left: `${clampedPct}%`,
                                 width: 12, height: 12, borderRadius: 6,
-                                backgroundColor: '#FF6B00',
+                                backgroundColor: '#E89951',
                                 marginLeft: -6,
                             } as any} />
                         </View>
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
-        backgroundColor: 'rgba(255,107,0,0.2)',
+        backgroundColor: 'rgba(232,153,81,0.2)',
         borderRadius: 12,
     },
 
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
         borderRadius: 2,
         overflow: 'hidden',
     },
-    progressBarFill: { height: 4, backgroundColor: '#FF6B00', borderRadius: 2 },
+    progressBarFill: { height: 4, backgroundColor: '#E89951', borderRadius: 2 },
     controlsOverlay: {
         position: 'absolute',
         top: 0,

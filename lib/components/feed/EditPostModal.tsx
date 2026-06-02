@@ -17,7 +17,7 @@ import { FeedService, Post } from '../../services/feed.service';
 import { MentionTextInput } from './MentionTextInput';
 
 const { width: SW } = Dimensions.get('window');
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   headerBtn: { minWidth: 60 },
   headerTitle: { color: '#fff', fontSize: 17, fontWeight: '800' },
   saveBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,

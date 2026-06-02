@@ -42,7 +42,7 @@ const tierBadgeText = {
 };
 
 const tierPrice = {
-    color: '#F97316',
+    color: '#E89951',
     fontSize: 13,
     fontWeight: '600' as const,
 };
@@ -139,7 +139,7 @@ export const GripCuffVideosScreen = () => {
                 style={{ alignItems: 'center', marginTop: 2, marginBottom: 8 }}
             >
                 <Text style={{
-                    color: '#F97316',
+                    color: '#E89951',
                     fontSize: 13,
                     fontWeight: '600',
                     textDecorationLine: 'underline',
@@ -341,7 +341,7 @@ export const GripCuffVideosScreen = () => {
                         <TouchableOpacity
                             onPress={() => setShowTiersModal(false)}
                             style={{
-                                backgroundColor: '#F97316',
+                                backgroundColor: '#FF6B00',
                                 borderRadius: 12,
                                 paddingVertical: 14,
                                 alignItems: 'center',

@@ -10,7 +10,7 @@ type Props = {
 };
 
 const TYPE_COLOR: Record<string, string> = {
-  workout_invite: '#F97316',
+  workout_invite: '#E89951',
   friend_request: '#4FC3F7',
   chat_message: '#22C55E',
   stranger_invite: '#EAB308',
@@ -66,7 +66,7 @@ export function TopBannerNotification({ notification, onDismiss, onPress }: Prop
 
   if (!notification) return null;
 
-  const accent = TYPE_COLOR[notification.type] ?? '#F97316';
+  const accent = TYPE_COLOR[notification.type] ?? '#E89951';
 
   return (
     <Animated.View style={[styles.container, { transform: [{ translateY }], opacity }]} pointerEvents="box-none">

@@ -21,7 +21,7 @@ import { TimeArrowPicker } from './TimeArrowPicker';
 import { WorkoutReminderService } from '../services/workoutReminder.service';
 import { useAuth } from '../providers/AuthContext';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const BG = '#0f1923';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER = 'rgba(255,255,255,0.08)';
@@ -468,7 +468,7 @@ export function SelfScheduleModal({
                                         <Switch
                                             value={intervalEnabled}
                                             onValueChange={setIntervalEnabled}
-                                            trackColor={{ false: '#334155', true: 'rgba(255,107,0,0.4)' }}
+                                            trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
                                             thumbColor={intervalEnabled ? ACCENT : '#94A3B8'}
                                         />
                                     </View>
@@ -623,18 +623,18 @@ const s = StyleSheet.create({
 
     banner: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(255,107,0,0.08)',
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
         borderRadius: 12, padding: 12, marginBottom: 16,
     },
     thumb: { width: 44, height: 44, borderRadius: 8, flexShrink: 0 },
     thumbPlaceholder: {
         width: 44, height: 44, borderRadius: 8,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(255,107,0,0.7)', fontSize: 10, fontWeight: '600',
+        color: 'rgba(232,153,81,0.7)', fontSize: 10, fontWeight: '600',
         letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2,
     },
     bannerTitle: { color: '#fff', fontSize: 13, fontWeight: '600' },
@@ -660,7 +660,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(255,107,0,0.15)', borderColor: ACCENT },
+    chipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
 
     chipTopText: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
     chipBotText: { color: '#94A3B8', fontSize: 11, marginTop: 2 },
@@ -674,12 +674,12 @@ const s = StyleSheet.create({
 
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.08)', borderRadius: 10,
+        backgroundColor: 'rgba(232,153,81,0.08)', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 10, marginTop: 16, marginBottom: 12,
     },
     summaryText: { color: ACCENT, fontSize: 14, fontWeight: '600', flex: 1 },
     soonHint: {
-        color: 'rgba(249,115,22,0.7)',
+        color: 'rgba(232,153,81,0.7)',
         fontSize: 12,
         fontWeight: '500',
         marginTop: 6,
@@ -687,7 +687,7 @@ const s = StyleSheet.create({
     },
 
     primaryBtn: {
-        backgroundColor: ACCENT, borderRadius: 14, paddingVertical: 14, alignItems: 'center',
+        backgroundColor: '#FF6B00', borderRadius: 14, paddingVertical: 14, alignItems: 'center',
     },
     primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
@@ -701,22 +701,22 @@ const s = StyleSheet.create({
         borderColor: BORDER,
         alignItems: 'center',
     },
-    segmentActive: { backgroundColor: 'rgba(255,107,0,0.18)', borderColor: ACCENT },
+    segmentActive: { backgroundColor: 'rgba(232,153,81,0.18)', borderColor: '#E89951' },
     segmentText: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '700' },
-    segmentTextActive: { color: ACCENT },
+    segmentTextActive: { color: '#E89951' },
 
     recurringCompact: { marginTop: 10 },
     scheduleWrapper: { marginTop: 18 },
     summaryAndSchedule: { marginTop: 20 },
     summaryBoxInner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.08)', borderRadius: 10,
+        backgroundColor: 'rgba(232,153,81,0.08)', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14,
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)',
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
     },
     unitSelector: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: BORDER },
     unitBtn: { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: 'transparent' },
-    unitActive: { backgroundColor: 'rgba(255,107,0,0.12)' },
+    unitActive: { backgroundColor: 'rgba(232,153,81,0.12)' },
     unitText: { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
     unitTextActive: { color: ACCENT },
 

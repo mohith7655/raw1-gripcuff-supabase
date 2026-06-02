@@ -15,7 +15,7 @@ import { useUser } from '../../providers/UserContext';
 import { useAuth } from '../../providers/AuthContext';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   pollCount: { color: TEXT_SECONDARY, fontSize: 12 },
   waitingBtnStack: { gap: 14, alignItems: 'center', width: '100%' },
   donePaying: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 14,
     height: 52,
     paddingHorizontal: 32,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 28 : 16,
   },
   buyBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 14,
     height: 52,
     alignItems: 'center',

@@ -20,7 +20,7 @@ import { useAuth } from '../../providers/AuthContext';
 import { ActionSheet } from './ActionSheet';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const BG = '#0F1923';
 const CARD_BG = '#1A2332';
 const TEXT_SECONDARY = '#94A3B8';
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,107,0,0.4)',
+    borderBottomColor: 'rgba(232,153,81,0.4)',
     paddingVertical: 4,
     marginBottom: 8,
   },
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     minWidth: 52,
     alignItems: 'center',
   },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     alignItems: 'center',
     justifyContent: 'center',
   },

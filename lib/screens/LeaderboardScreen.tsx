@@ -97,12 +97,12 @@ const LeaderboardRow = memo(function LeaderboardRow({
                 )}
             </View>
 
-            <View style={[styles.avatarCircle, { backgroundColor: isMe ? '#FF6B00' : '#1e3a5f' }]}>
+            <View style={[styles.avatarCircle, { backgroundColor: isMe ? '#E89951' : '#1e3a5f' }]}>
                 {item.photoURL ? (
                     Platform.OS === 'web' ? (
                         <img
                             src={item.photoURL}
-                            style={({ width: 44, height: 44, borderRadius: 22, objectFit: 'cover' } as any)}
+                            style={({ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' } as any)}
                         />
                     ) : (
                         <Image source={{ uri: item.photoURL }} style={styles.avatarImg} />
@@ -136,7 +136,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
                 </Text>
             </View>
 
-            <Text style={[styles.scoreText, { color: (item.score || 0) > 0 ? '#FF6B00' : '#445566' }]}>
+            <Text style={[styles.scoreText, { color: (item.score || 0) > 0 ? '#E89951' : '#445566' }]}>
                 {formatWatchTime(item.score || 0)}
             </Text>
         </Animated.View>
@@ -285,7 +285,7 @@ export function LeaderboardScreen() {
                 />
             ) : (
                 (loading ? (
-                    <ActivityIndicator color="#FF6B00" style={{ marginTop: 40 }} />
+                    <ActivityIndicator color="#E89951" style={{ marginTop: 40 }} />
                 ) : users.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No users yet</Text>
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10 },
-    tabActive: { backgroundColor: '#FF6B00' },
+    tabActive: { backgroundColor: '#E89951' },
     tabText: { color: '#8899aa', fontSize: 13, fontWeight: '600' },
     tabTextActive: { color: '#fff' },
     row: {
@@ -441,12 +441,12 @@ const styles = StyleSheet.create({
     avatarCircle: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
     },
-    avatarImg: { width: 44, height: 44, borderRadius: 22 },
+    avatarImg: { width: 44, height: 44, borderRadius: 10 },
     avatarLetter: { color: '#fff', fontSize: 18, fontWeight: '700' },
     infoCol: { flex: 1 },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -481,13 +481,13 @@ const styles = StyleSheet.create({
         right: 0,
         backgroundColor: '#0d1520',
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,107,0,0.25)',
+        borderTopColor: 'rgba(232,153,81,0.25)',
         paddingHorizontal: 16,
         paddingTop: 8,
         paddingBottom: 20,
     },
     pinnedLabel: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 10,
         fontWeight: '800',
         letterSpacing: 1,

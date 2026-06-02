@@ -12,7 +12,7 @@ import {
 import { Bell } from 'lucide-react-native';
 import { IntervalAlertConfig, INTERVAL_PRESETS, MESSAGE_PRESETS } from '../hooks/useIntervalAlerts';
 
-const ACCENT = '#F97316';
+const ACCENT = '#E89951';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER = 'rgba(255,255,255,0.1)';
 
@@ -91,7 +91,7 @@ export function IntervalAlertsConfig({ value, onChange, compact = false }: Props
                 <Switch
                     value={value.enabled}
                     onValueChange={v => update({ enabled: v })}
-                    trackColor={{ false: '#334155', true: 'rgba(249,115,22,0.4)' }}
+                    trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
                     thumbColor={value.enabled ? ACCENT : '#94A3B8'}
                 />
             </View>
@@ -227,7 +227,7 @@ function ToggleRow({
             <Switch
                 value={value}
                 onValueChange={onToggle}
-                trackColor={{ false: '#334155', true: 'rgba(249,115,22,0.4)' }}
+                trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
                 thumbColor={value ? ACCENT : '#94A3B8'}
             />
         </View>
@@ -254,7 +254,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(249,115,22,0.15)', borderColor: ACCENT },
+    chipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
     chipTxt: { color: '#9CA3AF', fontSize: 13, fontWeight: '600' },
     chipTxtActive: { color: ACCENT },
     msgList: { gap: 6 },
@@ -262,7 +262,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    msgChipActive: { backgroundColor: 'rgba(249,115,22,0.1)', borderColor: ACCENT },
+    msgChipActive: { backgroundColor: 'rgba(232,153,81,0.1)', borderColor: ACCENT },
     msgTxt: { color: '#9CA3AF', fontSize: 13 },
     msgTxtActive: { color: '#fff' },
     customInput: {

@@ -46,7 +46,6 @@ import { AppTheme, CoachingTheme, FontSizes, FontWeights } from '../core/theme/a
 import { LinearGradient } from 'expo-linear-gradient';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { useFriend } from '../providers/FriendContext';
-import { useFavorites } from '../providers/FavoritesContext';
 import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
@@ -90,7 +89,7 @@ function FireGlowPill({ children, style }: { children: React.ReactNode; style?: 
     loop.start();
     return () => loop.stop();
   }, []);
-  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(255,107,0,0.7)', 'rgba(255,160,0,1)'] });
+  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(232,153,81,0.7)', 'rgba(255,160,0,1)'] });
   const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.0] });
   const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [6, 20] });
   return (
@@ -220,7 +219,6 @@ const HomeScreenInner = () => {
   const { completedCount, totalGripCuff, allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
   const { incomingRequests, friends, acceptRequest, declineRequest } = useFriend();
-  const { favorites } = useFavorites();
   const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
   const exerciseCatalog = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
   const matchedExercises = exerciseCatalog.filter(v => favExerciseIds.has(v.id)).length;
@@ -735,7 +733,7 @@ const HomeScreenInner = () => {
                 width: halfToggle,
                 transform: [{ translateX: indicatorLeft }],
                 backgroundColor: '#000000',
-                borderBottomColor: isCoaching ? CoachingTheme.primaryColor : '#FF6B00',
+                borderBottomColor: isCoaching ? CoachingTheme.primaryColor : '#E89951',
               },
             ]}
           />
@@ -767,7 +765,7 @@ const HomeScreenInner = () => {
 
         {/* Coming Soon banner — shown directly below tab bar */}
         {appMode !== 'ai' ? null : null}
-        <View style={{ backgroundColor: 'rgba(255,107,0,0.07)', borderRadius: 10, marginHorizontal: 16, marginTop: 10, marginBottom: 2, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ backgroundColor: 'rgba(232,153,81,0.07)', borderRadius: 10, marginHorizontal: 16, marginTop: 10, marginBottom: 2, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ fontSize: 14 }}>🔒</Text>
           <Text style={{ color: '#888', fontSize: 13, fontWeight: '500' }}>Personal Coaching — Coming Soon</Text>
         </View>
@@ -894,8 +892,108 @@ const HomeScreenInner = () => {
               {/* Daily Reminder Scheduler */}
               <DailyReminderCard userId={supabaseUserId ?? undefined} />
 
+              {/* ── Recently Watched + Favourites (stacked) ── */}
+              {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
+                const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
+                const allProgs = getAllPrograms();
+                const COLORS = ['#FF6B35', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
+                const favItems = [
+                  ...allVids.filter(v => favExerciseIds.has(v.id)).map(v => ({ id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnail: (v as any).thumbnail })),
+                  ...allProgs
+                    .filter(p => favWorkoutIds.has(p.id) || p.videos.some(v => favWorkoutIds.has(v.id)))
+                    .map(p => ({ id: p.videos.find(v => favWorkoutIds.has(v.id))?.id ?? p.id, title: p.title, videoUrl: p.videos?.[0]?.videoUrl, thumbnail: (p as any).thumbnail })),
+                ];
+                return (
+                  <View style={{ marginBottom: 16, backgroundColor: '#131f2e', borderRadius: 12, paddingVertical: 14 }}>
+                    {recentlyWatched.length > 0 && (
+                      <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
+                          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Recently Watched</Text>
+                          <TouchableOpacity onPress={() => navigation.navigate('AllRecentlyWatched')} activeOpacity={0.75}>
+                            <Text style={{ color: '#C26A2D', fontSize: 12, fontWeight: '600' }}>View all →</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+                          {recentlyWatched.slice(0, 10).map((item, idx) => {
+                            const localVideo = allVids.find(v => v.id === item.videoId);
+                            const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
+                            const title = localVideo?.title ?? program?.title ?? item.videoId;
+                            const color = COLORS[idx % COLORS.length];
+                            return (
+                              <TouchableOpacity
+                                key={item.videoId}
+                                style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
+                                activeOpacity={0.85}
+                                onPress={() => navigation.navigate('VideoPlayer', {
+                                  videoId: item.videoId,
+                                  title,
+                                  videoUrl: localVideo?.videoUrl ?? program?.videos?.[0]?.videoUrl,
+                                  videoType: item.videoType,
+                                })}
+                              >
+                                <View style={{ width: '100%', height: 80, backgroundColor: color, justifyContent: 'center', alignItems: 'center' }}>
+                                  <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                                    <Raw1Logo fontSize={8} />
+                                  </View>
+                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
+                                  </View>
+                                </View>
+                                <View style={{ padding: 8 }}>
+                                  <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
+                                  <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>Continue →</Text>
+                                </View>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </ScrollView>
+                      </>
+                    )}
 
-
+                    {favItems.length > 0 && (
+                      <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: recentlyWatched.length > 0 ? 16 : 0, marginBottom: 12 }}>
+                          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Favourites</Text>
+                          <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'all' })} activeOpacity={0.75}>
+                            <Text style={{ color: '#C26A2D', fontSize: 12, fontWeight: '600' }}>View all →</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+                          {favItems.slice(0, 10).map((item, idx) => (
+                            <TouchableOpacity
+                              key={item.id}
+                              style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
+                              activeOpacity={0.85}
+                              onPress={() => navigation.navigate('VideoPlayer', {
+                                videoId: item.id,
+                                title: item.title,
+                                videoUrl: item.videoUrl,
+                              })}
+                            >
+                              {item.thumbnail ? (
+                                <Image source={{ uri: item.thumbnail }} style={{ width: '100%', height: 80 }} resizeMode="cover" />
+                              ) : (
+                                <View style={{ width: '100%', height: 80, backgroundColor: COLORS[idx % COLORS.length], justifyContent: 'center', alignItems: 'center' }}>
+                                  <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                                    <Raw1Logo fontSize={8} />
+                                  </View>
+                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
+                                  </View>
+                                </View>
+                              )}
+                              <View style={{ padding: 8 }}>
+                                <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
+                                <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>♥ Favourite</Text>
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </>
+                    )}
+                  </View>
+                );
+              })()}
 
               {/* Gripcuff Training Progress Card */}
               <View style={styles.gripCuffCard}>
@@ -955,55 +1053,6 @@ const HomeScreenInner = () => {
                   </View>
                 </View>
               </View>
-
-              {/* ── Recently Watched ── */}
-              {recentlyWatched.length > 0 && (() => {
-                const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
-                const allProgs = getAllPrograms();
-                const COLORS = ['#FF6B35', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
-                return (
-                  <View style={{ marginBottom: 16, backgroundColor: '#131f2e', borderRadius: 12, paddingVertical: 14 }}>
-                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', paddingHorizontal: 16, marginBottom: 12 }}>
-                      Recently Watched
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-                      {recentlyWatched.map((item, idx) => {
-                        const localVideo = allVids.find(v => v.id === item.videoId);
-                        const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
-                        const title = localVideo?.title ?? program?.title ?? item.videoId;
-                        const color = COLORS[idx % COLORS.length];
-                        return (
-                          <TouchableOpacity
-                            key={item.videoId}
-                            style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
-                            activeOpacity={0.85}
-                            onPress={() => navigation.navigate('VideoPlayer', {
-                              videoId: item.videoId,
-                              title,
-                              videoUrl: localVideo?.videoUrl ?? program?.videos?.[0]?.videoUrl,
-                              videoType: item.videoType,
-                            })}
-                          >
-                            <View style={{ width: '100%', height: 80, backgroundColor: color, justifyContent: 'center', alignItems: 'center' }}>
-                              <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                                <Raw1Logo fontSize={8} />
-                              </View>
-                              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
-                              </View>
-                            </View>
-                            <View style={{ padding: 8 }}>
-                              <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
-                              <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>Continue →</Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  </View>
-                );
-              })()}
-
 
               {/* ── Recommendation Sections ── */}
               {recSections?.hasData && (
@@ -1173,7 +1222,7 @@ const HomeScreenInner = () => {
                             padding: 14,
                             marginBottom: 10,
                             borderWidth: 1,
-                            borderColor: isAccepted ? 'rgba(16,185,129,0.3)' : 'rgba(249,115,22,0.2)',
+                            borderColor: isAccepted ? 'rgba(16,185,129,0.3)' : 'rgba(232,153,81,0.2)',
                           }}
                           activeOpacity={0.8}
                           onPress={() => navigation.navigate('UpcomingSessionsScreen')}
@@ -1533,7 +1582,7 @@ const HomeScreenInner = () => {
                       >
                         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#a78bfa33', alignItems: 'center', justifyContent: 'center' }}>
                           {club.avatar_url
-                            ? <Image source={{ uri: club.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                            ? <Image source={{ uri: club.avatar_url }} style={{ width: 36, height: 36, borderRadius: 8 }} />
                             : <Text style={{ color: '#a78bfa', fontWeight: '800', fontSize: 16 }}>{club.name?.charAt(0)?.toUpperCase()}</Text>
                           }
                         </View>
@@ -1573,7 +1622,7 @@ const HomeScreenInner = () => {
                     >
                       <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34d39933', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                         {club.avatar_url
-                          ? <Image source={{ uri: club.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                          ? <Image source={{ uri: club.avatar_url }} style={{ width: 36, height: 36, borderRadius: 8 }} />
                           : <Text style={{ color: '#34d399', fontWeight: '800', fontSize: 16 }}>{club.name?.charAt(0)?.toUpperCase()}</Text>
                         }
                       </View>
@@ -1599,10 +1648,10 @@ const HomeScreenInner = () => {
               {/* ── Move Reminders ── */}
               <View style={styles.notifSection}>
                 <View style={styles.notifSectionHeader}>
-                  <View style={[styles.notifSectionDot, { backgroundColor: '#FF6B00' }]} />
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#E89951' }]} />
                   <Text style={styles.notifSectionTitle}>Move Reminders</Text>
                   {moveReminder?.enabled && (moveReminder.generatedTimes?.length ?? 0) > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#FF6B00', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#E89951', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{moveReminder.generatedTimes.length}</Text>
                     </View>
                   )}
@@ -1697,28 +1746,28 @@ const HomeScreenInner = () => {
             >
               {[
                 {
-                  name: 'STARTER', color: '#3b82f6', price: 'Free',
+                  name: 'STARTER', color: '#7dd3fc', price: 'Free',
                   desc: 'Get started with Gripcuff basics.',
                   inherited: [],
                   newFeatures: ['1 free intro video', 'Progress tracking', 'Community access'],
                   locked: ['Full video library', 'Live sessions', 'Upload videos'],
                 },
                 {
-                  name: 'LIFTER', color: '#7C3AED', price: 'Paid',
+                  name: 'LIFTER', color: '#1d4ed8', price: 'Paid',
                   desc: 'Unlock the full training library.',
                   inherited: ['Progress tracking', 'Community access'],
                   newFeatures: ['Full video library', 'Structured programs', 'Progress analytics', 'Live workout sessions'],
                   locked: ['Upload videos', 'Client tools', 'Revenue sharing'],
                 },
                 {
-                  name: 'TRAINER', color: '#F97316', price: 'Paid',
+                  name: 'TRAINER', color: '#fb923c', price: 'Paid',
                   desc: 'Build your brand and upload content.',
                   inherited: ['Full video library', 'Live sessions', 'Analytics'],
                   newFeatures: ['Upload custom videos', 'Client management', 'Trainer profile badge', 'Revenue sharing'],
                   locked: ['Featured placement', 'Affiliate commission', 'Brand partnerships'],
                 },
                 {
-                  name: 'INFLUENCER', color: '#D4AF37', price: 'Paid',
+                  name: 'INFLUENCER', color: '#c2410c', price: 'Paid',
                   desc: 'The ultimate tier for creators.',
                   inherited: ['Upload videos', 'Client tools', 'Revenue sharing'],
                   newFeatures: ['Featured homepage placement', 'Affiliate commission', 'Priority support', 'Brand partnerships', 'Custom profile banner'],
@@ -1794,14 +1843,14 @@ const HomeScreenInner = () => {
 
             {/* Dot indicators */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, marginBottom: 14 }}>
-              {['#3b82f6','#7C3AED','#F97316','#D4AF37'].map((c, i) => (
+              {['#7dd3fc','#1d4ed8','#fb923c','#c2410c'].map((c, i) => (
                 <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c + '88' }} />
               ))}
             </View>
 
             <TouchableOpacity
               onPress={() => setShowTiersModal(false)}
-              style={{ backgroundColor: '#F97316', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginHorizontal: 20 }}
+              style={{ backgroundColor: '#FF6B00', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginHorizontal: 20 }}
             >
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Got It</Text>
             </TouchableOpacity>
@@ -1908,7 +1957,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderRadius: 12,
     borderBottomWidth: 2,
-    borderBottomColor: '#FF6B00',
+    borderBottomColor: '#E89951',
   },
   toggleButton: {
     flex: 1,
@@ -2081,7 +2130,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#E89951',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2303,7 +2352,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.3)',
+    borderColor: 'rgba(232,153,81,0.3)',
   },
   notificationIconBg: {
     width: 40,
@@ -2366,7 +2415,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
   },
   notificationRowActive: {
-    borderColor: 'rgba(255,107,0,0.3)',
+    borderColor: 'rgba(232,153,81,0.3)',
   },
   notificationRowFriend: {
     borderColor: 'rgba(46,204,113,0.3)',
@@ -2498,7 +2547,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   feedViewAllBtn: {
-    backgroundColor: '#F97316',
+    backgroundColor: '#E89951',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 7,

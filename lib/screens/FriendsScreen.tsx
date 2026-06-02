@@ -743,7 +743,7 @@ const s = StyleSheet.create({
         borderBottomColor: 'transparent',
     },
     tabActive: {
-        borderBottomColor: C.accent,
+        borderBottomColor: '#E89951',
     },
     tabText: {
         fontSize: 14,

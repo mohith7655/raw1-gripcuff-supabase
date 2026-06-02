@@ -23,7 +23,7 @@ import { Post } from '../services/feed.service';
 
 type Tab = 'daily' | 'clubs';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const TEXT_SECONDARY = '#94A3B8';
 
 export function FeedScreen() {
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
 
   errorText: { color: '#ef4444', fontSize: 14, textAlign: 'center', marginBottom: 12 },
   retryBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 8,

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Plus, Pencil, Image as ImageIcon, Video } from 'lucide-react-native';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 const PILL_BG = '#1A2332';
 const FAB_SIZE = 54;
 const PILL_STEP = 70;

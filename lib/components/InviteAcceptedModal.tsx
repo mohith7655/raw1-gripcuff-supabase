@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ORANGE = '#F97316';
+const ORANGE = '#E89951';
 
 type Props = {
     guestName: string;
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         gap: 12,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.3)',
+        borderColor: 'rgba(232,153,81,0.3)',
         boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
         elevation: 12,
     },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(249,115,22,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
-        backgroundColor: ORANGE,
+        backgroundColor: '#FF6B00',
     },
     joinBtnText: {
         color: '#fff',

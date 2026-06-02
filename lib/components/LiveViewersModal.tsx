@@ -25,7 +25,7 @@ import { FriendService } from '../services/friend.service';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT   = '#FF6B00';
+const ACCENT   = '#E89951';
 const SHEET_BG = '#0f1923';
 const CARD_BG  = 'rgba(255,255,255,0.04)';
 const PALETTE  = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6', '#E84393'];
@@ -465,7 +465,7 @@ const row = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         paddingHorizontal: 12,
         paddingVertical: 7,
         borderRadius: 10,
@@ -477,14 +477,14 @@ const row = StyleSheet.create({
     },
     badgeSelf: {
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.4)',
-        backgroundColor: 'rgba(255,107,0,0.12)',
+        borderColor: 'rgba(232,153,81,0.4)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
     },
     badgeSelfText: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 12,
         fontWeight: '700',
     },

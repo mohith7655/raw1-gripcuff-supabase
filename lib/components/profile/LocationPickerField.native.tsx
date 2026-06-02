@@ -39,7 +39,7 @@ export function LocationPickerField({ value, onChange }: Props) {
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.7}
             >
-                <MapPin color={value ? '#F97316' : '#6B7280'} size={16} style={styles.pin} />
+                <MapPin color={value ? '#E89951' : '#6B7280'} size={16} style={styles.pin} />
                 <Text style={[styles.fieldText, !value && styles.placeholder]} numberOfLines={1}>
                     {value ? value.address : 'Search your location'}
                 </Text>

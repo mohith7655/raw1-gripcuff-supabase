@@ -27,10 +27,11 @@ import {
 } from '../services/moveReminder.service';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';        // warm orange — general accent (pills, toggle, slider, number accents)
+const CTA = '#FF6B00';           // bright orange — primary actions only (Save, Challenge a Friend)
 const BG = '#0d1825';
 const CARD = '#111d2e';
-const BORDER = 'rgba(255,107,0,0.2)';
+const BORDER = 'rgba(232,153,81,0.2)'; // accent card border
 
 type IntervalMode = '1hr' | '2hr' | 'custom';
 
@@ -349,7 +350,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                             {/* Exercise Selector */}
                             <Text style={[s.sectionLabel, { marginTop: 22 }]}>Exercise</Text>
                             <View style={s.chipRow}>
-                                {(['Squats', 'Wall Sits', 'Standing Glute Kickbacks'] as ExerciseName[]).map(ex => (
+                                {(['Squats', 'Leaning Pullups'] as ExerciseName[]).map(ex => (
                                     <TouchableOpacity
                                         key={ex}
                                         style={[s.chip, exerciseName === ex && s.chipActive]}
@@ -362,15 +363,6 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                     </TouchableOpacity>
                                 ))}
                             </View>
-
-                            {/* Movement Intensity Comparison */}
-                            <IntensityComparisonCard
-                                workoutDurationMin={workoutDurationMin}
-                                intervalMins={intervalMins}
-                                startTime={startTime}
-                                endTime={endTime}
-                                exerciseName={exerciseName}
-                            />
 
                             {/* Daily Summary */}
                             <View style={s.summaryCard}>
@@ -488,7 +480,7 @@ const s = StyleSheet.create({
         marginBottom: 18,
     },
     challengeBtnText: {
-        color: ACCENT,
+        color: CTA,
         fontSize: 14,
         fontWeight: '700',
     },
@@ -568,7 +560,7 @@ const s = StyleSheet.create({
         flex: 1,
     },
     dualArrow: {
-        color: 'rgba(255,107,0,0.5)',
+        color: 'rgba(232,153,81,0.5)',
         fontSize: 16,
         fontWeight: '600',
         marginTop: 28,
@@ -655,7 +647,7 @@ const s = StyleSheet.create({
         backgroundColor: '#071120',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.15)',
+        borderColor: 'rgba(232,153,81,0.15)',
         paddingVertical: 14,
         paddingHorizontal: 16,
     },
@@ -695,7 +687,7 @@ const s = StyleSheet.create({
         marginHorizontal: 12,
     },
     summaryWarning: {
-        color: 'rgba(255,107,0,0.7)',
+        color: 'rgba(232,153,81,0.7)',
         fontSize: 12,
         fontWeight: '600',
         textAlign: 'center',
@@ -733,7 +725,7 @@ const s = StyleSheet.create({
         letterSpacing: 0.8,
     },
     timesCount: {
-        color: 'rgba(255,107,0,0.6)',
+        color: 'rgba(232,153,81,0.6)',
         fontSize: 11,
         fontWeight: '700',
     },
@@ -754,8 +746,8 @@ const s = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.08)',
     },
     timesPillStop: {
-        backgroundColor: 'rgba(255,107,0,0.08)',
-        borderColor: 'rgba(255,107,0,0.3)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
+        borderColor: 'rgba(232,153,81,0.3)',
     },
     timesPillText: {
         color: 'rgba(150,180,210,0.7)',
@@ -788,7 +780,7 @@ const s = StyleSheet.create({
         fontSize: 8,
         fontWeight: '800',
         letterSpacing: 0.5,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         paddingHorizontal: 4,
         paddingVertical: 1,
         borderRadius: 4,
@@ -802,8 +794,8 @@ const s = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.12)',
     },
     timesEditBtnActive: {
-        backgroundColor: 'rgba(255,107,0,0.15)',
-        borderColor: 'rgba(255,107,0,0.4)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
+        borderColor: 'rgba(232,153,81,0.4)',
     },
     timesEditBtnText: {
         color: 'rgba(150,180,210,0.7)',
@@ -831,7 +823,7 @@ const s = StyleSheet.create({
     },
     saveBtn: {
         marginTop: 24,
-        backgroundColor: ACCENT,
+        backgroundColor: CTA,
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: 'center',
@@ -852,8 +844,8 @@ const s = StyleSheet.create({
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: ACCENT,
-        borderColor: ACCENT,
+        backgroundColor: '#E89951',
+        borderColor: '#E89951',
     },
     toggleThumb: {
         width: 22,

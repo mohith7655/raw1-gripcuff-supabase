@@ -20,7 +20,7 @@ import { useAuth } from '../providers/AuthContext';
 
 const BASE_SPOTS = ['gym', 'home', 'park'];
 
-const ORANGE = '#F97316';
+const ORANGE = '#E89951';
 const BG = '#0d1520';
 const CARD = '#131f2e';
 
@@ -199,7 +199,7 @@ const pickerStyles = StyleSheet.create({
         marginBottom: 4,
     },
     optionSelected: {
-        backgroundColor: 'rgba(249,115,22,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
     },
     optionText: {
         color: '#9CA3AF',
@@ -207,7 +207,7 @@ const pickerStyles = StyleSheet.create({
         fontWeight: '500',
     },
     optionTextSelected: {
-        color: ORANGE,
+        color: '#E89951',
         fontWeight: '700',
     },
 });
@@ -690,13 +690,13 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     requiredBadge: {
-        backgroundColor: 'rgba(249,115,22,0.12)',
+        backgroundColor: 'rgba(232,153,81,0.12)',
         borderRadius: 6,
         paddingHorizontal: 7,
         paddingVertical: 2,
     },
     requiredBadgeText: {
-        color: '#F97316',
+        color: '#E89951',
         fontSize: 10,
         fontWeight: '600',
     },
@@ -708,12 +708,12 @@ const styles = StyleSheet.create({
     agePill: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(249,115,22,0.1)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
         borderRadius: 10,
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.25)',
+        borderColor: 'rgba(232,153,81,0.25)',
         marginBottom: 4,
     },
     agePillError: {
@@ -804,8 +804,8 @@ const styles = StyleSheet.create({
         backgroundColor: CARD,
     },
     genderPillSelected: {
-        borderColor: ORANGE,
-        backgroundColor: 'rgba(249,115,22,0.12)',
+        borderColor: '#E89951',
+        backgroundColor: 'rgba(232,153,81,0.12)',
     },
     genderPillText: {
         color: '#9CA3AF',
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     genderPillTextSelected: {
-        color: ORANGE,
+        color: '#E89951',
     },
     locationWrap: {
         zIndex: 9999,
@@ -833,11 +833,11 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     locTabActive: {
-        backgroundColor: 'rgba(249,115,22,0.15)',
-        borderColor: '#F97316',
+        backgroundColor: 'rgba(232,153,81,0.15)',
+        borderColor: '#E89951',
     },
     locTabHasData: {
-        borderColor: 'rgba(249,115,22,0.5)',
+        borderColor: 'rgba(232,153,81,0.5)',
     },
     locTabText: {
         color: '#9CA3AF',
@@ -845,10 +845,10 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     locTabTextActive: {
-        color: '#F97316',
+        color: '#E89951',
     },
     locTabTextHasData: {
-        color: 'rgba(249,115,22,0.8)',
+        color: 'rgba(232,153,81,0.8)',
     },
     footer: {
         paddingHorizontal: 24,
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
         borderTopColor: 'rgba(255,255,255,0.06)',
     },
     nextBtn: {
-        backgroundColor: ORANGE,
+        backgroundColor: '#FF6B00',
         borderRadius: 14,
         paddingVertical: 16,
         alignItems: 'center',

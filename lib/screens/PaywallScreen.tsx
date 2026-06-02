@@ -20,7 +20,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { supabase } from '../core/config/supabase';
 
-const ORANGE = '#FF6B00';
+const ORANGE = '#E89951';
 
 // Netlify function URL for creating a Stripe Checkout session.
 // Set EXPO_PUBLIC_STRIPE_CHECKOUT_URL in .env.local for local dev.
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
 
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,107,0,0.15)',
+    backgroundColor: 'rgba(232,153,81,0.15)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
   },
 
   cardBtn: {
-    backgroundColor: ORANGE,
+    backgroundColor: '#FF6B00',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',

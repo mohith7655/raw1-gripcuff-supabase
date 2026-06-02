@@ -5,9 +5,9 @@ import { StreakData } from '../../services/streak.service';
 import { getDateKey, getWeekdayIndex, getYesterdayKey, buildWeekDates } from '../../utils/streakDate';
 import { getResolvedTimezone } from '../../utils/timezone';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const CARD_BG = '#111d2e';
-const BORDER = 'rgba(255,107,0,0.18)';
+const BORDER = 'rgba(232,153,81,0.18)';
 const WEEKLY_TOTAL = 7;
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];

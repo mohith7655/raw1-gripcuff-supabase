@@ -636,7 +636,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                     />
                                     {(!isLoaded || isBuffering) && (
                                         <View style={styles.loadingOverlay}>
-                                            <ActivityIndicator size="large" color="#FF6B00" />
+                                            <ActivityIndicator size="large" color="#E89951" />
                                             <Text style={styles.loadingText}>Buffering video...</Text>
                                         </View>
                                     )}
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         height: 4,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#E89951',
         borderRadius: 2,
     },
     seekThumb: {
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#E89951',
         marginLeft: -6,
         top: 4,
     },
@@ -967,12 +967,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 6,
         borderRadius: 12,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.28)',
+        borderColor: 'rgba(232,153,81,0.28)',
     },
     footerBtnText: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -1020,12 +1020,12 @@ const styles = StyleSheet.create({
         paddingVertical: 11,
         paddingHorizontal: 6,
         borderRadius: 12,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.28)',
+        borderColor: 'rgba(232,153,81,0.28)',
     },
     footerBtnStartNowText: {
-        color: '#FF6B00',
+        color: '#E89951',
         fontSize: 12,
         fontWeight: '700',
     },

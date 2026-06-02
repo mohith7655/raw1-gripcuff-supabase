@@ -19,7 +19,7 @@ import { useUser } from '../providers/UserContext';
 import { SessionService } from '../services/session.service';
 import type { User } from '../models/User';
 
-const ACCENT = '#FF6B00';
+const ACCENT = '#E89951';
 const WAIT_SECONDS = 60;
 
 interface Props {
@@ -381,12 +381,12 @@ const s = StyleSheet.create({
     },
     videoBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.1)',
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.25)',
+        backgroundColor: 'rgba(232,153,81,0.1)',
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.25)',
         borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
         marginBottom: 16,
     },
-    videoBannerMeta: { color: 'rgba(255,107,0,0.65)', fontSize: 10, fontWeight: '600', letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 1 },
+    videoBannerMeta: { color: 'rgba(232,153,81,0.65)', fontSize: 10, fontWeight: '600', letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 1 },
     videoBannerText: { color: ACCENT, fontSize: 13, fontWeight: '600' },
     sectionLabel: {
         color: '#aaa', fontSize: 12,
@@ -401,7 +401,7 @@ const s = StyleSheet.create({
         backgroundColor: '#1a2530',
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
     },
-    avatar: { width: 38, height: 38, borderRadius: 19 },
+    avatar: { width: 38, height: 38, borderRadius: 8 },
     friendInfo: { flex: 1, marginLeft: 12 },
     friendName: { color: 'white', fontSize: 14, fontWeight: '600' },
     friendUsername: { color: '#888', fontSize: 12, marginTop: 1 },
@@ -424,13 +424,13 @@ const s = StyleSheet.create({
         position: 'relative',
     },
     waitAvatar: {
-        width: 72, height: 72, borderRadius: 36,
+        width: 72, height: 72, borderRadius: 16,
         borderWidth: 3, borderColor: ACCENT,
         marginBottom: 16,
     },
     waitAvatarPlaceholder: {
-        width: 72, height: 72, borderRadius: 36,
-        backgroundColor: 'rgba(255,107,0,0.2)',
+        width: 72, height: 72, borderRadius: 16,
+        backgroundColor: 'rgba(232,153,81,0.2)',
         borderWidth: 3, borderColor: ACCENT,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 16,
@@ -454,12 +454,12 @@ const s = StyleSheet.create({
     },
     cancelBtnText: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
     resultIcon: {
-        width: 72, height: 72, borderRadius: 36,
+        width: 72, height: 72, borderRadius: 16,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 16,
     },
     sendBtn: {
-        backgroundColor: ACCENT, borderRadius: 14,
+        backgroundColor: '#FF6B00', borderRadius: 14,
         paddingVertical: 14, paddingHorizontal: 40,
         alignItems: 'center', justifyContent: 'center',
         marginTop: 20,

@@ -49,7 +49,7 @@ import { WorkoutReminderService } from '../services/workoutReminder.service';
 import type { User } from '../models/User';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const ACCENT  = '#FF6B00';
+const ACCENT  = '#E89951';
 const BG      = '#0f1923';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER  = 'rgba(255,255,255,0.08)';
@@ -456,7 +456,7 @@ export function WorkoutTogetherModal({
                                 onPress={() => setSelectedType('friend')}
                                 activeOpacity={0.82}
                             >
-                                <View style={[s.iconCircle, { backgroundColor: 'rgba(255,107,0,0.12)' }]}>
+                                <View style={[s.iconCircle, { backgroundColor: 'rgba(232,153,81,0.12)' }]}>
                                     <Users color={ACCENT} size={20} />
                                 </View>
                                 <View style={{ flex: 1 }}>
@@ -639,18 +639,18 @@ const s = StyleSheet.create({
     // Banner
     banner: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(255,107,0,0.08)',
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
         borderRadius: 12, padding: 12, marginBottom: 14,
     },
     thumb: { width: 44, height: 44, borderRadius: 8, flexShrink: 0 },
     thumbPlaceholder: {
         width: 44, height: 44, borderRadius: 8,
-        backgroundColor: 'rgba(255,107,0,0.15)',
+        backgroundColor: 'rgba(232,153,81,0.15)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(255,107,0,0.7)', fontSize: 10, fontWeight: '600',
+        color: 'rgba(232,153,81,0.7)', fontSize: 10, fontWeight: '600',
         letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2,
     },
     bannerTitle: { color: '#fff', fontSize: 13, fontWeight: '600' },
@@ -671,7 +671,7 @@ const s = StyleSheet.create({
         borderRadius: 12, backgroundColor: SURFACE,
         borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(255,107,0,0.15)', borderColor: ACCENT },
+    chipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
     chipTopText: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
     chipBotText: { color: '#94A3B8', fontSize: 11, marginTop: 2 },
     chipActiveText: { color: ACCENT },
@@ -682,9 +682,9 @@ const s = StyleSheet.create({
     // Summary pill
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        backgroundColor: 'rgba(232,153,81,0.08)',
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-        marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)',
+        marginBottom: 12, borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
     },
     summaryText: { color: ACCENT, fontSize: 13, fontWeight: '600', flex: 1 },
 
@@ -698,8 +698,8 @@ const s = StyleSheet.create({
         borderRadius: 14, padding: 14,
     },
     optionCardSelected: {
-        borderColor: ACCENT,
-        backgroundColor: 'rgba(255,107,0,0.08)',
+        borderColor: '#E89951',
+        backgroundColor: 'rgba(232,153,81,0.08)',
     },
     iconCircle: {
         width: 36, height: 36, borderRadius: 18,
@@ -730,13 +730,13 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     friendRowSelected: {
-        backgroundColor: 'rgba(255,107,0,0.07)',
-        borderColor: 'rgba(255,107,0,0.25)',
+        backgroundColor: 'rgba(232,153,81,0.07)',
+        borderColor: 'rgba(232,153,81,0.25)',
     },
-    avatar: { width: 40, height: 40, borderRadius: 20, flexShrink: 0 },
+    avatar: { width: 40, height: 40, borderRadius: 9, flexShrink: 0 },
     avatarPlaceholder: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        width: 40, height: 40, borderRadius: 9,
+        backgroundColor: 'rgba(232,153,81,0.1)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     friendInfo: { flex: 1 },
@@ -766,10 +766,10 @@ const s = StyleSheet.create({
 
     // CTA button
     ctaBtn: {
-        backgroundColor: ACCENT,
+        backgroundColor: '#FF6B00',
         borderRadius: 14, paddingVertical: 14,
         alignItems: 'center', marginTop: 6,
     },
-    ctaBtnDisabled: { backgroundColor: 'rgba(255,107,0,0.35)' },
+    ctaBtnDisabled: { backgroundColor: 'rgba(232,153,81,0.35)' },
     ctaBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
