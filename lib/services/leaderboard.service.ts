@@ -162,3 +162,25 @@ export async function backfillLeaderboardUser(
 ): Promise<void> {}
 
 export async function addWorkoutMinutes(_uid: string, _minutes: number): Promise<void> {}
+
+// Returns the user's 1-based global rank (position by watched_seconds descending).
+// Returns null if the user is not found or on error.
+export async function getUserRank(uid: string): Promise<number | null> {
+    const { data: me, error: meErr } = await supabase
+        .from('users')
+        .select('watched_seconds')
+        .eq('id', uid)
+        .single();
+    if (meErr || !me) return null;
+
+    const mySeconds = Number(me.watched_seconds ?? 0);
+
+    const { count, error: rankErr } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .or('username.not.is.null,full_name.not.is.null')
+        .gt('watched_seconds', mySeconds);
+    if (rankErr || count === null) return null;
+
+    return count + 1;
+}

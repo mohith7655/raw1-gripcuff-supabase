@@ -70,6 +70,7 @@ import { deriveBadgeStates } from '../services/badge.service';
 import { BADGE_FAMILIES, getTierName } from '../services/badge.types';
 import { getAllPrograms } from '../data/preRecordedPrograms';
 import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
+import { getUserRank } from '../services/leaderboard.service';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -559,6 +560,7 @@ const HomeScreenInner = () => {
   useFocusEffect(useCallback(() => {
     if (!supabaseUserId) return;
     doRefresh(supabaseUserId);
+    getUserRank(supabaseUserId).then(setGlobalRank).catch(() => {});
   }, [supabaseUserId, doRefresh]));
 
   // ── ONE AppState listener — fires on foreground resume ───────────────────
@@ -599,6 +601,7 @@ const HomeScreenInner = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showTiersModal, setShowTiersModal] = useState(false);
   const [earnedBadges, setEarnedBadges] = useState<{ emoji: string; name: string; level: number; label: string }[]>([]);
+  const [globalRank, setGlobalRank] = useState<number | null>(null);
 
   const theme = appMode === 'coaching' ? CoachingTheme : AppTheme;
   const isCoaching = appMode === 'coaching';
@@ -664,6 +667,14 @@ const HomeScreenInner = () => {
           <View style={{ flex: 1, alignItems: 'center' }}>
             <AccessBadge />
           </View>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(194,106,45,0.15)', borderWidth: 1, borderColor: 'rgba(194,106,45,0.35)', borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6 }}
+            onPress={() => navigation.navigate('AllFavourites', { type: 'all' })}
+            activeOpacity={0.8}
+          >
+            <Heart color="#C26A2D" size={14} />
+            <Text style={{ color: '#C26A2D', fontSize: 13, fontWeight: '700' }}>Fav</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.profileButton}
             onPress={() => setNotificationModalVisible(true)}
@@ -751,7 +762,7 @@ const HomeScreenInner = () => {
               <View style={styles.compactStatsCard}>
                 {/* Profile row */}
                 <TouchableOpacity
-                  style={[styles.compactStatRow, { flexDirection: 'column', paddingVertical: 18 }]}
+                  style={[styles.compactStatRow, { flexDirection: 'row', paddingVertical: 18, alignItems: 'center', gap: 16 }]}
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
@@ -764,9 +775,10 @@ const HomeScreenInner = () => {
                       />
                     </View>
                   </View>
-                  <Text style={[styles.compactStatRowLabel, { marginTop: 10, fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
+                  <View style={{ flex: 1 }}>
+                  <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
                   {/* Badge pills only */}
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     {earnedBadges.length === 0 ? (
                       <View style={styles.profileStatPill}>
                         <Text style={styles.profileStatPillText}>🏅 No badges yet</Text>
@@ -792,6 +804,30 @@ const HomeScreenInner = () => {
                     >
                       <Text style={styles.profileStatPillText}>🏋️ Gripcuff Lv.{gripCuffLevel}</Text>
                     </TouchableOpacity>
+                  </View>
+                  {/* Weekly time + global rating */}
+                  {(() => {
+                    const weeklyMins = streakData
+                      ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
+                      : 0;
+                    const weeklyLabel = weeklyMins >= 60
+                      ? `${Math.floor(weeklyMins / 60)}h ${weeklyMins % 60}m`
+                      : `${weeklyMins}m`;
+                    const rankLabel = globalRank != null ? `#${globalRank}` : '—';
+                    return (
+                      <View style={{ flexDirection: 'row', gap: 14, marginTop: 10 }}>
+                        <View>
+                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>⏱ {weeklyLabel}</Text>
+                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>This week</Text>
+                        </View>
+                        <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                        <View>
+                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>🏆 {rankLabel}</Text>
+                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>Global Ranking</Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
                   </View>
                 </TouchableOpacity>
 
@@ -819,18 +855,6 @@ const HomeScreenInner = () => {
                     <Text style={styles.compactStatValue}>{profile?.dailyCredits?.toString() ?? "109"} Daily</Text>
                     <Text style={styles.compactEarnText}>Expires in {dailyCreditsExpiry}</Text>
                   </View>
-                </TouchableOpacity>
-
-                <View style={styles.compactHorizontalDivider} />
-
-                {/* Favourites row */}
-                <TouchableOpacity
-                  style={styles.compactStatRow}
-                  onPress={() => navigation.navigate('AllFavourites', { type: 'all' })}
-                  activeOpacity={0.7}
-                >
-                  <Heart color="#C26A2D" size={22} />
-                  <Text style={[styles.compactStatValue, { marginLeft: 12 }]}>{totalFavouritesCount.toString()} Favorites</Text>
                 </TouchableOpacity>
 
               </View>
@@ -936,6 +960,9 @@ const HomeScreenInner = () => {
                             })}
                           >
                             <View style={{ width: '100%', height: 80, backgroundColor: color, justifyContent: 'center', alignItems: 'center' }}>
+                              <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                                <Raw1Logo fontSize={8} />
+                              </View>
                               <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
                                 <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
                               </View>

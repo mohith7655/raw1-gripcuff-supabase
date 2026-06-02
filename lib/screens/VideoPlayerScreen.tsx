@@ -15,6 +15,7 @@ import {
     KeyboardAvoidingView,
     Dimensions,
     Animated,
+    Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VideoInviteModal } from '../components/VideoInviteModal';
@@ -221,7 +222,7 @@ const EQUIPMENT_BY_CATEGORY: Record<string, { equipment: string; description: st
     ],
 };
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const WebYouTubePlayer = ({ videoId }: { videoId: string }) => {
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
@@ -602,17 +603,44 @@ function VideoPlayerScreen({ route, navigation }: any) {
         sharedPlayerRef.current?.resumeVideo();
     };
 
-    // Shrink video height when scrolling down in tab content
+    // Shrink video height when scrolling down in tab content.
+    // videoScrollY tracks the scroll position 1:1 (fed by the scroll event).
+    // smoothVideoScrollY eases toward it, so the video resizes with a soft,
+    // animated motion that settles after the finger stops — instead of snapping
+    // crisply to every scroll frame. The wider input range (0→120) also makes
+    // the collapse more gradual.
     const videoScrollY = useRef(new Animated.Value(0)).current;
-    const videoHeight = videoScrollY.interpolate({
-        inputRange: [0, 60],
-        outputRange: [Dimensions.get('window').height * 0.42, 160],
+    const smoothVideoScrollY = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const id = videoScrollY.addListener(({ value }) => {
+            Animated.timing(smoothVideoScrollY, {
+                toValue: value,
+                duration: 220,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: false,
+            }).start();
+        });
+        return () => videoScrollY.removeListener(id);
+    }, [videoScrollY, smoothVideoScrollY]);
+    const videoHeight = smoothVideoScrollY.interpolate({
+        inputRange: [0, 120],
+        outputRange: [SCREEN_HEIGHT * 0.42, 160],
         extrapolate: 'clamp',
     });
     const handleTabScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: videoScrollY } } }],
         { useNativeDriver: false }
     );
+    // Single shared scroll container — the ONE element that scrolls all tab
+    // content. Switching tabs resets both the scroll position and the animated
+    // video height so every tab starts from a full-size player at the top.
+    const sharedScrollRef = useRef<ScrollView>(null);
+    const switchTab = useCallback((tab: Tab) => {
+        setActiveTab(tab);
+        videoScrollY.setValue(0);
+        smoothVideoScrollY.setValue(0);
+        sharedScrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [videoScrollY, smoothVideoScrollY]);
 
     // Lights-out: dim the panel when the video is actively playing
     const panelDimAnim = useRef(new Animated.Value(1)).current;
@@ -1068,13 +1096,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
         };
 
         return (
-            <ScrollView
-                style={panelStyles.scrollArea}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 }}
-                showsVerticalScrollIndicator={false}
-                onScroll={handleTabScroll}
-                scrollEventThrottle={16}
-            >
+            <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 }}>
                 {/* Scheduled Today */}
                 <View style={socialStyles.sectionCard}>
                     <Text style={socialStyles.sectionLabel}>SCHEDULED TODAY</Text>
@@ -1159,18 +1181,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         ))
                     )}
                 </View>
-            </ScrollView>
+            </View>
         );
     };
 
     const renderRequirementsContent = () => (
-        <ScrollView
-            style={panelStyles.scrollArea}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}
-            showsVerticalScrollIndicator={false}
-            onScroll={handleTabScroll}
-            scrollEventThrottle={16}
-        >
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
             {/* Purpose */}
             <PurposeSection purpose={(sourceVideo as any)?.purpose ?? activeProgram?.purpose} />
 
@@ -1355,19 +1371,13 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     </ScrollView>
                 </View>
             )}
-        </ScrollView>
+        </View>
     );
 
     const canPost = newComment.trim().length > 0 && commentType !== null;
 
     const renderFaqQaContent = () => (
-        <ScrollView
-            style={panelStyles.scrollArea}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            showsVerticalScrollIndicator={false}
-            onScroll={handleTabScroll}
-            scrollEventThrottle={16}
-        >
+        <View style={{ paddingBottom: 24 }}>
             {/* \u2500\u2500 Q&A Section \u2500\u2500 */}
             <Text style={panelStyles.sectionHeading}>Q & A</Text>
 
@@ -1542,7 +1552,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     </TouchableOpacity>
                 ))}
             </View>
-        </ScrollView>
+        </View>
     );
 
     return (
@@ -1859,17 +1869,30 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 {/* Everything below reaction buttons dims during playback */}
                 <Animated.View style={{ opacity: panelDimAnim, flex: 1 }}>
 
-                    {/* Scrollable content area */}
-                    {activeTab === 'social' ? renderSocialContent()
-                        : activeTab === 'requirements' ? renderRequirementsContent()
-                        : renderFaqQaContent()}
+                    {/* The ONE shared scroll container — drives the video resize
+                        for every tab. Each tab renders plain content (no inner
+                        ScrollView), so scroll position + video height stay in sync
+                        regardless of which tab is active. */}
+                    <ScrollView
+                        ref={sharedScrollRef}
+                        style={panelStyles.scrollArea}
+                        contentContainerStyle={{ minHeight: SCREEN_HEIGHT }}
+                        showsVerticalScrollIndicator={false}
+                        onScroll={handleTabScroll}
+                        scrollEventThrottle={16}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {activeTab === 'social' ? renderSocialContent()
+                            : activeTab === 'requirements' ? renderRequirementsContent()
+                            : renderFaqQaContent()}
+                    </ScrollView>
 
                     {/* Tab order: Social → Requirements → FAQ & Q&A */}
                     <View style={panelStyles.tabRow}>
                         {allowInvite && (
                             <TouchableOpacity
                                 style={[panelStyles.tab, activeTab === 'social' && panelStyles.tabActive]}
-                                onPress={() => setActiveTab('social')}
+                                onPress={() => switchTab('social')}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                     <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
@@ -1890,7 +1913,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
                         <TouchableOpacity
                             style={[panelStyles.tab, activeTab === 'requirements' && panelStyles.tabActive]}
-                            onPress={() => setActiveTab('requirements')}
+                            onPress={() => switchTab('requirements')}
                         >
                             <Text style={[panelStyles.tabText, activeTab === 'requirements' && panelStyles.tabTextActive]}>
                                 Requirements
@@ -1899,7 +1922,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
                         <TouchableOpacity
                             style={[panelStyles.tab, activeTab === 'faq-qa' && panelStyles.tabActive]}
-                            onPress={() => setActiveTab('faq-qa')}
+                            onPress={() => switchTab('faq-qa')}
                         >
                             <Text style={[panelStyles.tabText, activeTab === 'faq-qa' && panelStyles.tabTextActive]}>
                                 FAQ & Q&A
