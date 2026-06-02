@@ -61,6 +61,9 @@ import { DailyActivityService } from '../services/dailyActivity.service';
 import { supabase } from '../core/config/supabase';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
+import { MoveReminderService, MoveReminder, AlarmConfig, formatMoveTime12h } from '../services/moveReminder.service';
+import { AlarmPillSheet } from '../components/AlarmPillSheet';
+import { AlarmListRow } from '../components/AlarmListRow';
 import { msUntilMidnight, getDateKey, buildWeekDates, getLastNDayKeys } from '../utils/streakDate';
 import { getResolvedTimezone } from '../utils/timezone';
 import { BuyCreditsModal } from '../components/credits/BuyCreditsModal';
@@ -404,6 +407,27 @@ const HomeScreenInner = () => {
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const reopenNotificationModalRef = useRef(false);
   const totalNotificationsBadge = pendingInvites.length + incomingRequests.length + unreadChatCount;
+  const [moveReminder, setMoveReminder] = useState<MoveReminder | null>(null);
+  const [alarmSheetVisible, setAlarmSheetVisible] = useState(false);
+  const [selectedAlarm, setSelectedAlarm] = useState<any>(null);
+
+  useEffect(() => {
+    if (!notificationModalVisible || !supabaseUserId) return;
+    MoveReminderService.loadDefault(supabaseUserId).then(setMoveReminder).catch(() => {});
+  }, [notificationModalVisible, supabaseUserId]);
+
+  const saveAlarmConfigsFromPanel = async (configs: any[]) => {
+    if (!supabaseUserId || !moveReminder) return;
+    try {
+      const saved = await MoveReminderService.save(supabaseUserId, {
+        ...moveReminder,
+        alarmConfigs: configs,
+        generatedTimes: configs.map((c: any) => c.time),
+      });
+      setMoveReminder(saved);
+      reminderWatcherService.invalidateMoveCache();
+    } catch {}
+  };
 
   // Re-open the notification modal when returning from a screen launched from it
   useFocusEffect(
@@ -771,6 +795,7 @@ const HomeScreenInner = () => {
                       <WebSafeAvatar
                         uri={profile?.profileImageUrl}
                         size={72}
+                        borderRadius={16}
                         fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
                       />
                     </View>
@@ -1571,10 +1596,76 @@ const HomeScreenInner = () => {
                 </TouchableOpacity>
               </View>
 
+              {/* ── Move Reminders ── */}
+              <View style={styles.notifSection}>
+                <View style={styles.notifSectionHeader}>
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#FF6B00' }]} />
+                  <Text style={styles.notifSectionTitle}>Move Reminders</Text>
+                  {moveReminder?.enabled && (moveReminder.generatedTimes?.length ?? 0) > 0 && (
+                    <View style={[styles.countBadge, { backgroundColor: '#FF6B00', marginLeft: 8 }]}>
+                      <Text style={styles.countBadgeText}>{moveReminder.generatedTimes.length}</Text>
+                    </View>
+                  )}
+                </View>
+                {!moveReminder || (moveReminder.generatedTimes?.length ?? 0) === 0 ? (
+                  <Text style={styles.notifEmptyText}>No reminders set up yet. Tap the bell icon on the home screen to configure.</Text>
+                ) : (
+                  <>
+                    <Text style={[styles.notifEmptyText, { marginBottom: 10 }]}>
+                      {moveReminder.enabled
+                        ? `Active · ${moveReminder.generatedTimes.length} reminders scheduled`
+                        : `Paused · ${moveReminder.generatedTimes.length} reminders`}
+                    </Text>
+                    {(moveReminder.alarmConfigs?.length
+                      ? moveReminder.alarmConfigs
+                      : moveReminder.generatedTimes.map((t: string) => ({ time: t, enabled: true }))
+                    ).map((cfg: AlarmConfig, i: number, arr: AlarmConfig[]) => (
+                      <AlarmListRow
+                        key={cfg.time}
+                        alarm={cfg}
+                        isLast={i === arr.length - 1}
+                        compact
+                        onPress={() => { setSelectedAlarm(cfg); setAlarmSheetVisible(true); }}
+                        onToggle={(val: boolean) => {
+                          const next = arr.map((c: AlarmConfig) =>
+                            c.time === cfg.time ? { ...c, enabled: val } : c
+                          );
+                          saveAlarmConfigsFromPanel(next);
+                        }}
+                      />
+                    ))}
+                  </>
+                )}
+              </View>
+
             </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Alarm detail sheet — opened from notification panel pills */}
+      <AlarmPillSheet
+        visible={alarmSheetVisible}
+        alarm={selectedAlarm}
+        reminderId={moveReminder?.id ?? 'default'}
+        onClose={() => setAlarmSheetVisible(false)}
+        onUpdate={(updated: AlarmConfig) => {
+          if (!moveReminder) return;
+          const next = (moveReminder.alarmConfigs?.length
+            ? moveReminder.alarmConfigs
+            : moveReminder.generatedTimes.map((t: string) => ({ time: t, enabled: true }))
+          ).map((c: AlarmConfig) => c.time === selectedAlarm?.time ? updated : c);
+          saveAlarmConfigsFromPanel(next);
+        }}
+        onDelete={() => {
+          if (!moveReminder) return;
+          const next = (moveReminder.alarmConfigs?.length
+            ? moveReminder.alarmConfigs
+            : moveReminder.generatedTimes.map((t: string) => ({ time: t, enabled: true }))
+          ).filter((c: AlarmConfig) => c.time !== selectedAlarm?.time);
+          saveAlarmConfigsFromPanel(next);
+        }}
+      />
 
       {/* Gripcuff Tiers Modal */}
       <Modal
@@ -1583,48 +1674,134 @@ const HomeScreenInner = () => {
         animationType="slide"
         onRequestClose={() => setShowTiersModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#12122A', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxHeight: '85%' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Gripcuff Memberships</Text>
-              <TouchableOpacity onPress={() => setShowTiersModal(false)}>
-                <Ionicons name="close-circle" size={28} color="#666" />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#0d1118', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 20, paddingBottom: 36, maxHeight: '88%' }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, paddingHorizontal: 20 }}>
+              <View>
+                <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>Gripcuff Memberships</Text>
+                <Text style={{ color: 'rgba(150,180,210,0.55)', fontSize: 12, marginTop: 2 }}>Scroll to compare tiers →</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowTiersModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close-circle" size={28} color="#444" />
               </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.tierCard}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View style={[styles.tierBadge, { backgroundColor: '#1E3A5F' }]}><Text style={styles.tierBadgeText}>STARTER</Text></View>
-                  <Text style={styles.tierPrice}>Free</Text>
+
+            {/* Horizontal tier cards */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={272}
+              decelerationRate="fast"
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 12 }}
+            >
+              {[
+                {
+                  name: 'STARTER', color: '#3b82f6', price: 'Free',
+                  desc: 'Get started with Gripcuff basics.',
+                  inherited: [],
+                  newFeatures: ['1 free intro video', 'Progress tracking', 'Community access'],
+                  locked: ['Full video library', 'Live sessions', 'Upload videos'],
+                },
+                {
+                  name: 'LIFTER', color: '#7C3AED', price: 'Paid',
+                  desc: 'Unlock the full training library.',
+                  inherited: ['Progress tracking', 'Community access'],
+                  newFeatures: ['Full video library', 'Structured programs', 'Progress analytics', 'Live workout sessions'],
+                  locked: ['Upload videos', 'Client tools', 'Revenue sharing'],
+                },
+                {
+                  name: 'TRAINER', color: '#F97316', price: 'Paid',
+                  desc: 'Build your brand and upload content.',
+                  inherited: ['Full video library', 'Live sessions', 'Analytics'],
+                  newFeatures: ['Upload custom videos', 'Client management', 'Trainer profile badge', 'Revenue sharing'],
+                  locked: ['Featured placement', 'Affiliate commission', 'Brand partnerships'],
+                },
+                {
+                  name: 'INFLUENCER', color: '#D4AF37', price: 'Paid',
+                  desc: 'The ultimate tier for creators.',
+                  inherited: ['Upload videos', 'Client tools', 'Revenue sharing'],
+                  newFeatures: ['Featured homepage placement', 'Affiliate commission', 'Priority support', 'Brand partnerships', 'Custom profile banner'],
+                  locked: [],
+                },
+              ].map((tier, idx) => (
+                <View key={tier.name} style={{
+                  width: 260,
+                  backgroundColor: '#111827',
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: tier.color + '44',
+                  overflow: 'hidden',
+                }}>
+                  {/* Colored header strip */}
+                  <View style={{ backgroundColor: tier.color + '22', borderBottomWidth: 1, borderBottomColor: tier.color + '44', paddingHorizontal: 16, paddingVertical: 14 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ backgroundColor: tier.color, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.8 }}>{tier.name}</Text>
+                      </View>
+                      <View style={{ backgroundColor: tier.color + '33', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                        <Text style={{ color: tier.color, fontSize: 12, fontWeight: '700' }}>{tier.price}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ color: 'rgba(200,220,240,0.7)', fontSize: 12, lineHeight: 17 }}>{tier.desc}</Text>
+                  </View>
+
+                  {/* Features */}
+                  <View style={{ padding: 14, gap: 0 }}>
+                    {/* Inherited from previous */}
+                    {tier.inherited.length > 0 && (
+                      <>
+                        <Text style={{ color: 'rgba(150,180,210,0.35)', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' }}>Included from before</Text>
+                        {tier.inherited.map(f => (
+                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+                            <Text style={{ color: 'rgba(150,180,210,0.3)', fontSize: 13 }}>✓</Text>
+                            <Text style={{ color: 'rgba(150,180,210,0.3)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
+                          </View>
+                        ))}
+                        <View style={{ height: 1, backgroundColor: tier.color + '22', marginVertical: 8 }} />
+                      </>
+                    )}
+
+                    {/* New in this tier */}
+                    <Text style={{ color: tier.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' }}>
+                      {idx === 0 ? 'What you get' : `New in ${tier.name}`}
+                    </Text>
+                    {tier.newFeatures.map(f => (
+                      <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+                        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: tier.color + '33', alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ color: tier.color, fontSize: 10, fontWeight: '800' }}>✓</Text>
+                        </View>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600', flex: 1 }}>{f}</Text>
+                      </View>
+                    ))}
+
+                    {/* Locked in this tier */}
+                    {tier.locked.length > 0 && (
+                      <>
+                        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 8 }} />
+                        {tier.locked.map(f => (
+                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+                            <Text style={{ color: 'rgba(255,80,80,0.4)', fontSize: 13 }}>✗</Text>
+                            <Text style={{ color: 'rgba(150,180,210,0.25)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                  </View>
                 </View>
-                <Text style={styles.tierDesc}>Get started with Gripcuff basics. Access the first introductory video, track your progress, and explore the app.</Text>
-                <Text style={styles.tierFeatures}>{'✓ Access to 1 free video\n✓ Progress tracking\n✓ Community access\n✗ Locked advanced content'}</Text>
-              </View>
-              <View style={styles.tierCard}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View style={[styles.tierBadge, { backgroundColor: '#7C3AED' }]}><Text style={styles.tierBadgeText}>LIFTER</Text></View>
-                </View>
-                <Text style={styles.tierDesc}>Unlock the full Gripcuff training library. Follow structured programs and track strength gains.</Text>
-                <Text style={styles.tierFeatures}>{'✓ Full video library access\n✓ Structured training programs\n✓ Progress analytics\n✓ Live workout sessions\n✗ Upload access'}</Text>
-              </View>
-              <View style={styles.tierCard}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View style={[styles.tierBadge, { backgroundColor: '#F97316' }]}><Text style={styles.tierBadgeText}>TRAINER</Text></View>
-                </View>
-                <Text style={styles.tierDesc}>Everything in Lifter, plus upload your own workout videos and build your personal brand.</Text>
-                <Text style={styles.tierFeatures}>{'✓ Everything in Lifter\n✓ Upload custom videos\n✓ Client management tools\n✓ Trainer profile badge\n✓ Revenue sharing on content'}</Text>
-              </View>
-              <View style={styles.tierCard}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View style={[styles.tierBadge, { backgroundColor: '#D4AF37' }]}><Text style={styles.tierBadgeText}>INFLUENCER</Text></View>
-                </View>
-                <Text style={styles.tierDesc}>The ultimate Gripcuff tier. Get featured, access exclusive partnerships, and earn commission on referred members.</Text>
-                <Text style={styles.tierFeatures}>{'✓ Everything in Trainer\n✓ Featured homepage placement\n✓ Affiliate commission program\n✓ Priority support\n✓ Brand partnership access\n✓ Custom profile banner'}</Text>
-              </View>
+              ))}
             </ScrollView>
+
+            {/* Dot indicators */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, marginBottom: 14 }}>
+              {['#3b82f6','#7C3AED','#F97316','#D4AF37'].map((c, i) => (
+                <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c + '88' }} />
+              ))}
+            </View>
+
             <TouchableOpacity
               onPress={() => setShowTiersModal(false)}
-              style={{ backgroundColor: '#F97316', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 16 }}
+              style={{ backgroundColor: '#F97316', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginHorizontal: 20 }}
             >
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Got It</Text>
             </TouchableOpacity>
@@ -1801,7 +1978,7 @@ const styles = StyleSheet.create({
   profileAvatarRingLarge: {
     width: 84,
     height: 84,
-    borderRadius: 42,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: '#C26A2D',
     padding: 2,
@@ -1814,7 +1991,7 @@ const styles = StyleSheet.create({
   profileAvatarInnerLarge: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: '#131f2e',
     alignItems: 'center',

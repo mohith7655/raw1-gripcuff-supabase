@@ -13,6 +13,10 @@ import { WorkoutReminderService } from './services/workoutReminder.service';
 import { SessionReminderService } from './services/sessionReminder.service';
 import { reminderWatcherService, ForegroundAlarm } from './services/reminderWatcher.service';
 import { migrateLegacyReminders } from './services/moveReminder.service';
+import { unlockAudio } from './utils/webAudio';
+import { ChallengeSessionService } from './services/challengeSession.service';
+import { fetchAgoraToken } from './services/agora/AgoraTokenService';
+import { supabase } from './core/config/supabase';
 import { AppState } from 'react-native';
 import { CastManager } from './services/cast/castManager';
 import { AuthProvider, useAuth } from './providers/AuthContext';
@@ -405,6 +409,64 @@ if (typeof global !== 'undefined' && !(global as any).__errorHandlerInstalled) {
   });
 }
 
+// ── Inline challenge invite alert shown to the guest ─────────────────────────
+function ChallengeInviteAlert({
+  session, onAccept, onDecline,
+}: {
+  session: any;
+  myUid: string;
+  onAccept: (session: any) => void;
+  onDecline: (session: any) => void;
+}) {
+  return (
+    <View style={challengeAlertStyles.card}>
+      <Text style={challengeAlertStyles.title}>💪 Exercise Challenge!</Text>
+      <Text style={challengeAlertStyles.body}>
+        You've been challenged to {session.duration_seconds / 60} min of {session.exercise_name}.
+      </Text>
+      <View style={challengeAlertStyles.row}>
+        <TouchableOpacity
+          style={challengeAlertStyles.acceptBtn}
+          onPress={() => onAccept(session)}
+          activeOpacity={0.85}
+        >
+          <Text style={challengeAlertStyles.acceptText}>Accept</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={challengeAlertStyles.declineBtn}
+          onPress={() => onDecline(session)}
+          activeOpacity={0.85}
+        >
+          <Text style={challengeAlertStyles.declineText}>Decline</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const challengeAlertStyles = StyleSheet.create({
+  card: {
+    position: 'absolute', bottom: 120, left: 16, right: 16, zIndex: 9999,
+    backgroundColor: '#0d1825', borderRadius: 18, padding: 20,
+    borderWidth: 1, borderColor: 'rgba(255,107,0,0.35)',
+    shadowColor: '#FF6B00', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10,
+  },
+  title: { color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  body:  { color: 'rgba(150,180,210,0.7)', fontSize: 13, marginBottom: 16 },
+  row:   { flexDirection: 'row', gap: 10 },
+  acceptBtn: {
+    flex: 1, backgroundColor: '#FF6B00', borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  acceptText:  { color: '#fff', fontWeight: '700', fontSize: 14 },
+  declineBtn: {
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 12, alignItems: 'center',
+  },
+  declineText: { color: 'rgba(150,180,210,0.7)', fontWeight: '700', fontSize: 14 },
+});
+
 function MainApp() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
@@ -424,6 +486,7 @@ function MainApp() {
 
   const [alarmModalVisible, setAlarmModalVisible] = useState(false);
   const [activeAlarm, setActiveAlarm] = useState<ForegroundAlarm | null>(null);
+  const [pendingChallengeSession, setPendingChallengeSession] = useState<any>(null);
   const profileReminderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const profileReminderVisibleRef = useRef(false);
   const leaderboardSeeded = useRef(false);
@@ -474,12 +537,36 @@ function MainApp() {
     runBootSync();
   }, [supabaseUserId]);
 
+  // Register service worker + request notification permission on web
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err =>
+        console.warn('[SW] registration failed:', err)
+      );
+    }
+    // Unlock audio on first user interaction
+    const unlock = () => { unlockAudio(); };
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
+
   useEffect(() => {
     if (!supabaseUserId) {
       // User logged out — stop the clock
       reminderWatcherService.stop();
       return;
     }
+
+    // Request browser notification permission for PWA
+    if (Platform.OS === 'web' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     // Start the persistent reminder clock for this user.
     // NO cleanup return here — the clock is a global singleton that must
     // survive React re-renders, navigation, and tab switches.
@@ -490,6 +577,19 @@ function MainApp() {
     reminderWatcherService.start(supabaseUserId, (alarm) => {
       setActiveAlarm(alarm);
       setAlarmModalVisible(true);
+
+      // Browser notification — fires even when the tab is in background
+      if (Platform.OS === 'web' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new (window as any).Notification(alarm.workoutTitle || 'Reminder to Move 💪', {
+            body: alarm.recurrenceLabel || 'Time to move — stay active!',
+            icon: '/assets/icon.png',
+            tag: 'move-reminder',
+            renotify: true,
+            silent: false,
+          });
+        } catch {}
+      }
     });
   }, [supabaseUserId]);
 
@@ -509,6 +609,31 @@ function MainApp() {
       }
     });
     return () => sub.remove();
+  }, [supabaseUserId]);
+
+  // ── Incoming challenge invite listener ────────────────────────────────────
+  useEffect(() => {
+    if (!supabaseUserId) return;
+
+    const channel = supabase
+      .channel(`challenge-invites:${supabaseUserId}`)
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'challenge_sessions',
+          filter: `guest_id=eq.${supabaseUserId}`,
+        },
+        async (payload: any) => {
+          const session = payload.new;
+          if (!session || session.status !== 'pending') return;
+          setPendingChallengeSession(session);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [supabaseUserId]);
 
   useEffect(() => {
@@ -772,6 +897,35 @@ function MainApp() {
       {/* Survey + Paywall overlays — sit above all navigation */}
       {!!supabaseUserId && <GripcuffSurveyModal />}
       {!!supabaseUserId && <PaywallScreen />}
+      {/* Incoming challenge invite — in-app accept/decline prompt */}
+      {pendingChallengeSession && (
+        <ChallengeInviteAlert
+          session={pendingChallengeSession}
+          myUid={supabaseUserId!}
+          onAccept={async (session) => {
+            setPendingChallengeSession(null);
+            const token = await fetchAgoraToken(session.channel_name, 0).catch(() => '');
+            if (navigationRef.isReady()) {
+              (navigationRef as any).navigate('ChallengeVideoRoom', {
+                channelName: session.channel_name,
+                opponentName: 'Challenger',
+                opponentUid: session.host_id,
+                token,
+                challengeSessionId: session.id,
+                exerciseName: session.exercise_name,
+                workoutDurationSecs: session.duration_seconds,
+                isHost: false,
+                myUid: supabaseUserId,
+              });
+            }
+          }}
+          onDecline={(session) => {
+            setPendingChallengeSession(null);
+            ChallengeSessionService.cancel(session.id).catch(() => {});
+          }}
+        />
+      )}
+
       {/* Fullscreen workout alarm modal — global foreground watcher */}
       <WorkoutReminderModal
         visible={alarmModalVisible}

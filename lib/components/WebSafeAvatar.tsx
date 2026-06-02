@@ -7,6 +7,7 @@ interface WebSafeAvatarProps {
     fallback: React.ReactNode;
     style?: object;
     timeoutMs?: number;
+    borderRadius?: number;
 }
 
 /**
@@ -27,6 +28,7 @@ export function WebSafeAvatar({
     fallback,
     style,
     timeoutMs = 10000,
+    borderRadius,
 }: WebSafeAvatarProps) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
@@ -42,7 +44,7 @@ export function WebSafeAvatar({
         return () => clearTimeout(t);
     }, [uri, loaded, error, timeoutMs]);
 
-    const radius = size / 2;
+    const radius = borderRadius ?? size / 2;
     const containerStyle = [styles.container, { width: size, height: size, borderRadius: radius }, style];
 
     if (!uri || error) {

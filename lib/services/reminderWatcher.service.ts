@@ -1,6 +1,6 @@
-import { MoveReminderService, MoveReminder } from './moveReminder.service';
+import { MoveReminderService, MoveReminder, AlarmConfig } from './moveReminder.service';
 import { TimezoneService } from './timezone.service';
-import { getUserTimeSlot, getUserDateKey, getUserLocalString } from '../utils/userDate';
+import { getUserTimeSlot, getUserDateKey } from '../utils/userDate';
 
 export type AlarmSource = 'scheduledWorkout' | 'recurringReminder' | 'dailyReminder';
 
@@ -15,18 +15,12 @@ export interface ForegroundAlarm {
   scheduledAt: Date;
   recurrenceLabel?: string;
   isStartTime: boolean;
+  // For snooze support — the original slot key
+  originalSlot?: string;
+  reminderId?: string;
 }
 
 type AlarmCallback = (alarm: ForegroundAlarm) => void;
-
-function localTimeStr(d: Date): string {
-  return d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-  });
-}
 
 const MOVE_REMINDER_MESSAGES = [
   'Time to move 💪',
@@ -43,6 +37,13 @@ function pickMoveMessage(): string {
   return MOVE_REMINDER_MESSAGES[Math.floor(Math.random() * MOVE_REMINDER_MESSAGES.length)];
 }
 
+/** Add N minutes to a HH:MM string, wrapping at 24h. */
+function addMinsToSlot(slot: string, mins: number): string {
+  const [h, m] = slot.split(':').map(Number);
+  const total = (h * 60 + m + mins) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
 class ReminderWatcherService {
   private initialized = false;
   private uid: string | null = null;
@@ -52,6 +53,10 @@ class ReminderWatcherService {
   private moveRemindersLoadedAt = 0;
   private moveFiredSlots = new Set<string>();
   private timezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Per-alarm snooze overrides: key = `${reminderId}:${originalSlot}:${dateKey}`
+  // value = new slot string to fire at instead (or 'skipped' to skip entirely today)
+  private snoozeOverrides = new Map<string, string>();
 
   get isRunning(): boolean {
     return this.initialized && this.dueCheckTimer !== null;
@@ -79,6 +84,7 @@ class ReminderWatcherService {
     this.dueCheckTimer = null;
     this.moveReminders = [];
     this.moveFiredSlots.clear();
+    this.snoozeOverrides.clear();
     this.moveRemindersLoadedAt = 0;
     this.uid = null;
     this.onAlarm = null;
@@ -89,9 +95,28 @@ class ReminderWatcherService {
     this.moveRemindersLoadedAt = 0;
   }
 
+  /**
+   * Snooze a specific alarm for today.
+   * minutesFromNow = 0  → skip today entirely
+   * minutesFromNow > 0  → fire that many minutes later today
+   */
+  snoozeAlarm(reminderId: string, originalSlot: string, minutesFromNow: number, dateKey: string) {
+    const key = `${reminderId}:${originalSlot}:${dateKey}`;
+    if (minutesFromNow === 0) {
+      this.snoozeOverrides.set(key, 'skipped');
+      // Also mark the original slot as fired so it doesn't double-fire
+      this.moveFiredSlots.add(`movereminder:${reminderId}:${dateKey}:${originalSlot}`);
+    } else {
+      const newSlot = addMinsToSlot(originalSlot, minutesFromNow);
+      this.snoozeOverrides.set(key, newSlot);
+      // Mark original as fired so it won't re-fire
+      this.moveFiredSlots.add(`movereminder:${reminderId}:${dateKey}:${originalSlot}`);
+    }
+  }
+
   testFireAlarm(message = 'Test reminder — system working! 🔥') {
     if (!this.onAlarm || !this.uid) {
-      console.warn('[MoveReminder] testFireAlarm: watcher not running (no uid or callback)');
+      console.warn('[MoveReminder] testFireAlarm: watcher not running');
       return;
     }
     const now = new Date();
@@ -104,7 +129,7 @@ class ReminderWatcherService {
       workoutTitle: message,
       thumbnail: null,
       scheduledAt: now,
-      recurrenceLabel: 'Test Reminder',
+      recurrenceLabel: 'Reminder to Move',
       isStartTime: true,
     });
   }
@@ -138,33 +163,54 @@ class ReminderWatcherService {
     const nowDate = new Date(nowMs);
 
     await this.reloadMoveReminders();
-    const enabledReminders = this.moveReminders.filter(r => r.enabled && r.generatedTimes.length > 0);
-    if (enabledReminders.length > 0) {
-      const currentSlot = getUserTimeSlot(this.timezone, nowDate);
-      const dateKey = getUserDateKey(this.timezone, nowDate);
 
-      for (const reminder of enabledReminders) {
-        for (const slot of reminder.generatedTimes) {
-          if (slot !== currentSlot) continue;
-          const fireKey = `movereminder:${reminder.id ?? 'default'}:${dateKey}:${slot}`;
-          if (this.moveFiredSlots.has(fireKey)) continue;
-          this.moveFiredSlots.add(fireKey);
+    const enabledReminders = this.moveReminders.filter(r => r.enabled);
+    if (enabledReminders.length === 0) return;
 
-          const message = pickMoveMessage();
+    const currentSlot = getUserTimeSlot(this.timezone, nowDate);
+    const dateKey = getUserDateKey(this.timezone, nowDate);
 
-          this.onAlarm!({
-            source: 'dailyReminder',
-            id: `movereminder:${reminder.id ?? 'default'}:${dateKey}:${slot}`,
-            userId: this.uid!,
-            workoutId: '',
-            videoId: '',
-            workoutTitle: message,
-            thumbnail: null,
-            scheduledAt: nowDate,
-            recurrenceLabel: 'Reminder to Move',
-            isStartTime: true,
-          });
-        }
+    for (const reminder of enabledReminders) {
+      // Use alarmConfigs if available; fall back to generatedTimes (all enabled)
+      const configs: AlarmConfig[] = reminder.alarmConfigs?.length
+        ? reminder.alarmConfigs
+        : (reminder.generatedTimes ?? []).map(t => ({ time: t, enabled: true }));
+
+      for (const cfg of configs) {
+        if (!cfg.enabled) continue;
+
+        // Determine the effective fire slot (may be snoozed to a different time)
+        const snoozeKey = `${reminder.id ?? 'default'}:${cfg.time}:${dateKey}`;
+        const snoozeOverride = this.snoozeOverrides.get(snoozeKey);
+        if (snoozeOverride === 'skipped') continue;
+
+        const effectiveSlot = snoozeOverride ?? cfg.time;
+        if (effectiveSlot !== currentSlot) continue;
+
+        // Use original slot in fire-key so snooze doesn't re-fire the original
+        const fireKey = `movereminder:${reminder.id ?? 'default'}:${dateKey}:${cfg.time}`;
+        // For snoozed slots, use a distinct fire-key
+        const snoozedFireKey = snoozeOverride
+          ? `movereminder:${reminder.id ?? 'default'}:${dateKey}:${cfg.time}:snoozed`
+          : fireKey;
+
+        if (this.moveFiredSlots.has(snoozeOverride ? snoozedFireKey : fireKey)) continue;
+        this.moveFiredSlots.add(snoozeOverride ? snoozedFireKey : fireKey);
+
+        this.onAlarm!({
+          source: 'dailyReminder',
+          id: `movereminder:${reminder.id ?? 'default'}:${dateKey}:${cfg.time}`,
+          userId: this.uid!,
+          workoutId: '',
+          videoId: '',
+          workoutTitle: pickMoveMessage(),
+          thumbnail: null,
+          scheduledAt: nowDate,
+          recurrenceLabel: 'Reminder to Move',
+          isStartTime: true,
+          originalSlot: cfg.time,
+          reminderId: reminder.id ?? 'default',
+        });
       }
     }
   }

@@ -11,6 +11,9 @@ import {
   Vibration,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import { playReminderBeep } from '../utils/webAudio';
+import { reminderWatcherService } from '../services/reminderWatcher.service';
+import { getUserDateKey } from '../utils/userDate';
 const ACCENT = '#f97316';
 const { width } = Dimensions.get('window');
 
@@ -37,26 +40,8 @@ interface Props {
 }
 
 const playBeep = () => {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    [0, 0.3, 0.6].forEach((delay) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + delay + 0.2,
-      );
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.2);
-    });
-    console.log('[ReminderAlarm] sound started');
-  } catch (e) {
-    console.log('[ReminderAlarm] Web Audio API not available:', e);
-  }
+  playReminderBeep();
+  console.log('[ReminderAlarm] sound started');
 };
 
 const startWebVibration = () => {
@@ -140,6 +125,14 @@ export function WorkoutReminderModal({
 
   const handleSnooze = async () => {
     if (!workout) return;
+    // For move reminders, tell the watcher to re-fire 15 minutes from now
+    if (workout.source === 'dailyReminder' && workout.originalSlot && workout.reminderId) {
+      const dateKey = getUserDateKey(
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        new Date()
+      );
+      reminderWatcherService.snoozeAlarm(workout.reminderId, workout.originalSlot, 15, dateKey);
+    }
     onDismiss();
   };
 
@@ -217,7 +210,9 @@ export function WorkoutReminderModal({
                 onPress={handleSnooze}
                 activeOpacity={0.8}
               >
-                <Text style={s.snoozeBtnText}>SNOOZE 5 MIN</Text>
+                <Text style={s.snoozeBtnText}>
+                  {isDailyReminder ? 'SNOOZE 15 MIN' : 'SNOOZE 5 MIN'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity

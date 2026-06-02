@@ -1,22 +1,25 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 
 interface Props {
     icon: string;        // emoji
     pace: string;
-    squats: number;
+    count: number;
+    unit: string;        // e.g. "squats", "holds", "kicks"
     steps: number;
     accentColor: string;
 }
 
-export function MovementEquivalenceCard({ icon, pace, squats, steps, accentColor }: Props) {
+export function MovementEquivalenceCard({ icon, pace, count, unit, steps, accentColor }: Props) {
     const glowAnim = useRef(new Animated.Value(0.5)).current;
+
+    const nativeDriver = Platform.OS !== 'web';
 
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(glowAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
-                Animated.timing(glowAnim, { toValue: 0.5, duration: 1800, useNativeDriver: true }),
+                Animated.timing(glowAnim, { toValue: 1, duration: 1800, useNativeDriver: nativeDriver }),
+                Animated.timing(glowAnim, { toValue: 0.5, duration: 1800, useNativeDriver: nativeDriver }),
             ])
         ).start();
         return () => { glowAnim.stopAnimation(); };
@@ -38,9 +41,9 @@ export function MovementEquivalenceCard({ icon, pace, squats, steps, accentColor
             {/* Pace label */}
             <Text style={[styles.paceLabel, { color: accentColor }]}>{pace}</Text>
 
-            {/* Squat count */}
-            <Text style={[styles.squatNumber, { color: accentColor }]}>{squats}</Text>
-            <Text style={styles.squatWord}>squats</Text>
+            {/* Rep / hold count */}
+            <Text style={[styles.squatNumber, { color: accentColor }]}>{count}</Text>
+            <Text style={styles.squatWord}>{unit}</Text>
 
             {/* Step equivalence */}
             <View style={[styles.stepChip, { borderColor: accentColor + '40' }]}>

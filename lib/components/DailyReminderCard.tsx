@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Bell, Edit2, Zap } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { MoveReminder, MoveReminderService, formatMoveTime12h } from '../services/moveReminder.service';
 import { MoveReminderModal } from './MoveReminderModal';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function DailyReminderCard({ userId }: Props) {
+    const navigation = useNavigation<any>();
     const [settings, setSettings] = useState<MoveReminder | null>(null);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -111,6 +113,7 @@ export function DailyReminderCard({ userId }: Props) {
                 userId={userId}
                 onClose={() => setModalVisible(false)}
                 onSaved={handleSaved}
+                navigation={navigation}
             />
         </>
     );

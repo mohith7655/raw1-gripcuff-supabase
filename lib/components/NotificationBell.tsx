@@ -17,6 +17,7 @@ import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useFriend } from '../providers/FriendContext';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
+import { MoveReminderService, MoveReminder, formatMoveTime12h } from '../services/moveReminder.service';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 
@@ -29,6 +30,7 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
   const [modalVisible, setModalVisible] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [chatConversations, setChatConversations] = useState<ChatConversation[]>([]);
+  const [moveReminder, setMoveReminder] = useState<MoveReminder | null>(null);
   const [requestProfiles, setRequestProfiles] = useState<Record<string, any>>({});
 
   useEffect(() => {
@@ -46,6 +48,13 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
     if (uids.length === 0) { setRequestProfiles({}); return; }
     setRequestProfiles({});
   }, [incomingRequests]);
+
+  useEffect(() => {
+    if (!modalVisible || !authUser?.uid) return;
+    MoveReminderService.loadDefault(authUser.uid)
+      .then(setMoveReminder)
+      .catch(() => {});
+  }, [modalVisible, authUser?.uid]);
 
   const totalBadge = pendingInvites.length + incomingRequests.length + unreadChatCount;
 
@@ -193,6 +202,44 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
                 </TouchableOpacity>
               </View>
 
+              <View style={styles.divider} />
+
+              {/* Move Reminders */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.dot, { backgroundColor: '#4ade80' }]} />
+                  <Text style={styles.sectionTitle}>Move Reminders</Text>
+                  {moveReminder?.enabled && moveReminder.generatedTimes.length > 0 && (
+                    <View style={[styles.countBadge, { backgroundColor: '#4ade80', marginLeft: 8 }]}>
+                      <Text style={styles.countBadgeText}>{moveReminder.generatedTimes.length}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {!moveReminder || moveReminder.generatedTimes.length === 0 ? (
+                  <Text style={styles.emptyText}>No reminders set up yet.</Text>
+                ) : (
+                  <>
+                    <Text style={[styles.emptyText, { marginBottom: 8 }]}>
+                      {moveReminder.enabled ? `Active · ${moveReminder.generatedTimes.length} reminders scheduled` : `Paused · ${moveReminder.generatedTimes.length} reminders`}
+                    </Text>
+                    <View style={styles.moveTimesRow}>
+                      {moveReminder.generatedTimes.map((t, i) => {
+                        const isLast = i === moveReminder.generatedTimes.length - 1;
+                        return (
+                          <View key={t} style={[styles.moveTimePill, !moveReminder.enabled && styles.moveTimePillPaused, isLast && styles.moveTimePillStop]}>
+                            <Text style={[styles.moveTimePillText, !moveReminder.enabled && styles.moveTimePillTextPaused, isLast && styles.moveTimePillTextStop]}>
+                              {formatMoveTime12h(t)}
+                            </Text>
+                            {isLast && <Text style={styles.moveStopBadge}>STOP</Text>}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+              </View>
+
             </ScrollView>
           </View>
         </TouchableOpacity>
@@ -325,6 +372,52 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  moveTimesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingBottom: 4,
+  },
+  moveTimePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    backgroundColor: 'rgba(74,222,128,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
+  },
+  moveTimePillPaused: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  moveTimePillStop: {
+    backgroundColor: 'rgba(255,107,0,0.08)',
+    borderColor: 'rgba(255,107,0,0.3)',
+  },
+  moveTimePillText: {
+    color: '#4ade80',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  moveTimePillTextPaused: {
+    color: 'rgba(150,180,210,0.5)',
+  },
+  moveTimePillTextStop: {
+    color: '#FF6B00',
+  },
+  moveStopBadge: {
+    color: '#FF6B00',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    backgroundColor: 'rgba(255,107,0,0.15)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
   actionBtn: {
     borderRadius: 8,

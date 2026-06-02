@@ -2,27 +2,58 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MovementEquivalenceCard } from './MovementEquivalenceCard';
 
+export type ExerciseName = 'Squats' | 'Wall Sits' | 'Standing Glute Kickbacks';
+
 interface Props {
     workoutDurationMin: number;
     intervalMins: number;
     startTime: string;
     endTime: string;
+    exerciseName: ExerciseName;
 }
 
-const COLUMNS = [
-    { key: 'slow',  icon: '🐢', pace: 'Slow pace',  ratePerMin: 10, multiplier: 1.10, color: '#4ade80' },
-    { key: 'avg',   icon: '🏃', pace: 'Avg pace',   ratePerMin: 15, multiplier: 1.27, color: '#f59e0b' },
-    { key: 'fast',  icon: '⚡', pace: 'Fast pace',  ratePerMin: 25, multiplier: 1.24, color: '#f87171' },
+const COLUMNS_BASE = [
+    { key: 'slow',  icon: '🐢', pace: 'Slow pace',  color: '#4ade80' },
+    { key: 'avg',   icon: '🏃', pace: 'Avg pace',   color: '#f59e0b' },
+    { key: 'fast',  icon: '⚡', pace: 'Fast pace',  color: '#f87171' },
 ] as const;
 
-export function IntensityComparisonCard({ workoutDurationMin, intervalMins }: Props) {
+const EXERCISE_CONFIG: Record<ExerciseName, {
+    unit: string;
+    headerLabel: string;
+    rates: [number, number, number];        // slow / avg / fast ratePerMin
+    multipliers: [number, number, number];  // step equivalence multipliers
+}> = {
+    'Squats': {
+        unit: 'squats',
+        headerLabel: 'SQUATS',
+        rates: [10, 15, 25],
+        multipliers: [1.10, 1.27, 1.24],
+    },
+    'Wall Sits': {
+        unit: 'holds',
+        headerLabel: 'WALL SITS',
+        rates: [1, 2, 3],
+        multipliers: [1.05, 1.18, 1.35],
+    },
+    'Standing Glute Kickbacks': {
+        unit: 'kicks',
+        headerLabel: 'GLUTE KICKBACKS',
+        rates: [15, 25, 40],
+        multipliers: [0.90, 1.05, 1.20],
+    },
+};
+
+export function IntensityComparisonCard({ workoutDurationMin, intervalMins, exerciseName }: Props) {
+    const config = EXERCISE_CONFIG[exerciseName];
+
     const cols = useMemo(() =>
-        COLUMNS.map(c => ({
-            ...c,
-            squats: c.ratePerMin * workoutDurationMin,
-            steps: Math.round(c.ratePerMin * workoutDurationMin * c.multiplier),
+        COLUMNS_BASE.map((base, i) => ({
+            ...base,
+            count: config.rates[i] * workoutDurationMin,
+            steps: Math.round(config.rates[i] * workoutDurationMin * config.multipliers[i]),
         })),
-        [workoutDurationMin],
+        [workoutDurationMin, exerciseName],
     );
 
     const intervalDisplay = intervalMins >= 60
@@ -33,7 +64,7 @@ export function IntensityComparisonCard({ workoutDurationMin, intervalMins }: Pr
         <View style={s.root}>
             {/* Header */}
             <Text style={s.header}>
-                IF YOU DO SQUATS FOR {workoutDurationMin} MIN
+                IF YOU DO {config.headerLabel} FOR {workoutDurationMin} MIN
             </Text>
 
             {/* 3-column row */}
@@ -43,7 +74,8 @@ export function IntensityComparisonCard({ workoutDurationMin, intervalMins }: Pr
                         <MovementEquivalenceCard
                             icon={col.icon}
                             pace={col.pace}
-                            squats={col.squats}
+                            count={col.count}
+                            unit={config.unit}
                             steps={col.steps}
                             accentColor={col.color}
                         />
@@ -54,7 +86,7 @@ export function IntensityComparisonCard({ workoutDurationMin, intervalMins }: Pr
 
             {/* Footer */}
             <Text style={s.footer}>
-                {cols[0].squats} squats every {intervalDisplay} = metabolic benefits equal to a 10,000-step walk 💪
+                {cols[0].count} {config.unit} every {intervalDisplay} = metabolic benefits equal to a 10,000-step walk 💪
             </Text>
         </View>
     );
