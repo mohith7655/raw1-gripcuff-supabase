@@ -62,7 +62,17 @@ export function ChallengeLobbyModal({
 
     const [members, setMembers] = useState<LobbyMember[]>([]);
     const [loadingUid, setLoadingUid] = useState<string | null>(null);
+    const [incoming, setIncoming] = useState<{
+        sessionId: string; channelName: string; hostUid: string;
+        hostName: string; exerciseName: string; workoutDurationSecs: number;
+    } | null>(null);
     const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+    const selfName =
+        profile?.fullName || profile?.username ||
+        authUser?.displayName || authUser?.email?.split('@')[0] || 'Athlete';
+    const selfNameRef = useRef(selfName);
+    selfNameRef.current = selfName;
 
     // Pulsing "waiting" dot
     const pulse = useRef(new Animated.Value(0)).current;
@@ -81,10 +91,6 @@ export function ChallengeLobbyModal({
     // ── Join / leave the presence lobby ────────────────────────────────────────
     useEffect(() => {
         if (!visible || !supabaseUserId) return;
-
-        const selfName =
-            profile?.fullName || profile?.username ||
-            authUser?.displayName || authUser?.email?.split('@')[0] || 'Athlete';
 
         const channel = supabase.channel(LOBBY_CHANNEL, {
             config: { presence: { key: supabaseUserId } },
@@ -116,11 +122,23 @@ export function ChallengeLobbyModal({
             .on('presence', { event: 'sync' }, syncMembers)
             .on('presence', { event: 'join' }, syncMembers)
             .on('presence', { event: 'leave' }, syncMembers)
+            // Direct invite over the same channel — instant, no DB-publication dependency
+            .on('broadcast', { event: 'challenge' }, ({ payload }) => {
+                if (!payload || payload.guestUid !== supabaseUserId) return;
+                setIncoming({
+                    sessionId: payload.sessionId,
+                    channelName: payload.channelName,
+                    hostUid: payload.hostUid,
+                    hostName: payload.hostName ?? 'Challenger',
+                    exerciseName: payload.exerciseName ?? exerciseName,
+                    workoutDurationSecs: payload.workoutDurationSecs ?? workoutDurationSecs,
+                });
+            })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await channel.track({
                         uid: supabaseUserId,
-                        name: selfName,
+                        name: selfNameRef.current,
                         avatar: profile?.profileImageUrl ?? null,
                         accessType: profile?.accessType ?? null,
                         exercise: exerciseName,
@@ -152,14 +170,31 @@ export function ChallengeLobbyModal({
             });
             const token = await fetchAgoraToken(session.channelName, 0);
 
+            // Notification row (powers the bell + the App-level fallback listener)
             await NotificationService.insert({
                 toUid: member.uid,
                 fromUid: supabaseUserId,
-                fromName: profile?.fullName || profile?.username || authUser?.displayName || 'Someone',
+                fromName: selfNameRef.current,
                 type: 'challenge_invite',
                 title: '💪 Exercise Challenge!',
-                body: `${profile?.fullName || 'Someone'} challenged you to ${workoutDurationSecs / 60} min of ${exerciseName}!`,
+                body: `${selfNameRef.current} challenged you to ${workoutDurationSecs / 60} min of ${exerciseName}!`,
                 sessionId: session.id,
+            }).catch(() => {});
+
+            // Instant invite to the guest over the shared lobby channel.
+            // Await so the message flushes before we navigate (which unmounts the channel).
+            await channelRef.current?.send({
+                type: 'broadcast',
+                event: 'challenge',
+                payload: {
+                    sessionId: session.id,
+                    channelName: session.channelName,
+                    guestUid: member.uid,
+                    hostUid: supabaseUserId,
+                    hostName: selfNameRef.current,
+                    exerciseName,
+                    workoutDurationSecs,
+                },
             });
 
             onChallengeStarted({
@@ -177,6 +212,34 @@ export function ChallengeLobbyModal({
         } finally {
             setLoadingUid(null);
         }
+    };
+
+    // ── Guest accepts / declines an incoming challenge ──────────────────────────
+    const acceptIncoming = async () => {
+        const c = incoming;
+        if (!c) return;
+        setIncoming(null);
+        try {
+            const token = await fetchAgoraToken(c.channelName, 0).catch(() => '');
+            onChallengeStarted({
+                challengeSessionId: c.sessionId,
+                channelName: c.channelName,
+                token,
+                opponentName: c.hostName,
+                opponentUid: c.hostUid,
+                exerciseName: c.exerciseName,
+                workoutDurationSecs: c.workoutDurationSecs,
+                isHost: false,
+            });
+        } catch (e) {
+            console.warn('[ChallengeLobby] accept failed:', e);
+        }
+    };
+
+    const declineIncoming = () => {
+        const c = incoming;
+        setIncoming(null);
+        if (c) ChallengeSessionService.cancel(c.sessionId).catch(() => {});
     };
 
     const others = members.filter(m => m.uid !== supabaseUserId);
@@ -200,15 +263,33 @@ export function ChallengeLobbyModal({
                         </TouchableOpacity>
                     </View>
 
-                    {/* Waiting banner */}
-                    <View style={s.waitBanner}>
-                        <Animated.View style={[s.waitDot, pulseStyle]} />
-                        <Text style={s.waitText}>
-                            {others.length === 0
-                                ? 'Waiting for challengers…'
-                                : `${others.length} ${others.length === 1 ? 'athlete' : 'athletes'} in the lobby`}
-                        </Text>
-                    </View>
+                    {/* Incoming challenge — accept / decline */}
+                    {incoming ? (
+                        <View style={s.incomingBanner}>
+                            <Text style={s.incomingText}>
+                                💪 <Text style={{ fontWeight: '800' }}>{incoming.hostName}</Text> challenged you!
+                            </Text>
+                            <View style={s.incomingBtns}>
+                                <TouchableOpacity style={s.declineBtn} onPress={declineIncoming} activeOpacity={0.8}>
+                                    <Text style={s.declineBtnText}>Decline</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={s.acceptBtn} onPress={acceptIncoming} activeOpacity={0.85}>
+                                    <Zap color="#fff" size={14} />
+                                    <Text style={s.acceptBtnText}>Accept</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : (
+                        /* Waiting banner */
+                        <View style={s.waitBanner}>
+                            <Animated.View style={[s.waitDot, pulseStyle]} />
+                            <Text style={s.waitText}>
+                                {others.length === 0
+                                    ? 'Waiting for challengers…'
+                                    : `${others.length} ${others.length === 1 ? 'athlete' : 'athletes'} in the lobby`}
+                            </Text>
+                        </View>
+                    )}
 
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.list}>
                         {/* Self card */}
@@ -311,6 +392,40 @@ const s = StyleSheet.create({
     },
     waitDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: CTA },
     waitText: { color: CTA, fontSize: 13, fontWeight: '700' },
+    incomingBanner: {
+        marginHorizontal: 16,
+        marginTop: 14,
+        padding: 14,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,107,0,0.14)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,107,0,0.45)',
+        gap: 12,
+    },
+    incomingText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    incomingBtns: { flexDirection: 'row', gap: 10 },
+    acceptBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: CTA,
+        borderRadius: 10,
+        paddingVertical: 11,
+    },
+    acceptBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    declineBtn: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
+        borderRadius: 10,
+        paddingVertical: 11,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.18)',
+    },
+    declineBtnText: { color: 'rgba(150,180,210,0.8)', fontSize: 14, fontWeight: '700' },
     list: { paddingHorizontal: 16, paddingTop: 12, gap: 4 },
     row: {
         flexDirection: 'row',
