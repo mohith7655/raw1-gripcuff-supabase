@@ -69,6 +69,13 @@ interface SharedVideoPlayerProps {
     footerText?: string;
     headerLeftExtra?: React.ReactNode;
     onPlayStateChange?: (isPlaying: boolean) => void;
+    /**
+     * Called when the user presses the player's Play button (a play *intent*),
+     * before the video actually plays. Return `false` to suppress playback —
+     * e.g. workout mode triggers a Ready/Steady/Go countdown instead and only
+     * starts the video imperatively (via resumeVideo) once it finishes.
+     */
+    onPlayRequest?: () => boolean;
     onSeekForward?: (newPositionMs: number) => void;
     onVideoEnd?: () => void;
     onCurrentPositionChange?: (positionMs: number) => void;
@@ -89,6 +96,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     footerText,
     headerLeftExtra,
     onPlayStateChange,
+    onPlayRequest,
     onSeekForward,
     onVideoEnd,
     onCurrentPositionChange,
@@ -414,6 +422,12 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
         if (isPlaying) {
             player.pause();
             setIsPlaying(false);
+            return;
+        }
+        // Let the parent intercept a play intent (e.g. workout-mode countdown).
+        // Returning false suppresses playback — the video is NOT started here,
+        // avoiding the flash/stutter of play-then-pause.
+        if (onPlayRequest && onPlayRequest() === false) {
             return;
         }
         player.play();

@@ -288,63 +288,70 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 </View>
                             </View>
 
-                            {/* Interval */}
-                            <Text style={[s.sectionLabel, { marginTop: 18 }]}>Interval Between Reminders</Text>
-                            <View style={s.chipRow}>
-                                {(['1hr', '2hr', 'custom'] as IntervalMode[]).map(mode => (
-                                    <TouchableOpacity
-                                        key={mode}
-                                        style={[s.chip, intervalMode === mode && s.chipActive]}
-                                        onPress={() => setIntervalMode(mode)}
-                                        activeOpacity={0.75}
+                            {/* Active Workout Time (left) + Interval Between Reminders (right) */}
+                            <View style={s.dualRow}>
+                                {/* Left — Active Workout Time */}
+                                <View style={s.dualHalf}>
+                                    <Text style={[s.sectionLabel, { marginTop: 18 }]}>Active Workout Time</Text>
+                                    <Text style={s.durationDisplay}>
+                                        Duration: <Text style={{ color: ACCENT }}>{workoutDurationMin}</Text> min
+                                    </Text>
+
+                                    {/* Slider — 1 to 5 min */}
+                                    <View
+                                        style={s.sliderTrack}
+                                        onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width; }}
+                                        onStartShouldSetResponder={() => true}
+                                        onResponderGrant={(e) => {
+                                            const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
+                                            setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
+                                        }}
+                                        onResponderMove={(e) => {
+                                            const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
+                                            setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
+                                        }}
                                     >
-                                        <Text style={[s.chipText, intervalMode === mode && s.chipTextActive]}>
-                                            {mode === '1hr' ? '1 hr' : mode === '2hr' ? '2 hr' : 'Custom'}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                            {intervalMode === 'custom' && (
-                                <View style={{ marginTop: 10 }}>
-                                    <Text style={[s.sectionLabel, { marginBottom: 6 }]}>Minutes between reminders</Text>
-                                    <TextInput
-                                        style={s.numericInput}
-                                        keyboardType="numeric"
-                                        value={customIntervalMins}
-                                        onChangeText={setCustomIntervalMins}
-                                        placeholder="60"
-                                        placeholderTextColor="#3a5a7a"
-                                        maxLength={4}
-                                    />
+                                        <View style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
+                                        <View style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
+                                    </View>
+                                    <View style={s.sliderLabels}>
+                                        <Text style={s.sliderLabelText}>1 min</Text>
+                                        <Text style={s.sliderLabelText}>5 min</Text>
+                                    </View>
                                 </View>
-                            )}
 
-                            {/* Active Workout Time */}
-                            <Text style={[s.sectionLabel, { marginTop: 22 }]}>Active Workout Time</Text>
-                            <Text style={s.durationDisplay}>
-                                Duration: <Text style={{ color: ACCENT }}>{workoutDurationMin}</Text> min
-                            </Text>
-
-                            {/* Slider — 1 to 5 min */}
-                            <View
-                                style={s.sliderTrack}
-                                onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width; }}
-                                onStartShouldSetResponder={() => true}
-                                onResponderGrant={(e) => {
-                                    const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
-                                    setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
-                                }}
-                                onResponderMove={(e) => {
-                                    const ratio = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
-                                    setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
-                                }}
-                            >
-                                <View style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
-                                <View style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
-                            </View>
-                            <View style={s.sliderLabels}>
-                                <Text style={s.sliderLabelText}>1 min</Text>
-                                <Text style={s.sliderLabelText}>5 min</Text>
+                                {/* Right — Interval Between Reminders */}
+                                <View style={s.dualHalf}>
+                                    <Text style={[s.sectionLabel, { marginTop: 18 }]}>Interval Between Reminders</Text>
+                                    <View style={s.chipRow}>
+                                        {(['1hr', '2hr', 'custom'] as IntervalMode[]).map(mode => (
+                                            <TouchableOpacity
+                                                key={mode}
+                                                style={[s.chip, intervalMode === mode && s.chipActive]}
+                                                onPress={() => setIntervalMode(mode)}
+                                                activeOpacity={0.75}
+                                            >
+                                                <Text style={[s.chipText, intervalMode === mode && s.chipTextActive]}>
+                                                    {mode === '1hr' ? '1 hr' : mode === '2hr' ? '2 hr' : 'Custom'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                    {intervalMode === 'custom' && (
+                                        <View style={{ marginTop: 10 }}>
+                                            <Text style={[s.sectionLabel, { marginBottom: 6 }]}>Minutes between reminders</Text>
+                                            <TextInput
+                                                style={s.numericInput}
+                                                keyboardType="numeric"
+                                                value={customIntervalMins}
+                                                onChangeText={setCustomIntervalMins}
+                                                placeholder="60"
+                                                placeholderTextColor="#3a5a7a"
+                                                maxLength={4}
+                                            />
+                                        </View>
+                                    )}
+                                </View>
                             </View>
 
                             {/* Exercise Selector */}
@@ -557,6 +564,14 @@ const s = StyleSheet.create({
         marginBottom: 18,
     },
     timeHalf: {
+        flex: 1,
+    },
+    dualRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 16,
+    },
+    dualHalf: {
         flex: 1,
     },
     dualArrow: {

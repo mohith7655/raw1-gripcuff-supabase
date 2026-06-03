@@ -38,6 +38,7 @@ export interface User {
   completedWorkouts?: number;
   watchedMinutes?: number;
   watchedSeconds?: number;
+  workoutSeconds?: number;
   todayWatchSeconds?: number;
   totalWatchSessions?: number;
   lastVideoWatchAt?: string | null;

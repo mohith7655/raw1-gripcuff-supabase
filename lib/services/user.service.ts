@@ -48,6 +48,7 @@ const toAppUser = (row: any, uid: string): User => {
     completedWorkouts: Number(row?.completed_workouts ?? 0),
     watchedMinutes: Number(row?.watched_minutes ?? 0),
     watchedSeconds: Number(row?.watched_seconds ?? 0),
+    workoutSeconds: Number(row?.workout_seconds ?? 0),
     todayWatchSeconds: Number(row?.today_watch_seconds ?? 0),
     totalWatchSessions: Number(row?.total_watch_sessions ?? 0),
     lastVideoWatchAt: row?.last_video_watch_at || null,

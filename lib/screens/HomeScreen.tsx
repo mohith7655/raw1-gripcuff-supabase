@@ -917,14 +917,16 @@ const HomeScreenInner = () => {
                           </TouchableOpacity>
                         </View>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-                          {recentlyWatched.slice(0, 10).map((item, idx) => {
+                          {[...new Map(recentlyWatched.map(item => [item.videoId, item])).values()]
+                            .slice(0, 10)
+                            .map((item, idx) => {
                             const localVideo = allVids.find(v => v.id === item.videoId);
                             const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
                             const title = localVideo?.title ?? program?.title ?? item.videoId;
                             const color = COLORS[idx % COLORS.length];
                             return (
                               <TouchableOpacity
-                                key={item.videoId}
+                                key={`rw-${item.videoId}`}
                                 style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
                                 activeOpacity={0.85}
                                 onPress={() => navigation.navigate('VideoPlayer', {

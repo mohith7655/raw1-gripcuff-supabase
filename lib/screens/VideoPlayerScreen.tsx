@@ -59,6 +59,8 @@ import { PlaybackSyncService } from '../services/playbackSync.service';
 import { useVideoInteractions } from '../hooks/useVideoInteractions';
 import { recordVideoWatch } from '../hooks/useRecentlyWatched';
 import { LiveViewersModal } from '../components/LiveViewersModal';
+import Svg, { Circle } from 'react-native-svg';
+import { supabase } from '../core/config/supabase';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -323,6 +325,37 @@ function VideoPlayerScreen({ route, navigation }: any) {
     );
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
     const { isFavorite, toggleFavorite } = useFavorites();
+
+    // ── Workout / Watch mode ──────────────────────────────────────────────────
+    const [modeType, setModeType] = useState<'watch' | 'workout'>('watch');
+    const [timerState, setTimerState] = useState<'idle' | 'countdown' | 'running'>('idle');
+    // Refs updated every render so callbacks can read current values without stale closures
+    const modeTypeRef = useRef<'watch' | 'workout'>('watch');
+    const timerStateRef = useRef<'idle' | 'countdown' | 'running'>('idle');
+    const startWorkoutCallbackRef = useRef<() => void>(() => {});
+    modeTypeRef.current = modeType;
+    timerStateRef.current = timerState;
+    const [countdownPhase, setCountdownPhase] = useState<'Ready' | 'Steady' | 'Go' | null>(null);
+    const [workoutElapsed, setWorkoutElapsed] = useState(0);
+    const workoutTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const countdownTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const unflushedWorkoutSecsRef = useRef(0);
+
+    useEffect(() => {
+        return () => {
+            if (workoutTimerRef.current) clearInterval(workoutTimerRef.current);
+            countdownTimeoutsRef.current.forEach(t => clearTimeout(t));
+            // Flush any remaining workout seconds on unmount
+            if (unflushedWorkoutSecsRef.current > 0 && supabaseUserId) {
+                supabase.rpc('increment_workout_time', {
+                    p_user_id: supabaseUserId,
+                    p_seconds: unflushedWorkoutSecsRef.current,
+                }).then(null, () => {});
+            }
+        };
+    // supabaseUserId is stable for screen lifetime
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Cleanup completion timer on unmount
     useEffect(() => {
@@ -656,7 +689,36 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // HOST: wrap setLightsOut to also emit play/pause sync events.
     // If not a session host (or no sessionId), this is identical to setLightsOut.
     const hasRecordedWatchRef = useRef(false);
+
+    // Intercepts the play *intent* from the player's Play button BEFORE the video
+    // actually plays. In workout mode (timer not yet running) we suppress playback
+    // and kick off the Ready/Steady/Go countdown instead; the video is started
+    // imperatively when the countdown finishes. Returning false = "don't play".
+    const handlePlayRequest = useCallback((): boolean => {
+        if (modeTypeRef.current === 'workout' && timerStateRef.current !== 'running') {
+            if (timerStateRef.current === 'idle') {
+                startWorkoutCallbackRef.current();
+            }
+            // If already counting down, just ignore the extra press.
+            return false;
+        }
+        return true;
+    // refs are stable; startWorkout is invoked via ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handlePlayStateChange = useCallback((playing: boolean) => {
+        // Safety net: if the video somehow starts playing in workout mode before
+        // the timer is running (e.g. autoplay), pause it back. The Play button is
+        // already handled earlier by handlePlayRequest, so this rarely fires.
+        if (playing && modeTypeRef.current === 'workout' && timerStateRef.current !== 'running') {
+            sharedPlayerRef.current?.pauseVideo();
+            if (timerStateRef.current === 'idle') {
+                startWorkoutCallbackRef.current();
+            }
+            return;
+        }
+
         setLightsOut(playing);
 
         // Record watch on first play
@@ -1035,6 +1097,87 @@ function VideoPlayerScreen({ route, navigation }: any) {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedFaq((prev) => (prev === index ? null : index));
     }, []);
+
+    const formatWorkoutTime = (secs: number) => {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    };
+
+    const stopWorkoutTimer = useCallback(() => {
+        if (workoutTimerRef.current) {
+            clearInterval(workoutTimerRef.current);
+            workoutTimerRef.current = null;
+        }
+        countdownTimeoutsRef.current.forEach(t => clearTimeout(t));
+        countdownTimeoutsRef.current = [];
+    }, []);
+
+    const flushWorkoutSeconds = useCallback(() => {
+        const secs = unflushedWorkoutSecsRef.current;
+        if (secs <= 0 || !supabaseUserId) return;
+        unflushedWorkoutSecsRef.current = 0;
+        supabase.rpc('increment_workout_time', {
+            p_user_id: supabaseUserId,
+            p_seconds: secs,
+        }).then(null, () => {
+            unflushedWorkoutSecsRef.current += secs;
+        });
+    }, [supabaseUserId]);
+
+    const startWorkout = useCallback(() => {
+        stopWorkoutTimer();
+        setWorkoutElapsed(0);
+        unflushedWorkoutSecsRef.current = 0;
+        setTimerState('countdown');
+        setCountdownPhase('Ready');
+
+        const t1 = setTimeout(() => {
+            setCountdownPhase('Steady');
+            const t2 = setTimeout(() => {
+                setCountdownPhase('Go');
+                const t3 = setTimeout(() => {
+                    setCountdownPhase(null);
+                    setTimerState('running');
+                    timerStateRef.current = 'running'; // update ref immediately so handlePlayStateChange sees it before next render
+                    sharedPlayerRef.current?.resumeVideo();
+                    workoutTimerRef.current = setInterval(() => {
+                        unflushedWorkoutSecsRef.current += 1;
+                        setWorkoutElapsed(prev => prev + 1);
+                    }, 1000);
+                }, 1000);
+                countdownTimeoutsRef.current.push(t3);
+            }, 1000);
+            countdownTimeoutsRef.current.push(t2);
+        }, 1000);
+        countdownTimeoutsRef.current.push(t1);
+    }, [stopWorkoutTimer]);
+
+    const resetWorkout = useCallback(() => {
+        stopWorkoutTimer();
+        flushWorkoutSeconds();
+        setTimerState('idle');
+        setCountdownPhase(null);
+        setWorkoutElapsed(0);
+        sharedPlayerRef.current?.pauseVideo();
+    }, [stopWorkoutTimer, flushWorkoutSeconds]);
+
+    // Keep the ref current so handlePlayStateChange can call startWorkout without stale closure
+    startWorkoutCallbackRef.current = startWorkout;
+
+    const switchViewMode = useCallback((mode: 'watch' | 'workout') => {
+        if (mode === 'watch') {
+            resetWorkout();
+        } else {
+            // Entering workout mode — pause video and reset timer to idle
+            sharedPlayerRef.current?.pauseVideo();
+            stopWorkoutTimer();
+            setTimerState('idle');
+            setCountdownPhase(null);
+            setWorkoutElapsed(0);
+        }
+        setModeType(mode);
+    }, [resetWorkout, stopWorkoutTimer]);
 
     const activeProgram = useMemo(() => {
         if (!allowInvite) return undefined;
@@ -1590,6 +1733,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             </View>
                         ) : undefined}
                         onPlayStateChange={handlePlayStateChange}
+                        onPlayRequest={handlePlayRequest}
                         userId={supabaseUserId ?? undefined}
                         onSeekForward={triggerCompletionCheck}
                         onVideoEnd={handleVideoEndCallback}
@@ -1866,71 +2010,158 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     }}
                 />
 
-                {/* Everything below reaction buttons dims during playback */}
-                <Animated.View style={{ opacity: panelDimAnim, flex: 1 }}>
-
-                    {/* The ONE shared scroll container — drives the video resize
-                        for every tab. Each tab renders plain content (no inner
-                        ScrollView), so scroll position + video height stay in sync
-                        regardless of which tab is active. */}
-                    <ScrollView
-                        ref={sharedScrollRef}
-                        style={panelStyles.scrollArea}
-                        contentContainerStyle={{ minHeight: SCREEN_HEIGHT }}
-                        showsVerticalScrollIndicator={false}
-                        onScroll={handleTabScroll}
-                        scrollEventThrottle={16}
-                        keyboardShouldPersistTaps="handled"
+                {/* Mode Toggle — Workout / Watch */}
+                <View style={panelStyles.modeToggleRow}>
+                    <TouchableOpacity
+                        style={[panelStyles.modeToggleBtn, modeType === 'workout' && panelStyles.modeToggleBtnActive]}
+                        onPress={() => switchViewMode('workout')}
+                        activeOpacity={0.8}
                     >
-                        {activeTab === 'social' ? renderSocialContent()
-                            : activeTab === 'requirements' ? renderRequirementsContent()
-                            : renderFaqQaContent()}
-                    </ScrollView>
+                        <Text style={[panelStyles.modeToggleText, modeType === 'workout' && panelStyles.modeToggleTextActive]}>
+                            Workout Mode
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[panelStyles.modeToggleBtn, modeType === 'watch' && panelStyles.modeToggleBtnActive]}
+                        onPress={() => switchViewMode('watch')}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[panelStyles.modeToggleText, modeType === 'watch' && panelStyles.modeToggleTextActive]}>
+                            Watch Mode
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
-                    {/* Tab order: Social → Requirements → FAQ & Q&A */}
-                    <View style={panelStyles.tabRow}>
-                        {allowInvite && (
+                {modeType === 'watch' ? (
+                    /* Everything below reaction buttons dims during playback */
+                    <Animated.View style={{ opacity: panelDimAnim, flex: 1 }}>
+
+                        {/* The ONE shared scroll container — drives the video resize
+                            for every tab. Each tab renders plain content (no inner
+                            ScrollView), so scroll position + video height stay in sync
+                            regardless of which tab is active. */}
+                        <ScrollView
+                            ref={sharedScrollRef}
+                            style={panelStyles.scrollArea}
+                            contentContainerStyle={{ minHeight: SCREEN_HEIGHT }}
+                            showsVerticalScrollIndicator={false}
+                            onScroll={handleTabScroll}
+                            scrollEventThrottle={16}
+                            keyboardShouldPersistTaps="handled"
+                        >
+                            {activeTab === 'social' ? renderSocialContent()
+                                : activeTab === 'requirements' ? renderRequirementsContent()
+                                : renderFaqQaContent()}
+                        </ScrollView>
+
+                        {/* Tab order: Social → Requirements → FAQ & Q&A */}
+                        <View style={panelStyles.tabRow}>
+                            {allowInvite && (
+                                <TouchableOpacity
+                                    style={[panelStyles.tab, activeTab === 'social' && panelStyles.tabActive]}
+                                    onPress={() => switchTab('social')}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
+                                        {(() => {
+                                            const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
+                                            const fallback = Math.max(0, (viewerCount || 1) - 1);
+                                            const n = liveViewers.length > 0 ? exactCount : fallback;
+                                            return n > 0 ? (
+                                                <View style={panelStyles.socialLiveChip}>
+                                                    <View style={panelStyles.socialLiveDot} />
+                                                    <Text style={panelStyles.socialLiveChipText}>{n}</Text>
+                                                </View>
+                                            ) : null;
+                                        })()}
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+
                             <TouchableOpacity
-                                style={[panelStyles.tab, activeTab === 'social' && panelStyles.tabActive]}
-                                onPress={() => switchTab('social')}
+                                style={[panelStyles.tab, activeTab === 'requirements' && panelStyles.tabActive]}
+                                onPress={() => switchTab('requirements')}
                             >
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                    <Text style={[panelStyles.tabText, activeTab === 'social' && panelStyles.tabTextActive]}>Community</Text>
-                                    {(() => {
-                                        const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
-                                        const fallback = Math.max(0, (viewerCount || 1) - 1);
-                                        const n = liveViewers.length > 0 ? exactCount : fallback;
-                                        return n > 0 ? (
-                                            <View style={panelStyles.socialLiveChip}>
-                                                <View style={panelStyles.socialLiveDot} />
-                                                <Text style={panelStyles.socialLiveChipText}>{n}</Text>
-                                            </View>
-                                        ) : null;
-                                    })()}
-                                </View>
+                                <Text style={[panelStyles.tabText, activeTab === 'requirements' && panelStyles.tabTextActive]}>
+                                    Requirements
+                                </Text>
                             </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[panelStyles.tab, activeTab === 'faq-qa' && panelStyles.tabActive]}
+                                onPress={() => switchTab('faq-qa')}
+                            >
+                                <Text style={[panelStyles.tabText, activeTab === 'faq-qa' && panelStyles.tabTextActive]}>
+                                    FAQ & Q&A
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                    </Animated.View>
+                ) : (
+                    /* Workout Mode panel */
+                    <View style={panelStyles.workoutPanel}>
+                        {timerState === 'countdown' && countdownPhase ? (
+                            <Text style={panelStyles.countdownText}>{countdownPhase}</Text>
+                        ) : (
+                            <>
+                                {(() => {
+                                    const RING_SIZE = 220;
+                                    const STROKE = 8;
+                                    const RADIUS = (RING_SIZE - STROKE) / 2;
+                                    const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+                                    // One full rotation every 60 s, repeating
+                                    const progress = timerState === 'running'
+                                        ? (workoutElapsed % 60) / 60
+                                        : 0;
+                                    const dashOffset = CIRCUMFERENCE * (1 - progress);
+                                    return (
+                                        <View style={{ width: RING_SIZE, height: RING_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+                                            <Svg width={RING_SIZE} height={RING_SIZE} style={{ position: 'absolute' }}>
+                                                {/* Track */}
+                                                <Circle
+                                                    cx={RING_SIZE / 2}
+                                                    cy={RING_SIZE / 2}
+                                                    r={RADIUS}
+                                                    stroke="rgba(255,255,255,0.08)"
+                                                    strokeWidth={STROKE}
+                                                    fill="none"
+                                                />
+                                                {/* Progress arc */}
+                                                <Circle
+                                                    cx={RING_SIZE / 2}
+                                                    cy={RING_SIZE / 2}
+                                                    r={RADIUS}
+                                                    stroke="#FF6B00"
+                                                    strokeWidth={STROKE}
+                                                    fill="none"
+                                                    strokeDasharray={CIRCUMFERENCE}
+                                                    strokeDashoffset={dashOffset}
+                                                    strokeLinecap="round"
+                                                    rotation="-90"
+                                                    origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+                                                />
+                                            </Svg>
+                                            <Text style={panelStyles.timerText}>{formatWorkoutTime(workoutElapsed)}</Text>
+                                            <Text style={panelStyles.timerLabel}>
+                                                {timerState === 'running' ? 'in progress' : 'ready'}
+                                            </Text>
+                                        </View>
+                                    );
+                                })()}
+                                {timerState === 'idle' ? (
+                                    <TouchableOpacity style={panelStyles.startBtn} onPress={startWorkout} activeOpacity={0.8}>
+                                        <Text style={panelStyles.startBtnText}>Start</Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <TouchableOpacity style={panelStyles.resetBtn} onPress={resetWorkout} activeOpacity={0.8}>
+                                        <Text style={panelStyles.resetBtnText}>Stop</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </>
                         )}
-
-                        <TouchableOpacity
-                            style={[panelStyles.tab, activeTab === 'requirements' && panelStyles.tabActive]}
-                            onPress={() => switchTab('requirements')}
-                        >
-                            <Text style={[panelStyles.tabText, activeTab === 'requirements' && panelStyles.tabTextActive]}>
-                                Requirements
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[panelStyles.tab, activeTab === 'faq-qa' && panelStyles.tabActive]}
-                            onPress={() => switchTab('faq-qa')}
-                        >
-                            <Text style={[panelStyles.tabText, activeTab === 'faq-qa' && panelStyles.tabTextActive]}>
-                                FAQ & Q&A
-                            </Text>
-                        </TouchableOpacity>
                     </View>
-
-                </Animated.View>
+                )}
             </View>
             )}
         </KeyboardAvoidingView>
@@ -2108,6 +2339,85 @@ const panelStyles = StyleSheet.create({
         fontSize: 13,
         lineHeight: 20,
         marginTop: 10,
+    },
+    modeToggleRow: {
+        flexDirection: 'row',
+        marginHorizontal: 12,
+        marginTop: 8,
+        marginBottom: 4,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        padding: 3,
+        gap: 3,
+    },
+    modeToggleBtn: {
+        flex: 1,
+        paddingVertical: 8,
+        alignItems: 'center',
+        borderRadius: 8,
+    },
+    modeToggleBtnActive: {
+        backgroundColor: '#FF6B00',
+    },
+    modeToggleText: {
+        color: '#94A3B8',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    modeToggleTextActive: {
+        color: '#fff',
+    },
+    workoutPanel: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        gap: 12,
+    },
+    timerText: {
+        color: '#E89951',
+        fontSize: 56,
+        fontWeight: '900',
+        letterSpacing: 2,
+    },
+    timerLabel: {
+        color: '#607a94',
+        fontSize: 12,
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    countdownText: {
+        color: '#fff',
+        fontSize: 80,
+        fontWeight: '900',
+        letterSpacing: 2,
+    },
+    startBtn: {
+        backgroundColor: '#FF6B00',
+        paddingHorizontal: 56,
+        paddingVertical: 16,
+        borderRadius: 30,
+        marginTop: 12,
+    },
+    startBtnText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    resetBtn: {
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        paddingHorizontal: 56,
+        paddingVertical: 16,
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.15)',
+        marginTop: 12,
+    },
+    resetBtnText: {
+        color: '#94A3B8',
+        fontSize: 18,
+        fontWeight: '700',
     },
 });
 

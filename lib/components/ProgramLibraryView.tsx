@@ -180,7 +180,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
         const baseColor = THUMBNAIL_COLORS[index % THUMBNAIL_COLORS.length];
 
         return (
-            <View key={video.id} style={styles.videoCard}>
+            <View style={styles.videoCard}>
                 <LinearGradient
                     colors={[baseColor, baseColor]}
                     start={{ x: 0, y: 0 }}
@@ -230,7 +230,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                 {renderIntroCard(program)}
                 {program.videos.slice(0, 4).map((video, index) => (
                     <TouchableOpacity
-                        key={video.id}
+                        key={`${program.id}|${video.id}`}
                         onPress={() => openVideo(video, program)}
                         activeOpacity={0.8}
                     >

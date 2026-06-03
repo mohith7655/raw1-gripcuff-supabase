@@ -606,6 +606,37 @@ export const ProfileScreen = () => {
             <Text style={s.bodyText}>{bio}</Text>
           </ProfileCard>
 
+          {/* ── ACTIVITY TIME ────────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.activityTimeRow}>
+              <View style={s.activityTimeItem}>
+                <Text style={s.activityTimeValue}>
+                  {(() => {
+                    const sec = profile?.watchedSeconds ?? 0;
+                    if (sec < 60) return sec > 0 ? `${sec}s` : '0m';
+                    const h = Math.floor(sec / 3600);
+                    const m = Math.floor((sec % 3600) / 60);
+                    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                  })()}
+                </Text>
+                <Text style={s.activityTimeLabel}>Watch Time</Text>
+              </View>
+              <View style={s.activityTimeDivider} />
+              <View style={s.activityTimeItem}>
+                <Text style={s.activityTimeValue}>
+                  {(() => {
+                    const sec = (profile as any)?.workoutSeconds ?? 0;
+                    if (sec < 60) return sec > 0 ? `${sec}s` : '0m';
+                    const h = Math.floor(sec / 3600);
+                    const m = Math.floor((sec % 3600) / 60);
+                    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                  })()}
+                </Text>
+                <Text style={s.activityTimeLabel}>Workout Time</Text>
+              </View>
+            </View>
+          </ProfileCard>
+
           {/* ── BADGES ──────────────────────────────────────────────────────── */}
           <ProfileCard>
             <View style={s.cardHeaderRow}>
@@ -1246,6 +1277,34 @@ const s = StyleSheet.create({
     color: C.muted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  activityTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityTimeItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  activityTimeValue: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  activityTimeLabel: {
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  activityTimeDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   viewAllLink: {
     color: C.orange,

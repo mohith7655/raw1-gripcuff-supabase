@@ -685,7 +685,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             const isSelected = selectedVideo?.id === video.id;
                                             return (
                                                 <TouchableOpacity
-                                                    key={video.id}
+                                                    key={`${program.id}|${video.id}`}
                                                     onPress={() => handlePickVideo(video, program)}
                                                     activeOpacity={0.8}
                                                 >
