@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Mic, MicOff, PhoneOff, CircleUserRound, Flag } from 'lucide-react-native';
 import { ChallengeSessionService, ChallengeSession } from '../services/challengeSession.service';
+import { supabase } from '../core/config/supabase';
 import { playReminderBeep } from '../utils/webAudio';
 // Platform-split voice service — picks .native.ts (react-native-agora) on mobile
 // and .web.ts (agora-rtc-sdk-ng) on web, so voice works everywhere.
@@ -58,6 +59,14 @@ export const ChallengeVideoRoom: React.FC = () => {
     const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const countdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Ready-state sync via Realtime presence (no DB-publication dependency)
+    const myRole = isHost ? 'host' : 'guest';
+    const readyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+    const iMeReadyRef = useRef(false);
+    const startedRef = useRef(false);
+    const phaseRef = useRef<Phase>('waiting');
+    phaseRef.current = phase;
+
     // ── Agora voice init (works on native + web via platform-split service) ──
     useEffect(() => {
         let cancelled = false;
@@ -82,28 +91,50 @@ export const ChallengeVideoRoom: React.FC = () => {
         };
     }, []);
 
-    // ── Supabase Realtime — sync ready state ─────────────────────────
+    // ── Ready-state sync via Realtime presence ───────────────────────
+    // Both participants join `challenge:<sessionId>` and track { ready, finished }.
+    // Presence is delivered regardless of table-publication settings, so the
+    // timer reliably starts once BOTH have pressed "I'm Ready".
     useEffect(() => {
         if (!challengeSessionId) return;
 
-        const unsub = ChallengeSessionService.subscribe(challengeSessionId, (session) => {
-            const myReady   = isHost ? session.hostReady  : session.guestReady;
-            const theirReady = isHost ? session.guestReady : session.hostReady;
+        const ch = supabase.channel(`challenge:${challengeSessionId}`, {
+            config: { presence: { key: myRole } },
+        });
+        readyChannelRef.current = ch;
 
-            setOpponentReady(theirReady);
-            if (myReady) setIMeReady(true);
+        const evaluate = () => {
+            const state = ch.presenceState() as Record<string, any[]>;
+            const host = state['host']?.[0];
+            const guest = state['guest']?.[0];
+            const theirs = isHost ? guest : host;
 
-            if (session.hostReady && session.guestReady && phase === 'waiting') {
+            setOpponentReady(!!theirs?.ready);
+
+            if (!!host?.ready && !!guest?.ready && !startedRef.current && phaseRef.current === 'waiting') {
+                startedRef.current = true;
                 startCountdown();
             }
-
-            if (session.status === 'completed' && phase !== 'finished') {
+            if (theirs?.finished && phaseRef.current !== 'finished') {
                 finishWorkout(false);
             }
-        });
+        };
 
-        return unsub;
-    }, [challengeSessionId, phase]);
+        ch.on('presence', { event: 'sync' }, evaluate)
+            .on('presence', { event: 'join' }, evaluate)
+            .on('presence', { event: 'leave' }, evaluate)
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await ch.track({ role: myRole, ready: iMeReadyRef.current, finished: false });
+                }
+            });
+
+        return () => {
+            supabase.removeChannel(ch);
+            readyChannelRef.current = null;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [challengeSessionId, isHost]);
 
     // ── Countdown 5 → GO ────────────────────────────────────────────
     const startCountdown = () => {
@@ -157,6 +188,8 @@ export const ChallengeVideoRoom: React.FC = () => {
 
     const finishWorkout = (markDB: boolean) => {
         setPhase('finished');
+        // Let the opponent know via presence (idempotent)
+        readyChannelRef.current?.track({ role: myRole, ready: true, finished: true }).catch(() => {});
         if (markDB && challengeSessionId) {
             ChallengeSessionService.markCompleted(challengeSessionId).catch(() => {});
         }
@@ -165,9 +198,12 @@ export const ChallengeVideoRoom: React.FC = () => {
     // ── Press "I'm Ready" ────────────────────────────────────────────
     const handleReady = async () => {
         setIMeReady(true);
+        iMeReadyRef.current = true;
         if (challengeSessionId) {
-            const role = isHost ? 'host' : 'guest';
-            await ChallengeSessionService.setReady(challengeSessionId, role);
+            // Broadcast my ready state to the opponent over presence (reliable),
+            // and persist to the DB as a record.
+            readyChannelRef.current?.track({ role: myRole, ready: true, finished: false }).catch(() => {});
+            ChallengeSessionService.setReady(challengeSessionId, myRole).catch(() => {});
         } else {
             // No session (direct nav) — just start immediately for testing
             startCountdown();
@@ -393,12 +429,10 @@ const st = StyleSheet.create({
     countdownWrap: { alignItems: 'center', gap: 16 },
     countdownNumber: {
         color: '#fff',
-        fontSize: 140,
+        fontSize: 88,
         fontWeight: '900',
-        lineHeight: 160,
-        textShadowColor: ORANGE,
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 30,
+        lineHeight: 100,
+        textShadow: `0px 0px 24px ${ORANGE}` as any,
     },
     countdownLabel: {
         color: 'rgba(150,180,210,0.5)', fontSize: 14, fontWeight: '700', letterSpacing: 2,
@@ -411,16 +445,16 @@ const st = StyleSheet.create({
     },
     activeTimer: {
         color: '#fff',
-        fontSize: 88,
+        fontSize: 52,
         fontWeight: '800',
         fontVariant: ['tabular-nums'] as any,
-        lineHeight: 100,
-        letterSpacing: -2,
+        lineHeight: 60,
+        letterSpacing: -1,
     },
-    activeSubtitle: { color: 'rgba(150,180,210,0.45)', fontSize: 14 },
+    activeSubtitle: { color: 'rgba(150,180,210,0.45)', fontSize: 13 },
     progressRing: {
-        width: width * 0.7, height: 5, borderRadius: 3,
-        backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 16, overflow: 'hidden',
+        width: width * 0.55, height: 5, borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 14, overflow: 'hidden',
     },
     progressFill: {
         height: '100%', backgroundColor: ORANGE, borderRadius: 3,
