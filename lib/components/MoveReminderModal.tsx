@@ -15,7 +15,7 @@ import { IntensityComparisonCard, ExerciseName } from './IntensityComparisonCard
 import { TimeArrowPicker } from './TimeArrowPicker';
 import { AlarmPillSheet } from './AlarmPillSheet';
 import { AlarmListRow } from './AlarmListRow';
-import { ChallengeUserPickerModal } from './ChallengeUserPickerModal';
+import { ChallengeLobbyModal } from './ChallengeLobbyModal';
 import {
     MoveReminder,
     AlarmConfig,
@@ -253,7 +253,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 activeOpacity={0.85}
                             >
                                 <Zap color="#fff" size={16} />
-                                <Text style={s.challengeBtnText}>Challenge a Friend</Text>
+                                <Text style={s.challengeBtnText}>Start a Challenge</Text>
                             </TouchableOpacity>
 
                             {/* Enable toggle */}
@@ -470,8 +470,8 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
             </SafeAreaView>
         </Modal>
 
-        {/* Challenge friend picker */}
-        <ChallengeUserPickerModal
+        {/* Open challenge lobby — anyone present can challenge anyone */}
+        <ChallengeLobbyModal
             visible={challengePickerVisible}
             exerciseName={pickerExercise}
             workoutDurationSecs={workoutDurationMin * 60}
