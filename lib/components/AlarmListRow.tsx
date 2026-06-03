@@ -22,8 +22,8 @@ function parseTime(slot: string): { hour: string; minute: string; ampm: string }
 
 export function AlarmListRow({ alarm, isLast, onPress, onToggle, compact }: Props) {
     const { hour, minute, ampm } = parseTime(alarm.time);
-    const timeFontSize = compact ? 28 : 36;
-    const ampmFontSize = compact ? 13 : 16;
+    const timeFontSize = compact ? 16 : 18;
+    const ampmFontSize = compact ? 11 : 12;
 
     return (
         <View style={[r.row, isLast && r.rowLast]}>
@@ -65,7 +65,7 @@ const r = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 9,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: 'rgba(255,255,255,0.07)',
     },
@@ -81,21 +81,19 @@ const r = StyleSheet.create({
     },
     timeText: {
         color: '#fff',
-        fontWeight: '300',
-        letterSpacing: -1,
-        lineHeight: 42,
+        fontWeight: '600',
     },
     ampmText: {
         color: '#fff',
-        fontWeight: '400',
-        marginBottom: 4,
+        fontWeight: '600',
+        marginBottom: 1,
     },
     dimText: {
         color: 'rgba(150,180,210,0.28)',
     },
     editBtn: {
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         borderRadius: 8,
         backgroundColor: 'rgba(232,153,81,0.1)',
         borderWidth: 1,

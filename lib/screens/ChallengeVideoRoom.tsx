@@ -1,29 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    Dimensions, Platform, PermissionsAndroid, ActivityIndicator, Animated,
+    Dimensions, ActivityIndicator, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Mic, MicOff, PhoneOff, CircleUserRound, Flag } from 'lucide-react-native';
-import { AGORA_APP_ID } from '../core/config/api_keys';
 import { ChallengeSessionService, ChallengeSession } from '../services/challengeSession.service';
 import { playReminderBeep } from '../utils/webAudio';
-
-// react-native-agora is native-only. Wrap in try/catch so the web bundler
-// doesn't crash when it encounters the unresolvable native module.
-let createAgoraRtcEngine: any = null;
-let ChannelProfileType: any = { ChannelProfileCommunication: 0 };
-let ClientRoleType: any = { ClientRoleBroadcaster: 1 };
-try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const agora = require('react-native-agora');
-    createAgoraRtcEngine = agora.createAgoraRtcEngine;
-    ChannelProfileType = agora.ChannelProfileType;
-    ClientRoleType = agora.ClientRoleType;
-} catch {
-    // Web — Agora native SDK not available; voice call disabled, exercise UI still works
-}
+// Platform-split voice service — picks .native.ts (react-native-agora) on mobile
+// and .web.ts (agora-rtc-sdk-ng) on web, so voice works everywhere.
+import { AgoraVoice } from '../services/agora/AgoraVoice';
 
 type Phase = 'waiting' | 'countdown' | 'active' | 'finished';
 
@@ -55,7 +42,6 @@ export const ChallengeVideoRoom: React.FC = () => {
         workoutDurationSecs = 60, isHost = true, myUid,
     } = route.params;
 
-    const engineRef = useRef<any>(null);
     const [isMuted, setIsMuted] = useState(false);
     const [isConnecting, setIsConnecting] = useState(true);
 
@@ -72,35 +58,27 @@ export const ChallengeVideoRoom: React.FC = () => {
     const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const countdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // ── Agora voice init (native only) ──────────────────────────────
+    // ── Agora voice init (works on native + web via platform-split service) ──
     useEffect(() => {
-        if (Platform.OS === 'web') { setIsConnecting(false); return; }
+        let cancelled = false;
 
-        const init = async () => {
-            if (Platform.OS === 'android') {
-                await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-            }
-            const engine = createAgoraRtcEngine();
-            engineRef.current = engine;
-            engine.initialize({
-                appId: AGORA_APP_ID,
-                channelProfile: ChannelProfileType.ChannelProfileCommunication,
+        AgoraVoice.joinChannelWithToken(
+            token,
+            channelName,
+            0,
+            () => {},  // onSpeakerActive — not used here
+            () => {},  // onRemoteUidJoined
+            () => {},  // onRemoteUidLeft
+        )
+            .then(() => { if (!cancelled) setIsConnecting(false); })
+            .catch((e) => {
+                console.warn('[ChallengeVideoRoom] voice join failed:', e);
+                if (!cancelled) setIsConnecting(false);
             });
-            engine.enableAudio();
-            engine.disableVideo();
-            engine.addListener('onJoinChannelSuccess', () => setIsConnecting(false));
-            await engine.joinChannel(token, channelName, 0, {
-                clientRoleType: ClientRoleType.ClientRoleBroadcaster,
-                publishMicrophoneTrack: true,
-                publishCameraTrack: false,
-            });
-        };
-
-        init().catch(() => setIsConnecting(false));
 
         return () => {
-            engineRef.current?.leaveChannel();
-            engineRef.current?.release();
+            cancelled = true;
+            AgoraVoice.leaveChannel().catch(() => {});
         };
     }, []);
 
@@ -201,13 +179,14 @@ export const ChallengeVideoRoom: React.FC = () => {
         clearInterval(timerInterval.current!);
         clearInterval(countdownInterval.current!);
         if (challengeSessionId) ChallengeSessionService.cancel(challengeSessionId).catch(() => {});
-        engineRef.current?.leaveChannel();
+        AgoraVoice.leaveChannel().catch(() => {});
         navigation.goBack();
     };
 
     const toggleMute = () => {
-        engineRef.current?.muteLocalAudioStream(!isMuted);
-        setIsMuted(m => !m);
+        const next = !isMuted;
+        AgoraVoice.toggleMute(next).catch(() => {});
+        setIsMuted(next);
     };
 
     // ── Render ────────────────────────────────────────────────────────
@@ -350,7 +329,7 @@ export const ChallengeVideoRoom: React.FC = () => {
                     </View>
                 )}
 
-                {isConnecting && Platform.OS !== 'web' && (
+                {isConnecting && (
                     <View style={st.connectingBadge}>
                         <ActivityIndicator color="#E89951" size="small" />
                         <Text style={st.connectingText}>Connecting voice…</Text>
