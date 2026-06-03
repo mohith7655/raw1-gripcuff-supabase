@@ -18,7 +18,7 @@ import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
 import { supabase } from '../core/config/supabase';
 
-export type AccessType = null | 'gripcuff' | 'subscription';
+export type AccessType = null | 'gripcuff' | 'subscription' | 'trainer' | 'influencer';
 export type GripcuffStatus = null | 'has_gripcuff' | 'using_at_gym' | 'no_gripcuff';
 
 /**
@@ -33,6 +33,8 @@ export type GripcuffStatus = null | 'has_gripcuff' | 'using_at_gym' | 'no_gripcu
 const normalizeAccessType = (raw: string | null | undefined): AccessType => {
   if (raw === 'gripcuff') return 'gripcuff';
   if (raw === 'subscription' || raw === 'stripe') return 'subscription';
+  if (raw === 'trainer') return 'trainer';
+  if (raw === 'influencer') return 'influencer';
   return null;
 };
 
@@ -261,7 +263,7 @@ export const AccessProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [applyAccess, supabaseUserId]);
 
-  const hasAccess = accessType === 'gripcuff' || accessType === 'subscription';
+  const hasAccess = accessType === 'gripcuff' || accessType === 'subscription' || accessType === 'trainer' || accessType === 'influencer';
 
   // ─── Realtime: auto-grant when webhook writes to user_access (native Stripe) ─
   // For the native Stripe flow: Linking.openURL → user pays in browser →

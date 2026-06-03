@@ -50,6 +50,7 @@ import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
+import { TierBars } from '../components/profile/TierBars';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { RecommendedProgram } from '../services/recommendation.service';
 import { LiveSessionService, LiveSession } from '../services/liveSession.service';
@@ -791,15 +792,18 @@ const HomeScreenInner = () => {
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
-                  <View style={[styles.profileAvatarRingLarge, { borderColor: avatarRingColor, shadowColor: avatarRingColor }]}>
-                    <View style={styles.profileAvatarInnerLarge}>
-                      <WebSafeAvatar
-                        uri={profile?.profileImageUrl}
-                        size={72}
-                        borderRadius={16}
-                        fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
-                      />
+                  <View style={{ alignItems: 'center', gap: 6 }}>
+                    <View style={[styles.profileAvatarRingLarge, { borderColor: avatarRingColor, shadowColor: avatarRingColor }]}>
+                      <View style={styles.profileAvatarInnerLarge}>
+                        <WebSafeAvatar
+                          uri={profile?.profileImageUrl}
+                          size={72}
+                          borderRadius={16}
+                          fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
+                        />
+                      </View>
                     </View>
+                    <TierBars accessType={accessType} width={84} />
                   </View>
                   <View style={{ flex: 1 }}>
                   <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
@@ -2011,14 +2015,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    borderWidth: 2,
-    borderColor: '#C26A2D',
     padding: 2,
-    shadowColor: '#C26A2D',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
   },
   profileAvatarInner: {
     width: '100%',
@@ -2033,14 +2030,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#C26A2D',
     padding: 2,
-    shadowColor: '#C26A2D',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
   },
   profileAvatarInnerLarge: {
     width: '100%',

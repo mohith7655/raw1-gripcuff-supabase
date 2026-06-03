@@ -102,22 +102,22 @@ export const CONNECTION_GOAL_META: Record<ConnectionGoal, { label: string; emoji
 };
 
 export const HOBBY_META: Record<Hobby, { label: string; emoji: string }> = {
-    gym: { label: 'Gym', emoji: '' },
-    cycling: { label: 'Cycling', emoji: '' },
-    photography: { label: 'Photography', emoji: '' },
-    reading: { label: 'Reading', emoji: '' },
-    running: { label: 'Running', emoji: '' },
-    travel: { label: 'Travel', emoji: '' },
-    cooking: { label: 'Cooking', emoji: '' },
-    gaming: { label: 'Gaming', emoji: '' },
-    hiking: { label: 'Hiking', emoji: '' },
-    swimming: { label: 'Swimming', emoji: '' },
-    yoga: { label: 'Yoga', emoji: '' },
-    football: { label: 'Football', emoji: '' },
-    basketball: { label: 'Basketball', emoji: '' },
-    martial_arts: { label: 'Martial Arts', emoji: '' },
-    music: { label: 'Music', emoji: '' },
-    art: { label: 'Art', emoji: '' },
+    gym: { label: 'Gym', emoji: '🏋️' },
+    cycling: { label: 'Cycling', emoji: '🚴' },
+    photography: { label: 'Photography', emoji: '📷' },
+    reading: { label: 'Reading', emoji: '📚' },
+    running: { label: 'Running', emoji: '🏃' },
+    travel: { label: 'Travel', emoji: '✈️' },
+    cooking: { label: 'Cooking', emoji: '🍳' },
+    gaming: { label: 'Gaming', emoji: '🎮' },
+    hiking: { label: 'Hiking', emoji: '🥾' },
+    swimming: { label: 'Swimming', emoji: '🏊' },
+    yoga: { label: 'Yoga', emoji: '🧘' },
+    football: { label: 'Football', emoji: '⚽' },
+    basketball: { label: 'Basketball', emoji: '🏀' },
+    martial_arts: { label: 'Martial Arts', emoji: '🥋' },
+    music: { label: 'Music', emoji: '🎵' },
+    art: { label: 'Art', emoji: '🎨' },
 };
 
 export const AGE_GROUP_META: Record<AgeGroup, string> = {

@@ -32,6 +32,7 @@ import {
   ChevronRight,
   CircleUserRound,
   Dumbbell,
+  Eye,
   Flame,
   HeartHandshake,
   Home,
@@ -63,6 +64,7 @@ import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { ChipPill } from '../components/profile/ChipPill';
 import { LocationRow } from '../components/profile/LocationRow';
 import { ProfileCard } from '../components/profile/ProfileCard';
+import { TierBars } from '../components/profile/TierBars';
 
 // ── Fire glow badge wrapper (streak only) ─────────────────────────────────────
 function FireGlowBadge({ color, children }: { color: string; children: React.ReactNode }) {
@@ -422,6 +424,17 @@ export const ProfileScreen = () => {
           </TouchableOpacity>
 
           <View style={s.topRight}>
+            {/* Eye icon — preview profile as others see it */}
+            <TouchableOpacity
+              style={s.navBtn}
+              onPress={() => navigation.navigate('SocialProfileScreen', {
+                uid: supabaseUserId,
+                previewAsOther: true,
+              })}
+              activeOpacity={0.76}
+            >
+              <Eye size={23} color={C.text} strokeWidth={1.9} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={s.navBtn}
               onPress={() => navigation.navigate('AccountSettingsScreen')}
@@ -494,6 +507,8 @@ export const ProfileScreen = () => {
                 <Avatar uri={profile?.profileImageUrl} size={134} />
               )}
             </View>
+
+            <TierBars accessType={profile?.accessType} width={96} />
 
             {/* Avatar action icons — below picture, always visible */}
             <View style={s.avatarActions}>
@@ -1096,8 +1111,6 @@ const s = StyleSheet.create({
     width: 146,
     height: 146,
     borderRadius: 28,
-    borderWidth: 3,
-    borderColor: C.orange,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

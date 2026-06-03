@@ -333,10 +333,15 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const modeTypeRef = useRef<'watch' | 'workout'>('watch');
     const timerStateRef = useRef<'idle' | 'countdown' | 'running'>('idle');
     const startWorkoutCallbackRef = useRef<() => void>(() => {});
+    // Refs so the (earlier-defined) YouTube message effect can drive the timer
+    const startWorkoutTickRef = useRef<() => void>(() => {});
+    const pauseWorkoutTickRef = useRef<() => void>(() => {});
     modeTypeRef.current = modeType;
     timerStateRef.current = timerState;
     const [countdownPhase, setCountdownPhase] = useState<'Ready' | 'Steady' | 'Go' | null>(null);
     const [workoutElapsed, setWorkoutElapsed] = useState(0);
+    // True while an active workout's timer is paused because the video is paused
+    const [workoutPaused, setWorkoutPaused] = useState(false);
     const workoutTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const countdownTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
     const unflushedWorkoutSecsRef = useRef(0);
@@ -719,6 +724,16 @@ function VideoPlayerScreen({ route, navigation }: any) {
             return;
         }
 
+        // During an active workout, keep the timer in lockstep with the video:
+        // pausing the video pauses the timer, resuming the video resumes it.
+        if (modeTypeRef.current === 'workout' && timerStateRef.current === 'running') {
+            if (playing) {
+                startWorkoutTick();
+            } else {
+                pauseWorkoutTick();
+            }
+        }
+
         setLightsOut(playing);
 
         // Record watch on first play
@@ -1044,12 +1059,23 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             console.log('[Timer] video playing — YouTube playerState=1, elapsed will start counting');
                             isVideoPlayingRef.current = true;
                         }
+                        // Resume the workout clock alongside the video
+                        if (modeTypeRef.current === 'workout' && timerStateRef.current === 'running') {
+                            startWorkoutTickRef.current();
+                        }
                     } else if (state === 2) {
                         // Paused — stop counting wall-clock seconds
                         isVideoPlayingRef.current = false;
+                        // Pausing the video pauses the workout clock
+                        if (modeTypeRef.current === 'workout' && timerStateRef.current === 'running') {
+                            pauseWorkoutTickRef.current();
+                        }
                     } else if (state === 0) {
                         // Natural video end
                         isVideoPlayingRef.current = false;
+                        if (modeTypeRef.current === 'workout' && timerStateRef.current === 'running') {
+                            pauseWorkoutTickRef.current();
+                        }
                         if (elapsedSecondsRef.current < 5) elapsedSecondsRef.current = 5;
                         console.log('[Completion] YouTube ended, elapsed:', elapsedSecondsRef.current, 's');
                         handleVideoEndRef.current();
@@ -1113,6 +1139,26 @@ function VideoPlayerScreen({ route, navigation }: any) {
         countdownTimeoutsRef.current = [];
     }, []);
 
+    // Start the 1-second tick that advances the workout clock. Guarded so calling
+    // it twice (e.g. play event + countdown finish) never double-counts.
+    const startWorkoutTick = useCallback(() => {
+        if (workoutTimerRef.current) return;
+        setWorkoutPaused(false);
+        workoutTimerRef.current = setInterval(() => {
+            unflushedWorkoutSecsRef.current += 1;
+            setWorkoutElapsed(prev => prev + 1);
+        }, 1000);
+    }, []);
+
+    // Pause the tick (video paused) without losing elapsed time.
+    const pauseWorkoutTick = useCallback(() => {
+        if (workoutTimerRef.current) {
+            clearInterval(workoutTimerRef.current);
+            workoutTimerRef.current = null;
+        }
+        setWorkoutPaused(true);
+    }, []);
+
     const flushWorkoutSeconds = useCallback(() => {
         const secs = unflushedWorkoutSecsRef.current;
         if (secs <= 0 || !supabaseUserId) return;
@@ -1128,6 +1174,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const startWorkout = useCallback(() => {
         stopWorkoutTimer();
         setWorkoutElapsed(0);
+        setWorkoutPaused(false);
         unflushedWorkoutSecsRef.current = 0;
         setTimerState('countdown');
         setCountdownPhase('Ready');
@@ -1141,17 +1188,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     setTimerState('running');
                     timerStateRef.current = 'running'; // update ref immediately so handlePlayStateChange sees it before next render
                     sharedPlayerRef.current?.resumeVideo();
-                    workoutTimerRef.current = setInterval(() => {
-                        unflushedWorkoutSecsRef.current += 1;
-                        setWorkoutElapsed(prev => prev + 1);
-                    }, 1000);
+                    startWorkoutTick();
                 }, 1000);
                 countdownTimeoutsRef.current.push(t3);
             }, 1000);
             countdownTimeoutsRef.current.push(t2);
         }, 1000);
         countdownTimeoutsRef.current.push(t1);
-    }, [stopWorkoutTimer]);
+    }, [stopWorkoutTimer, startWorkoutTick]);
 
     const resetWorkout = useCallback(() => {
         stopWorkoutTimer();
@@ -1159,11 +1203,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
         setTimerState('idle');
         setCountdownPhase(null);
         setWorkoutElapsed(0);
+        setWorkoutPaused(false);
         sharedPlayerRef.current?.pauseVideo();
     }, [stopWorkoutTimer, flushWorkoutSeconds]);
 
     // Keep the ref current so handlePlayStateChange can call startWorkout without stale closure
     startWorkoutCallbackRef.current = startWorkout;
+    startWorkoutTickRef.current = startWorkoutTick;
+    pauseWorkoutTickRef.current = pauseWorkoutTick;
 
     const switchViewMode = useCallback((mode: 'watch' | 'workout') => {
         if (mode === 'watch') {
@@ -1175,6 +1222,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
             setTimerState('idle');
             setCountdownPhase(null);
             setWorkoutElapsed(0);
+            setWorkoutPaused(false);
         }
         setModeType(mode);
     }, [resetWorkout, stopWorkoutTimer]);
@@ -2144,7 +2192,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                             </Svg>
                                             <Text style={panelStyles.timerText}>{formatWorkoutTime(workoutElapsed)}</Text>
                                             <Text style={panelStyles.timerLabel}>
-                                                {timerState === 'running' ? 'in progress' : 'ready'}
+                                                {timerState === 'running'
+                                                    ? (workoutPaused ? 'paused' : 'in progress')
+                                                    : 'ready'}
                                             </Text>
                                         </View>
                                     );

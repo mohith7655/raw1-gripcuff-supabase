@@ -34,6 +34,17 @@ const CARD = '#111d2e';
 const BORDER = 'rgba(232,153,81,0.2)'; // accent card border
 
 type IntervalMode = '1hr' | '2hr' | 'custom';
+type ExerciseSelection = ExerciseName | 'Random';
+
+const EXERCISE_OPTIONS: ExerciseName[] = ['Squats', 'Leaning Pullups'];
+
+/** Resolve the picker selection to a concrete exercise, randomizing if 'Random'. */
+function resolveExercise(sel: ExerciseSelection): ExerciseName {
+    if (sel === 'Random') {
+        return EXERCISE_OPTIONS[Math.floor(Math.random() * EXERCISE_OPTIONS.length)];
+    }
+    return sel;
+}
 
 interface Props {
     visible: boolean;
@@ -67,7 +78,9 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
     const [intervalMode, setIntervalMode] = useState<IntervalMode>('1hr');
     const [customIntervalMins, setCustomIntervalMins] = useState('60');
     const [workoutDurationMin, setWorkoutDurationMin] = useState(DEFAULT_MOVE_REMINDER.workoutDurationMin);
-    const [exerciseName, setExerciseName] = useState<ExerciseName>('Squats');
+    const [exerciseName, setExerciseName] = useState<ExerciseSelection>('Squats');
+    // Concrete exercise handed to the challenge picker (random resolved at open time)
+    const [pickerExercise, setPickerExercise] = useState<ExerciseName>('Squats');
     const [savedTimes, setSavedTimes] = useState<string[]>([]);
     const [alarmConfigs, setAlarmConfigs] = useState<AlarmConfig[]>([]);
     const [selectedAlarm, setSelectedAlarm] = useState<AlarmConfig | null>(null);
@@ -236,7 +249,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                             {/* Challenge button */}
                             <TouchableOpacity
                                 style={s.challengeBtn}
-                                onPress={() => setChallengePickerVisible(true)}
+                                onPress={() => { setPickerExercise(resolveExercise(exerciseName)); setChallengePickerVisible(true); }}
                                 activeOpacity={0.85}
                             >
                                 <Zap color="#fff" size={16} />
@@ -357,7 +370,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                             {/* Exercise Selector */}
                             <Text style={[s.sectionLabel, { marginTop: 22 }]}>Exercise</Text>
                             <View style={s.chipRow}>
-                                {(['Squats', 'Leaning Pullups'] as ExerciseName[]).map(ex => (
+                                {(['Squats', 'Leaning Pullups', 'Random'] as ExerciseSelection[]).map(ex => (
                                     <TouchableOpacity
                                         key={ex}
                                         style={[s.chip, exerciseName === ex && s.chipActive]}
@@ -365,7 +378,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                         activeOpacity={0.75}
                                     >
                                         <Text style={[s.chipText, exerciseName === ex && s.chipTextActive]}>
-                                            {ex}
+                                            {ex === 'Random' ? '🎲 Random' : ex}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
@@ -460,7 +473,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
         {/* Challenge friend picker */}
         <ChallengeUserPickerModal
             visible={challengePickerVisible}
-            exerciseName={exerciseName}
+            exerciseName={pickerExercise}
             workoutDurationSecs={workoutDurationMin * 60}
             onClose={() => setChallengePickerVisible(false)}
             onChallengeStarted={(params) => {

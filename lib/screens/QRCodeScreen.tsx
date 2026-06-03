@@ -42,6 +42,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { HOBBY_META } from '../models/SocialProfile';
+import { TierBars } from '../components/profile/TierBars';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
 import { BADGE_FAMILIES, TIER_COLORS, getTierName } from '../services/badge.types';
 import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
@@ -281,8 +282,11 @@ export function QRCodeScreen() {
 
           {/* Identity */}
           <View style={s.identityRow}>
-            <View style={s.avatarRing}>
-              <Avatar uri={avatarUrl} size={64} />
+            <View style={{ alignItems: 'center', gap: 6 }}>
+              <View style={s.avatarRing}>
+                <Avatar uri={avatarUrl} size={64} />
+              </View>
+              <TierBars accessType={accessType} width={60} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.identityName} numberOfLines={1}>{displayName || 'Athlete'}</Text>

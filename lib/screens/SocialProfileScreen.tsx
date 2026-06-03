@@ -24,8 +24,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { LocationMapPreview } from '../components/profile/LocationMapPreview';
+import { TierBars } from '../components/profile/TierBars';
 import {
-    ArrowLeft, Briefcase, ChevronRight, Dumbbell, Edit2, Flame, Heart, Home,
+    ArrowLeft, Briefcase, ChevronRight, Dumbbell, Edit2, Eye, Flame, Heart, Home,
     MapPin, MessageCircle, QrCode, Settings, Trees, Trophy,
     UserCheck, UserPlus,
 } from 'lucide-react-native';
@@ -73,14 +75,14 @@ function Avatar({ uri, size = 80 }: { uri?: string | null; size?: number }) {
         return (
             <Image
                 source={{ uri }}
-                style={{ width: size, height: size, borderRadius: size / 2 }}
+                style={{ width: size, height: size, borderRadius: Math.round(size * 0.22) }}
                 onError={() => setErr(true)}
             />
         );
     }
     return (
         <View style={{
-            width: size, height: size, borderRadius: size / 2,
+            width: size, height: size, borderRadius: Math.round(size * 0.22),
             backgroundColor: C.bgCard,
             alignItems: 'center', justifyContent: 'center',
         }}>
@@ -119,7 +121,8 @@ function SectionCard({
 }
 
 function LocationCard({
-    title, icon, name, address, placeholder, isOwn, onEdit,
+    title, icon, name, address, placeholder, isOwn, onEdit, lat, lng,
+    onMapTouchStart, onMapTouchEnd,
 }: {
     title: string;
     icon: React.ReactNode;
@@ -128,6 +131,10 @@ function LocationCard({
     placeholder: string;
     isOwn: boolean;
     onEdit: () => void;
+    lat?: number | null;
+    lng?: number | null;
+    onMapTouchStart?: () => void;
+    onMapTouchEnd?: () => void;
 }) {
     const trimName = (name ?? '').trim();
     const trimAddr = (address ?? '').trim();
@@ -138,6 +145,11 @@ function LocationCard({
     const hasContent = !!primary;
 
     if (!isOwn && !hasContent) return null;
+
+    // Show the interactive map whenever we have coordinates, or on web where an
+    // address query still resolves. Web renders an expandable/pannable iframe.
+    const hasCoords = !!lat && !!lng;
+    const showMap = hasContent && (hasCoords || (Platform.OS === 'web' && !!trimAddr));
 
     const body = (
         <View style={s.locRow}>
@@ -159,6 +171,17 @@ function LocationCard({
             {isOwn ? (
                 <TouchableOpacity activeOpacity={0.7} onPress={onEdit}>{body}</TouchableOpacity>
             ) : body}
+            {showMap ? (
+                <LocationMapPreview
+                    lat={lat ?? 0}
+                    lng={lng ?? 0}
+                    address={trimAddr || primary}
+                    label=""
+                    isGym={false}
+                    onMapTouchStart={onMapTouchStart}
+                    onMapTouchEnd={onMapTouchEnd}
+                />
+            ) : null}
         </SectionCard>
     );
 }
@@ -228,7 +251,9 @@ export function SocialProfileScreen() {
     const { sendRequest } = useFriend();
 
     const uid       = (route.params?.uid as string) ?? supabaseUserId ?? '';
-    const isOwn     = uid === supabaseUserId;
+    // Preview mode: viewing your own profile as other people see it
+    const isPreview = route.params?.previewAsOther === true && uid === supabaseUserId;
+    const isOwn     = uid === supabaseUserId && !isPreview;
 
     const [user,        setUser]        = useState<User | null>(null);
     const [social,      setSocial]      = useState<SocialProfile | null>(null);
@@ -237,6 +262,8 @@ export function SocialProfileScreen() {
     const [loading,     setLoading]     = useState(true);
     const [refreshing,  setRefreshing]  = useState(false);
     const [connectBusy, setConnectBusy] = useState(false);
+    // Pause page scroll while a finger is panning a location map
+    const [scrollEnabled, setScrollEnabled] = useState(true);
 
     const load = useCallback(async (silent = false) => {
         if (!uid) return;
@@ -257,7 +284,7 @@ export function SocialProfileScreen() {
                 hobbies: sp?.hobbies,
             });
 
-            if (!isOwn && supabaseUserId) {
+            if (!isOwn && supabaseUserId && uid !== supabaseUserId) {
                 const status = await FriendService.getRequestStatus(supabaseUserId, uid);
                 setRelStatus(status);
             }
@@ -412,6 +439,13 @@ export function SocialProfileScreen() {
                 </View>
             </View>
 
+            {isPreview && (
+                <View style={s.previewBanner}>
+                    <Eye size={14} color={C.accent} />
+                    <Text style={s.previewBannerText}>Preview — this is how others see your profile</Text>
+                </View>
+            )}
+
             <ScrollView
                 refreshControl={
                     <RefreshControl
@@ -422,6 +456,7 @@ export function SocialProfileScreen() {
                     />
                 }
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={scrollEnabled}
                 contentContainerStyle={{ paddingBottom: isOwn ? 40 : 120 }}
             >
 
@@ -439,6 +474,7 @@ export function SocialProfileScreen() {
                             </TouchableOpacity>
                         )}
                     </View>
+                    <TierBars accessType={user?.accessType} width={80} />
                     <Text style={s.identityName}>{displayName}</Text>
                     {username ? <Text style={s.identityUsername}>@{username}</Text> : null}
                     {social?.openToConnect && (
@@ -459,6 +495,47 @@ export function SocialProfileScreen() {
                 </View>
 
                 <View style={s.body}>
+
+                    {/* ── Locations (right below connection section) ── */}
+                    <LocationCard
+                        title="Gym I go to"
+                        icon={<MapPin size={16} color={C.accent} />}
+                        name={social?.gymName}
+                        address={social?.gymArea || social?.gymAddress}
+                        lat={social?.gymLat}
+                        lng={social?.gymLng}
+                        placeholder="Add your gym location"
+                        isOwn={isOwn}
+                        onEdit={goToEdit}
+                        onMapTouchStart={() => setScrollEnabled(false)}
+                        onMapTouchEnd={() => setScrollEnabled(true)}
+                    />
+                    <LocationCard
+                        title="Home area"
+                        icon={<Home size={16} color={C.accent} />}
+                        name={social?.houseName}
+                        address={social?.houseAddress}
+                        lat={social?.houseLat}
+                        lng={social?.houseLng}
+                        placeholder="Add your home area"
+                        isOwn={isOwn}
+                        onEdit={goToEdit}
+                        onMapTouchStart={() => setScrollEnabled(false)}
+                        onMapTouchEnd={() => setScrollEnabled(true)}
+                    />
+                    <LocationCard
+                        title="Local park"
+                        icon={<Trees size={16} color={C.accent} />}
+                        name={social?.parkName}
+                        address={social?.parkAddress}
+                        lat={social?.parkLat}
+                        lng={social?.parkLng}
+                        placeholder="Add your local park"
+                        isOwn={isOwn}
+                        onEdit={goToEdit}
+                        onMapTouchStart={() => setScrollEnabled(false)}
+                        onMapTouchEnd={() => setScrollEnabled(true)}
+                    />
 
                     {/* ── About me ── */}
                     {(isOwn || social?.bio) && (
@@ -526,39 +603,6 @@ export function SocialProfileScreen() {
                             )}
                         </SectionCard>
                     )}
-
-                    {/* ── Gym ── */}
-                    <LocationCard
-                        title="Gym I go to"
-                        icon={<MapPin size={16} color={C.accent} />}
-                        name={social?.gymName}
-                        address={social?.gymArea || social?.gymAddress}
-                        placeholder="Add your gym location"
-                        isOwn={isOwn}
-                        onEdit={goToEdit}
-                    />
-
-                    {/* ── Home area ── */}
-                    <LocationCard
-                        title="Home area"
-                        icon={<Home size={16} color={C.accent} />}
-                        name={social?.houseName}
-                        address={social?.houseAddress}
-                        placeholder="Add your home area"
-                        isOwn={isOwn}
-                        onEdit={goToEdit}
-                    />
-
-                    {/* ── Local park ── */}
-                    <LocationCard
-                        title="Local park"
-                        icon={<Trees size={16} color={C.accent} />}
-                        name={social?.parkName}
-                        address={social?.parkAddress}
-                        placeholder="Add your local park"
-                        isOwn={isOwn}
-                        onEdit={goToEdit}
-                    />
 
                     {/* ── Hobbies ── */}
                     {(isOwn || (social?.hobbies && social.hobbies.length > 0)) && (
@@ -666,7 +710,20 @@ export function SocialProfileScreen() {
             </ScrollView>
 
             {/* ── Bottom CTA (other users) ── */}
-            {!isOwn && (
+            {isPreview && (
+                <View style={s.bottomCta}>
+                    <TouchableOpacity
+                        style={[s.ctaConnect, { flex: 1 }]}
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.85}
+                    >
+                        <Eye size={18} color="#fff" />
+                        <Text style={s.ctaConnectText}>Exit Preview</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {!isOwn && !isPreview && (
                 <View style={s.bottomCta}>
                     <TouchableOpacity
                         style={s.ctaMessage}
@@ -739,6 +796,25 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center', justifyContent: 'center',
     },
+    previewBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginHorizontal: 16,
+        marginBottom: 4,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        backgroundColor: 'rgba(232,153,81,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(232,153,81,0.3)',
+    },
+    previewBannerText: {
+        color: C.accent,
+        fontSize: 12,
+        fontWeight: '700',
+    },
 
     // Identity (avatar + name + username + open badge), centered
     identity: {
@@ -748,9 +824,7 @@ const s = StyleSheet.create({
         alignItems: 'center',
     },
     avatarRing: {
-        width: 108, height: 108, borderRadius: 54,
-        borderWidth: 3,
-        borderColor: C.accent,
+        width: 108, height: 108, borderRadius: 26,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 14,
     },

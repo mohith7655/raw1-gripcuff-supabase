@@ -53,6 +53,7 @@ import { ChipPill } from '../components/profile/ChipPill';
 import { LocationRow } from '../components/profile/LocationRow';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
+import { TierBars } from '../components/profile/TierBars';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -402,6 +403,7 @@ export function ScannedProfileScreen() {
           <View style={s.avatarRing}>
             <Avatar uri={user?.profileImageUrl} size={100} />
           </View>
+          <TierBars accessType={user?.accessType} width={88} />
           <Text style={s.name}>{displayName}</Text>
           {!!username && <Text style={s.handle}>@{username}</Text>}
           <View style={s.connectPill}>
