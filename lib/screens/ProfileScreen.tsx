@@ -334,6 +334,19 @@ export const ProfileScreen = () => {
   const workouts = streakData?.totalWorkouts  ?? profile?.completedWorkouts ?? 12;
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
 
+  // Avatar ring color based on gripcuff membership tier
+  const avatarRingColor = (() => {
+    switch (profile?.accessType) {
+      case 'starter':     return '#60A5FA'; // Starter     — light blue
+      case 'lifter':      return '#1E40AF'; // Lifter      — dark blue
+      case 'trainer':     return '#FB923C'; // Trainer     — light orange
+      case 'influencer':  return '#C26A2D'; // Influencer  — dark orange
+      case 'gripcuff':    return '#60A5FA'; // legacy gripcuff → Starter light blue
+      case 'subscription':return '#1E40AF'; // legacy subscription → Lifter dark blue
+      default:            return '#334155'; // No membership
+    }
+  })();
+
   // Location data
   const gymName    = social?.gymName?.trim()   || '';
   const gymAddress = splitAddress(social?.gymAddress || social?.gymArea, '').sub;
@@ -472,7 +485,7 @@ export const ProfileScreen = () => {
 
           {/* ── HERO ───────────────────────────────────────────────────────── */}
           <View style={s.hero}>
-            <View style={s.avatarRing}>
+            <View style={[s.avatarRing, { borderColor: avatarRingColor }]}>
               {avatarUploading ? (
                 <View style={{ width: 134, height: 134, borderRadius: 67, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
                   <ActivityIndicator color={C.orange} size="large" />
@@ -528,6 +541,33 @@ export const ProfileScreen = () => {
                 );
               })}
             </View>
+
+            {/* Location labels below privacy pills */}
+            {(gymName || homeName || parkName) && (
+              <View style={s.heroLocations}>
+                {gymName ? (
+                  <View style={s.heroLocationRow}>
+                    <Text style={s.heroLocationLabel}>Workout Area</Text>
+                    <Text style={s.heroLocationDash}> – </Text>
+                    <Text style={s.heroLocationValue} numberOfLines={1}>{gymName}</Text>
+                  </View>
+                ) : null}
+                {homeName ? (
+                  <View style={s.heroLocationRow}>
+                    <Text style={s.heroLocationLabel}>Home</Text>
+                    <Text style={s.heroLocationDash}> – </Text>
+                    <Text style={s.heroLocationValue} numberOfLines={1}>{homeName}</Text>
+                  </View>
+                ) : null}
+                {parkName ? (
+                  <View style={s.heroLocationRow}>
+                    <Text style={s.heroLocationLabel}>Hangout Area</Text>
+                    <Text style={s.heroLocationDash}> – </Text>
+                    <Text style={s.heroLocationValue} numberOfLines={1}>{parkName}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
 
           </View>
 
@@ -855,7 +895,7 @@ export const ProfileScreen = () => {
             </View>
             {gymName ? (
               <LocationRow
-                cardTitle="Gym I go to"
+                cardTitle="Workout Area"
                 name={gymName}
                 address={gymAddress}
                 iconComponent={MapPin}
@@ -876,7 +916,7 @@ export const ProfileScreen = () => {
               <>
                 {(gymName || homeName) ? <View style={{ height: 12 }} /> : null}
                 <LocationRow
-                  cardTitle="Local park"
+                  cardTitle="Hangout Area"
                   name={parkName}
                   address={parkAddress}
                   iconComponent={Trees}
@@ -1087,6 +1127,32 @@ const s = StyleSheet.create({
   privacyPillTextActive: {
     color: '#000000',
     fontWeight: '800',
+  },
+  heroLocations: {
+    gap: 4,
+    marginTop: 10,
+    alignSelf: 'center',
+  },
+  heroLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroLocationLabel: {
+    color: '#E89951',
+    fontSize: 12,
+    fontWeight: '700',
+    width: 96,
+  },
+  heroLocationDash: {
+    color: '#6b7280',
+    fontSize: 12,
+    marginHorizontal: 4,
+  },
+  heroLocationValue: {
+    color: '#d1d5db',
+    fontSize: 12,
+    fontWeight: '500',
+    maxWidth: 150,
   },
   basicInfoContainer: {
     width: '100%',

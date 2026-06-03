@@ -216,6 +216,17 @@ const HomeScreenInner = () => {
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
   const { accessType } = useAccess();
+  const avatarRingColor = (() => {
+    switch (accessType) {
+      case 'starter':      return '#60A5FA'; // light blue
+      case 'lifter':       return '#1E40AF'; // dark blue
+      case 'trainer':      return '#FB923C'; // light orange
+      case 'influencer':   return '#C26A2D'; // dark orange
+      case 'gripcuff':     return '#60A5FA'; // legacy → starter
+      case 'subscription': return '#1E40AF'; // legacy → lifter
+      default:             return '#334155'; // no tier
+    }
+  })();
   const { completedCount, totalGripCuff, allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
   const { incomingRequests, friends, acceptRequest, declineRequest } = useFriend();
@@ -690,14 +701,6 @@ const HomeScreenInner = () => {
             <AccessBadge />
           </View>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(194,106,45,0.15)', borderWidth: 1, borderColor: 'rgba(194,106,45,0.35)', borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6 }}
-            onPress={() => navigation.navigate('AllFavourites', { type: 'all' })}
-            activeOpacity={0.8}
-          >
-            <Heart color="#C26A2D" size={14} />
-            <Text style={{ color: '#C26A2D', fontSize: 13, fontWeight: '700' }}>Fav</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={styles.profileButton}
             onPress={() => setNotificationModalVisible(true)}
             activeOpacity={0.8}
@@ -788,7 +791,7 @@ const HomeScreenInner = () => {
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
-                  <View style={styles.profileAvatarRingLarge}>
+                  <View style={[styles.profileAvatarRingLarge, { borderColor: avatarRingColor, shadowColor: avatarRingColor }]}>
                     <View style={styles.profileAvatarInnerLarge}>
                       <WebSafeAvatar
                         uri={profile?.profileImageUrl}

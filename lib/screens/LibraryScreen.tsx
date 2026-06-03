@@ -173,51 +173,34 @@ export const LibraryScreen = () => {
         onScroll={onFloatScroll}
         scrollEventThrottle={16}
       >
-      {/* Header */}
+      {/* Header — matches Home screen */}
       <View style={{
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingVertical: 12,
       }}>
-        <View>
-          <Text style={{
-            color: '#ffffff',
-            fontSize: 24,
-            fontWeight: '800',
-          }}>Library</Text>
-          <Text style={{
-            color: 'rgba(180,200,220,0.6)',
-            fontSize: 12,
-            fontWeight: '400',
-            marginTop: 4,
-            lineHeight: 18,
-          }}>Explore single short phased exercises for every goal.</Text>
+        <View style={{ marginRight: 8 }}>
+          <Raw1Logo fontSize={24} />
         </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          {/* Customize button */}
+        <View style={{ flex: 1 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
             onPress={() => setShowCustomizeModal(true)}
             style={{
               backgroundColor: '#131f2e',
               borderRadius: 20,
-              paddingHorizontal: 14,
-              paddingVertical: 7,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
+              gap: 5,
               borderWidth: 1,
               borderColor: '#1c3a56',
             }}
           >
-            <Text style={{ fontSize: 13 }}>⚙️</Text>
-            <Text style={{
-              color: '#8aaccc',
-              fontSize: 13,
-              fontWeight: '500',
-            }}>Customize</Text>
+            <Text style={{ fontSize: 12 }}>⚙️</Text>
+            <Text style={{ color: '#8aaccc', fontSize: 12, fontWeight: '500' }}>Customize</Text>
           </TouchableOpacity>
           <NotificationBell size={24} />
         </View>
