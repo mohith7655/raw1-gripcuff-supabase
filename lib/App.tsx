@@ -10,6 +10,7 @@ import { useNotifications } from './hooks/useNotifications';
 import * as Notifications from 'expo-notifications';
 import { WorkoutReminderModal } from './components/WorkoutReminderModal';
 import { WorkoutReminderService } from './services/workoutReminder.service';
+import { EXERCISE_SQUAT_VIDEO_URL } from './constants/videoUrls';
 import { SessionReminderService } from './services/sessionReminder.service';
 import { reminderWatcherService, ForegroundAlarm } from './services/reminderWatcher.service';
 import { migrateLegacyReminders } from './services/moveReminder.service';
@@ -952,8 +953,23 @@ function MainApp() {
         onStartNow={(workout) => {
           setAlarmModalVisible(false);
           setActiveAlarm(null);
+          if (!navigationRef.isReady()) return;
+
+          // "Reminder to Move" → jump straight into a 1-minute squat in workout mode.
+          if (workout.source === 'dailyReminder') {
+            (navigationRef as any).navigate('VideoPlayer', {
+              videoId: 'move-squat',
+              title: 'Squats',
+              videoUrl: EXERCISE_SQUAT_VIDEO_URL,
+              initialMode: 'workout',
+              autoStartWorkout: true,
+              targetDurationSec: 60,
+            });
+            return;
+          }
+
           const targetVideoId = activeAlarm?.videoId || workout.videoId;
-          if (targetVideoId && navigationRef.isReady()) {
+          if (targetVideoId) {
             console.log('[ReminderWatcherService] navigation triggered', { videoId: targetVideoId });
             (navigationRef as any).navigate('VideoPlayer', {
               videoId: targetVideoId,

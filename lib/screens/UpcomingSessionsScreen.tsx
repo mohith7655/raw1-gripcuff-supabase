@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Calendar, Clock, Check, X, Dumbbell, UserRound, ArrowLeft, Play } from 'lucide-react-native';
+import { Calendar, Clock, Check, X, Dumbbell, UserRound, ArrowLeft, Play, Zap } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
 import { ScheduledSessionService } from '../services/scheduledSession.service';
+import { ChallengeSessionService, PreviousChallenge } from '../services/challengeSession.service';
 import { useUser } from '../providers/UserContext';
 import { TierAvatar } from '../components/profile/TierAvatar';
 
@@ -51,15 +52,26 @@ export const UpcomingSessionsScreen = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [startLoading, setStartLoading] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [previousChallenges, setPreviousChallenges] = useState<PreviousChallenge[]>([]);
+
+    const loadPreviousChallenges = React.useCallback(() => {
+        if (!supabaseUserId) return;
+        ChallengeSessionService.loadPreviousForUser(supabaseUserId)
+            .then(setPreviousChallenges)
+            .catch(() => {});
+    }, [supabaseUserId]);
 
     // Refresh sessions every time the screen comes into focus
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             refreshSessions();
+            loadPreviousChallenges();
         });
         return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [navigation]);
+    }, [navigation, loadPreviousChallenges]);
+
+    useEffect(() => { loadPreviousChallenges(); }, [loadPreviousChallenges]);
 
     // Map context WorkoutSession[] → SelfScheduledEntry[] shape used by this screen.
     const selfScheduled: SelfScheduledEntry[] = selfSessions.map(s => ({
@@ -76,7 +88,7 @@ export const UpcomingSessionsScreen = () => {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        try { await refreshSessions(); }
+        try { await refreshSessions(); loadPreviousChallenges(); }
         catch (e) { console.error(e); }
         finally { setRefreshing(false); }
     };
@@ -252,17 +264,21 @@ export const UpcomingSessionsScreen = () => {
     const previousMap = new Map(allPrevious.map(s => [s.id, s]));
     const previousSessions = Array.from(previousMap.values());
 
-    // Merge sessions + pastSelf into a single sorted list
+    // Merge sessions + pastSelf + challenges into a single sorted list
     type PreviousItem =
         | { kind: 'session'; data: typeof previousSessions[number] }
-        | { kind: 'self'; data: SelfScheduledEntry };
+        | { kind: 'self'; data: SelfScheduledEntry }
+        | { kind: 'challenge'; data: PreviousChallenge };
     const previous: PreviousItem[] = [
         ...previousSessions.map(s => ({ kind: 'session' as const, data: s })),
         ...pastSelf.map(e => ({ kind: 'self' as const, data: e })),
+        ...previousChallenges.map(c => ({ kind: 'challenge' as const, data: c })),
     ].sort((a, b) => {
-        const tsA = a.kind === 'session' ? toMs(a.data.scheduledAt) : toMs(a.data.scheduledFor);
-        const tsB = b.kind === 'session' ? toMs(b.data.scheduledAt) : toMs(b.data.scheduledFor);
-        return tsB - tsA;
+        const tsOf = (it: PreviousItem) =>
+            it.kind === 'session' ? toMs(it.data.scheduledAt)
+            : it.kind === 'self' ? toMs(it.data.scheduledFor)
+            : new Date(it.data.createdAt).getTime();
+        return tsOf(b) - tsOf(a);
     });
 
     if (loading && !pendingInvites.length && !pendingOutgoing.length && !upcomingSessions.length) {
@@ -626,6 +642,56 @@ export const UpcomingSessionsScreen = () => {
                                                 <Clock color="#555" size={14} />
                                                 <Text style={styles.pastDetailText}>{timeStr}</Text>
                                             </View>
+                                        </View>
+                                    </View>
+                                );
+                            }
+
+                            // Challenge entry
+                            if (item.kind === 'challenge') {
+                                const c = item.data;
+                                const { dateStr, timeStr } = formatDateTime(new Date(c.createdAt));
+                                return (
+                                    <View key={`challenge_${c.id}`} style={styles.pastCard}>
+                                        <Text style={styles.sessionTypeLabel}>Challenge</Text>
+                                        <View style={styles.cardHeader}>
+                                            <TierAvatar
+                                                uri={c.opponentAvatar}
+                                                size={44}
+                                                uid={c.opponentUid}
+                                                name={c.opponentName}
+                                                radius={10}
+                                                showBadge={false}
+                                                fallback={
+                                                    <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(255,107,0,0.12)' }]}>
+                                                        <Zap color={AppTheme.primaryColor} size={20} />
+                                                    </View>
+                                                }
+                                            />
+                                            <View style={[styles.headerText, { marginLeft: 12 }]}>
+                                                <Text style={styles.userName} numberOfLines={1}>You vs {c.opponentName}</Text>
+                                                <View style={styles.completedBadge}>
+                                                    <Text style={styles.completedText}>
+                                                        {c.status === 'completed' ? 'Completed' : 'Attended'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View style={styles.detailsRow}>
+                                            <View style={styles.detailHarp}>
+                                                <Calendar color="#555" size={14} />
+                                                <Text style={styles.pastDetailText}>{dateStr}</Text>
+                                            </View>
+                                            <View style={styles.detailHarp}>
+                                                <Clock color="#555" size={14} />
+                                                <Text style={styles.pastDetailText}>{timeStr}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={[styles.detailHarp, { marginTop: 8 }]}>
+                                            <Dumbbell color="#555" size={14} />
+                                            <Text style={[styles.pastDetailText, { flex: 1 }]} numberOfLines={1}>
+                                                {c.exerciseName} · {Math.round(c.durationSeconds / 60) || 1} min
+                                            </Text>
                                         </View>
                                     </View>
                                 );

@@ -214,6 +214,7 @@ export const ChallengeVideoRoom: React.FC = () => {
                 // "Go!" was the last phrase shown — start the workout
                 clearInterval(countdownInterval.current!);
                 setPhase('active');
+                if (challengeSessionId) ChallengeSessionService.markActive(challengeSessionId).catch(() => {});
                 startWorkoutTimer();
             } else {
                 showPhrase(); // "Steady", then "Go!"

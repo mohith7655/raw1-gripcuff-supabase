@@ -597,11 +597,7 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
                 );
               })()}
             </View>
-            {isMe ? (
-              <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
-                {formatWatchTime(entry.score ?? 0)}
-              </Text>
-            ) : (
+            {!isMe && period === 'alltime' ? (
               <TouchableOpacity
                 onPress={() => setChallengeTarget(entry)}
                 style={{ backgroundColor: 'rgba(255,107,0,0.12)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)', flexDirection: 'row', alignItems: 'center', gap: 4 }}
@@ -610,6 +606,10 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
                 <Text style={{ fontSize: 12 }}>🔥</Text>
                 <Text style={{ color: '#FF6B00', fontSize: 11, fontWeight: '700' }}>Challenge</Text>
               </TouchableOpacity>
+            ) : (
+              <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
+                {formatWatchTime(entry.score ?? 0)}
+              </Text>
             )}
           </View>
         );

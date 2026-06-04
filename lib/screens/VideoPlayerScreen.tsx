@@ -1377,6 +1377,27 @@ function VideoPlayerScreen({ route, navigation }: any) {
     startWorkoutTickRef.current = startWorkoutTick;
     pauseWorkoutTickRef.current = pauseWorkoutTick;
 
+    // ── Auto-start workout (e.g. "Reminder to Move" → 1-min squat) ───────────
+    const autoStartWorkout = route?.params?.autoStartWorkout === true;
+    const targetDurationSec: number | null = route?.params?.targetDurationSec ?? null;
+    const autoStartedRef = useRef(false);
+    useEffect(() => {
+        if (autoStartWorkout && modeType === 'workout' && timerState === 'idle' && !autoStartedRef.current) {
+            autoStartedRef.current = true;
+            const t = setTimeout(() => startWorkout(), 600); // let the player mount first
+            return () => clearTimeout(t);
+        }
+    }, [autoStartWorkout, modeType, timerState, startWorkout]);
+
+    // Auto-stop when the target duration (e.g. 60s squat set) is reached.
+    useEffect(() => {
+        if (targetDurationSec && timerState === 'running' && !workoutPaused && workoutElapsed >= targetDurationSec) {
+            sharedPlayerRef.current?.pauseVideo();
+            pauseWorkoutTick();
+            flushWorkoutSeconds();
+        }
+    }, [targetDurationSec, timerState, workoutPaused, workoutElapsed, pauseWorkoutTick, flushWorkoutSeconds]);
+
     const switchViewMode = useCallback((mode: 'watch' | 'workout') => {
         if (mode === 'watch') {
             resetWorkout();

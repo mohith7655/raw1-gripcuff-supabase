@@ -4,6 +4,18 @@ import { WebView } from 'react-native-webview';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
 
+// Dark-mode the embed (no native style support) by inverting + hue-rotating the
+// whole document — the classic readable-dark-map trick. Applied to <html> so
+// dynamically loaded tiles inherit it too.
+const DARK_MAP_CSS = `
+  (function() {
+    var s = document.createElement('style');
+    s.innerHTML = 'html{filter:invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9);background:#1d2530 !important;}';
+    document.head.appendChild(s);
+  })();
+  true;
+`;
+
 type Props = {
     lat: number;
     lng: number;
@@ -47,6 +59,7 @@ export function LocationMapPreview({
                     setBuiltInZoomControls={false}
                     androidLayerType="hardware"
                     startInLoadingState
+                    injectedJavaScript={DARK_MAP_CSS}
                     {...(Platform.OS === 'ios' ? { allowsInlineMediaPlayback: true } : {})}
                 />
 

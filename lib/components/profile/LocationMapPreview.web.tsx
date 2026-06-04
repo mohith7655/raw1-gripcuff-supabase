@@ -75,7 +75,7 @@ export function LocationMapPreview({
                             src={embedUrl}
                             width="100%"
                             height="180"
-                            style={({ border: 0, borderRadius: 12, display: 'block', touchAction: 'pan-x pan-y' } as any)}
+                            style={({ border: 0, borderRadius: 12, display: 'block', touchAction: 'pan-x pan-y', filter: 'invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9)' } as any)}
                             allowFullScreen
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"

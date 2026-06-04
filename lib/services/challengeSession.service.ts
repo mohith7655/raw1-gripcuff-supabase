@@ -15,6 +15,18 @@ export interface ChallengeSession {
     createdAt: string;
 }
 
+export interface PreviousChallenge {
+    id: string;
+    exerciseName: string;
+    durationSeconds: number;
+    status: string;
+    createdAt: string;
+    isHost: boolean;
+    opponentUid: string;
+    opponentName: string;
+    opponentAvatar: string | null;
+}
+
 function rowToSession(row: any): ChallengeSession {
     return {
         id: row.id,
@@ -121,6 +133,54 @@ export const ChallengeSessionService = {
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
+    },
+
+    /**
+     * Load previous (attended) challenges for a user — those that reached the
+     * active or completed state, with the opponent's display name/avatar
+     * resolved. Used by the "Previous Sessions" list.
+     */
+    async loadPreviousForUser(uid: string): Promise<PreviousChallenge[]> {
+        const { data, error } = await supabase
+            .from('challenge_sessions')
+            .select('*')
+            .or(`host_id.eq.${uid},guest_id.eq.${uid}`)
+            .in('status', ['active', 'completed'])
+            .order('created_at', { ascending: false });
+        if (error || !data) return [];
+
+        const sessions = data.map(rowToSession);
+        const opponentIds = Array.from(
+            new Set(sessions.map(s => (s.hostId === uid ? s.guestId : s.hostId)).filter(Boolean)),
+        );
+
+        const nameMap: Record<string, { name: string; avatar: string | null }> = {};
+        if (opponentIds.length > 0) {
+            const { data: profs } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .in('id', opponentIds);
+            (profs ?? []).forEach((p: any) => {
+                nameMap[p.id] = { name: p.full_name ?? 'Athlete', avatar: p.avatar_url ?? null };
+            });
+        }
+
+        return sessions.map((s) => {
+            const isHost = s.hostId === uid;
+            const opponentUid = isHost ? s.guestId : s.hostId;
+            const prof = nameMap[opponentUid];
+            return {
+                id: s.id,
+                exerciseName: s.exerciseName,
+                durationSeconds: s.durationSeconds,
+                status: s.status,
+                createdAt: s.createdAt,
+                isHost,
+                opponentUid,
+                opponentName: prof?.name ?? 'Athlete',
+                opponentAvatar: prof?.avatar ?? null,
+            };
+        });
     },
 
     /** Load pending challenge invites where user is the guest */
