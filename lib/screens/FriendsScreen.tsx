@@ -38,6 +38,7 @@ import { SocialProfileService } from '../services/socialProfile.service';
 import { RelationshipStatus } from '../models/Friend';
 import { User } from '../models/User';
 import { AppTheme } from '../core/theme/app_theme';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -63,32 +64,22 @@ type TabId = 'friends' | 'requests' | 'suggestions';
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 function Avatar({
-    uri, size = 48, online = false,
-}: { uri?: string | null; size?: number; online?: boolean }) {
-    const [err, setErr] = useState(false);
+    uri, size = 48, online = false, uid, name,
+}: { uri?: string | null; size?: number; online?: boolean; uid?: string | null; name?: string | null }) {
+    // Mirror the ring padding so the presence dot sits on the avatar's corner.
+    const STROKE = Math.max(2, Math.min(5, Math.round(size * 0.042)));
+    const GAP    = Math.max(2, Math.min(6, Math.round(size * 0.052)));
+    const pad    = GAP + STROKE;
     return (
-        <View style={{ width: size, height: size }}>
-            {uri && !err
-                ? <Image
-                    source={{ uri }}
-                    style={{ width: size, height: size, borderRadius: size / 2 }}
-                    onError={() => setErr(true)}
-                  />
-                : <View style={[{
-                    width: size, height: size, borderRadius: size / 2,
-                    backgroundColor: C.bgCard,
-                    alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 1, borderColor: C.border,
-                  }]}>
-                    <Text style={{ fontSize: size * 0.4 }}>👤</Text>
-                  </View>
-            }
+        <View style={{ position: 'relative' }}>
+            <TierAvatar uri={uri} size={size} uid={uid} name={name} showBadge={false} />
             {online && (
                 <View style={{
-                    position: 'absolute', bottom: 0, right: 0,
+                    position: 'absolute', bottom: pad - 1, right: pad - 1,
                     width: 12, height: 12, borderRadius: 6,
                     backgroundColor: C.green,
                     borderWidth: 2, borderColor: C.bg,
+                    zIndex: 20,
                 }} />
             )}
         </View>
@@ -260,7 +251,7 @@ function FriendRow({ user, onProfile, onMessage, onRemove }: {
 
     return (
         <TouchableOpacity style={s.friendRow} onPress={onProfile} activeOpacity={0.8}>
-            <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} />
+            <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} uid={user.uid} name={user.fullName} />
             <View style={s.rowInfo}>
                 <Text style={s.rowName} numberOfLines={1}>{user.fullName}</Text>
                 <Text style={s.rowSub} numberOfLines={1}>@{user.username}</Text>
@@ -432,7 +423,7 @@ function RequestsTab() {
                     const busy   = actionBusy === item.uid;
                     return (
                         <View key={item.uid} style={s.searchRow}>
-                            <Avatar uri={item.profileImageUrl} size={40} />
+                            <Avatar uri={item.profileImageUrl} size={40} uid={item.uid} name={item.fullName} />
                             <View style={s.rowInfo}>
                                 <Text style={s.rowName}>{item.fullName}</Text>
                                 <Text style={s.rowSub}>@{item.username}</Text>
@@ -480,7 +471,7 @@ function RequestsTab() {
                     const busy   = actionLoading === req.id;
                     return (
                         <View key={req.id} style={s.requestRow}>
-                            <Avatar uri={sender?.profileImageUrl} size={44} />
+                            <Avatar uri={sender?.profileImageUrl} size={44} uid={sender?.uid} name={sender?.fullName} />
                             <View style={s.rowInfo}>
                                 <Text style={s.rowName}>{sender?.fullName ?? '...'}</Text>
                                 <Text style={s.rowSub}>@{sender?.username ?? req.fromUid.slice(0, 8)}</Text>
@@ -519,7 +510,7 @@ function RequestsTab() {
                         const recipient = profiles[req.toUid];
                         return (
                             <View key={req.id} style={s.requestRow}>
-                                <Avatar uri={recipient?.profileImageUrl} size={44} />
+                                <Avatar uri={recipient?.profileImageUrl} size={44} uid={recipient?.uid} name={recipient?.fullName} />
                                 <View style={s.rowInfo}>
                                     <Text style={s.rowName}>{recipient?.fullName ?? '...'}</Text>
                                     <Text style={s.rowSub}>@{recipient?.username ?? req.toUid.slice(0, 8)}</Text>
@@ -605,7 +596,7 @@ function SuggestionsTab() {
                         onPress={() => navigation.navigate('SocialProfileScreen', { uid: item.uid })}
                         activeOpacity={0.85}
                     >
-                        <Avatar uri={item.avatarUrl} size={52} />
+                        <Avatar uri={item.avatarUrl} size={52} uid={item.uid} name={item.fullName} />
                         <View style={s.rowInfo}>
                             <Text style={s.rowName} numberOfLines={1}>{item.fullName}</Text>
                             <Text style={s.rowSub}>@{item.username}</Text>

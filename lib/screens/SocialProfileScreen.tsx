@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LocationMapPreview } from '../components/profile/LocationMapPreview';
-import { TierBars } from '../components/profile/TierBars';
+import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import {
     ArrowLeft, Briefcase, ChevronRight, Dumbbell, Edit2, Eye, Flame, Heart, Home,
     MapPin, MessageCircle, QrCode, Settings, Trees, Trophy,
@@ -265,6 +265,17 @@ export function SocialProfileScreen() {
     // Pause page scroll while a finger is panning a location map
     const [scrollEnabled, setScrollEnabled] = useState(true);
 
+    // Hide bottom CTA bar while scrolling, reveal when idle
+    const ctaAnim = useRef(new Animated.Value(1)).current;
+    const scrollIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleScroll = () => {
+        Animated.timing(ctaAnim, { toValue: 0, duration: 120, useNativeDriver: true }).start();
+        if (scrollIdleTimer.current) clearTimeout(scrollIdleTimer.current);
+        scrollIdleTimer.current = setTimeout(() => {
+            Animated.timing(ctaAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+        }, 500);
+    };
+
     const load = useCallback(async (silent = false) => {
         if (!uid) return;
         if (!silent) setLoading(true);
@@ -457,24 +468,31 @@ export function SocialProfileScreen() {
                 }
                 showsVerticalScrollIndicator={false}
                 scrollEnabled={scrollEnabled}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 contentContainerStyle={{ paddingBottom: isOwn ? 40 : 120 }}
             >
 
                 {/* ── Identity ── */}
                 <View style={s.identity}>
-                    <View style={s.avatarRing}>
-                        <Avatar uri={user?.profileImageUrl} size={96} />
-                        {isOwn && (
-                            <TouchableOpacity
-                                style={s.editFloat}
-                                onPress={goToEdit}
-                                activeOpacity={0.8}
-                            >
-                                <Edit2 size={12} color="#fff" />
-                            </TouchableOpacity>
-                        )}
+                    <View style={{ marginBottom: 14 }}>
+                        <TierAvatarRing
+                            accessType={user?.accessType}
+                            avatarSize={96}
+                            avatarRadius={Math.round(96 * 0.22)}
+                        >
+                            <Avatar uri={user?.profileImageUrl} size={96} />
+                            {isOwn && (
+                                <TouchableOpacity
+                                    style={s.editFloat}
+                                    onPress={goToEdit}
+                                    activeOpacity={0.8}
+                                >
+                                    <Edit2 size={12} color="#fff" />
+                                </TouchableOpacity>
+                            )}
+                        </TierAvatarRing>
                     </View>
-                    <TierBars accessType={user?.accessType} width={80} />
                     <Text style={s.identityName}>{displayName}</Text>
                     {username ? <Text style={s.identityUsername}>@{username}</Text> : null}
                     {social?.openToConnect && (
@@ -711,7 +729,7 @@ export function SocialProfileScreen() {
 
             {/* ── Bottom CTA (other users) ── */}
             {isPreview && (
-                <View style={s.bottomCta}>
+                <Animated.View style={[s.bottomCta, { opacity: ctaAnim }]}>
                     <TouchableOpacity
                         style={[s.ctaConnect, { flex: 1 }]}
                         onPress={() => navigation.goBack()}
@@ -720,11 +738,11 @@ export function SocialProfileScreen() {
                         <Eye size={18} color="#fff" />
                         <Text style={s.ctaConnectText}>Exit Preview</Text>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
             )}
 
             {!isOwn && !isPreview && (
-                <View style={s.bottomCta}>
+                <Animated.View style={[s.bottomCta, { opacity: ctaAnim }]}>
                     <TouchableOpacity
                         style={s.ctaMessage}
                         onPress={() => navigation.navigate('ChatRoom', {
@@ -762,7 +780,7 @@ export function SocialProfileScreen() {
                             {connectLabel()}
                         </Text>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
             )}
         </SafeAreaView>
     );
@@ -822,11 +840,6 @@ const s = StyleSheet.create({
         paddingTop: 12,
         paddingBottom: 18,
         alignItems: 'center',
-    },
-    avatarRing: {
-        width: 108, height: 108, borderRadius: 26,
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: 14,
     },
     editFloat: {
         position: 'absolute',

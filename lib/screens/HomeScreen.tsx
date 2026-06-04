@@ -21,6 +21,7 @@ import {
   PlusCircle,
   Accessibility,
   ChevronRight,
+  Zap,
   Clock,
   Dumbbell,
   Video as VideoIcon,
@@ -51,6 +52,7 @@ import { ChatService, getChatId } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
 import { TierBars } from '../components/profile/TierBars';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { RecommendedProgram } from '../services/recommendation.service';
 import { LiveSessionService, LiveSession } from '../services/liveSession.service';
@@ -61,6 +63,7 @@ import { DailyActivityService } from '../services/dailyActivity.service';
 import { supabase } from '../core/config/supabase';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
+import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
 import { MoveReminderService, MoveReminder, AlarmConfig, formatMoveTime12h } from '../services/moveReminder.service';
 import { AlarmPillSheet } from '../components/AlarmPillSheet';
 import { AlarmListRow } from '../components/AlarmListRow';
@@ -214,20 +217,10 @@ function RecommendationSection({
 
 const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
+  const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
   const { accessType } = useAccess();
-  const avatarRingColor = (() => {
-    switch (accessType) {
-      case 'starter':      return '#60A5FA'; // light blue
-      case 'lifter':       return '#1E40AF'; // dark blue
-      case 'trainer':      return '#FB923C'; // light orange
-      case 'influencer':   return '#C26A2D'; // dark orange
-      case 'gripcuff':     return '#60A5FA'; // legacy → starter
-      case 'subscription': return '#1E40AF'; // legacy → lifter
-      default:             return '#334155'; // no tier
-    }
-  })();
   const { completedCount, totalGripCuff, allVideos, gripCuffVideos, trainerVideos, bodyPartVideos } = useLibrary();
   const { pendingInvites, pendingOutgoing, completedSessions, upcomingSessions } = useWorkoutSession();
   const { incomingRequests, friends, acceptRequest, declineRequest } = useFriend();
@@ -793,17 +786,14 @@ const HomeScreenInner = () => {
                   activeOpacity={0.85}
                 >
                   <View style={{ alignItems: 'center', gap: 6 }}>
-                    <View style={[styles.profileAvatarRingLarge, { borderColor: avatarRingColor, shadowColor: avatarRingColor }]}>
-                      <View style={styles.profileAvatarInnerLarge}>
-                        <WebSafeAvatar
-                          uri={profile?.profileImageUrl}
-                          size={72}
-                          borderRadius={16}
-                          fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
-                        />
-                      </View>
-                    </View>
-                    <TierBars accessType={accessType} width={84} />
+                    <TierAvatar
+                      uri={profile?.profileImageUrl}
+                      size={72}
+                      accessType={accessType}
+                      name={profile?.fullName}
+                      radius={16}
+                      fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
                   <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
@@ -898,6 +888,33 @@ const HomeScreenInner = () => {
 
               {/* Daily Reminder Scheduler */}
               <DailyReminderCard userId={supabaseUserId ?? undefined} />
+
+              {/* Challenge Lobby entry card */}
+              <TouchableOpacity
+                style={homeChallengeStyles.card}
+                onPress={() => setChallengeLobbyVisible(true)}
+                activeOpacity={0.85}
+              >
+                <View style={homeChallengeStyles.iconWrap}>
+                  <Zap color="#FF6B00" size={18} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={homeChallengeStyles.title}>Enter Challenge Lobby</Text>
+                  <Text style={homeChallengeStyles.sub}>Compete live with anyone in the lobby</Text>
+                </View>
+                <ChevronRight color="#FF6B00" size={18} />
+              </TouchableOpacity>
+
+              <ChallengeLobbyModal
+                visible={challengeLobbyVisible}
+                exerciseName="Squats"
+                workoutDurationSecs={60}
+                onClose={() => setChallengeLobbyVisible(false)}
+                onChallengeStarted={(params) => {
+                  setChallengeLobbyVisible(false);
+                  navigation.navigate('ChallengeVideoRoom', params);
+                }}
+              />
 
               {/* ── Recently Watched + Favourites (stacked) ── */}
               {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
@@ -1477,9 +1494,11 @@ const HomeScreenInner = () => {
                             });
                           }}
                         >
-                          <WebSafeAvatar
+                          <TierAvatar
                             uri={friend.profileImageUrl}
                             size={36}
+                            uid={friend.uid}
+                            name={friend.fullName || friend.username}
                             fallback={
                               <View style={{ flex: 1, backgroundColor: 'rgba(79,195,247,0.12)', alignItems: 'center', justifyContent: 'center' }}>
                                 <CircleUserRound color="#4FC3F7" size={18} />
@@ -1531,9 +1550,11 @@ const HomeScreenInner = () => {
                       activeOpacity={0.7}
                       onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                     >
-                      <WebSafeAvatar
+                      <TierAvatar
                         uri={invite.hostAvatarUrl}
                         size={36}
+                        uid={invite.hostUid}
+                        name={invite.hostName}
                         fallback={
                           <View style={{ flex: 1, backgroundColor: 'rgba(194,106,45,0.12)', alignItems: 'center', justifyContent: 'center' }}>
                             <VideoIcon color="#C26A2D" size={18} />
@@ -1883,6 +1904,44 @@ const HomeScreenInner = () => {
 };
 
 export const HomeScreen = React.memo(HomeScreenInner);
+
+const homeChallengeStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#111d2e',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,0,0.3)',
+    marginHorizontal: 4,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,107,0,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,0,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  sub: {
+    color: '#4a6480',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+});
 
 const styles = StyleSheet.create({
   safeArea: {

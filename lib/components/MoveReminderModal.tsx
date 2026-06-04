@@ -234,8 +234,8 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                     {/* Header */}
                     <View style={s.header}>
                         <View style={s.titleBlock}>
-                            <Text style={s.title}>Reminder to Move</Text>
-                            <Text style={s.titleSubtitle}>Avoid a dangerous sedentary lifestyle by exercising for 1 minute each hour.</Text>
+                            <Text style={s.title}>Stay Active All Day</Text>
+                            <Text style={s.titleSubtitle}>Set minutes every hour to break the cycle.</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={s.closeBtn}>
                             <X color="#4a6480" size={22} />
@@ -253,12 +253,12 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 activeOpacity={0.85}
                             >
                                 <Zap color="#fff" size={16} />
-                                <Text style={s.challengeBtnText}>Start a Challenge</Text>
+                                <Text style={s.challengeBtnText}>Enter Challenge Lobby</Text>
                             </TouchableOpacity>
 
                             {/* Enable toggle */}
                             <View style={s.row}>
-                                <Text style={s.sectionLabel}>Enable Reminder to Move</Text>
+                                <Text style={s.sectionLabel}>Enable Movement Reminders</Text>
                                 <TouchableOpacity
                                     style={[s.togglePill, enabled && s.togglePillOn]}
                                     onPress={() => setEnabled(e => !e)}
@@ -268,13 +268,30 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 </TouchableOpacity>
                             </View>
 
+                            {/* Exercise Selector */}
+                            <Text style={[s.sectionLabel, { marginTop: 22 }]}>Exercise</Text>
+                            <View style={s.chipRow}>
+                                {(['Squats', 'Leaning Pullups', 'Random'] as ExerciseSelection[]).map(ex => (
+                                    <TouchableOpacity
+                                        key={ex}
+                                        style={[s.chip, exerciseName === ex && s.chipActive]}
+                                        onPress={() => setExerciseName(ex)}
+                                        activeOpacity={0.75}
+                                    >
+                                        <Text style={[s.chipText, exerciseName === ex && s.chipTextActive]}>
+                                            {ex === 'Random' ? '🎲 Random' : ex}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
                             {/* Start + End time side by side */}
                             <View style={s.timeDualRow}>
                                 <View style={s.timeHalf}>
                                     <Text style={s.sectionLabel}>Start Time</Text>
                                     <View style={s.card}>
                                         <TimeArrowPicker
-                                            compact
+
                                             hour={startHour}
                                             minute={startMinute}
                                             amPm={startAmPm}
@@ -289,7 +306,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                     <Text style={s.sectionLabel}>End Time</Text>
                                     <View style={s.card}>
                                         <TimeArrowPicker
-                                            compact
+
                                             hour={endHour}
                                             minute={endMinute}
                                             amPm={endAmPm}
@@ -301,11 +318,11 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 </View>
                             </View>
 
-                            {/* Active Workout Time (left) + Interval Between Reminders (right) */}
+                            {/* How long each session? (left) + How often? (right) */}
                             <View style={s.dualRow}>
-                                {/* Left — Active Workout Time */}
+                                {/* Left — How long each session? */}
                                 <View style={s.dualHalf}>
-                                    <Text style={[s.sectionLabel, { marginTop: 18 }]}>Active Workout Time</Text>
+                                    <Text style={[s.sectionLabel, { marginTop: 18 }]}>How long each session?</Text>
                                     <Text style={s.durationDisplay}>
                                         Duration: <Text style={{ color: ACCENT }}>{workoutDurationMin}</Text> min
                                     </Text>
@@ -333,9 +350,9 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                     </View>
                                 </View>
 
-                                {/* Right — Interval Between Reminders */}
+                                {/* Right — How often? */}
                                 <View style={s.dualHalf}>
-                                    <Text style={[s.sectionLabel, { marginTop: 18 }]}>Interval Between Reminders</Text>
+                                    <Text style={[s.sectionLabel, { marginTop: 18 }]}>How often?</Text>
                                     <View style={s.chipRow}>
                                         {(['1hr', '2hr', 'custom'] as IntervalMode[]).map(mode => (
                                             <TouchableOpacity
@@ -365,23 +382,6 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                         </View>
                                     )}
                                 </View>
-                            </View>
-
-                            {/* Exercise Selector */}
-                            <Text style={[s.sectionLabel, { marginTop: 22 }]}>Exercise</Text>
-                            <View style={s.chipRow}>
-                                {(['Squats', 'Leaning Pullups', 'Random'] as ExerciseSelection[]).map(ex => (
-                                    <TouchableOpacity
-                                        key={ex}
-                                        style={[s.chip, exerciseName === ex && s.chipActive]}
-                                        onPress={() => setExerciseName(ex)}
-                                        activeOpacity={0.75}
-                                    >
-                                        <Text style={[s.chipText, exerciseName === ex && s.chipTextActive]}>
-                                            {ex === 'Random' ? '🎲 Random' : ex}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
                             </View>
 
                             {/* Daily Summary */}
@@ -568,7 +568,8 @@ const s = StyleSheet.create({
         borderRadius: 14,
         borderWidth: 1,
         borderColor: BORDER,
-        padding: 10,
+        paddingVertical: 6,
+        overflow: 'hidden' as any,
     },
     timeDualRow: {
         flexDirection: 'row',

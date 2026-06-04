@@ -15,6 +15,7 @@ import { ActionSheet } from './ActionSheet';
 import { ConfirmDialog } from './ConfirmDialog';
 import { EditTweetModal } from './EditTweetModal';
 import { EditPostModal } from './EditPostModal';
+import { TierAvatar } from '../profile/TierAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -286,12 +287,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
       <View style={[styles.card, styles.tweetCard]}>
         <View style={styles.tweetRow}>
           <View style={styles.tweetAvatarCol}>
-            <View style={styles.avatarSm}>
-              {avatar
-                ? <Image source={{ uri: avatar }} style={styles.avatarSmImg} />
-                : <Text style={styles.avatarSmInitial}>{displayName.charAt(0).toUpperCase()}</Text>
-              }
-            </View>
+            <TierAvatar uri={avatar} size={34} uid={post.user_id} name={displayName} showBadge={false} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.tweetMeta}>
@@ -337,12 +333,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          {avatar
-            ? <Image source={{ uri: avatar }} style={styles.avatarImg} />
-            : <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
-          }
-        </View>
+        <TierAvatar uri={avatar} size={38} uid={post.user_id} name={displayName} radius={8} showBadge={false} />
         <View style={{ flex: 1 }}>
           <Text style={styles.displayName}>{displayName}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

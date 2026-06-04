@@ -19,6 +19,7 @@ import { StrangerInviteService } from '../services/StrangerInviteService';
 import { LiveSessionService } from '../services/liveSession.service';
 import { useUser } from '../providers/UserContext';
 import { useAuth } from '../providers/AuthContext';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -106,9 +107,18 @@ function ViewerRow({ entry, onJoin, onInvite, loading }: ViewerRowProps) {
     const color = avatarColor(entry.displayName);
     return (
         <View style={row.card}>
-            <View style={[row.avatar, { backgroundColor: color }]}>
-                <Text style={row.avatarText}>{initials(entry.displayName)}</Text>
-            </View>
+            <TierAvatar
+                uri={(entry as any).profilePhoto}
+                size={42}
+                uid={entry.uid}
+                name={entry.displayName}
+                showBadge={false}
+                fallback={
+                    <View style={[row.avatar, { backgroundColor: color }]}>
+                        <Text style={row.avatarText}>{initials(entry.displayName)}</Text>
+                    </View>
+                }
+            />
             <View style={row.info}>
                 <View style={row.nameRow}>
                     <Text style={row.name}>{entry.displayName}</Text>
@@ -147,9 +157,18 @@ function ScheduledRow({ entry, onJoin, onInvite, loading }: ScheduledRowProps) {
     const isSolo = !entry.isShared && !entry.partnerUid;
     return (
         <View style={row.card}>
-            <View style={[row.avatar, { backgroundColor: color }]}>
-                <Text style={row.avatarText}>{initials(entry.displayName)}</Text>
-            </View>
+            <TierAvatar
+                uri={(entry as any).profilePhoto}
+                size={42}
+                uid={entry.userId}
+                name={entry.displayName}
+                showBadge={false}
+                fallback={
+                    <View style={[row.avatar, { backgroundColor: color }]}>
+                        <Text style={row.avatarText}>{initials(entry.displayName)}</Text>
+                    </View>
+                }
+            />
             <View style={row.info}>
                 <View style={row.nameRow}>
                     <Text style={row.name}>{entry.displayName}</Text>

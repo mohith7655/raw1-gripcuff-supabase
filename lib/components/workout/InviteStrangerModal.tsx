@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Calendar, Dumbbell, UserPlus, X } from 'lucide-react-native';
 import { SocialOpenEntry, SocialScheduledEntry } from '../../hooks/useWorkoutSocialHub';
+import { TierAvatar } from '../profile/TierAvatar';
 
 const ACCENT = '#E89951';
 
@@ -62,12 +63,21 @@ function formatScheduledTime(ts: Date): string {
     );
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, uid, uri }: { name: string; uid?: string | null; uri?: string | null }) {
     const initial = (name || '?').charAt(0).toUpperCase();
     return (
-        <View style={[styles.avatar, { backgroundColor: avatarColor(name || '?') }]}>
-            <Text style={styles.avatarText}>{initial}</Text>
-        </View>
+        <TierAvatar
+            uri={uri}
+            size={36}
+            uid={uid}
+            name={name}
+            showBadge={false}
+            fallback={
+                <View style={[styles.avatar, { backgroundColor: avatarColor(name || '?') }]}>
+                    <Text style={styles.avatarText}>{initial}</Text>
+                </View>
+            }
+        />
     );
 }
 
@@ -129,7 +139,7 @@ export function InviteStrangerModal({
                         ) : (
                             live.map((user, i) => (
                                 <View key={user.uid} style={[styles.row, i < live.length - 1 && styles.rowBorder]}>
-                                    <Avatar name={user.displayName || user.username} />
+                                    <Avatar name={user.displayName || user.username} uid={user.uid} />
                                     <View style={styles.userBlock}>
                                         <Text style={styles.userName}>{user.displayName || user.username}</Text>
                                         <ViewerMeta user={user} />
@@ -162,7 +172,7 @@ export function InviteStrangerModal({
                                 const isFriend = !isMine && friendUids.includes(item.userId);
                                 return (
                                     <View key={item.id} style={[styles.row, i < scheduled.length - 1 && styles.rowBorder]}>
-                                        <Avatar name={item.displayName} />
+                                        <Avatar name={item.displayName} uid={item.userId} />
                                         <View style={styles.userBlock}>
                                             <Text style={styles.userName}>{item.displayName}</Text>
                                             <Text style={styles.userMeta}>{formatScheduledTime(item.scheduledFor)}</Text>
@@ -208,7 +218,7 @@ export function InviteStrangerModal({
                         ) : (
                             open.map((item, i) => (
                                 <View key={item.id} style={[styles.row, i < open.length - 1 && styles.rowBorder]}>
-                                    <Avatar name={item.hostName || 'Athlete'} />
+                                    <Avatar name={item.hostName || 'Athlete'} uid={item.hostUid} />
                                     <View style={styles.userBlock}>
                                         <Text style={styles.userName}>{item.title}</Text>
                                         <Text style={styles.userMeta}>

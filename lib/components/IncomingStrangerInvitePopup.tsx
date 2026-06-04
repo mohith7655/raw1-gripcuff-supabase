@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Dumbbell, Clock } from 'lucide-react-native';
 import { StrangerInvite } from '../services/StrangerInviteService';
+import { TierAvatar } from './profile/TierAvatar';
 
 const ACCENT = '#E89951';
 const TIMEOUT_SEC = 10;
@@ -22,20 +23,26 @@ type Props = {
     onDecline: (invite: StrangerInvite) => void;
 };
 
-function AvatarCircle({ name, photo }: { name: string; photo: string | null }) {
+function AvatarCircle({ name, photo, uid }: { name: string; photo: string | null; uid?: string | null }) {
     const initial = name.charAt(0).toUpperCase();
     const colors = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     const bg = colors[Math.abs(hash) % colors.length];
 
-    if (photo) {
-        return <Image source={{ uri: photo }} style={styles.avatar} />;
-    }
     return (
-        <View style={[styles.avatar, { backgroundColor: bg }]}>
-            <Text style={styles.avatarText}>{initial}</Text>
-        </View>
+        <TierAvatar
+            uri={photo}
+            size={54}
+            uid={uid}
+            name={name}
+            showBadge={false}
+            fallback={
+                <View style={[styles.avatar, { backgroundColor: bg }]}>
+                    <Text style={styles.avatarText}>{initial}</Text>
+                </View>
+            }
+        />
     );
 }
 
@@ -138,7 +145,7 @@ export function IncomingStrangerInvitePopup({ invite, onAccept, onDecline }: Pro
 
                 {/* Inviter profile */}
                 <View style={styles.profileRow}>
-                    <AvatarCircle name={inviterUsername} photo={inviterPhoto} />
+                    <AvatarCircle name={inviterUsername} photo={inviterPhoto} uid={invite.inviterId} />
                     <View style={styles.profileInfo}>
                         <Text style={styles.inviterName}>{inviterUsername}</Text>
                         {metaLine ? (

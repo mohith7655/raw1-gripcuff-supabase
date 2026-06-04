@@ -29,6 +29,8 @@ const toAppUser = (row: any): User => ({
     completedWorkouts: Number(row.completed_workouts ?? 0),
     watchedMinutes: Number(row.watched_minutes ?? 0),
     totalLiveSessions: Number(row.total_live_sessions ?? 0),
+    hasAccess: Boolean(row.has_access),
+    accessType: row.access_type ?? null,
 });
 
 const toFriendRequest = (row: any): FriendRequest => ({

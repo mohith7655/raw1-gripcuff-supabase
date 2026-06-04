@@ -28,6 +28,7 @@ import {
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { CreateClubModal } from '../components/clubs/CreateClubModal';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 
@@ -436,15 +437,7 @@ function LeaderboardTab() {
       <View style={s.lbSelfCard}>
         <View style={s.lbSelfInner}>
           <View style={s.lbAvatarWrap}>
-            {profile?.profileImageUrl ? (
-              <Image source={{ uri: profile.profileImageUrl }} style={s.lbSelfAvatar} />
-            ) : (
-              <View style={[s.lbSelfAvatar, s.lbSelfAvatarFallback]}>
-                <Text style={s.lbSelfAvatarLetter}>
-                  {(profile?.username || 'U')[0].toUpperCase()}
-                </Text>
-              </View>
-            )}
+            <TierAvatar uri={profile?.profileImageUrl} size={56} accessType={profile?.accessType ?? null} name={profile?.fullName || profile?.username} radius={12} />
             {myRank > 0 && (
               <View style={s.lbRankBubble}>
                 <Text style={s.lbRankBubbleText}>Rank {myRank}</Text>
@@ -487,13 +480,7 @@ function LeaderboardTab() {
               <Text style={[s.lbRank, { color: rankColor }]}>
                 {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
               </Text>
-              {entry.photoURL ? (
-                <Image source={{ uri: entry.photoURL }} style={s.lbAvatar} />
-              ) : (
-                <View style={[s.lbAvatar, s.lbAvatarFallback]}>
-                  <Text style={s.lbAvatarLetter}>{(entry.displayName || 'U')[0].toUpperCase()}</Text>
-                </View>
-              )}
+              <TierAvatar uri={entry.photoURL} size={44} uid={entry.uid} name={entry.displayName} radius={10} showBadge={false} />
               <View style={{ flex: 1 }}>
                 <Text style={[s.lbName, isMe && { color: ORANGE }]} numberOfLines={1}>
                   {entry.displayName || 'User'}{isMe ? ' (You)' : ''}
@@ -522,15 +509,7 @@ function ProfileTab() {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
       <Text style={s.tabPageTitle}>Profile</Text>
       <View style={s.profileCard}>
-        {profile?.profileImageUrl ? (
-          <Image source={{ uri: profile.profileImageUrl }} style={s.profileAvatar} />
-        ) : (
-          <View style={[s.profileAvatar, s.profileAvatarFallback]}>
-            <Text style={s.profileAvatarLetter}>
-              {(profile?.username || 'U')[0].toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <TierAvatar uri={profile?.profileImageUrl} size={80} accessType={profile?.accessType ?? null} name={profile?.fullName || profile?.username} radius={18} />
         <Text style={s.profileName}>{profile?.username || profile?.fullName || 'You'}</Text>
         <View style={s.profileStats}>
           <View style={s.profileStat}>

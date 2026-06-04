@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Users, UserPlus, X, Search, Check, MessageSquare } from 'lucide-react-native';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import type { Club } from './ClubsScreen';
 
 const { width: SW } = Dimensions.get('window');
@@ -154,12 +155,7 @@ function InviteModal({
 
             return (
               <View style={inviteStyles.resultRow}>
-                <View style={inviteStyles.avatar}>
-                  {item.avatar_url
-                    ? <Image source={{ uri: item.avatar_url }} style={inviteStyles.avatarImg} />
-                    : <Text style={inviteStyles.avatarInitial}>{initials}</Text>
-                  }
-                </View>
+                <TierAvatar uri={item.avatar_url} size={40} uid={item.id} name={name} showBadge={false} />
                 <View style={{ flex: 1 }}>
                   <Text style={inviteStyles.name}>{name}</Text>
                   {item.username && (
@@ -365,12 +361,7 @@ export function ClubDetailScreen() {
     const avatar = item.profiles?.avatar_url;
     return (
       <View style={styles.memberRow}>
-        <View style={styles.memberAvatar}>
-          {avatar
-            ? <Image source={{ uri: avatar }} style={styles.memberAvatarImg} />
-            : <Text style={styles.memberAvatarInitial}>{name.charAt(0).toUpperCase()}</Text>
-          }
-        </View>
+        <TierAvatar uri={avatar} size={38} uid={item.user_id} name={name} showBadge={false} />
         <Text style={styles.memberName} numberOfLines={1}>{name}</Text>
         <RoleBadge role={item.role} />
       </View>

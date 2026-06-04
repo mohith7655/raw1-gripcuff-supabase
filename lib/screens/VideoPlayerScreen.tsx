@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     View,
     Text,
+    Image,
     TouchableOpacity,
     StyleSheet,
     StatusBar,
@@ -58,7 +59,9 @@ import { CoWorkoutCameraTiles } from '../components/CoWorkoutCameraTiles';
 import { PlaybackSyncService } from '../services/playbackSync.service';
 import { useVideoInteractions } from '../hooks/useVideoInteractions';
 import { recordVideoWatch } from '../hooks/useRecentlyWatched';
+import { getCueTrack, resolveActiveCue } from '../data/workoutCues';
 import { LiveViewersModal } from '../components/LiveViewersModal';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import Svg, { Circle } from 'react-native-svg';
 import { supabase } from '../core/config/supabase';
 
@@ -77,6 +80,8 @@ interface EngagementBarProps {
     onDislike: () => void;
     onTryIntent: () => void;
     onFavorite: () => void;
+    modeType: 'workout' | 'watch';
+    onSwitchMode: (mode: 'workout' | 'watch') => void;
 }
 
 function EngagementBar({
@@ -88,12 +93,14 @@ function EngagementBar({
     onDislike,
     onTryIntent,
     onFavorite,
+    modeType,
+    onSwitchMode,
 }: EngagementBarProps) {
     const { state } = engagement;
 
     const buttons = [
         { key: 'fav', label: isFavorite ? 'Favorited' : 'Favorite', icon: '❤️', active: isFavorite, onPress: onFavorite },
-        { key: 'try', label: state.tryIntent ? 'Trying' : 'Want to try it', icon: '🔥', active: state.tryIntent, onPress: onTryIntent },
+        { key: 'try', label: state.tryIntent ? 'Trying' : 'Try it', icon: '🔥', active: state.tryIntent, onPress: onTryIntent },
         {
             key: 'dislike',
             label: totalDislikes > 0 ? formatCount(totalDislikes) : 'Dislike',
@@ -113,11 +120,36 @@ function EngagementBar({
                     activeOpacity={0.7}
                 >
                     <Text style={engagementStyles.pillIcon}>{btn.icon}</Text>
-                    <Text style={[engagementStyles.pillLabel, btn.active && engagementStyles.pillLabelActive]}>
+                    <Text
+                        numberOfLines={1}
+                        style={[engagementStyles.pillLabel, btn.active && engagementStyles.pillLabelActive]}
+                    >
                         {btn.label}
                     </Text>
                 </TouchableOpacity>
             ))}
+
+            {/* Mode toggle — Workout / Watch, inline after Dislike */}
+            <View style={engagementStyles.modeGroup}>
+                <TouchableOpacity
+                    style={[engagementStyles.modeBtn, modeType === 'workout' && engagementStyles.modeBtnActive]}
+                    onPress={() => onSwitchMode('workout')}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[engagementStyles.modeText, modeType === 'workout' && engagementStyles.modeTextActive]}>
+                        Workout
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[engagementStyles.modeBtn, modeType === 'watch' && engagementStyles.modeBtnActive]}
+                    onPress={() => onSwitchMode('watch')}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[engagementStyles.modeText, modeType === 'watch' && engagementStyles.modeTextActive]}>
+                        Watch
+                    </Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
@@ -125,19 +157,19 @@ function EngagementBar({
 const engagementStyles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        paddingHorizontal: 12,
+        alignItems: 'center',
+        paddingHorizontal: 10,
         paddingVertical: 10,
-        gap: 8,
+        gap: 6,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: 'rgba(255,255,255,0.06)',
-        flexWrap: 'wrap',
         justifyContent: 'center',
     },
     pill: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        paddingHorizontal: 11,
+        paddingHorizontal: 9,
         paddingVertical: 7,
         borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.06)',
@@ -158,6 +190,31 @@ const engagementStyles = StyleSheet.create({
     },
     pillLabelActive: {
         color: '#E89951',
+    },
+    modeGroup: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#FF6B00',
+        padding: 3,
+        gap: 3,
+    },
+    modeBtn: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 17,
+    },
+    modeBtnActive: {
+        backgroundColor: '#000',
+    },
+    modeText: {
+        color: '#94A3B8',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    modeTextActive: {
+        color: '#fff',
     },
 });
 
@@ -952,6 +1009,99 @@ function VideoPlayerScreen({ route, navigation }: any) {
         .replace(/[^a-zA-Z0-9-_]/g, '-')
         .toLowerCase();
 
+    // ── Previous / next video in the current list (for workout-mode nav) ──────
+    const playlist = useMemo(() => {
+        const lists = [gripCuffVideos, trainerVideos, bodyPartVideos, allVideos];
+        for (const list of lists) {
+            if (list.some((v) => v.id === requestedVideoId)) return list;
+        }
+        return allVideos;
+    }, [gripCuffVideos, trainerVideos, bodyPartVideos, allVideos, requestedVideoId]);
+
+    const playlistIndex = useMemo(
+        () => playlist.findIndex((v) => v.id === requestedVideoId),
+        [playlist, requestedVideoId],
+    );
+    const prevVideo = playlistIndex > 0 ? playlist[playlistIndex - 1] : null;
+    const nextVideo =
+        playlistIndex >= 0 && playlistIndex < playlist.length - 1
+            ? playlist[playlistIndex + 1]
+            : null;
+
+    const goToVideo = useCallback(
+        (v: any) => {
+            if (!v) return;
+            navigation.push('VideoPlayer', {
+                videoId: v.id,
+                title: v.title,
+                videoUrl: v.videoUrl,
+                youtubeId: (v as any).youtubeId,
+                category: (v as any).category,
+                thumbnail: v.thumbnail,
+                duration: v.duration,
+                allowInvite,
+            });
+        },
+        [navigation, allowInvite],
+    );
+
+    // ── Live coaching cue, synced to the workout timer ────────────────────────
+    // Prefer an authored per-video cue track (real reps/weight/time the
+    // instructor uses); fall back to a generic work/rest cycle when none exists.
+    const cueTrack = useMemo(
+        () => getCueTrack(sourceVideo?.id ?? requestedVideoId),
+        [sourceVideo?.id, requestedVideoId],
+    );
+
+    const { activeCue, cueSegmentElapsed } = useMemo(() => {
+        // Authored track takes priority.
+        if (cueTrack && cueTrack.length > 0) {
+            const resolved = resolveActiveCue(cueTrack, workoutElapsed);
+            if (resolved) {
+                const { cue, segmentElapsed } = resolved;
+                return {
+                    activeCue: {
+                        label: cue.label,
+                        reps: cue.reps != null ? `${cue.reps}` : '—',
+                        weight: cue.weight ?? '—',
+                        tip: cue.tip ?? '',
+                    },
+                    cueSegmentElapsed: segmentElapsed,
+                };
+            }
+        }
+
+        // Generic fallback: 45s work / 15s rest cycle.
+        const WORK_SECS = 45;
+        const REST_SECS = 15;
+        const CYCLE = WORK_SECS + REST_SECS;
+
+        const inCycle = workoutElapsed % CYCLE;
+        const setNum = Math.floor(workoutElapsed / CYCLE) + 1;
+
+        if (inCycle < WORK_SECS) {
+            const reps = Math.min(15, Math.floor(inCycle / 3) + 1); // ~1 rep / 3s
+            return {
+                activeCue: {
+                    label: `Set ${setNum}`,
+                    reps: `${reps}`,
+                    weight: 'Bodyweight',
+                    tip: 'Match the instructor — controlled tempo, full range of motion.',
+                },
+                cueSegmentElapsed: inCycle,
+            };
+        }
+        return {
+            activeCue: {
+                label: 'Rest',
+                reps: '—',
+                weight: '—',
+                tip: 'Breathe and recover before the next set.',
+            },
+            cueSegmentElapsed: inCycle - WORK_SECS,
+        };
+    }, [cueTrack, workoutElapsed]);
+
     // Keep completionParamsRef current every render so the tick timer ([] deps)
     // always reads up-to-date uid, workoutId, title, etc. without stale closure.
     completionParamsRef.current = {
@@ -1207,6 +1357,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
         sharedPlayerRef.current?.pauseVideo();
     }, [stopWorkoutTimer, flushWorkoutSeconds]);
 
+    // Manual pause / resume — keeps the workout clock and the video in sync.
+    const toggleWorkoutPause = useCallback(() => {
+        if (timerStateRef.current !== 'running') return;
+        if (workoutPaused) {
+            sharedPlayerRef.current?.resumeVideo();
+            startWorkoutTick();
+        } else {
+            sharedPlayerRef.current?.pauseVideo();
+            pauseWorkoutTick();
+        }
+    }, [workoutPaused, startWorkoutTick, pauseWorkoutTick]);
+
     // Keep the ref current so handlePlayStateChange can call startWorkout without stale closure
     startWorkoutCallbackRef.current = startWorkout;
     startWorkoutTickRef.current = startWorkoutTick;
@@ -1302,9 +1464,17 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             const isFriend = !isMine && friendUids.includes(entry.userId);
                             return (
                                 <View key={entry.id} style={[socialStyles.row, i < socialHub.scheduled.length - 1 && socialStyles.rowBorder]}>
-                                    <View style={[socialStyles.avatar, { backgroundColor: avatarColor(entry.displayName || '?') }]}>
-                                        <Text style={socialStyles.avatarText}>{(entry.displayName || '?')[0].toUpperCase()}</Text>
-                                    </View>
+                                    <TierAvatar
+                                        size={36}
+                                        uid={entry.userId}
+                                        name={entry.displayName}
+                                        showBadge={false}
+                                        fallback={
+                                            <View style={[socialStyles.avatar, { backgroundColor: avatarColor(entry.displayName || '?') }]}>
+                                                <Text style={socialStyles.avatarText}>{(entry.displayName || '?')[0].toUpperCase()}</Text>
+                                            </View>
+                                        }
+                                    />
                                     <View style={{ flex: 1 }}>
                                         <Text style={socialStyles.name}>{entry.displayName}</Text>
                                         <Text style={socialStyles.sub}>{formatScheduledTime(entry.scheduledFor)}</Text>
@@ -1350,9 +1520,17 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     ) : (
                         socialHub.open.map((entry, i) => (
                             <View key={entry.id} style={[socialStyles.row, i < socialHub.open.length - 1 && socialStyles.rowBorder]}>
-                                <View style={[socialStyles.avatar, { backgroundColor: avatarColor(entry.hostName || '?') }]}>
-                                    <Text style={socialStyles.avatarText}>{(entry.hostName || '?')[0].toUpperCase()}</Text>
-                                </View>
+                                <TierAvatar
+                                    size={36}
+                                    uid={(entry as any).hostUid}
+                                    name={entry.hostName}
+                                    showBadge={false}
+                                    fallback={
+                                        <View style={[socialStyles.avatar, { backgroundColor: avatarColor(entry.hostName || '?') }]}>
+                                            <Text style={socialStyles.avatarText}>{(entry.hostName || '?')[0].toUpperCase()}</Text>
+                                        </View>
+                                    }
+                                />
                                 <View style={{ flex: 1 }}>
                                     <Text style={socialStyles.name}>{entry.title}</Text>
                                     <Text style={socialStyles.sub}>
@@ -2056,29 +2234,56 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         });
                         interactions.toggleInteraction('favourited');
                     }}
+                    modeType={modeType}
+                    onSwitchMode={switchViewMode}
                 />
 
-                {/* Mode Toggle — Workout / Watch */}
-                <View style={panelStyles.modeToggleRow}>
-                    <TouchableOpacity
-                        style={[panelStyles.modeToggleBtn, modeType === 'workout' && panelStyles.modeToggleBtnActive]}
-                        onPress={() => switchViewMode('workout')}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[panelStyles.modeToggleText, modeType === 'workout' && panelStyles.modeToggleTextActive]}>
-                            Workout Mode
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[panelStyles.modeToggleBtn, modeType === 'watch' && panelStyles.modeToggleBtnActive]}
-                        onPress={() => switchViewMode('watch')}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[panelStyles.modeToggleText, modeType === 'watch' && panelStyles.modeToggleTextActive]}>
-                            Watch Mode
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                {/* Prev / Next video nav — workout mode only */}
+                {modeType === 'workout' && (prevVideo || nextVideo) && (
+                    <View style={navStyles.row}>
+                        {prevVideo ? (
+                            <TouchableOpacity
+                                style={[navStyles.card, navStyles.cardLeft]}
+                                onPress={() => goToVideo(prevVideo)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={navStyles.arrow}>‹</Text>
+                                {prevVideo.thumbnail ? (
+                                    <Image source={{ uri: prevVideo.thumbnail }} style={navStyles.thumb} />
+                                ) : (
+                                    <View style={[navStyles.thumb, navStyles.thumbFallback]} />
+                                )}
+                                <View style={navStyles.textCol}>
+                                    <Text style={navStyles.label}>Previous</Text>
+                                    <Text style={navStyles.titleText} numberOfLines={1}>{prevVideo.title}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={navStyles.card} />
+                        )}
+
+                        {nextVideo ? (
+                            <TouchableOpacity
+                                style={[navStyles.card, navStyles.cardRight]}
+                                onPress={() => goToVideo(nextVideo)}
+                                activeOpacity={0.8}
+                            >
+                                <View style={[navStyles.textCol, { alignItems: 'flex-end' }]}>
+                                    <Text style={navStyles.label}>Up next</Text>
+                                    <Text style={navStyles.titleText} numberOfLines={1}>{nextVideo.title}</Text>
+                                </View>
+                                {nextVideo.thumbnail ? (
+                                    <Image source={{ uri: nextVideo.thumbnail }} style={navStyles.thumb} />
+                                ) : (
+                                    <View style={[navStyles.thumb, navStyles.thumbFallback]} />
+                                )}
+                                <Text style={navStyles.arrow}>›</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={navStyles.card} />
+                        )}
+                    </View>
+                )}
 
                 {modeType === 'watch' ? (
                     /* Everything below reaction buttons dims during playback */
@@ -2148,7 +2353,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     </Animated.View>
                 ) : (
                     /* Workout Mode panel */
-                    <View style={panelStyles.workoutPanel}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={panelStyles.workoutPanel}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
                         {timerState === 'countdown' && countdownPhase ? (
                             <Text style={panelStyles.countdownText}>{countdownPhase}</Text>
                         ) : (
@@ -2204,19 +2414,90 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                         <Text style={panelStyles.startBtnText}>Start</Text>
                                     </TouchableOpacity>
                                 ) : (
-                                    <TouchableOpacity style={panelStyles.resetBtn} onPress={resetWorkout} activeOpacity={0.8}>
-                                        <Text style={panelStyles.resetBtnText}>Stop</Text>
-                                    </TouchableOpacity>
+                                    <View style={panelStyles.timerControls}>
+                                        <TouchableOpacity
+                                            style={panelStyles.pauseBtn}
+                                            onPress={toggleWorkoutPause}
+                                            activeOpacity={0.8}
+                                            disabled={timerState !== 'running'}
+                                        >
+                                            <Text style={panelStyles.pauseBtnText}>
+                                                {workoutPaused ? 'Resume' : 'Pause'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={panelStyles.resetBtn} onPress={resetWorkout} activeOpacity={0.8}>
+                                            <Text style={panelStyles.resetBtnText}>Stop</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+
+                                {/* Live coaching cue — always visible, values synced to the timer */}
+                                {activeCue && (
+                                    <View style={panelStyles.cueCard}>
+                                        <Text style={panelStyles.cuePhase}>{activeCue.label}</Text>
+                                        <View style={panelStyles.cueStatsRow}>
+                                            <View style={panelStyles.cueStat}>
+                                                <Text style={panelStyles.cueStatValue} numberOfLines={1} adjustsFontSizeToFit>{activeCue.reps}</Text>
+                                                <Text style={panelStyles.cueStatLabel}>reps</Text>
+                                            </View>
+                                            <View style={panelStyles.cueDivider} />
+                                            <View style={[panelStyles.cueStat, panelStyles.cueStatWide]}>
+                                                <Text style={panelStyles.cueStatValue} numberOfLines={1}>{activeCue.weight}</Text>
+                                                <Text style={panelStyles.cueStatLabel}>load</Text>
+                                            </View>
+                                            <View style={panelStyles.cueDivider} />
+                                            <View style={panelStyles.cueStat}>
+                                                <Text style={panelStyles.cueStatValue} numberOfLines={1} adjustsFontSizeToFit>{formatWorkoutTime(cueSegmentElapsed)}</Text>
+                                                <Text style={panelStyles.cueStatLabel}>in set</Text>
+                                            </View>
+                                        </View>
+                                        {activeCue.tip ? <Text style={panelStyles.cueTip}>{activeCue.tip}</Text> : null}
+                                    </View>
                                 )}
                             </>
                         )}
-                    </View>
+                    </ScrollView>
                 )}
             </View>
             )}
         </KeyboardAvoidingView>
     );
 }
+
+const navStyles = StyleSheet.create({
+    row: {
+        flexDirection: 'row',
+        gap: 10,
+        paddingHorizontal: 16,
+        paddingTop: 10,
+    },
+    card: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        borderRadius: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+    },
+    cardLeft: { justifyContent: 'flex-start' },
+    cardRight: { justifyContent: 'flex-end' },
+    arrow: { color: '#FF6B00', fontSize: 22, fontWeight: '800' },
+    thumb: { width: 40, height: 40, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)' },
+    thumbFallback: { backgroundColor: 'rgba(255,107,0,0.18)' },
+    textCol: { flex: 1, minWidth: 0 },
+    label: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 0.4,
+        textTransform: 'uppercase',
+    },
+    titleText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+});
 
 const s = StyleSheet.create({
     container: {
@@ -2390,38 +2671,13 @@ const panelStyles = StyleSheet.create({
         lineHeight: 20,
         marginTop: 10,
     },
-    modeToggleRow: {
-        flexDirection: 'row',
-        marginHorizontal: 12,
-        marginTop: 8,
-        marginBottom: 4,
-        borderRadius: 10,
-        backgroundColor: 'rgba(255,255,255,0.06)',
-        padding: 3,
-        gap: 3,
-    },
-    modeToggleBtn: {
-        flex: 1,
-        paddingVertical: 8,
-        alignItems: 'center',
-        borderRadius: 8,
-    },
-    modeToggleBtnActive: {
-        backgroundColor: '#FF6B00',
-    },
-    modeToggleText: {
-        color: '#94A3B8',
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    modeToggleTextActive: {
-        color: '#fff',
-    },
     workoutPanel: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 24,
+        paddingTop: 16,
+        paddingBottom: 32,
         gap: 12,
     },
     timerText: {
@@ -2455,19 +2711,84 @@ const panelStyles = StyleSheet.create({
         fontWeight: '700',
         letterSpacing: 0.5,
     },
+    timerControls: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 12,
+        alignSelf: 'stretch',
+        paddingHorizontal: 16,
+    },
+    pauseBtn: {
+        flex: 1,
+        backgroundColor: '#FF6B00',
+        paddingVertical: 16,
+        borderRadius: 30,
+        alignItems: 'center',
+    },
+    pauseBtnText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
     resetBtn: {
+        flex: 1,
         backgroundColor: 'rgba(255,255,255,0.08)',
-        paddingHorizontal: 56,
         paddingVertical: 16,
         borderRadius: 30,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.15)',
-        marginTop: 12,
+        alignItems: 'center',
     },
     resetBtnText: {
         color: '#94A3B8',
         fontSize: 18,
         fontWeight: '700',
+    },
+    cueCard: {
+        alignSelf: 'stretch',
+        marginTop: 16,
+        // Pull outward past the panel's 24px horizontal padding so the card is
+        // wide enough to show full stat values (e.g. "Bodyweight").
+        marginHorizontal: -16,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,107,0,0.25)',
+        borderRadius: 14,
+        paddingVertical: 14,
+        paddingHorizontal: 14,
+    },
+    cuePhase: {
+        color: '#FF6B00',
+        fontSize: 13,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    cueStatsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+    cueStat: { flex: 1, alignItems: 'center', paddingHorizontal: 4, minWidth: 0 },
+    cueStatWide: { flex: 1.5 },
+    cueStatValue: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
+    cueStatLabel: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 11,
+        fontWeight: '600',
+        marginTop: 4,
+    },
+    cueDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.1)' },
+    cueTip: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 12,
+        textAlign: 'center',
+        marginTop: 12,
+        lineHeight: 17,
     },
 });
 

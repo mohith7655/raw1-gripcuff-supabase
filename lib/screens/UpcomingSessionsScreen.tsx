@@ -8,6 +8,7 @@ import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
 import { ScheduledSessionService } from '../services/scheduledSession.service';
 import { useUser } from '../providers/UserContext';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 interface SelfScheduledEntry {
     id: string;
@@ -300,13 +301,19 @@ export const UpcomingSessionsScreen = () => {
                             <View key={session.id} style={styles.card}>
                                 <Text style={styles.sessionTypeLabel}>Workout with Friend</Text>
                                 <View style={styles.cardHeader}>
-                                    {session.hostAvatarUrl ? (
-                                        <Image source={{ uri: session.hostAvatarUrl }} style={styles.avatar} />
-                                    ) : (
-                                        <View style={styles.avatarPlaceholder}>
-                                            <UserRound color={AppTheme.primaryColor} size={20} />
-                                        </View>
-                                    )}
+                                    <TierAvatar
+                                        uri={session.hostAvatarUrl}
+                                        size={44}
+                                        uid={session.hostUid}
+                                        name={session.hostName}
+                                        radius={10}
+                                        showBadge={false}
+                                        fallback={
+                                            <View style={styles.avatarPlaceholder}>
+                                                <UserRound color={AppTheme.primaryColor} size={20} />
+                                            </View>
+                                        }
+                                    />
                                     <View style={styles.headerText}>
                                         <Text style={styles.userName}>{session.hostName}</Text>
                                         <Text style={styles.actionText}>invited you to work out</Text>
@@ -499,12 +506,20 @@ export const UpcomingSessionsScreen = () => {
                                         <View style={[styles.avatarPlaceholder, { zIndex: 2, borderWidth: 2, borderColor: AppTheme.cardColor }]}>
                                             <UserRound color={AppTheme.primaryColor} size={20} />
                                         </View>
-                                        <View style={[styles.avatarPlaceholder, { marginLeft: -15, zIndex: 1, backgroundColor: '#333' }]}>
-                                            {partnerAvatar ? (
-                                                <Image source={{ uri: partnerAvatar }} style={[styles.avatar, { width: 40, height: 40 }]} />
-                                            ) : (
-                                                <UserRound color="#888" size={20} />
-                                            )}
+                                        <View style={{ marginLeft: -15, zIndex: 1 }}>
+                                            <TierAvatar
+                                                uri={partnerAvatar}
+                                                size={40}
+                                                uid={isHost ? session.guestUid : session.hostUid}
+                                                name={partnerName}
+                                                radius={10}
+                                                showBadge={false}
+                                                fallback={
+                                                    <View style={[styles.avatarPlaceholder, { width: 40, height: 40, backgroundColor: '#333' }]}>
+                                                        <UserRound color="#888" size={20} />
+                                                    </View>
+                                                }
+                                            />
                                         </View>
                                     </View>
                                     <View style={[styles.headerText, { marginLeft: 12 }]}>
@@ -668,12 +683,20 @@ export const UpcomingSessionsScreen = () => {
                                             <View style={[styles.avatarPlaceholder, { zIndex: 2, borderWidth: 2, borderColor: AppTheme.cardColor }]}>
                                                 <UserRound color="#666" size={20} />
                                             </View>
-                                            <View style={[styles.avatarPlaceholder, { marginLeft: -15, zIndex: 1, backgroundColor: '#333' }]}>
-                                                {partnerAvatar ? (
-                                                    <Image source={{ uri: partnerAvatar }} style={[styles.avatar, { width: 40, height: 40 }]} />
-                                                ) : (
-                                                    <UserRound color="#666" size={20} />
-                                                )}
+                                            <View style={{ marginLeft: -15, zIndex: 1 }}>
+                                                <TierAvatar
+                                                    uri={partnerAvatar}
+                                                    size={40}
+                                                    uid={isHost ? session.guestUid : session.hostUid}
+                                                    name={partnerName}
+                                                    radius={10}
+                                                    showBadge={false}
+                                                    fallback={
+                                                        <View style={[styles.avatarPlaceholder, { width: 40, height: 40, backgroundColor: '#333' }]}>
+                                                            <UserRound color="#666" size={20} />
+                                                        </View>
+                                                    }
+                                                />
                                             </View>
                                         </View>
                                         <View style={[styles.headerText, { marginLeft: 12 }]}>

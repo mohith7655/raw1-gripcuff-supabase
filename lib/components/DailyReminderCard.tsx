@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Bell, Edit2, Zap } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MoveReminder, MoveReminderService, formatMoveTime12h } from '../services/moveReminder.service';
-import { MoveReminderModal } from './MoveReminderModal';
+import { useFocusEffect } from '@react-navigation/native';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 
 const ACCENT = '#E89951';
@@ -18,7 +18,6 @@ export function DailyReminderCard({ userId }: Props) {
     const navigation = useNavigation<any>();
     const [settings, setSettings] = useState<MoveReminder | null>(null);
     const [loading, setLoading] = useState(true);
-    const [modalVisible, setModalVisible] = useState(false);
     const [toggling, setToggling] = useState(false);
 
     const load = useCallback(() => {
@@ -29,7 +28,8 @@ export function DailyReminderCard({ userId }: Props) {
         }).catch(() => setLoading(false));
     }, [userId]);
 
-    useEffect(() => { load(); }, [load]);
+    // Reload whenever the screen comes back into focus (returning from MoveReminderScreen)
+    useFocusEffect(useCallback(() => { load(); }, [load]));
 
     const handleToggle = async () => {
         if (!userId || !settings || toggling) return;
@@ -41,10 +41,6 @@ export function DailyReminderCard({ userId }: Props) {
         reminderWatcherService.invalidateMoveCache();
     };
 
-    const handleSaved = (s: MoveReminder) => {
-        setSettings(s);
-        reminderWatcherService.invalidateMoveCache();
-    };
 
     if (!userId) return null;
 
@@ -61,14 +57,13 @@ export function DailyReminderCard({ userId }: Props) {
             : `Paused · ${firstTime}–${lastTime}`;
 
     return (
-        <>
-            <View style={s.card}>
+        <View style={s.card}>
                 <View style={s.left}>
                     <View style={[s.iconWrap, enabled && s.iconWrapOn]}>
                         <Bell color={enabled ? ACCENT : '#4a6480'} size={18} />
                     </View>
                     <View style={s.textBlock}>
-                        <Text style={s.cardTitle}>Reminder to Move</Text>
+                        <Text style={s.cardTitle}>Stay Active All Day</Text>
                         {loading
                             ? <ActivityIndicator color={ACCENT} size="small" />
                             : <Text style={s.summaryText} numberOfLines={1}>{summaryText}</Text>
@@ -87,7 +82,7 @@ export function DailyReminderCard({ userId }: Props) {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={s.editBtn}
-                        onPress={() => setModalVisible(true)}
+                        onPress={() => navigation.navigate('MoveReminderScreen', { userId })}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         activeOpacity={0.75}
                     >
@@ -106,16 +101,7 @@ export function DailyReminderCard({ userId }: Props) {
                         }
                     </TouchableOpacity>
                 </View>
-            </View>
-
-            <MoveReminderModal
-                visible={modalVisible}
-                userId={userId}
-                onClose={() => setModalVisible(false)}
-                onSaved={handleSaved}
-                navigation={navigation}
-            />
-        </>
+        </View>
     );
 }
 

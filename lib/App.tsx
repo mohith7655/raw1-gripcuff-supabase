@@ -38,6 +38,7 @@ import { SignUpScreen } from './screens/SignUpScreen';
 import { PaywallScreen } from './screens/PaywallScreen';
 import { GripcuffSurveyModal } from './screens/GripcuffSurveyModal';
 import { AccessProvider, useAccess } from './providers/AccessContext';
+import { TierProvider } from './providers/TierContext';
 import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { WorkoutsScreen } from './screens/WorkoutsScreen';
@@ -80,6 +81,7 @@ import { BadgesScreen } from './screens/BadgesScreen';
 import { QRCodeScreen } from './screens/QRCodeScreen';
 import { QRProfileScreen } from './screens/QRProfileScreen';
 import { LookingToMeetEditScreen } from './screens/LookingToMeetEditScreen';
+import { MoveReminderScreen } from './screens/MoveReminderScreen';
 import { ScannedProfileScreen } from './screens/ScannedProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AllFavouritesScreen } from './screens/AllFavouritesScreen';
@@ -378,6 +380,7 @@ function AppStack({
         <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} />
         <Stack.Screen name="QRProfileScreen" component={QRProfileScreen} />
         <Stack.Screen name="LookingToMeetEditScreen" component={LookingToMeetEditScreen} />
+        <Stack.Screen name="MoveReminderScreen" component={MoveReminderScreen} options={{ headerShown: false }} />
         <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
         <Stack.Screen name="BadgesScreen" component={BadgesScreen} />
         <Stack.Screen name="FeedScreen" component={FeedScreen} options={{ headerShown: false }} />
@@ -1014,7 +1017,9 @@ export default function App() {
                   <WorkoutSessionProvider>
                     <NotificationProvider>
                       <AccessProvider>
-                        <MainApp />
+                        <TierProvider>
+                          <MainApp />
+                        </TierProvider>
                       </AccessProvider>
                     </NotificationProvider>
                   </WorkoutSessionProvider>

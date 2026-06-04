@@ -18,6 +18,7 @@ import { X, Send, MoreHorizontal, Pencil, Trash2 } from 'lucide-react-native';
 import { FeedService, Comment, Post } from '../../services/feed.service';
 import { useAuth } from '../../providers/AuthContext';
 import { ActionSheet } from './ActionSheet';
+import { TierAvatar } from '../profile/TierAvatar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ORANGE = '#E89951';
@@ -98,12 +99,7 @@ function CommentItem({ comment, currentUserId, onEdit, onDelete }: CommentItemPr
   return (
     <>
       <View style={styles.commentRow}>
-        <View style={styles.commentAvatar}>
-          {avatar
-            ? <Image source={{ uri: avatar }} style={styles.commentAvatarImg} />
-            : <Text style={styles.commentAvatarInitial}>{name.charAt(0).toUpperCase()}</Text>
-          }
-        </View>
+        <TierAvatar uri={avatar} size={32} uid={comment.user_id} name={name} showBadge={false} />
         <View style={styles.commentBubble}>
           <View style={styles.commentHeader}>
             <Text style={styles.commentName}>{name}</Text>

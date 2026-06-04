@@ -19,6 +19,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatMessage } from '../models/Chat';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 type RouteParams = {
     friendUid: string;
@@ -114,13 +115,19 @@ export const ChatRoomScreen = () => {
                 )}
                 <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowThem]}>
                     {!isMe && (
-                        friendAvatar ? (
-                            <Image source={{ uri: friendAvatar }} style={styles.bubbleAvatar} />
-                        ) : (
-                            <View style={styles.bubbleAvatarFallback}>
-                                <CircleUserRound color={AppTheme.primaryColor} size={16} />
-                            </View>
-                        )
+                        <View style={{ marginRight: 6 }}>
+                            <TierAvatar
+                                uri={friendAvatar}
+                                size={28}
+                                uid={friendUid}
+                                name={friendName}
+                                fallback={
+                                    <View style={styles.bubbleAvatarFallback}>
+                                        <CircleUserRound color={AppTheme.primaryColor} size={16} />
+                                    </View>
+                                }
+                            />
+                        </View>
                     )}
                     <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
                         <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextThem]}>
@@ -150,13 +157,18 @@ export const ChatRoomScreen = () => {
                         })
                     }
                 >
-                    {friendAvatar ? (
-                        <Image source={{ uri: friendAvatar }} style={styles.headerAvatar} />
-                    ) : (
-                        <View style={styles.headerAvatarFallback}>
-                            <CircleUserRound color={AppTheme.primaryColor} size={20} />
-                        </View>
-                    )}
+                    <TierAvatar
+                        uri={friendAvatar}
+                        size={36}
+                        uid={friendUid}
+                        name={friendName}
+                        showBadge={false}
+                        fallback={
+                            <View style={styles.headerAvatarFallback}>
+                                <CircleUserRound color={AppTheme.primaryColor} size={20} />
+                            </View>
+                        }
+                    />
                     <Text style={styles.headerName} numberOfLines={1}>{friendName}</Text>
                 </TouchableOpacity>
                 <View style={{ width: 40 }} />

@@ -64,7 +64,7 @@ import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { ChipPill } from '../components/profile/ChipPill';
 import { LocationRow } from '../components/profile/LocationRow';
 import { ProfileCard } from '../components/profile/ProfileCard';
-import { TierBars } from '../components/profile/TierBars';
+import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 
 // ── Fire glow badge wrapper (streak only) ─────────────────────────────────────
 function FireGlowBadge({ color, children }: { color: string; children: React.ReactNode }) {
@@ -252,6 +252,7 @@ export const ProfileScreen = () => {
   const [editingField, setEditingField] = useState<'age' | 'gender' | 'dateOfBirth' | 'phone' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const handleReplaceAvatar = async () => {
     if (!supabaseUserId) return;
@@ -336,18 +337,6 @@ export const ProfileScreen = () => {
   const workouts = streakData?.totalWorkouts  ?? profile?.completedWorkouts ?? 12;
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
 
-  // Avatar ring color based on gripcuff membership tier
-  const avatarRingColor = (() => {
-    switch (profile?.accessType) {
-      case 'starter':     return '#60A5FA'; // Starter     — light blue
-      case 'lifter':      return '#1E40AF'; // Lifter      — dark blue
-      case 'trainer':     return '#FB923C'; // Trainer     — light orange
-      case 'influencer':  return '#C26A2D'; // Influencer  — dark orange
-      case 'gripcuff':    return '#60A5FA'; // legacy gripcuff → Starter light blue
-      case 'subscription':return '#1E40AF'; // legacy subscription → Lifter dark blue
-      default:            return '#334155'; // No membership
-    }
-  })();
 
   // Location data
   const gymName    = social?.gymName?.trim()   || '';
@@ -485,6 +474,7 @@ export const ProfileScreen = () => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
+          scrollEnabled={scrollEnabled}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -498,17 +488,21 @@ export const ProfileScreen = () => {
 
           {/* ── HERO ───────────────────────────────────────────────────────── */}
           <View style={s.hero}>
-            <View style={[s.avatarRing, { borderColor: avatarRingColor }]}>
-              {avatarUploading ? (
-                <View style={{ width: 134, height: 134, borderRadius: 67, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
-                  <ActivityIndicator color={C.orange} size="large" />
-                </View>
-              ) : (
-                <Avatar uri={profile?.profileImageUrl} size={134} />
-              )}
-            </View>
-
-            <TierBars accessType={profile?.accessType} width={96} />
+            <TierAvatarRing
+              accessType={profile?.accessType}
+              avatarSize={134}
+              avatarRadius={28}
+            >
+              <View style={s.avatarRing}>
+                {avatarUploading ? (
+                  <View style={{ width: 134, height: 134, borderRadius: 28, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={C.orange} size="large" />
+                  </View>
+                ) : (
+                  <Avatar uri={profile?.profileImageUrl} size={134} />
+                )}
+              </View>
+            </TierAvatarRing>
 
             {/* Avatar action icons — below picture, always visible */}
             <View style={s.avatarActions}>
@@ -945,6 +939,10 @@ export const ProfileScreen = () => {
                 name={gymName}
                 address={gymAddress}
                 iconComponent={MapPin}
+                lat={social?.gymLat}
+                lng={social?.gymLng}
+                onMapTouchStart={() => setScrollEnabled(false)}
+                onMapTouchEnd={() => setScrollEnabled(true)}
               />
             ) : null}
             {homeName ? (
@@ -955,6 +953,10 @@ export const ProfileScreen = () => {
                   name={homeName}
                   address={homeAddress}
                   iconComponent={Home}
+                  lat={social?.houseLat}
+                  lng={social?.houseLng}
+                  onMapTouchStart={() => setScrollEnabled(false)}
+                  onMapTouchEnd={() => setScrollEnabled(true)}
                 />
               </>
             ) : null}
@@ -966,6 +968,10 @@ export const ProfileScreen = () => {
                   name={parkName}
                   address={parkAddress}
                   iconComponent={Trees}
+                  lat={social?.parkLat}
+                  lng={social?.parkLng}
+                  onMapTouchStart={() => setScrollEnabled(false)}
+                  onMapTouchEnd={() => setScrollEnabled(true)}
                 />
               </>
             ) : null}
@@ -1108,11 +1114,6 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   avatarRing: {
-    width: 146,
-    height: 146,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
     position: 'relative',
   },
   editBadge: {

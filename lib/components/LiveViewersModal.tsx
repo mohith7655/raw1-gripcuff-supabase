@@ -22,6 +22,7 @@ import {
 import { X, UserCheck, UserPlus, Clock } from 'lucide-react-native';
 import { ActiveWatcher } from '../services/WorkoutWatcherService';
 import { FriendService } from '../services/friend.service';
+import { TierAvatar } from './profile/TierAvatar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,26 +39,25 @@ function avatarColor(name: string): string {
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
-function Avatar({ name, uri, size = 44 }: { name: string; uri?: string | null; size?: number }) {
-    const [err, setErr] = useState(false);
-    if (uri && !err) {
-        return (
-            <Image
-                source={{ uri }}
-                style={{ width: size, height: size, borderRadius: size / 2 }}
-                onError={() => setErr(true)}
-            />
-        );
-    }
+function Avatar({ name, uri, size = 44, uid }: { name: string; uri?: string | null; size?: number; uid?: string | null }) {
     return (
-        <View style={[
-            { width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' },
-            { backgroundColor: avatarColor(name) },
-        ]}>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.38 }}>
-                {(name || '?')[0].toUpperCase()}
-            </Text>
-        </View>
+        <TierAvatar
+            uri={uri}
+            size={size}
+            uid={uid}
+            name={name}
+            showBadge={false}
+            fallback={
+                <View style={[
+                    { width: size, height: size, alignItems: 'center', justifyContent: 'center' },
+                    { backgroundColor: avatarColor(name) },
+                ]}>
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.38 }}>
+                        {(name || '?')[0].toUpperCase()}
+                    </Text>
+                </View>
+            }
+        />
     );
 }
 
@@ -87,7 +87,7 @@ export function StackedAvatars({ viewers, currentUid, maxVisible = 3, size = 24 
                         zIndex: others.length - i,
                     }}
                 >
-                    <Avatar name={v.username || v.displayName || '?'} uri={v.profilePhoto} size={size} />
+                    <Avatar name={v.username || v.displayName || '?'} uri={v.profilePhoto} size={size} uid={v.uid} />
                 </View>
             ))}
         </View>
@@ -109,7 +109,7 @@ function ViewerRow({ viewer, status, onAdd }: ViewerRowProps) {
 
     return (
         <View style={row.container}>
-            <Avatar name={name} uri={viewer.profilePhoto} size={44} />
+            <Avatar name={name} uri={viewer.profilePhoto} size={44} uid={viewer.uid} />
 
             <View style={row.info}>
                 <Text style={row.username}>@{name}</Text>

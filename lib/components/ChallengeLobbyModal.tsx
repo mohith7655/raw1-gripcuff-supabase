@@ -19,6 +19,7 @@ import { ChallengeSessionService } from '../services/challengeSession.service';
 import { NotificationService } from '../services/notification.service';
 import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 import { TierBars } from './profile/TierBars';
+import { TierAvatar } from './profile/TierAvatar';
 
 const ACCENT = '#E89951';
 const CTA    = '#FF6B00';
@@ -300,7 +301,6 @@ export function ChallengeLobbyModal({
                                     <Text style={s.rowName} numberOfLines={1}>
                                         {profile?.fullName || profile?.username || 'You'}
                                     </Text>
-                                    <TierBars accessType={profile?.accessType} width={56} />
                                 </View>
                                 <View style={s.youBadge}><Text style={s.youBadgeText}>YOU</Text></View>
                             </View>
@@ -320,7 +320,6 @@ export function ChallengeLobbyModal({
                                     <Avatar member={member} />
                                     <View style={s.rowInfo}>
                                         <Text style={s.rowName} numberOfLines={1}>{member.name}</Text>
-                                        <TierBars accessType={member.accessType} width={56} />
                                     </View>
                                     <TouchableOpacity
                                         style={[s.challengeBtn, loadingUid === member.uid && { opacity: 0.6 }]}
@@ -348,12 +347,20 @@ export function ChallengeLobbyModal({
 }
 
 function Avatar({ member }: { member: LobbyMember }) {
-    return member.avatar ? (
-        <Image source={{ uri: member.avatar }} style={s.avatar} />
-    ) : (
-        <View style={[s.avatar, s.avatarFallback]}>
-            <CircleUserRound color="#4a6480" size={22} strokeWidth={1.5} />
-        </View>
+    return (
+        <TierAvatar
+            uri={member.avatar}
+            size={44}
+            accessType={member.accessType ?? null}
+            name={member.name}
+            radius={10}
+            showBadge={false}
+            fallback={
+                <View style={[s.avatar, s.avatarFallback]}>
+                    <CircleUserRound color="#4a6480" size={22} strokeWidth={1.5} />
+                </View>
+            }
+        />
     );
 }
 

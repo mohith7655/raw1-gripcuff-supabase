@@ -17,6 +17,7 @@ import {
   Platform,
 } from 'react-native';
 import { supabase } from '../../core/config/supabase';
+import { TierAvatar } from '../profile/TierAvatar';
 
 const ORANGE = '#E89951';
 const CARD_BG = '#1A2332';
@@ -209,14 +210,7 @@ export function MentionTextInput({
                   onPressOut={() => setHoveredId(null)}
                   activeOpacity={0.85}
                 >
-                  <View style={styles.resultAvatar}>
-                    {item.avatar_url
-                      ? <Image source={{ uri: item.avatar_url }} style={styles.resultAvatarImg} />
-                      : <Text style={styles.resultAvatarInitial}>
-                          {(item.full_name ?? item.username).charAt(0).toUpperCase()}
-                        </Text>
-                    }
-                  </View>
+                  <TierAvatar uri={item.avatar_url} size={36} uid={item.id} name={item.full_name ?? item.username} radius={8} showBadge={false} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.resultName} numberOfLines={1}>
                       {item.full_name ?? item.username}

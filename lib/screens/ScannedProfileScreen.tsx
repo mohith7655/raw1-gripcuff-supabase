@@ -54,6 +54,7 @@ import { LocationRow } from '../components/profile/LocationRow';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { TierBars } from '../components/profile/TierBars';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -400,10 +401,8 @@ export function ScannedProfileScreen() {
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <View style={s.hero}>
-          <View style={s.avatarRing}>
-            <Avatar uri={user?.profileImageUrl} size={100} />
-          </View>
-          <TierBars accessType={user?.accessType} width={88} />
+          <TierAvatar uri={user?.profileImageUrl} size={100} accessType={user?.accessType} name={displayName} />
+          <View style={{ height: 12 }} />
           <Text style={s.name}>{displayName}</Text>
           {!!username && <Text style={s.handle}>@{username}</Text>}
           <View style={s.connectPill}>

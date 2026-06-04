@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Send } from 'lucide-react-native';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 const ORANGE = '#E89951';
 const BG = '#0F1923';
@@ -144,12 +145,7 @@ export function ClubChatScreen() {
         {!isMe && (
           <View style={styles.msgAvatarSlot}>
             {showAvatar && (
-              <View style={styles.msgAvatar}>
-                {avatar
-                  ? <Image source={{ uri: avatar }} style={styles.msgAvatarImg} />
-                  : <Text style={styles.msgAvatarInitial}>{name.charAt(0).toUpperCase()}</Text>
-                }
-              </View>
+              <TierAvatar uri={avatar} size={28} uid={item.user_id} name={name} />
             )}
           </View>
         )}

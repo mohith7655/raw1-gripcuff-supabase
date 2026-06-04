@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, CircleUserRound } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 type RouteParams = {
     friendUid: string;
@@ -76,13 +77,9 @@ export const ChatFriendProfileScreen = () => {
             ) : (
                 <ScrollView contentContainerStyle={styles.content}>
                     <View style={styles.hero}>
-                        {avatar ? (
-                            <Image source={{ uri: avatar }} style={styles.avatar} />
-                        ) : (
-                            <View style={styles.avatarFallback}>
-                                <CircleUserRound color={AppTheme.primaryColor} size={48} />
-                            </View>
-                        )}
+                        <View style={{ marginBottom: 12 }}>
+                            <TierAvatar uri={avatar} size={92} uid={friendUid} name={displayName} radius={20} />
+                        </View>
                         <Text style={styles.name}>{displayName}</Text>
                         <Text style={styles.username}>{displayUsername}</Text>
                     </View>
