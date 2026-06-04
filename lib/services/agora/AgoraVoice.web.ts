@@ -167,9 +167,7 @@ async function _doJoin(
 
     _localVolumeInterval = setInterval(() => {
         if (!localAudioTrack) return;
-        const level = Math.round(localAudioTrack.getVolumeLevel() * 100);
-        _localVolumeLevel = level;
-        if (level > 25) console.log('[ActiveSpeaker] ME is speaking — UID:', _client.uid);
+        _localVolumeLevel = Math.round(localAudioTrack.getVolumeLevel() * 100);
     }, 200);
 
     console.log('[AgoraVoice] Publishing tracks...');

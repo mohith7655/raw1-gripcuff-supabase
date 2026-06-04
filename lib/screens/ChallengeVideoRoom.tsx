@@ -54,7 +54,7 @@ export const ChallengeVideoRoom: React.FC = () => {
     const [phase, setPhase] = useState<Phase>('waiting');
     const [iMeReady, setIMeReady] = useState(false);
     const [opponentReady, setOpponentReady] = useState(false);
-    const [countdown, setCountdown] = useState(5);
+    const [countdownText, setCountdownText] = useState('Ready');
     const [remainingSecs, setRemainingSecs] = useState(workoutDurationSecs);
 
     // Animations
@@ -115,10 +115,6 @@ export const ChallengeVideoRoom: React.FC = () => {
 
             setOpponentReady(!!theirs?.ready);
 
-            if (!!host?.ready && !!guest?.ready && !startedRef.current && phaseRef.current === 'waiting') {
-                startedRef.current = true;
-                startCountdown();
-            }
             if (theirs?.finished && phaseRef.current !== 'finished') {
                 finishWorkout(false);
             }
@@ -140,27 +136,45 @@ export const ChallengeVideoRoom: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [challengeSessionId, isHost]);
 
-    // ── Countdown 5 → GO ────────────────────────────────────────────
+    // ── Start the countdown once BOTH sides are ready ────────────────
+    // Driven off React state (not presenceState) so it fires deterministically
+    // for whoever readies up second — their opponentReady flag is already set
+    // from the opponent's earlier presence event, and iMeReady is local.
+    useEffect(() => {
+        if (iMeReady && opponentReady && !startedRef.current && phaseRef.current === 'waiting') {
+            startedRef.current = true;
+            startCountdown();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [iMeReady, opponentReady]);
+
+    // ── Countdown: Ready → Steady → Go! ──────────────────────────────
     const startCountdown = () => {
         setPhase('countdown');
-        let c = 5;
-        setCountdown(c);
-        playReminderBeep();
+        const phrases = ['Ready', 'Steady', 'Go!'];
+        let i = 0;
+
+        const showPhrase = () => {
+            setCountdownText(phrases[i]);
+            playReminderBeep();
+            // Pop animation on each word
+            Animated.sequence([
+                Animated.timing(countdownScale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
+                Animated.timing(countdownScale, { toValue: 1,   duration: 280, useNativeDriver: true }),
+            ]).start();
+        };
+
+        showPhrase(); // "Ready"
 
         countdownInterval.current = setInterval(() => {
-            c--;
-            if (c <= 0) {
+            i++;
+            if (i >= phrases.length) {
+                // "Go!" was the last phrase shown — start the workout
                 clearInterval(countdownInterval.current!);
-                playReminderBeep();
                 setPhase('active');
                 startWorkoutTimer();
             } else {
-                setCountdown(c);
-                // Pulse animation on each tick
-                Animated.sequence([
-                    Animated.timing(countdownScale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
-                    Animated.timing(countdownScale, { toValue: 1,   duration: 280, useNativeDriver: true }),
-                ]).start();
+                showPhrase(); // "Steady", then "Go!"
             }
         }, 1000);
     };
@@ -299,18 +313,17 @@ export const ChallengeVideoRoom: React.FC = () => {
                         </View>
                     )}
 
-                    {/* COUNTDOWN */}
+                    {/* COUNTDOWN — Ready · Steady · Go! */}
                     {phase === 'countdown' && (
                         <View style={st.countdownWrap}>
                             <Animated.Text
                                 style={[
-                                    st.countdownNumber,
+                                    st.countdownWord,
                                     { transform: [{ scale: countdownScale }] },
                                 ]}
                             >
-                                {countdown}
+                                {countdownText}
                             </Animated.Text>
-                            <Text style={st.countdownLabel}>GET READY</Text>
                         </View>
                     )}
 
@@ -455,17 +468,15 @@ const st = StyleSheet.create({
     },
     waitingForText: { color: 'rgba(150,180,210,0.5)', fontSize: 14 },
 
-    // Countdown
+    // Countdown — Ready · Steady · Go!
     countdownWrap: { alignItems: 'center', gap: 16 },
-    countdownNumber: {
+    countdownWord: {
         color: '#fff',
-        fontSize: 88,
+        fontSize: 64,
         fontWeight: '900',
-        lineHeight: 100,
+        lineHeight: 76,
+        letterSpacing: 1,
         textShadow: `0px 0px 24px ${ORANGE}` as any,
-    },
-    countdownLabel: {
-        color: 'rgba(150,180,210,0.5)', fontSize: 14, fontWeight: '700', letterSpacing: 2,
     },
 
     // Active timer
