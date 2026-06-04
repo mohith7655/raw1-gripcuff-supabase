@@ -95,37 +95,61 @@ export const ChallengeVideoRoom: React.FC = () => {
         };
     }, []);
 
-    // ── Ready-state sync via Realtime presence ───────────────────────
-    // Both participants join `challenge:<sessionId>` and track { ready, finished }.
-    // Presence is delivered regardless of table-publication settings, so the
-    // timer reliably starts once BOTH have pressed "I'm Ready".
+    // ── Ready-state sync via Realtime broadcast (+ presence) ─────────
+    // Both participants join `challenge:<sessionId>`. We use *broadcast* events
+    // ('ready' / 'finished') as the primary signal because they are delivered
+    // immediately and reliably (same mechanism as the lobby invite), whereas
+    // presence-metadata *updates* on re-track were being dropped — leaving both
+    // sides stuck on "Waiting for Challenger" even after both pressed Ready.
+    // Presence is still tracked so a late joiner can read the current state, and
+    // we re-announce our ready state whenever the opponent joins.
     useEffect(() => {
         if (!challengeSessionId) return;
 
         const ch = supabase.channel(`challenge:${challengeSessionId}`, {
-            config: { presence: { key: myRole } },
+            config: { presence: { key: myRole }, broadcast: { self: false } },
         });
         readyChannelRef.current = ch;
 
-        const evaluate = () => {
-            const state = ch.presenceState() as Record<string, any[]>;
-            const host = state['host']?.[0];
-            const guest = state['guest']?.[0];
-            const theirs = isHost ? guest : host;
-
-            setOpponentReady(!!theirs?.ready);
-
-            if (theirs?.finished && phaseRef.current !== 'finished') {
-                finishWorkout(false);
+        // Re-broadcast my ready state — used when I press Ready and whenever the
+        // opponent (re)joins, so they can never miss that I'm already ready.
+        const announce = () => {
+            if (iMeReadyRef.current) {
+                ch.send({ type: 'broadcast', event: 'ready', payload: { role: myRole } }).catch(() => {});
             }
         };
 
+        // Read the opponent's tracked presence (covers the case where they
+        // readied up before we subscribed, so we missed their broadcast).
+        const evaluate = () => {
+            const state = ch.presenceState() as Record<string, any[]>;
+            const theirs = isHost ? state['guest']?.[0] : state['host']?.[0];
+            if (theirs?.ready) {
+                console.log('[ChallengeRoom] opponent ready (presence)');
+                setOpponentReady(true);
+            }
+            if (theirs?.finished && phaseRef.current !== 'finished') finishWorkout(false);
+        };
+
         ch.on('presence', { event: 'sync' }, evaluate)
-            .on('presence', { event: 'join' }, evaluate)
+            .on('presence', { event: 'join' }, () => { evaluate(); announce(); })
             .on('presence', { event: 'leave' }, evaluate)
+            .on('broadcast', { event: 'ready' }, ({ payload }) => {
+                if (payload?.role && payload.role !== myRole) {
+                    console.log('[ChallengeRoom] opponent ready (broadcast)');
+                    setOpponentReady(true);
+                }
+            })
+            .on('broadcast', { event: 'finished' }, ({ payload }) => {
+                if (payload?.role && payload.role !== myRole && phaseRef.current !== 'finished') {
+                    finishWorkout(false);
+                }
+            })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await ch.track({ role: myRole, ready: iMeReadyRef.current, finished: false });
+                    evaluate();   // opponent may already be present & ready
+                    announce();   // tell an already-present opponent if I'm ready
                 }
             });
 
@@ -206,8 +230,10 @@ export const ChallengeVideoRoom: React.FC = () => {
 
     const finishWorkout = (markDB: boolean) => {
         setPhase('finished');
-        // Let the opponent know via presence (idempotent)
-        readyChannelRef.current?.track({ role: myRole, ready: true, finished: true }).catch(() => {});
+        // Let the opponent know via broadcast (primary) + presence (idempotent)
+        const ch = readyChannelRef.current;
+        ch?.send({ type: 'broadcast', event: 'finished', payload: { role: myRole } }).catch(() => {});
+        ch?.track({ role: myRole, ready: true, finished: true }).catch(() => {});
         if (markDB && challengeSessionId) {
             ChallengeSessionService.markCompleted(challengeSessionId).catch(() => {});
         }
@@ -218,9 +244,11 @@ export const ChallengeVideoRoom: React.FC = () => {
         setIMeReady(true);
         iMeReadyRef.current = true;
         if (challengeSessionId) {
-            // Broadcast my ready state to the opponent over presence (reliable),
-            // and persist to the DB as a record.
-            readyChannelRef.current?.track({ role: myRole, ready: true, finished: false }).catch(() => {});
+            // Broadcast my ready state (primary, instant) + track via presence
+            // (so a later joiner can still read it), and persist a DB record.
+            const ch = readyChannelRef.current;
+            ch?.send({ type: 'broadcast', event: 'ready', payload: { role: myRole } }).catch(() => {});
+            ch?.track({ role: myRole, ready: true, finished: false }).catch(() => {});
             ChallengeSessionService.setReady(challengeSessionId, myRole).catch(() => {});
         } else {
             // No session (direct nav) — just start immediately for testing
