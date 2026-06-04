@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import { Audio } from 'expo-audio';
 import {
     createAgoraRtcEngine,
@@ -16,7 +16,16 @@ let engine: IRtcEngine | null = null;
  * the engine. The only difference is whether video is enabled.
  */
 async function _initEngine(withVideo: boolean): Promise<void> {
+    // Microphone (expo-audio handles iOS + Android RECORD_AUDIO).
     await Audio.requestPermissionsAsync();
+
+    // Camera — on Android the CAMERA runtime permission must be requested
+    // explicitly, otherwise enableVideo()/startPreview() silently fail and the
+    // OS never prompts. On iOS react-native-agora triggers the prompt itself
+    // via the Info.plist usage description when the camera is first accessed.
+    if (withVideo && Platform.OS === 'android') {
+        await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
+    }
 
     engine = createAgoraRtcEngine();
     engine.initialize({ appId: AGORA_APP_ID });
@@ -113,6 +122,12 @@ export const AgoraVoice: AgoraVoiceService = {
     toggleMute: async (muted: boolean) => {
         if (engine) {
             engine.muteLocalAudioStream(muted);
+        }
+    },
+
+    toggleCamera: async (off: boolean) => {
+        if (engine) {
+            engine.muteLocalVideoStream(off);
         }
     },
 };

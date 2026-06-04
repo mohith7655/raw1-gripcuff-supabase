@@ -263,4 +263,12 @@ export const AgoraVoice: AgoraVoiceService = {
             console.log('[AgoraVoice] Mic muted:', muted);
         }
     },
+
+    toggleCamera: async (off: boolean) => {
+        if (localVideoTrack) {
+            await localVideoTrack.setMuted(off);
+            _cameraStatus = off ? 'off' : 'on';
+            console.log('[AgoraVoice] Camera off:', off);
+        }
+    },
 };

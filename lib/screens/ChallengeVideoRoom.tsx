@@ -5,13 +5,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { Mic, MicOff, PhoneOff, CircleUserRound, Flag } from 'lucide-react-native';
+import { Mic, MicOff, PhoneOff, Flag, Video, VideoOff } from 'lucide-react-native';
 import { ChallengeSessionService, ChallengeSession } from '../services/challengeSession.service';
 import { supabase } from '../core/config/supabase';
 import { playReminderBeep } from '../utils/webAudio';
 // Platform-split voice service — picks .native.ts (react-native-agora) on mobile
 // and .web.ts (agora-rtc-sdk-ng) on web, so voice works everywhere.
 import { AgoraVoice } from '../services/agora/AgoraVoice';
+// Platform-split video layer — opponent fills the screen, local camera as PiP.
+import { ChallengeVideoStage } from '../components/ChallengeVideoStage';
 
 type Phase = 'waiting' | 'countdown' | 'active' | 'finished';
 
@@ -44,6 +46,8 @@ export const ChallengeVideoRoom: React.FC = () => {
     } = route.params;
 
     const [isMuted, setIsMuted] = useState(false);
+    const [isCameraOff, setIsCameraOff] = useState(false);
+    const [remoteUids, setRemoteUids] = useState<number[]>([]);
     const [isConnecting, setIsConnecting] = useState(true);
 
     // Challenge phase state machine
@@ -76,8 +80,8 @@ export const ChallengeVideoRoom: React.FC = () => {
             channelName,
             0,
             () => {},  // onSpeakerActive — not used here
-            () => {},  // onRemoteUidJoined
-            () => {},  // onRemoteUidLeft
+            (uid) => setRemoteUids(prev => (prev.includes(uid) ? prev : [...prev, uid])),
+            (uid) => setRemoteUids(prev => prev.filter(u => u !== uid)),
         )
             .then(() => { if (!cancelled) setIsConnecting(false); })
             .catch((e) => {
@@ -225,12 +229,25 @@ export const ChallengeVideoRoom: React.FC = () => {
         setIsMuted(next);
     };
 
+    const toggleCamera = () => {
+        const next = !isCameraOff;
+        AgoraVoice.toggleCamera(next).catch(() => {});
+        setIsCameraOff(next);
+    };
+
     // ── Render ────────────────────────────────────────────────────────
     return (
         <View style={st.root}>
-            {/* Background gradient feel */}
-            <View style={st.bgTop} />
-            <View style={st.bgBottom} />
+            {/* Live video layer — opponent fills the screen, local camera as PiP */}
+            <ChallengeVideoStage
+                remoteUid={remoteUids[0]}
+                isCameraOff={isCameraOff}
+                opponentName={opponentName}
+            />
+
+            {/* Scrims keep the overlaid text/controls legible over the video */}
+            <View style={st.scrimTop} pointerEvents="none" />
+            <View style={st.scrimBottom} pointerEvents="none" />
 
             <SafeAreaView style={st.safe} edges={['top', 'bottom']}>
 
@@ -249,10 +266,10 @@ export const ChallengeVideoRoom: React.FC = () => {
                     {/* WAITING */}
                     {phase === 'waiting' && (
                         <View style={st.waitingWrap}>
-                            <CircleUserRound color="#2a4060" size={72} strokeWidth={1} />
-                            <Text style={st.opponentName}>{opponentName}</Text>
                             <Text style={st.opponentStatus}>
-                                {opponentReady ? '✓ Ready!' : 'Waiting to get ready…'}
+                                {opponentReady
+                                    ? `✓ ${opponentName} is ready!`
+                                    : `Waiting for ${opponentName} to get ready…`}
                             </Text>
 
                             <View style={st.readyStatusRow}>
@@ -351,6 +368,16 @@ export const ChallengeVideoRoom: React.FC = () => {
                             <PhoneOff color="#fff" size={24} />
                         </TouchableOpacity>
 
+                        <TouchableOpacity
+                            style={[st.ctrlBtn, isCameraOff && st.ctrlBtnActive]}
+                            onPress={toggleCamera}
+                            activeOpacity={0.8}
+                        >
+                            {isCameraOff
+                                ? <VideoOff color="#fff" size={20} />
+                                : <Video color="#fff" size={20} />}
+                        </TouchableOpacity>
+
                         {/* Show "End Workout" when active (early finish) */}
                         {phase === 'active' && (
                             <TouchableOpacity
@@ -361,7 +388,6 @@ export const ChallengeVideoRoom: React.FC = () => {
                                 <Flag color="#fff" size={20} />
                             </TouchableOpacity>
                         )}
-                        {phase !== 'active' && <View style={st.ctrlBtn} />}
                     </View>
                 )}
 
@@ -380,8 +406,8 @@ const ORANGE = '#E89951';
 
 const st = StyleSheet.create({
     root:      { flex: 1, backgroundColor: '#080e18' },
-    bgTop:     { position: 'absolute', top: 0, left: 0, right: 0, height: height * 0.55, backgroundColor: '#0d1520' },
-    bgBottom:  { position: 'absolute', bottom: 0, left: 0, right: 0, height: height * 0.45, backgroundColor: '#060c14' },
+    scrimTop:    { position: 'absolute', top: 0, left: 0, right: 0, height: height * 0.22, backgroundColor: 'rgba(8,14,24,0.55)' },
+    scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: height * 0.28, backgroundColor: 'rgba(6,12,20,0.6)' },
     safe:      { flex: 1 },
 
     topBar: {
@@ -404,9 +430,13 @@ const st = StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
 
     // Waiting
-    waitingWrap: { alignItems: 'center', gap: 12 },
-    opponentName: { color: '#fff', fontSize: 22, fontWeight: '700', marginTop: 8 },
-    opponentStatus: { color: 'rgba(150,180,210,0.6)', fontSize: 14 },
+    waitingWrap: {
+        alignItems: 'center', gap: 12,
+        backgroundColor: 'rgba(8,14,24,0.7)',
+        borderRadius: 22, paddingHorizontal: 28, paddingVertical: 24,
+        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+    },
+    opponentStatus: { color: 'rgba(200,220,240,0.85)', fontSize: 14 },
     readyStatusRow: {
         flexDirection: 'row', alignItems: 'center', gap: 10,
         marginTop: 8, marginBottom: 4,

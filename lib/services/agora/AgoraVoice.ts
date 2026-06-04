@@ -30,6 +30,8 @@ export interface AgoraVoiceService {
 
     leaveChannel: () => Promise<void>;
     toggleMute: (muted: boolean) => Promise<void>;
+    /** Turn the local camera on/off (off=true hides/stops sending local video). */
+    toggleCamera: (off: boolean) => Promise<void>;
 }
 
 // No-op fallback — real implementations live in .native.ts and .web.ts.
@@ -38,4 +40,5 @@ export const AgoraVoice: AgoraVoiceService = {
     joinChannelWithToken: async () => {},
     leaveChannel: async () => {},
     toggleMute: async () => {},
+    toggleCamera: async () => {},
 };
