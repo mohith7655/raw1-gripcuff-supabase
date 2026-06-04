@@ -172,6 +172,24 @@ export const ChallengeVideoRoom: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [iMeReady, opponentReady]);
 
+    // ── Reliable fallback: poll the DB ready flags ───────────────────
+    // Broadcast/presence can drop a packet (e.g. one side readies before the
+    // other subscribes), leaving the countdown stuck. setReady() always writes
+    // host_ready/guest_ready, so poll it while waiting and pick up the
+    // opponent's ready state even if the realtime signal was missed.
+    useEffect(() => {
+        if (!challengeSessionId || opponentReady || startedRef.current) return;
+        let cancelled = false;
+        const poll = setInterval(async () => {
+            if (cancelled || startedRef.current) return;
+            const s = await ChallengeSessionService.get(challengeSessionId).catch(() => null);
+            if (!s || cancelled) return;
+            const theirReady = isHost ? s.guestReady : s.hostReady;
+            if (theirReady) setOpponentReady(true);
+        }, 1500);
+        return () => { cancelled = true; clearInterval(poll); };
+    }, [challengeSessionId, isHost, opponentReady]);
+
     // ── Countdown: Ready → Steady → Go! ──────────────────────────────
     const startCountdown = () => {
         setPhase('countdown');

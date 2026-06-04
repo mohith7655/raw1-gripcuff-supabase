@@ -384,7 +384,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const { isFavorite, toggleFavorite } = useFavorites();
 
     // ── Workout / Watch mode ──────────────────────────────────────────────────
-    const [modeType, setModeType] = useState<'watch' | 'workout'>('watch');
+    const [modeType, setModeType] = useState<'watch' | 'workout'>(
+        route?.params?.initialMode === 'workout' ? 'workout' : 'watch',
+    );
     const [timerState, setTimerState] = useState<'idle' | 'countdown' | 'running'>('idle');
     // Refs updated every render so callbacks can read current values without stale closures
     const modeTypeRef = useRef<'watch' | 'workout'>('watch');
@@ -1040,6 +1042,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 thumbnail: v.thumbnail,
                 duration: v.duration,
                 allowInvite,
+                initialMode: modeTypeRef.current,
             });
         },
         [navigation, allowInvite],
