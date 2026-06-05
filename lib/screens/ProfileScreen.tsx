@@ -201,6 +201,7 @@ export const ProfileScreen = () => {
   const [streakData, setStreakData] = useState<StreakData | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [genningSummary, setGenningSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const pulse = useRef(new RNAnimated.Value(0.45)).current;
 
@@ -345,7 +346,9 @@ export const ProfileScreen = () => {
   // AI-curated intro blurb — generate from profile data, cache to DB.
   const handleGenerateSummary = async () => {
     if (genningSummary || !supabaseUserId) return;
+    console.log('[Summary] generating…');
     setGenningSummary(true);
+    setSummaryError(null);
     try {
       const hobbyLabels = (social?.hobbies ?? []).map(h => HOBBY_META[h]?.label ?? h);
       const goalLabels  = (social?.connectionGoals ?? []).map(g => CONNECTION_GOAL_META[g]?.label ?? g);
@@ -365,14 +368,16 @@ export const ProfileScreen = () => {
         workouts,
         joinedRecently: workouts > 0 && workouts <= 15,
       });
+      console.log('[Summary] result:', summary);
       if (!summary) {
-        Alert.alert('Add a few details first', 'Tell people what you do, your hobbies, or a short bio — then generate.');
+        setSummaryError('Add what you do, your hobbies, or a short bio first — then generate.');
         return;
       }
       await SocialProfileService.update(supabaseUserId, { aiSummary: summary });
       setSocial(prev => (prev ? { ...prev, aiSummary: summary } : prev));
     } catch (e: any) {
-      Alert.alert('Could not generate summary', String(e?.message ?? e));
+      console.warn('[Summary] failed:', e);
+      setSummaryError(String(e?.message ?? e));
     } finally {
       setGenningSummary(false);
     }
@@ -653,6 +658,9 @@ export const ProfileScreen = () => {
                 </>
               )}
             </TouchableOpacity>
+            {summaryError ? (
+              <Text style={{ color: '#ff6b6b', fontSize: 12, marginTop: 8 }}>{summaryError}</Text>
+            ) : null}
           </ProfileCard>
 
           {/* ── STATS (3 cards) ─────────────────────────────────────────────── */}
