@@ -5,12 +5,13 @@
  * server-side) to generate the AI intro blurb. The owner generates it once; the
  * result is persisted to profiles.ai_summary so viewers just read it.
  *
- * NOTE: uses the same relative `/.netlify/functions/...` path as the Agora token
- * service. That resolves on web/PWA. For native builds, point it at an absolute
- * base URL.
+ * Uses an ABSOLUTE base URL (the deployed Netlify site) so it works from the
+ * local Expo dev server (`expo start --web`) and native too — a relative
+ * `/.netlify/...` path only resolves when served by Netlify itself.
  */
 
-const SUMMARY_ENDPOINT = '/.netlify/functions/profile-summary';
+const APP_WEB_BASE_URL = (process.env.EXPO_PUBLIC_APP_WEB_URL || 'https://raw1-supabase.netlify.app').replace(/\/+$/, '');
+const SUMMARY_ENDPOINT = `${APP_WEB_BASE_URL}/.netlify/functions/profile-summary`;
 
 export interface ProfileSummaryInput {
     name?: string | null;
