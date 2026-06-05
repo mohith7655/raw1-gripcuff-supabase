@@ -48,7 +48,7 @@ export const ChallengeVideoRoom: React.FC = () => {
     const {
         channelName, opponentName = 'Opponent', token = '',
         challengeSessionId, exerciseName = 'Squats',
-        workoutDurationSecs = 60, isHost = true, myUid,
+        workoutDurationSecs = 60, isHost = true, myUid, opponentUid,
     } = route.params;
 
     const [isMuted, setIsMuted] = useState(false);
