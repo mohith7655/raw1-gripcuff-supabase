@@ -37,6 +37,7 @@ import {
   UserPlus,
   Target,
   Star,
+  Swords,
 } from 'lucide-react-native';
 import { Raw1Logo } from '../raw1_logo';
 import { AccessBadge } from '../components/AccessBadge';
@@ -64,6 +65,7 @@ import { supabase } from '../core/config/supabase';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
 import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
+import { ChallengeSessionService, PreviousChallenge } from '../services/challengeSession.service';
 import { MoveReminderService, MoveReminder, AlarmConfig, formatMoveTime12h } from '../services/moveReminder.service';
 import { AlarmPillSheet } from '../components/AlarmPillSheet';
 import { AlarmListRow } from '../components/AlarmListRow';
@@ -213,6 +215,19 @@ function RecommendationSection({
       </ScrollView>
     </View>
   );
+}
+
+// Compact relative date for challenge history rows (e.g. "Today", "3d ago", "Apr 12").
+function formatChallengeDate(iso: string): string {
+  const then = new Date(iso);
+  if (isNaN(then.getTime())) return '';
+  const now = new Date();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const days = Math.floor((now.getTime() - then.getTime()) / dayMs);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 const HomeScreenInner = () => {
@@ -413,10 +428,12 @@ const HomeScreenInner = () => {
   const [moveReminder, setMoveReminder] = useState<MoveReminder | null>(null);
   const [alarmSheetVisible, setAlarmSheetVisible] = useState(false);
   const [selectedAlarm, setSelectedAlarm] = useState<any>(null);
+  const [challengeHistory, setChallengeHistory] = useState<PreviousChallenge[]>([]);
 
   useEffect(() => {
     if (!notificationModalVisible || !supabaseUserId) return;
     MoveReminderService.loadDefault(supabaseUserId).then(setMoveReminder).catch(() => {});
+    ChallengeSessionService.loadPreviousForUser(supabaseUserId).then(setChallengeHistory).catch(() => {});
   }, [notificationModalVisible, supabaseUserId]);
 
   const saveAlarmConfigsFromPanel = async (configs: any[]) => {
@@ -1674,6 +1691,65 @@ const HomeScreenInner = () => {
                   <Text style={[styles.notifViewAllText, { color: '#34d399' }]}>View all clubs &gt;</Text>
                 </TouchableOpacity>
               </View>
+
+              <View style={styles.notifDivider} />
+
+              {/* ── Challenges ── */}
+              <View style={styles.notifSection}>
+                <View style={styles.notifSectionHeader}>
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#FF6B00' }]} />
+                  <Text style={styles.notifSectionTitle}>Challenges</Text>
+                  {challengeHistory.length > 0 && (
+                    <View style={[styles.countBadge, { backgroundColor: '#FF6B00', marginLeft: 8 }]}>
+                      <Text style={styles.countBadgeText}>{challengeHistory.length}</Text>
+                    </View>
+                  )}
+                </View>
+                {challengeHistory.length === 0 ? (
+                  <Text style={styles.notifEmptyText}>No challenges yet. Challenge a friend to get started.</Text>
+                ) : (
+                  challengeHistory.slice(0, 4).map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={styles.notifRow}
+                      activeOpacity={0.7}
+                      onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
+                    >
+                      <TierAvatar
+                        uri={c.opponentAvatar}
+                        size={36}
+                        uid={c.opponentUid}
+                        name={c.opponentName}
+                        fallback={
+                          <View style={{ flex: 1, backgroundColor: 'rgba(255,107,0,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                            <Swords color="#FF6B00" size={18} />
+                          </View>
+                        }
+                      />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.notifRowName} numberOfLines={1}>
+                          {(profile?.fullName || 'You')} vs {c.opponentName}
+                        </Text>
+                        <Text style={styles.notifRowSub} numberOfLines={1}>
+                          {c.exerciseName} · {Math.max(1, Math.round(c.durationSeconds / 60))} min · {formatChallengeDate(c.createdAt)}
+                        </Text>
+                      </View>
+                      <View style={[styles.countBadge, { backgroundColor: c.status === 'completed' ? '#FF6B00' : '#E89951' }]}>
+                        <Text style={styles.countBadgeText}>{c.status === 'completed' ? 'Done' : 'Played'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+                <TouchableOpacity
+                  style={styles.notifViewAll}
+                  onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.notifViewAllText, { color: '#FF6B00' }]}>View all challenges &gt;</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.notifDivider} />
 
               {/* ── Move Reminders ── */}
               <View style={styles.notifSection}>

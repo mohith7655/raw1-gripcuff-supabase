@@ -93,7 +93,25 @@ export function MoveReminderScreen() {
         `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ap}`;
 
     const sliderWidthRef = useRef(0);
+    const sliderLeftRef = useRef(0);
+    const sliderRef = useRef<View>(null);
     const scrollRef = useRef<ScrollView>(null);
+
+    // Measure the track's position/width in the window so drags map to the
+    // correct value. We use pageX (absolute) rather than locationX, which on
+    // React Native Web is relative to whichever child node the pointer is over
+    // (the thumb/fill) and would otherwise snap the value back toward 1 min.
+    const measureSlider = () => {
+        sliderRef.current?.measureInWindow((x, _y, w) => {
+            sliderLeftRef.current = x;
+            if (w) sliderWidthRef.current = w;
+        });
+    };
+    const setDurationFromPageX = (pageX: number) => {
+        const w = sliderWidthRef.current || 1;
+        const ratio = Math.min(Math.max((pageX - sliderLeftRef.current) / w, 0), 1);
+        setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(ratio * 4) + 1)));
+    };
 
     useEffect(() => {
         MoveReminderService.loadDefault(userId).then(r => {
@@ -244,20 +262,17 @@ export function MoveReminderScreen() {
                                 Duration: <Text style={{ color: ACCENT }}>{workoutDurationMin}</Text> min
                             </Text>
                             <View
+                                ref={sliderRef}
                                 style={s.sliderTrack}
-                                onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width; }}
+                                onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width; measureSlider(); }}
                                 onStartShouldSetResponder={() => true}
-                                onResponderGrant={(e) => {
-                                    const r = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
-                                    setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(r * 4) + 1)));
-                                }}
-                                onResponderMove={(e) => {
-                                    const r = Math.min(Math.max(e.nativeEvent.locationX / sliderWidthRef.current, 0), 1);
-                                    setWorkoutDurationMin(Math.max(1, Math.min(5, Math.round(r * 4) + 1)));
-                                }}
+                                onMoveShouldSetResponder={() => true}
+                                onResponderTerminationRequest={() => false}
+                                onResponderGrant={(e) => { measureSlider(); setDurationFromPageX(e.nativeEvent.pageX); }}
+                                onResponderMove={(e) => setDurationFromPageX(e.nativeEvent.pageX)}
                             >
-                                <View style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
-                                <View style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
+                                <View pointerEvents="none" style={[s.sliderFill, { width: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
+                                <View pointerEvents="none" style={[s.sliderThumb, { left: `${((workoutDurationMin - 1) / 4) * 100}%` as any }]} />
                             </View>
                             <View style={s.sliderLabels}>
                                 <Text style={s.sliderLabelText}>1 min</Text>

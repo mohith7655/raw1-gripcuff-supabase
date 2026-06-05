@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Calendar, Clock, Check, X, Dumbbell, UserRound, ArrowLeft, Play, Zap } from 'lucide-react-native';
+import { Calendar, Clock, Check, X, Dumbbell, UserRound, ArrowLeft, Play, Zap, Star, Trophy } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
@@ -28,6 +28,28 @@ interface SelfScheduledEntry {
     thumbnail: string | null;
     scheduledFor: Date;
     status: string;
+}
+
+// Read-only 1–5 star row used to display the user's saved challenge answers.
+function StarRow({ label, value }: { label: string; value: number | null }) {
+    return (
+        <View style={styles.fbRow}>
+            <Text style={styles.fbLabel}>{label}</Text>
+            <View style={{ flexDirection: 'row', gap: 2 }}>
+                {[1, 2, 3, 4, 5].map((n) => {
+                    const active = value != null && n <= value;
+                    return (
+                        <Star
+                            key={n}
+                            size={13}
+                            color={active ? AppTheme.primaryColor : 'rgba(120,140,160,0.35)'}
+                            fill={active ? AppTheme.primaryColor : 'transparent'}
+                        />
+                    );
+                })}
+            </View>
+        </View>
+    );
 }
 
 export const UpcomingSessionsScreen = () => {
@@ -693,6 +715,27 @@ export const UpcomingSessionsScreen = () => {
                                                 {c.exerciseName} · {Math.round(c.durationSeconds / 60) || 1} min
                                             </Text>
                                         </View>
+
+                                        {/* The user's own questionnaire answers (self-viewable) */}
+                                        {c.feedback && (
+                                            <View style={styles.feedbackBox}>
+                                                <Text style={styles.feedbackTitle}>YOUR ANSWERS</Text>
+                                                <StarRow label="How you felt" value={c.feedback.feeling} />
+                                                <StarRow label="They were friendly" value={c.feedback.friendliness} />
+                                                <StarRow label="Your reps" value={c.feedback.reps} />
+                                                <View style={styles.fbRow}>
+                                                    <Text style={styles.fbLabel}>Winner</Text>
+                                                    <View style={styles.fbWinner}>
+                                                        <Trophy size={12} color={AppTheme.primaryColor} />
+                                                        <Text style={styles.fbWinnerText}>
+                                                            {c.feedback.winnerId
+                                                                ? (c.feedback.winnerId === supabaseUserId ? 'You' : c.opponentName)
+                                                                : '—'}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        )}
                                     </View>
                                 );
                             }
@@ -951,6 +994,28 @@ const styles = StyleSheet.create({
         color: '#555',
         fontSize: 14,
     },
+    feedbackBox: {
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: 'rgba(255,255,255,0.08)',
+        gap: 7,
+    },
+    feedbackTitle: {
+        color: 'rgba(255,107,0,0.8)',
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    fbRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    fbLabel: { color: '#8aa0b6', fontSize: 13 },
+    fbWinner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    fbWinnerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
     sessionTypeLabel: {
         color: 'rgba(255,255,255,0.3)',
         fontSize: 11,

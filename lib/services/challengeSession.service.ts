@@ -15,6 +15,23 @@ export interface ChallengeSession {
     createdAt: string;
 }
 
+export interface ChallengeFeedbackInput {
+    sessionId: string;
+    userId: string;
+    feeling: number;       // 1–5
+    friendliness: number;  // 1–5
+    reps: number;          // 1–5
+    winnerId: string | null;
+}
+
+/** The current user's own answers for a challenge (self-viewable in history). */
+export interface ChallengeFeedback {
+    feeling: number | null;
+    friendliness: number | null;
+    reps: number | null;
+    winnerId: string | null;
+}
+
 export interface PreviousChallenge {
     id: string;
     exerciseName: string;
@@ -25,6 +42,7 @@ export interface PreviousChallenge {
     opponentUid: string;
     opponentName: string;
     opponentAvatar: string | null;
+    feedback: ChallengeFeedback | null;
 }
 
 function rowToSession(row: any): ChallengeSession {
@@ -165,6 +183,26 @@ export const ChallengeSessionService = {
             });
         }
 
+        // Attach the user's OWN questionnaire answers per session (RLS already
+        // restricts this to their own rows) so they're viewable in history.
+        const feedbackMap: Record<string, ChallengeFeedback> = {};
+        const sessionIds = sessions.map(s => s.id);
+        if (sessionIds.length > 0) {
+            const { data: fb } = await supabase
+                .from('challenge_feedback')
+                .select('session_id, feeling, friendliness, reps, winner_id')
+                .eq('user_id', uid)
+                .in('session_id', sessionIds);
+            (fb ?? []).forEach((r: any) => {
+                feedbackMap[r.session_id] = {
+                    feeling: r.feeling ?? null,
+                    friendliness: r.friendliness ?? null,
+                    reps: r.reps ?? null,
+                    winnerId: r.winner_id ?? null,
+                };
+            });
+        }
+
         return sessions.map((s) => {
             const isHost = s.hostId === uid;
             const opponentUid = isHost ? s.guestId : s.hostId;
@@ -179,8 +217,28 @@ export const ChallengeSessionService = {
                 opponentUid,
                 opponentName: prof?.name ?? 'Athlete',
                 opponentAvatar: prof?.avatar ?? null,
+                feedback: feedbackMap[s.id] ?? null,
             };
         });
+    },
+
+    /** Save (or update) the submitter's post-challenge questionnaire answers. */
+    async submitFeedback(input: ChallengeFeedbackInput): Promise<void> {
+        const { error } = await supabase
+            .from('challenge_feedback')
+            .upsert(
+                {
+                    session_id: input.sessionId,
+                    user_id: input.userId,
+                    feeling: input.feeling,
+                    friendliness: input.friendliness,
+                    reps: input.reps,
+                    winner_id: input.winnerId,
+                    updated_at: new Date().toISOString(),
+                },
+                { onConflict: 'session_id,user_id' },
+            );
+        if (error) throw error;
     },
 
     /** Load pending challenge invites where user is the guest */
