@@ -204,6 +204,11 @@ export const ChallengeSessionService = {
                     winnerId: r.winner_id ?? null,
                 };
             });
+            console.log('[Challenge] previous loaded', {
+                challenges: sessions.length,
+                feedbackRows: (fb ?? []).length,
+                ratedSessions: Object.keys(feedbackMap),
+            });
         }
 
         return sessions.map((s) => {
