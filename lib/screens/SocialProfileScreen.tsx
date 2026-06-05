@@ -158,7 +158,6 @@ function LocationLine({
 
     const body = (
         <View style={s.locRow}>
-            <View style={s.locIcon}>{icon}</View>
             <View style={{ flex: 1 }}>
                 <Text style={s.locLineTitle}>{title}</Text>
                 {hasContent ? (
@@ -585,20 +584,16 @@ export function SocialProfileScreen() {
                                     onEdit={goToEdit}
                                 />
                             </View>
-                            {/* Single interactive map highlighting every set location.
-                                Only the owner sees the precise map — others get just
-                                the coarse locality text above, never exact pins. */}
-                            {isOwn && (
-                                <LocationsMap
-                                    points={[
-                                        { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
-                                        { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
-                                        { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
-                                    ]}
-                                    onMapTouchStart={() => setScrollEnabled(false)}
-                                    onMapTouchEnd={() => setScrollEnabled(true)}
-                                />
-                            )}
+                            {/* Single interactive map highlighting every set location */}
+                            <LocationsMap
+                                points={[
+                                    { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
+                                    { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
+                                    { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
+                                ]}
+                                onMapTouchStart={() => setScrollEnabled(false)}
+                                onMapTouchEnd={() => setScrollEnabled(true)}
+                            />
                         </SectionCard>
                     ) : null}
 

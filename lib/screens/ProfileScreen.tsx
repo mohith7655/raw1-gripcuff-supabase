@@ -1016,40 +1016,29 @@ export const ProfileScreen = () => {
                 <Pencil size={16} color={C.muted} strokeWidth={2} />
               </TouchableOpacity>
             </View>
-            {gymName ? (
-              <LocationRow
-                cardTitle="Workout Area"
-                name={gymName}
-                address={gymAddress}
-                iconComponent={MapPin}
-              />
-            ) : null}
-            {homeName ? (
-              <>
-                {gymName ? <View style={{ height: 12 }} /> : null}
-                <LocationRow
-                  cardTitle="Home area"
-                  name={homeName}
-                  address={homeAddress}
-                  iconComponent={Home}
-                />
-              </>
-            ) : null}
-            {parkName ? (
-              <>
-                {(gymName || homeName) ? <View style={{ height: 12 }} /> : null}
-                <LocationRow
-                  cardTitle="Hangout Area"
-                  name={parkName}
-                  address={parkAddress}
-                  iconComponent={Trees}
-                />
-              </>
-            ) : null}
-            {!gymName && !homeName && !parkName && (
-              <Text style={s.bodyText}>Add your favorite locations</Text>
-            )}
-            {/* One shared, interactive map highlighting every set location */}
+            {(() => {
+              // Self view → full address. Compact: just label + address text.
+              const items = [
+                { label: 'Workout Area', address: social?.gymAddress || social?.gymArea || '' },
+                { label: 'Home area',    address: social?.houseAddress || '' },
+                { label: 'Hangout Area', address: social?.parkAddress || '' },
+              ].filter(it => it.address.trim());
+
+              if (items.length === 0) {
+                return <Text style={s.bodyText}>Add your favorite locations</Text>;
+              }
+              return (
+                <View style={{ gap: 12, marginTop: 4 }}>
+                  {items.map(it => (
+                    <View key={it.label}>
+                      <Text style={s.locItemLabel}>{it.label}</Text>
+                      <Text style={s.locItemAddr}>{it.address}</Text>
+                    </View>
+                  ))}
+                </View>
+              );
+            })()}
+            {/* Shared interactive map highlighting every set location */}
             <LocationsMap
               points={[
                 { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
@@ -1386,6 +1375,17 @@ const s = StyleSheet.create({
     color: C.muted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  locItemLabel: {
+    color: '#E89951',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  locItemAddr: {
+    color: C.text,
+    fontSize: 14,
+    lineHeight: 19,
   },
   aiBtn: {
     flexDirection: 'row',
