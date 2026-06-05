@@ -27,6 +27,7 @@ import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useInvite } from '../hooks/useInvite';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { User as FriendUser } from '../models/User';
 import { Video } from '../models/Video';
 import { getProgramByVideoId, getProgramsByCategory, PreRecordedProgram, ProgramVideo } from '../data/preRecordedPrograms';
@@ -423,11 +424,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        {f.profileImageUrl ? (
-                                            <Image key={f.profileImageUrl} source={{ uri: f.profileImageUrl }} style={styles.avatar} />
-                                        ) : (
-                                            <CircleUserRound color={AppTheme.primaryColor} size={40} />
-                                        )}
+                                        <TierAvatar uri={f.profileImageUrl} size={44} uid={f.uid} name={f.fullName || f.username} radius={10} />
                                         <View style={{ marginLeft: 12 }}>
                                             <Text style={styles.friendName}>{f.fullName}</Text>
                                             <Text style={styles.friendUsername}>@{f.username}</Text>
@@ -487,11 +484,9 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                 return (
                                     <View key={session.id} style={styles.sessionCard}>
                                         <View style={styles.sessionCardRow}>
-                                            {partnerAvatar ? (
-                                                <Image source={{ uri: partnerAvatar }} style={styles.sessionAvatar} />
-                                            ) : (
-                                                <CircleUserRound color={AppTheme.primaryColor} size={32} style={{ marginRight: 12 }} />
-                                            )}
+                                            <View style={{ marginRight: 12 }}>
+                                                <TierAvatar uri={partnerAvatar} size={32} uid={isHost ? session.guestUid : session.hostUid} name={partnerName} radius={8} />
+                                            </View>
                                             <Text style={styles.sessionPartner}>{partnerName}</Text>
                                         </View>
                                         <View style={styles.sessionCardBottom}>

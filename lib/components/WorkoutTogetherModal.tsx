@@ -43,6 +43,7 @@ import {
 } from 'lucide-react-native';
 import { TimeArrowPicker } from './TimeArrowPicker';
 import { useFriend } from '../providers/FriendContext';
+import { TierAvatar } from './profile/TierAvatar';
 import { useInvite } from '../hooks/useInvite';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { WorkoutReminderService } from '../services/workoutReminder.service';
@@ -513,13 +514,7 @@ export function WorkoutTogetherModal({
                                         onPress={() => setSelectedFriend(item)}
                                         activeOpacity={0.78}
                                     >
-                                        {item.profileImageUrl ? (
-                                            <Image source={{ uri: item.profileImageUrl }} style={s.avatar} />
-                                        ) : (
-                                            <View style={s.avatarPlaceholder}>
-                                                <CircleUserRound color={ACCENT} size={22} />
-                                            </View>
-                                        )}
+                                        <TierAvatar uri={item.profileImageUrl} size={40} uid={item.uid} name={item.fullName || item.username} radius={9} />
                                         <View style={s.friendInfo}>
                                             <Text style={s.friendName} numberOfLines={1}>
                                                 {item.fullName || item.username}

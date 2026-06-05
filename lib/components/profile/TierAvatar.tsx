@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { WebSafeAvatar } from '../WebSafeAvatar';
 import { TierAvatarRing } from './TierAvatarRing';
 import { useTier } from '../../providers/TierContext';
@@ -21,6 +22,8 @@ interface Props {
     showBadge?: boolean;
     /** Background the badge border blends into. */
     badgeBorderColor?: string;
+    /** Opt out of the tap-to-open-profile behaviour (e.g. own avatar in editors). */
+    disableProfileLink?: boolean;
 }
 
 function initialsOf(name?: string | null): string {
@@ -36,8 +39,9 @@ function initialsOf(name?: string | null): string {
  * on the segments the user has activated (via accessType).
  */
 export function TierAvatar({
-    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor,
+    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink,
 }: Props) {
+    const navigation = useNavigation<any>();
     const r = radius ?? Math.round(size * 0.22);
 
     // Explicit accessType wins; otherwise resolve by uid via the batched cache.
@@ -60,7 +64,7 @@ export function TierAvatar({
         </View>
     );
 
-    return (
+    const content = (
         <TierAvatarRing
             accessType={tier}
             avatarSize={size}
@@ -76,4 +80,23 @@ export function TierAvatar({
             />
         </TierAvatarRing>
     );
+
+    // Tapping any avatar with a known user id opens that user's profile.
+    if (uid && !disableProfileLink) {
+        return (
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SocialProfileScreen', { uid })}
+                // Web: stop the click from also triggering the parent row's handler
+                // (so tapping the avatar opens the profile, not the row's action).
+                {...(Platform.OS === 'web'
+                    ? { onClick: (e: any) => { e?.stopPropagation?.(); } }
+                    : {})}
+            >
+                {content}
+            </TouchableOpacity>
+        );
+    }
+
+    return content;
 }

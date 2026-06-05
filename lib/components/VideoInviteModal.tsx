@@ -13,6 +13,7 @@ import {
 import { Check, CircleUserRound, X, PlayCircle, Clock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFriend } from '../providers/FriendContext';
+import { TierAvatar } from './profile/TierAvatar';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
@@ -228,11 +229,7 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                                         onPress={() => handleSelectFriend(item)}
                                         activeOpacity={0.75}
                                     >
-                                        {item.profileImageUrl ? (
-                                            <Image key={item.profileImageUrl} source={{ uri: item.profileImageUrl }} style={s.avatar} />
-                                        ) : (
-                                            <CircleUserRound color={ACCENT} size={38} />
-                                        )}
+                                        <TierAvatar uri={item.profileImageUrl} size={38} uid={item.uid} name={item.fullName || item.username} radius={8} />
                                         <View style={s.friendInfo}>
                                             <Text style={s.friendName}>{item.fullName || item.username}</Text>
                                             <Text style={s.friendUsername}>@{item.username}</Text>
@@ -263,15 +260,7 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                         </TouchableOpacity>
 
                         {/* Avatar */}
-                        {selected?.profileImageUrl ? (
-                            <Image key={selected.profileImageUrl} source={{ uri: selected.profileImageUrl }} style={s.waitAvatar} />
-                        ) : (
-                            <View style={s.waitAvatarPlaceholder}>
-                                <Text style={s.waitAvatarInitial}>
-                                    {(selected?.fullName ?? selected?.username ?? '?').charAt(0).toUpperCase()}
-                                </Text>
-                            </View>
-                        )}
+                        <TierAvatar uri={selected?.profileImageUrl} size={72} uid={selected?.uid} name={selected?.fullName ?? selected?.username} radius={16} />
 
                         <Text style={s.waitTitle}>Waiting for</Text>
                         <Text style={s.waitName}>{selected?.fullName ?? selected?.username}</Text>

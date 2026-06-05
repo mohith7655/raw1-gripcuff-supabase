@@ -46,6 +46,7 @@ import {
   X,
   Trash2,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { StorageService } from '../services/storage.service';
@@ -54,11 +55,13 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useFriend } from '../providers/FriendContext';
 import { SocialProfileService } from '../services/socialProfile.service';
+import { generateProfileSummary } from '../services/profileSummary.service';
+import { coarseLocality } from '../utils/locality';
 import { StreakService, StreakData } from '../services/streak.service';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
 import { BADGE_FAMILIES, TIER_COLORS, getTierName } from '../services/badge.types';
 import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
-import { SocialProfile, HOBBY_META, Hobby } from '../models/SocialProfile';
+import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, Hobby } from '../models/SocialProfile';
 import { StatPill } from '../components/profile/StatPill';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { ChipPill } from '../components/profile/ChipPill';
@@ -197,6 +200,7 @@ export const ProfileScreen = () => {
   const [social,     setSocial]     = useState<SocialProfile | null>(null);
   const [streakData, setStreakData] = useState<StreakData | null>(null);
   const [loading,    setLoading]    = useState(true);
+  const [genningSummary, setGenningSummary] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const pulse = useRef(new RNAnimated.Value(0.45)).current;
 
@@ -337,6 +341,42 @@ export const ProfileScreen = () => {
   const streak   = streakData?.currentStreak  ?? profile?.currentStreak    ?? 3;
   const workouts = streakData?.totalWorkouts  ?? profile?.completedWorkouts ?? 12;
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
+
+  // AI-curated intro blurb — generate from profile data, cache to DB.
+  const handleGenerateSummary = async () => {
+    if (genningSummary || !supabaseUserId) return;
+    setGenningSummary(true);
+    try {
+      const hobbyLabels = (social?.hobbies ?? []).map(h => HOBBY_META[h]?.label ?? h);
+      const goalLabels  = (social?.connectionGoals ?? []).map(g => CONNECTION_GOAL_META[g]?.label ?? g);
+      const cityHint    = social?.city
+        || coarseLocality(social?.houseAddress, social?.houseName)
+        || social?.gymArea
+        || null;
+      const summary = await generateProfileSummary({
+        name: displayName,
+        whatIDo: social?.whatIDo ?? null,
+        city: cityHint,
+        hobbies: hobbyLabels,
+        lookingToMeet: social?.lookingToMeet ?? null,
+        connectionGoals: goalLabels,
+        bio: social?.bio ?? null,
+        streak,
+        workouts,
+        joinedRecently: workouts > 0 && workouts <= 15,
+      });
+      if (!summary) {
+        Alert.alert('Add a few details first', 'Tell people what you do, your hobbies, or a short bio — then generate.');
+        return;
+      }
+      await SocialProfileService.update(supabaseUserId, { aiSummary: summary });
+      setSocial(prev => (prev ? { ...prev, aiSummary: summary } : prev));
+    } catch (e: any) {
+      Alert.alert('Could not generate summary', String(e?.message ?? e));
+    } finally {
+      setGenningSummary(false);
+    }
+  };
 
 
   // Location data
@@ -489,45 +529,50 @@ export const ProfileScreen = () => {
 
           {/* ── HERO ───────────────────────────────────────────────────────── */}
           <View style={s.hero}>
-            <TierAvatarRing
-              accessType={profile?.accessType}
-              avatarSize={134}
-              avatarRadius={28}
-            >
-              <View style={s.avatarRing}>
-                {avatarUploading ? (
-                  <View style={{ width: 134, height: 134, borderRadius: 28, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
-                    <ActivityIndicator color={C.orange} size="large" />
+            <View style={s.heroRow}>
+              <View style={s.heroAvatarCol}>
+                <TierAvatarRing
+                  accessType={profile?.accessType}
+                  avatarSize={100}
+                  avatarRadius={22}
+                >
+                  <View style={s.avatarRing}>
+                    {avatarUploading ? (
+                      <View style={{ width: 100, height: 100, borderRadius: 22, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
+                        <ActivityIndicator color={C.orange} size="large" />
+                      </View>
+                    ) : (
+                      <Avatar uri={profile?.profileImageUrl} size={100} />
+                    )}
                   </View>
-                ) : (
-                  <Avatar uri={profile?.profileImageUrl} size={134} />
-                )}
+                </TierAvatarRing>
+
+                {/* Avatar action icons — below picture, always visible */}
+                <View style={s.avatarActions}>
+                  {profile?.profileImageUrl ? (
+                    <>
+                      <TouchableOpacity style={s.avatarActionBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
+                        <RefreshCw size={15} color="#fff" strokeWidth={2.2} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[s.avatarActionBtn, s.avatarActionDelete]} onPress={handleDeleteAvatar} activeOpacity={0.75}>
+                        <Trash2 size={15} color="#fff" strokeWidth={2.2} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity style={s.avatarUploadBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
+                      <Camera size={15} color="#fff" strokeWidth={2.2} />
+                      <Text style={s.avatarUploadBtnText}>Upload Photo</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </TierAvatarRing>
 
-            {/* Avatar action icons — below picture, always visible */}
-            <View style={s.avatarActions}>
-              {profile?.profileImageUrl ? (
-                <>
-                  <TouchableOpacity style={s.avatarActionBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
-                    <RefreshCw size={15} color="#fff" strokeWidth={2.2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[s.avatarActionBtn, s.avatarActionDelete]} onPress={handleDeleteAvatar} activeOpacity={0.75}>
-                    <Trash2 size={15} color="#fff" strokeWidth={2.2} />
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity style={s.avatarUploadBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
-                  <Camera size={15} color="#fff" strokeWidth={2.2} />
-                  <Text style={s.avatarUploadBtnText}>Upload Photo</Text>
-                </TouchableOpacity>
-              )}
+              <View style={s.heroInfoCol}>
+                <Text style={s.handle} numberOfLines={1}>@{username}</Text>
+                <Text style={s.name} numberOfLines={1}>{displayName}</Text>
+                <Text style={s.email} numberOfLines={1}>{email}</Text>
+              </View>
             </View>
-
-
-            <Text style={s.handle}>@{username}</Text>
-            <Text style={s.name} numberOfLines={1}>{displayName}</Text>
-            <Text style={s.email}>{email}</Text>
 
             {/* Privacy Controls */}
             <View style={s.privacyRow}>
@@ -580,6 +625,35 @@ export const ProfileScreen = () => {
             )}
 
           </View>
+
+          {/* ── AI SUMMARY — curated intro, right after locations ───────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Summary</Text>
+            </View>
+            <Text style={s.bodyText}>
+              {social?.aiSummary
+                ? social.aiSummary
+                : 'Let AI craft a friendly intro from your details so people want to connect.'}
+            </Text>
+            <TouchableOpacity
+              style={s.aiBtn}
+              onPress={handleGenerateSummary}
+              disabled={genningSummary}
+              activeOpacity={0.85}
+            >
+              {genningSummary ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Sparkles size={15} color="#fff" />
+                  <Text style={s.aiBtnText}>
+                    {social?.aiSummary ? 'Regenerate with AI' : 'Generate with AI'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </ProfileCard>
 
           {/* ── STATS (3 cards) ─────────────────────────────────────────────── */}
           <StatPill streak={streak} workouts={workouts} prs={prs} />
@@ -1081,6 +1155,20 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    alignSelf: 'stretch',
+  },
+  heroAvatarCol: {
+    alignItems: 'center',
+  },
+  heroInfoCol: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'flex-start',
+  },
   avatarActions: {
     flexDirection: 'row',
     gap: 10,
@@ -1138,7 +1226,7 @@ const s = StyleSheet.create({
     color: C.muted,
     fontSize: 16,
     fontWeight: '600',
-    marginTop: 12,
+    marginTop: 0,
   },
   email: {
     color: C.muted,
@@ -1290,6 +1378,21 @@ const s = StyleSheet.create({
     color: C.muted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  aiBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    backgroundColor: '#FF6B00',
+    borderRadius: 12,
+    paddingVertical: 11,
+  },
+  aiBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   activityTimeRow: {
     flexDirection: 'row',

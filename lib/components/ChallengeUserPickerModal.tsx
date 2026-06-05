@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { X, Zap, CircleUserRound } from 'lucide-react-native';
 import { useFriend } from '../providers/FriendContext';
+import { TierAvatar } from './profile/TierAvatar';
 import { useAuth } from '../providers/AuthContext';
 import { ChallengeSessionService } from '../services/challengeSession.service';
 import { NotificationService } from '../services/notification.service';
@@ -104,13 +105,7 @@ export function ChallengeUserPickerModal({
                             {friends.map((friend: any) => (
                                 <View key={friend.uid} style={s.row}>
                                     {/* Avatar */}
-                                    {friend.profileImageUrl ? (
-                                        <Image source={{ uri: friend.profileImageUrl }} style={s.avatar} />
-                                    ) : (
-                                        <View style={[s.avatar, s.avatarFallback]}>
-                                            <CircleUserRound color="#4a6480" size={22} strokeWidth={1.5} />
-                                        </View>
-                                    )}
+                                    <TierAvatar uri={friend.profileImageUrl} size={44} uid={friend.uid} name={friend.fullName || friend.username} radius={10} />
 
                                     {/* Name + streak */}
                                     <View style={s.rowInfo}>

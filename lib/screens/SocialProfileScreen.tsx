@@ -11,6 +11,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Animated,
     Image,
     Platform,
@@ -25,16 +26,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LocationsMap } from '../components/profile/LocationsMap';
+import { coarseLocality } from '../utils/locality';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import {
     ArrowLeft, Briefcase, ChevronRight, Dumbbell, Edit2, Eye, Flame, Heart, Home,
     MapPin, MessageCircle, QrCode, Settings, Trees, Trophy,
-    UserCheck, UserPlus,
+    UserCheck, UserPlus, Sparkles,
 } from 'lucide-react-native';
 import { useAuth } from '../providers/AuthContext';
 import { useFriend } from '../providers/FriendContext';
 import { UserService } from '../services/user.service';
 import { SocialProfileService } from '../services/socialProfile.service';
+import { generateProfileSummary } from '../services/profileSummary.service';
 import { FriendService } from '../services/friend.service';
 import { StreakService, StreakData } from '../services/streak.service';
 import { ALL_BADGES } from '../services/rewards.service';
@@ -135,10 +138,20 @@ function LocationLine({
 }) {
     const trimName = (name ?? '').trim();
     const trimAddr = (address ?? '').trim();
-    const primary   = trimName || trimAddr;
-    const secondary = (trimName && trimAddr && trimName.toLowerCase() !== trimAddr.toLowerCase())
-        ? trimAddr
-        : null;
+
+    // Owner sees the exact place name + full address. Everyone else sees only
+    // the coarse locality/area — no exact name, building or street number.
+    let primary: string;
+    let secondary: string | null;
+    if (isOwn) {
+        primary   = trimName || trimAddr;
+        secondary = (trimName && trimAddr && trimName.toLowerCase() !== trimAddr.toLowerCase())
+            ? trimAddr
+            : null;
+    } else {
+        primary   = coarseLocality(trimAddr || trimName, trimName);
+        secondary = null;
+    }
     const hasContent = !!primary;
 
     if (!isOwn && !hasContent) return null;
@@ -242,6 +255,8 @@ export function SocialProfileScreen() {
     const [connectBusy, setConnectBusy] = useState(false);
     // Pause page scroll while a finger is panning a location map
     const [scrollEnabled, setScrollEnabled] = useState(true);
+    // AI intro blurb (owner generates it; everyone reads the cached value)
+    const [genningSummary, setGenningSummary] = useState(false);
 
     // Hide bottom CTA bar while scrolling, reveal when idle
     const ctaAnim = useRef(new Animated.Value(1)).current;
@@ -365,6 +380,46 @@ export function SocialProfileScreen() {
         (social?.openToTrainAgeGroups && social.openToTrainAgeGroups.length > 0)
     );
 
+    // Owner-only: ask the AI to curate an intro blurb from the profile data,
+    // then persist it so every viewer reads the same cached text.
+    const handleGenerateSummary = async () => {
+        if (genningSummary) return;
+        setGenningSummary(true);
+        try {
+            const hobbyLabels = (social?.hobbies ?? []).map(h => HOBBY_META[h]?.label ?? h);
+            const goalLabels  = (social?.connectionGoals ?? []).map(g => CONNECTION_GOAL_META[g]?.label ?? g);
+            const cityHint    = social?.city
+                || coarseLocality(social?.houseAddress, social?.houseName)
+                || social?.gymArea
+                || null;
+            const workouts    = streakData?.totalWorkouts ?? 0;
+
+            const summary = await generateProfileSummary({
+                name: displayName,
+                whatIDo: social?.whatIDo ?? null,
+                city: cityHint,
+                hobbies: hobbyLabels,
+                lookingToMeet: social?.lookingToMeet ?? null,
+                connectionGoals: goalLabels,
+                bio: social?.bio ?? null,
+                streak: streakData?.currentStreak ?? 0,
+                workouts,
+                joinedRecently: workouts > 0 && workouts <= 15,
+            });
+
+            if (!summary) {
+                Alert.alert('Add a few details first', 'Tell people what you do, your hobbies, or a short bio — then generate.');
+                return;
+            }
+            await SocialProfileService.update(uid, { aiSummary: summary });
+            setSocial(prev => (prev ? { ...prev, aiSummary: summary } : prev));
+        } catch (e: any) {
+            Alert.alert('Could not generate summary', String(e?.message ?? e));
+        } finally {
+            setGenningSummary(false);
+        }
+    };
+
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <SafeAreaView style={s.safe} edges={['top']}>
@@ -453,7 +508,7 @@ export function SocialProfileScreen() {
 
                 {/* ── Identity ── */}
                 <View style={s.identity}>
-                    <View style={{ marginBottom: 14 }}>
+                    <View style={s.identityRow}>
                         <TierAvatarRing
                             accessType={user?.accessType}
                             avatarSize={96}
@@ -470,15 +525,18 @@ export function SocialProfileScreen() {
                                 </TouchableOpacity>
                             )}
                         </TierAvatarRing>
-                    </View>
-                    <Text style={s.identityName}>{displayName}</Text>
-                    {username ? <Text style={s.identityUsername}>@{username}</Text> : null}
-                    {social?.openToConnect && (
-                        <View style={s.openBadge}>
-                            <View style={s.openDot} />
-                            <Text style={s.openText}>Open to connect</Text>
+
+                        <View style={s.identityInfo}>
+                            <Text style={s.identityName} numberOfLines={1}>{displayName}</Text>
+                            {username ? <Text style={s.identityUsername} numberOfLines={1}>@{username}</Text> : null}
+                            {social?.openToConnect && (
+                                <View style={s.openBadge}>
+                                    <View style={s.openDot} />
+                                    <Text style={s.openText}>Open to connect</Text>
+                                </View>
+                            )}
                         </View>
-                    )}
+                    </View>
                 </View>
 
                 {/* ── Stats ── */}
@@ -527,18 +585,54 @@ export function SocialProfileScreen() {
                                     onEdit={goToEdit}
                                 />
                             </View>
-                            {/* Single interactive map highlighting every set location */}
-                            <LocationsMap
-                                points={[
-                                    { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
-                                    { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
-                                    { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
-                                ]}
-                                onMapTouchStart={() => setScrollEnabled(false)}
-                                onMapTouchEnd={() => setScrollEnabled(true)}
-                            />
+                            {/* Single interactive map highlighting every set location.
+                                Only the owner sees the precise map — others get just
+                                the coarse locality text above, never exact pins. */}
+                            {isOwn && (
+                                <LocationsMap
+                                    points={[
+                                        { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
+                                        { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
+                                        { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
+                                    ]}
+                                    onMapTouchStart={() => setScrollEnabled(false)}
+                                    onMapTouchEnd={() => setScrollEnabled(true)}
+                                />
+                            )}
                         </SectionCard>
                     ) : null}
+
+                    {/* ── AI Summary — curated intro, shown right after Locations ── */}
+                    {(isOwn || social?.aiSummary) && (
+                        <SectionCard title="Summary">
+                            {social?.aiSummary ? (
+                                <Text style={s.aboutText}>{social.aiSummary}</Text>
+                            ) : (
+                                <Text style={s.placeholder}>
+                                    Let AI craft a friendly intro from your details so people want to connect.
+                                </Text>
+                            )}
+                            {isOwn && (
+                                <TouchableOpacity
+                                    style={s.aiBtn}
+                                    onPress={handleGenerateSummary}
+                                    disabled={genningSummary}
+                                    activeOpacity={0.85}
+                                >
+                                    {genningSummary ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <>
+                                            <Sparkles size={15} color="#fff" />
+                                            <Text style={s.aiBtnText}>
+                                                {social?.aiSummary ? 'Regenerate with AI' : 'Generate with AI'}
+                                            </Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+                            )}
+                        </SectionCard>
+                    )}
 
                     {/* ── About me ── */}
                     {(isOwn || social?.bio) && (
@@ -826,6 +920,18 @@ const s = StyleSheet.create({
         paddingBottom: 18,
         alignItems: 'center',
     },
+    identityRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        alignSelf: 'stretch',
+    },
+    identityInfo: {
+        flex: 1,
+        minWidth: 0,
+        alignItems: 'flex-start',
+        gap: 2,
+    },
     editFloat: {
         position: 'absolute',
         bottom: 0, right: 0,
@@ -835,10 +941,10 @@ const s = StyleSheet.create({
         borderWidth: 2, borderColor: C.bgBottom,
     },
     identityName: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '800',
         color: C.text,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     identityUsername: {
         fontSize: 14,
@@ -902,6 +1008,21 @@ const s = StyleSheet.create({
         fontSize: 14,
         color: 'rgba(255,255,255,0.85)',
         lineHeight: 20,
+    },
+    aiBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 12,
+        backgroundColor: '#FF6B00',
+        borderRadius: 12,
+        paddingVertical: 11,
+    },
+    aiBtnText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '700',
     },
     placeholder: {
         fontSize: 13,

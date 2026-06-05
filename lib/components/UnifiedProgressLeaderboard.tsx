@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { ChevronRight, Zap, Clock } from 'lucide-react-native';
 import { TimeArrowPicker } from './TimeArrowPicker';
+import { TierAvatar } from './profile/TierAvatar';
 import { useNavigation } from '@react-navigation/native';
 import { useInvite } from '../hooks/useInvite';
 import { BADGE_FAMILIES, TIER_COLORS, computeTier } from '../services/badge.types';
@@ -574,14 +575,8 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
         return (
           <View key={entry.uid} style={[s.lbRow, isMe && s.lbRowMe]}>
             <View style={s.lbAvatarWrap}>
-              {entry.photoURL ? (
-                <>
-                  <Image source={{ uri: entry.photoURL }} style={[s.lbAvatar, isMe && s.lbAvatarMe]} />
-                  <Text style={s.lbMedal}>{MEDALS[index] ?? ''}</Text>
-                </>
-              ) : (
-                <Text style={s.lbRankEmoji}>{MEDALS[index] ?? `#${index + 1}`}</Text>
-              )}
+              <TierAvatar uri={entry.photoURL} size={32} uid={entry.uid} name={entry.displayName} radius={7} />
+              <Text style={s.lbMedal}>{MEDALS[index] ?? ''}</Text>
             </View>
             <View style={s.lbNameRow}>
               <Text style={[s.lbName, isMe && s.lbNameMe]} numberOfLines={1}>{entry.displayName ?? 'Unknown'}</Text>

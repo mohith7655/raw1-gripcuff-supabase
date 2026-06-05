@@ -58,6 +58,7 @@ const fromRow = (row: any): SocialProfile => ({
     openToTrainAgeGroups: Array.isArray(row.open_to_train_age_groups) ? row.open_to_train_age_groups : [],
     city: row.city ?? null,
     country: row.country ?? null,
+    aiSummary: row.ai_summary ?? null,
 });
 
 const ALL_COLS = [
@@ -91,6 +92,7 @@ const ALL_COLS = [
     'open_to_train_age_groups',
     'city',
     'country',
+    'ai_summary',
 ].join(', ');
 
 export class SocialProfileService {
@@ -212,6 +214,10 @@ export class SocialProfileService {
         if (patch.parkLng !== undefined)                payload.park_lng = patch.parkLng;
         if (patch.city !== undefined)                   payload.city = patch.city;
         if (patch.country !== undefined)                payload.country = patch.country;
+        if (patch.aiSummary !== undefined) {
+            payload.ai_summary = patch.aiSummary;
+            payload.ai_summary_updated_at = new Date().toISOString();
+        }
 
         if (Object.keys(payload).length === 0) return;
 

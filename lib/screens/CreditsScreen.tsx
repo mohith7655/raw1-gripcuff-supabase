@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, CircleUserRound } from 'lucide-react-native';
 import { useUser } from '../providers/UserContext';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { SCREEN_PADDING } from '../constants/theme';
 import { AppTheme } from '../core/theme/app_theme';
 
@@ -110,7 +111,7 @@ export const CreditsScreen = () => {
 
         {/* Balance Card — centered with profile */}
         <View style={styles.balanceCard}>
-          <SmallAvatar uri={profile?.profileImageUrl} size={52} />
+          <TierAvatar uri={profile?.profileImageUrl} size={52} accessType={profile?.accessType} name={displayName} />
           <Text style={styles.profileName}>{displayName}</Text>
           <Text style={styles.balanceLabel}>Current Balance</Text>
           <Text style={styles.balanceAmount}>💎 {currentBalance} Credits</Text>

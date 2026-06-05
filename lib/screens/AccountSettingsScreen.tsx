@@ -30,6 +30,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Camera, CircleUserRound, Trash2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useAccess } from '../providers/AccessContext';
@@ -268,9 +269,11 @@ export const AccountSettingsScreen = () => {
                 {/* ── Avatar ── */}
                 <View style={styles.avatarSection}>
                     <View style={styles.avatarContainer}>
-                        <WebSafeAvatar
+                        <TierAvatar
                             uri={photoUri}
                             size={100}
+                            accessType={profile?.accessType}
+                            name={profile?.fullName}
                             fallback={
                                 <View style={styles.avatarPlaceholder}>
                                     <CircleUserRound color={AppTheme.primaryColor} size={50} />

@@ -19,6 +19,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { User } from '../models/User';
 import { TIER_COLORS, BADGE_FAMILIES, computeTier } from '../services/badge.types';
+import { TierAvatar } from '../components/profile/TierAvatar';
 
 type Tab = 'self' | 'weekly' | 'alltime';
 
@@ -97,22 +98,13 @@ const LeaderboardRow = memo(function LeaderboardRow({
                 )}
             </View>
 
-            <View style={[styles.avatarCircle, { backgroundColor: isMe ? '#E89951' : '#1e3a5f' }]}>
-                {item.photoURL ? (
-                    Platform.OS === 'web' ? (
-                        <img
-                            src={item.photoURL}
-                            style={({ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' } as any)}
-                        />
-                    ) : (
-                        <Image source={{ uri: item.photoURL }} style={styles.avatarImg} />
-                    )
-                ) : (
-                    <Text style={styles.avatarLetter}>
-                        {(item.displayName || 'U')[0].toUpperCase()}
-                    </Text>
-                )}
-            </View>
+            <TierAvatar
+                uri={item.photoURL || null}
+                size={44}
+                uid={item.uid}
+                name={item.displayName}
+                radius={10}
+            />
 
             <View style={styles.infoCol}>
                 <View style={styles.nameRow}>

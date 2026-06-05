@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, CircleUserRound, MessageCircle } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { useFriend } from '../providers/FriendContext';
 import { useAuth } from '../providers/AuthContext';
 import { ChatService, getChatId } from '../services/chat.service';
@@ -67,13 +68,13 @@ export const ChatInboxScreen = () => {
                         })
                     }
                 >
-                    {friend.profileImageUrl ? (
-                        <Image key={friend.profileImageUrl} source={{ uri: friend.profileImageUrl }} style={styles.avatar} />
-                    ) : (
-                        <View style={styles.avatarFallback}>
-                            <CircleUserRound color={AppTheme.primaryColor} size={24} />
-                        </View>
-                    )}
+                    <TierAvatar
+                        uri={friend.profileImageUrl}
+                        size={52}
+                        uid={friend.uid}
+                        name={friend.fullName || friend.username}
+                        radius={11}
+                    />
                     <Text style={styles.friendName} numberOfLines={1}>
                         {friend.fullName || friend.username}
                     </Text>

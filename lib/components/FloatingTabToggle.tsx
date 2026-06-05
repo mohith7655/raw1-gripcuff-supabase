@@ -24,8 +24,9 @@ export function useFloatingToggle() {
   const hide = useCallback(() => {
     if (!isVisible.current) return;
     isVisible.current = false;
+    // Toggle sits at the top, so hide it by sliding up & out of view.
     Animated.timing(translateY, {
-      toValue: 120,
+      toValue: -120,
       duration: 160,
       useNativeDriver: true,
     }).start();
@@ -44,14 +45,16 @@ type Props = {
   activeTab: SubTab;
   onTabChange: (tab: SubTab) => void;
   translateY: Animated.Value;
+  /** Distance from the top of the (already safe-area-insetted) container. */
+  topOffset?: number;
 };
 
-export function FloatingTabToggle({ activeTab, onTabChange, translateY }: Props) {
+export function FloatingTabToggle({ activeTab, onTabChange, translateY, topOffset = 56 }: Props) {
   return (
     <Animated.View
       style={{
         position: 'absolute',
-        bottom: 20,
+        top: topOffset,
         left: 40,
         right: 40,
         transform: [{ translateY }],

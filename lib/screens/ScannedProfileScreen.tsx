@@ -51,6 +51,7 @@ import { RelationshipStatus } from '../models/Friend';
 import { StatPill } from '../components/profile/StatPill';
 import { ChipPill } from '../components/profile/ChipPill';
 import { LocationRow } from '../components/profile/LocationRow';
+import { coarseLocality } from '../utils/locality';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { TierBars } from '../components/profile/TierBars';
@@ -124,12 +125,6 @@ function Bone({ width, height = 14, radius = 7 }: { width: any; height?: number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function splitAddress(address?: string | null) {
-  if (!address) return '';
-  const parts = address.split(',').map(p => p.trim()).filter(Boolean);
-  return parts.slice(1, 3).join(', ') || address;
-}
-
 function deriveBadges(streakData: StreakData | null): Badge[] {
   if (!streakData) return [];
   const ids = new Set(streakData.badges ?? []);
@@ -326,12 +321,11 @@ export function ScannedProfileScreen() {
   const workouts = streakData?.totalWorkouts ?? 0;
   const prs      = streakData?.bestStreak    ?? 0;
 
-  const gymName    = social?.gymName?.trim()  || '';
-  const gymAddress = splitAddress(social?.gymAddress || social?.gymArea);
-  const homeName   = social?.houseName?.trim() || '';
-  const homeAddress = splitAddress(social?.houseAddress);
-  const parkName   = social?.parkName?.trim()  || '';
-  const parkAddress = splitAddress(social?.parkAddress);
+  // Scanned profiles are always viewed by OTHERS — show only the coarse
+  // locality/area, never the exact place name, building or street number.
+  const gymArea  = coarseLocality(social?.gymAddress || social?.gymArea, social?.gymName);
+  const homeArea = coarseLocality(social?.houseAddress, social?.houseName);
+  const parkArea = coarseLocality(social?.parkAddress, social?.parkName);
 
   const lookingText = (() => {
     const l = social?.lookingToMeet;
@@ -516,14 +510,14 @@ export function ScannedProfileScreen() {
         </ProfileCard>
 
         {/* ── LOCATIONS ─────────────────────────────────────────────────────── */}
-        {!!gymName && (
-          <LocationRow cardTitle="Gym I go to"  name={gymName}  address={gymAddress}  iconComponent={MapPin} />
+        {!!gymArea && (
+          <LocationRow cardTitle="Gym I go to"  name={gymArea}  address=""  iconComponent={MapPin} />
         )}
-        {!!homeName && (
-          <LocationRow cardTitle="Home area"    name={homeName} address={homeAddress} iconComponent={Home}   />
+        {!!homeArea && (
+          <LocationRow cardTitle="Home area"    name={homeArea} address="" iconComponent={Home}   />
         )}
-        {!!parkName && (
-          <LocationRow cardTitle="Local park"   name={parkName} address={parkAddress} iconComponent={Trees}  />
+        {!!parkArea && (
+          <LocationRow cardTitle="Local park"   name={parkArea} address="" iconComponent={Trees}  />
         )}
 
         {/* ── HOBBIES ───────────────────────────────────────────────────────── */}

@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Check, MapPin, Camera, CircleUserRound, Trash2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
+import { TierAvatar } from '../components/profile/TierAvatar';
 import { LocationMapPreview } from '../components/profile/LocationMapPreview';
 import { StorageService } from '../services/storage.service';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
@@ -564,13 +565,17 @@ export function EditSocialProfileScreen() {
                     <>
                         <View style={s.avatarSection}>
                             <View style={s.avatarWrap}>
-                                {photoUri ? (
-                                    <WebSafeAvatar uri={photoUri} size={110} style={s.avatarImg} />
-                                ) : (
-                                    <View style={[s.avatarImg, s.avatarPlaceholder]}>
-                                        <CircleUserRound size={48} color={C.textMuted} />
-                                    </View>
-                                )}
+                                <TierAvatar
+                                    uri={photoUri}
+                                    size={110}
+                                    accessType={profile?.accessType}
+                                    name={profile?.fullName}
+                                    fallback={
+                                        <View style={[s.avatarImg, s.avatarPlaceholder]}>
+                                            <CircleUserRound size={48} color={C.textMuted} />
+                                        </View>
+                                    }
+                                />
                                 {uploading && (
                                     <View style={s.uploadOverlay}>
                                         <ActivityIndicator color="#fff" />

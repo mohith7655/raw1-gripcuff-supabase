@@ -88,6 +88,9 @@ export interface SocialProfile {
     city?: string | null;
     /** Country — maps to profiles.country */
     country?: string | null;
+
+    /** AI-curated intro blurb shown under Locations. Maps to profiles.ai_summary */
+    aiSummary?: string | null;
 }
 
 export const CONNECTION_GOAL_META: Record<ConnectionGoal, { label: string; emoji: string }> = {
