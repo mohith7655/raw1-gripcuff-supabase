@@ -739,6 +739,10 @@ export const UpcomingSessionsScreen = () => {
                                                 </View>
                                             </View>
                                         )}
+
+                                        {!c.feedback && (
+                                            <Text style={styles.notRatedText}>Not rated</Text>
+                                        )}
                                     </View>
                                 );
                             }
@@ -1018,6 +1022,11 @@ const styles = StyleSheet.create({
     },
     fbLabel: { color: '#8aa0b6', fontSize: 13, flex: 1, marginRight: 8 },
     fbValue: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    notRatedText: {
+        color: 'rgba(150,180,210,0.4)', fontSize: 11, fontStyle: 'italic',
+        marginTop: 10, paddingTop: 10,
+        borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.06)',
+    },
     fbWinner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     fbWinnerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
     sessionTypeLabel: {

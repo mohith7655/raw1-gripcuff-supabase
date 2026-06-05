@@ -188,11 +188,14 @@ export const ChallengeSessionService = {
         const feedbackMap: Record<string, ChallengeFeedback> = {};
         const sessionIds = sessions.map(s => s.id);
         if (sessionIds.length > 0) {
-            const { data: fb } = await supabase
+            const { data: fb, error: fbErr } = await supabase
                 .from('challenge_feedback')
                 .select('session_id, feeling, friendliness, reps, winner_id')
                 .eq('user_id', uid)
                 .in('session_id', sessionIds);
+            if (fbErr) {
+                console.warn('[Challenge] feedback load failed (is the challenge_feedback migration applied?):', fbErr.message);
+            }
             (fb ?? []).forEach((r: any) => {
                 feedbackMap[r.session_id] = {
                     feeling: r.feeling ?? null,

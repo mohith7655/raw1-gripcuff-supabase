@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    Dimensions, ActivityIndicator, Animated, Platform, useWindowDimensions,
+    Dimensions, ActivityIndicator, Animated, Platform, useWindowDimensions, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -354,22 +354,33 @@ export const ChallengeVideoRoom: React.FC = () => {
                     oppId = oppId ?? (isHost ? s.guestId : s.hostId);
                 }
             }
-            if (challengeSessionId && meId) {
-                await ChallengeSessionService.submitFeedback({
-                    sessionId: challengeSessionId,
-                    userId: meId,
-                    feeling: answers.feeling,
-                    friendliness: answers.friendliness,
-                    reps: answers.reps,
-                    winnerId: answers.winner === 'me' ? meId : oppId,
-                });
+            if (!challengeSessionId || !meId) {
+                throw new Error('Could not determine the challenge or your user id.');
             }
-        } catch (e) {
-            console.warn('[ChallengeVideoRoom] feedback submit failed:', e);
-        } finally {
+            await ChallengeSessionService.submitFeedback({
+                sessionId: challengeSessionId,
+                userId: meId,
+                feeling: answers.feeling,
+                friendliness: answers.friendliness,
+                reps: answers.reps,
+                winnerId: answers.winner === 'me' ? meId : oppId,
+            });
+            // Saved — close the questionnaire and leave the room.
             setSubmittingFeedback(false);
             setShowQuestionnaire(false);
             handleLeave();
+        } catch (e: any) {
+            // Keep the questionnaire open so the user can retry; surface the
+            // reason (a missing table here means the migration isn't applied).
+            setSubmittingFeedback(false);
+            console.warn('[ChallengeVideoRoom] feedback submit failed:', e);
+            const msg = String(e?.message ?? e);
+            Alert.alert(
+                'Could not save your answers',
+                /relation|table|does not exist|schema/i.test(msg)
+                    ? 'The challenge_feedback table is missing — apply the Supabase migration, then try again.'
+                    : msg,
+            );
         }
     };
 
