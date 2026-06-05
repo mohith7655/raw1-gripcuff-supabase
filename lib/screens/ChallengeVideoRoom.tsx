@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    Dimensions, ActivityIndicator, Animated,
+    Dimensions, ActivityIndicator, Animated, Platform, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -40,6 +40,11 @@ function fmtTime(s: number) { return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`
 export const ChallengeVideoRoom: React.FC = () => {
     const navigation = useNavigation<any>();
     const route = useRoute<RouteProp<ParamList, 'ChallengeVideoRoom'>>();
+    // On web the flex chain through the navigator scene has no fixed height, so
+    // this full-screen view collapses (the video stage is absolutely positioned).
+    // Pin it to the live viewport height so it always fills the screen and the
+    // page doesn't scroll / show the scene background below.
+    const { height: winHeight } = useWindowDimensions();
     const {
         channelName, opponentName = 'Opponent', token = '',
         challengeSessionId, exerciseName = 'Squats',
@@ -418,7 +423,7 @@ export const ChallengeVideoRoom: React.FC = () => {
 
     // ── Render ────────────────────────────────────────────────────────
     return (
-        <View style={st.root}>
+        <View style={[st.root, Platform.OS === 'web' && { height: winHeight }]}>
             {/* Live video layer — opponent fills the screen, local camera as PiP */}
             <ChallengeVideoStage
                 remoteUid={remoteUids[0]}
@@ -607,7 +612,7 @@ export const ChallengeVideoRoom: React.FC = () => {
 const ORANGE = '#E89951';
 
 const st = StyleSheet.create({
-    root:      { flex: 1, backgroundColor: '#080e18' },
+    root:      { flex: 1, backgroundColor: '#080e18', overflow: 'hidden' },
     scrimTop:    { position: 'absolute', top: 0, left: 0, right: 0, height: height * 0.22, backgroundColor: 'rgba(8,14,24,0.55)' },
     scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: height * 0.28, backgroundColor: 'rgba(6,12,20,0.6)' },
     safe:      { flex: 1 },

@@ -720,11 +720,14 @@ export const UpcomingSessionsScreen = () => {
                                         {c.feedback && (
                                             <View style={styles.feedbackBox}>
                                                 <Text style={styles.feedbackTitle}>YOUR ANSWERS</Text>
-                                                <StarRow label="How you felt" value={c.feedback.feeling} />
-                                                <StarRow label="They were friendly" value={c.feedback.friendliness} />
-                                                <StarRow label="Your reps" value={c.feedback.reps} />
+                                                <StarRow label="How do you feel?" value={c.feedback.feeling} />
+                                                <StarRow label={`Was ${c.opponentName} friendly?`} value={c.feedback.friendliness} />
                                                 <View style={styles.fbRow}>
-                                                    <Text style={styles.fbLabel}>Winner</Text>
+                                                    <Text style={styles.fbLabel} numberOfLines={1}>How many reps did you do?</Text>
+                                                    <Text style={styles.fbValue}>{c.feedback.reps ?? '—'}</Text>
+                                                </View>
+                                                <View style={styles.fbRow}>
+                                                    <Text style={styles.fbLabel} numberOfLines={1}>Who won the challenge?</Text>
                                                     <View style={styles.fbWinner}>
                                                         <Trophy size={12} color={AppTheme.primaryColor} />
                                                         <Text style={styles.fbWinnerText}>
@@ -1013,7 +1016,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    fbLabel: { color: '#8aa0b6', fontSize: 13 },
+    fbLabel: { color: '#8aa0b6', fontSize: 13, flex: 1, marginRight: 8 },
+    fbValue: { color: '#fff', fontSize: 14, fontWeight: '700' },
     fbWinner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     fbWinnerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
     sessionTypeLabel: {

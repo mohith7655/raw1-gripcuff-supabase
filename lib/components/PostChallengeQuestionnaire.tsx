@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator,
+    Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, TextInput,
 } from 'react-native';
 import { Star } from 'lucide-react-native';
 
@@ -10,7 +10,7 @@ const ACCENT = '#E89951';
 export interface PostChallengeAnswers {
     feeling: number;       // 1–5
     friendliness: number;  // 1–5
-    reps: number;          // 1–5
+    reps: number;          // actual rep count
     winner: 'me' | 'opponent';
 }
 
@@ -47,10 +47,12 @@ export function PostChallengeQuestionnaire({
 }: Props) {
     const [feeling, setFeeling] = useState(0);
     const [friendliness, setFriendliness] = useState(0);
-    const [reps, setReps] = useState(0);
+    const [repsText, setRepsText] = useState('');
     const [winner, setWinner] = useState<'me' | 'opponent' | null>(null);
 
-    const complete = feeling > 0 && friendliness > 0 && reps > 0 && winner !== null;
+    const reps = parseInt(repsText, 10);
+    const repsValid = Number.isFinite(reps) && reps > 0;
+    const complete = feeling > 0 && friendliness > 0 && repsValid && winner !== null;
 
     const handleSubmit = () => {
         if (!complete || submitting) return;
@@ -81,7 +83,15 @@ export function PostChallengeQuestionnaire({
                         {/* Q3 */}
                         <View style={st.qBlock}>
                             <Text style={st.qLabel}>3. How many reps did you do?</Text>
-                            <StarRating value={reps} onChange={setReps} />
+                            <TextInput
+                                style={st.repsInput}
+                                value={repsText}
+                                onChangeText={(t) => setRepsText(t.replace(/[^0-9]/g, '').slice(0, 4))}
+                                keyboardType="number-pad"
+                                placeholder="e.g. 20"
+                                placeholderTextColor="rgba(150,180,210,0.4)"
+                                maxLength={4}
+                            />
                         </View>
 
                         {/* Q4 */}
@@ -146,6 +156,13 @@ const st = StyleSheet.create({
 
     starRow: { flexDirection: 'row', gap: 8 },
     starBtn: { padding: 2 },
+
+    repsInput: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
+        color: '#fff', fontSize: 18, fontWeight: '700',
+    },
 
     winnerRow: { flexDirection: 'row', gap: 12 },
     winnerPill: {
