@@ -63,6 +63,7 @@ import { StatPill } from '../components/profile/StatPill';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { ChipPill } from '../components/profile/ChipPill';
 import { LocationRow } from '../components/profile/LocationRow';
+import { LocationsMap } from '../components/profile/LocationsMap';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 
@@ -939,10 +940,6 @@ export const ProfileScreen = () => {
                 name={gymName}
                 address={gymAddress}
                 iconComponent={MapPin}
-                lat={social?.gymLat}
-                lng={social?.gymLng}
-                onMapTouchStart={() => setScrollEnabled(false)}
-                onMapTouchEnd={() => setScrollEnabled(true)}
               />
             ) : null}
             {homeName ? (
@@ -953,10 +950,6 @@ export const ProfileScreen = () => {
                   name={homeName}
                   address={homeAddress}
                   iconComponent={Home}
-                  lat={social?.houseLat}
-                  lng={social?.houseLng}
-                  onMapTouchStart={() => setScrollEnabled(false)}
-                  onMapTouchEnd={() => setScrollEnabled(true)}
                 />
               </>
             ) : null}
@@ -968,16 +961,22 @@ export const ProfileScreen = () => {
                   name={parkName}
                   address={parkAddress}
                   iconComponent={Trees}
-                  lat={social?.parkLat}
-                  lng={social?.parkLng}
-                  onMapTouchStart={() => setScrollEnabled(false)}
-                  onMapTouchEnd={() => setScrollEnabled(true)}
                 />
               </>
             ) : null}
             {!gymName && !homeName && !parkName && (
               <Text style={s.bodyText}>Add your favorite locations</Text>
             )}
+            {/* One shared, interactive map highlighting every set location */}
+            <LocationsMap
+              points={[
+                { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
+                { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
+                { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
+              ]}
+              onMapTouchStart={() => setScrollEnabled(false)}
+              onMapTouchEnd={() => setScrollEnabled(true)}
+            />
           </ProfileCard>
 
           {/* ── COMMUNITY SERVICE ───────────────────────────────────────────── */}

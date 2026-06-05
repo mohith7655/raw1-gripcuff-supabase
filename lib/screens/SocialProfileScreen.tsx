@@ -24,7 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { LocationMapPreview } from '../components/profile/LocationMapPreview';
+import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import {
     ArrowLeft, Briefcase, ChevronRight, Dumbbell, Edit2, Eye, Flame, Heart, Home,
@@ -120,9 +120,10 @@ function SectionCard({
     );
 }
 
-function LocationCard({
-    title, icon, name, address, placeholder, isOwn, onEdit, lat, lng,
-    onMapTouchStart, onMapTouchEnd,
+// A single location entry (icon + label + place/address). No map — all
+// locations share ONE map rendered once below the list.
+function LocationLine({
+    title, icon, name, address, placeholder, isOwn, onEdit,
 }: {
     title: string;
     icon: React.ReactNode;
@@ -131,10 +132,6 @@ function LocationCard({
     placeholder: string;
     isOwn: boolean;
     onEdit: () => void;
-    lat?: number | null;
-    lng?: number | null;
-    onMapTouchStart?: () => void;
-    onMapTouchEnd?: () => void;
 }) {
     const trimName = (name ?? '').trim();
     const trimAddr = (address ?? '').trim();
@@ -146,15 +143,11 @@ function LocationCard({
 
     if (!isOwn && !hasContent) return null;
 
-    // Show the interactive map whenever we have coordinates, or on web where an
-    // address query still resolves. Web renders an expandable/pannable iframe.
-    const hasCoords = !!lat && !!lng;
-    const showMap = hasContent && (hasCoords || (Platform.OS === 'web' && !!trimAddr));
-
     const body = (
         <View style={s.locRow}>
             <View style={s.locIcon}>{icon}</View>
             <View style={{ flex: 1 }}>
+                <Text style={s.locLineTitle}>{title}</Text>
                 {hasContent ? (
                     <>
                         <Text style={s.locName}>{primary}</Text>
@@ -166,24 +159,9 @@ function LocationCard({
             </View>
         </View>
     );
-    return (
-        <SectionCard title={title} onEdit={isOwn ? onEdit : undefined}>
-            {isOwn ? (
-                <TouchableOpacity activeOpacity={0.7} onPress={onEdit}>{body}</TouchableOpacity>
-            ) : body}
-            {showMap ? (
-                <LocationMapPreview
-                    lat={lat ?? 0}
-                    lng={lng ?? 0}
-                    address={trimAddr || primary}
-                    label=""
-                    isGym={false}
-                    onMapTouchStart={onMapTouchStart}
-                    onMapTouchEnd={onMapTouchEnd}
-                />
-            ) : null}
-        </SectionCard>
-    );
+    return isOwn
+        ? <TouchableOpacity activeOpacity={0.7} onPress={onEdit}>{body}</TouchableOpacity>
+        : body;
 }
 
 function CommunityListRow({
@@ -514,46 +492,53 @@ export function SocialProfileScreen() {
 
                 <View style={s.body}>
 
-                    {/* ── Locations (right below connection section) ── */}
-                    <LocationCard
-                        title="Gym I go to"
-                        icon={<MapPin size={16} color={C.accent} />}
-                        name={social?.gymName}
-                        address={social?.gymArea || social?.gymAddress}
-                        lat={social?.gymLat}
-                        lng={social?.gymLng}
-                        placeholder="Add your gym location"
-                        isOwn={isOwn}
-                        onEdit={goToEdit}
-                        onMapTouchStart={() => setScrollEnabled(false)}
-                        onMapTouchEnd={() => setScrollEnabled(true)}
-                    />
-                    <LocationCard
-                        title="Home area"
-                        icon={<Home size={16} color={C.accent} />}
-                        name={social?.houseName}
-                        address={social?.houseAddress}
-                        lat={social?.houseLat}
-                        lng={social?.houseLng}
-                        placeholder="Add your home area"
-                        isOwn={isOwn}
-                        onEdit={goToEdit}
-                        onMapTouchStart={() => setScrollEnabled(false)}
-                        onMapTouchEnd={() => setScrollEnabled(true)}
-                    />
-                    <LocationCard
-                        title="Local park"
-                        icon={<Trees size={16} color={C.accent} />}
-                        name={social?.parkName}
-                        address={social?.parkAddress}
-                        lat={social?.parkLat}
-                        lng={social?.parkLng}
-                        placeholder="Add your local park"
-                        isOwn={isOwn}
-                        onEdit={goToEdit}
-                        onMapTouchStart={() => setScrollEnabled(false)}
-                        onMapTouchEnd={() => setScrollEnabled(true)}
-                    />
+                    {/* ── Locations — one section: list of places, then ONE shared map ── */}
+                    {(isOwn
+                        || social?.gymName || social?.gymAddress
+                        || social?.houseName || social?.houseAddress
+                        || social?.parkName || social?.parkAddress) ? (
+                        <SectionCard title="Locations" onEdit={isOwn ? goToEdit : undefined}>
+                            <View style={s.locList}>
+                                <LocationLine
+                                    title="Gym I go to"
+                                    icon={<MapPin size={16} color={C.accent} />}
+                                    name={social?.gymName}
+                                    address={social?.gymArea || social?.gymAddress}
+                                    placeholder="Add your gym location"
+                                    isOwn={isOwn}
+                                    onEdit={goToEdit}
+                                />
+                                <LocationLine
+                                    title="Home area"
+                                    icon={<Home size={16} color={C.accent} />}
+                                    name={social?.houseName}
+                                    address={social?.houseAddress}
+                                    placeholder="Add your home area"
+                                    isOwn={isOwn}
+                                    onEdit={goToEdit}
+                                />
+                                <LocationLine
+                                    title="Local park"
+                                    icon={<Trees size={16} color={C.accent} />}
+                                    name={social?.parkName}
+                                    address={social?.parkAddress}
+                                    placeholder="Add your local park"
+                                    isOwn={isOwn}
+                                    onEdit={goToEdit}
+                                />
+                            </View>
+                            {/* Single interactive map highlighting every set location */}
+                            <LocationsMap
+                                points={[
+                                    { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
+                                    { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
+                                    { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
+                                ]}
+                                onMapTouchStart={() => setScrollEnabled(false)}
+                                onMapTouchEnd={() => setScrollEnabled(true)}
+                            />
+                        </SectionCard>
+                    ) : null}
 
                     {/* ── About me ── */}
                     {(isOwn || social?.bio) && (
@@ -984,6 +969,16 @@ const s = StyleSheet.create({
     },
 
     // Location rows
+    locList: {
+        gap: 14,
+        marginBottom: 4,
+    },
+    locLineTitle: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: C.textMuted,
+        marginBottom: 2,
+    },
     locRow: {
         flexDirection: 'row',
         alignItems: 'center',
