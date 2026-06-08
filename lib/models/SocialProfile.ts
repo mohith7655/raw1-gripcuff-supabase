@@ -91,6 +91,13 @@ export interface SocialProfile {
 
     /** AI-curated intro blurb shown under Locations. Maps to profiles.ai_summary */
     aiSummary?: string | null;
+
+    /**
+     * Per-section visibility. `true` = the owner marked that section private
+     * (hidden from other viewers). Missing/false = public. Maps to
+     * profiles.section_visibility (jsonb).
+     */
+    sectionVisibility?: Record<string, boolean>;
 }
 
 export const CONNECTION_GOAL_META: Record<ConnectionGoal, { label: string; emoji: string }> = {

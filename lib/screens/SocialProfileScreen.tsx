@@ -245,6 +245,10 @@ export function SocialProfileScreen() {
     const isPreview = route.params?.previewAsOther === true && uid === supabaseUserId;
     const isOwn     = uid === supabaseUserId && !isPreview;
 
+    // A section is shown to a viewer (anyone who isn't the owner, incl. preview
+    // mode) unless its owner marked it private via the profile visibility toggle.
+    const showSection = (key: string) => isOwn || !social?.sectionVisibility?.[key];
+
     const [user,        setUser]        = useState<User | null>(null);
     const [social,      setSocial]      = useState<SocialProfile | null>(null);
     const [streakData,  setStreakData]  = useState<StreakData | null>(null);
@@ -550,7 +554,7 @@ export function SocialProfileScreen() {
                 <View style={s.body}>
 
                     {/* ── Locations — one section: list of places, then ONE shared map ── */}
-                    {(isOwn
+                    {showSection('locations') && (isOwn
                         || social?.gymName || social?.gymAddress
                         || social?.houseName || social?.houseAddress
                         || social?.parkName || social?.parkAddress) ? (
@@ -598,7 +602,7 @@ export function SocialProfileScreen() {
                     ) : null}
 
                     {/* ── AI Summary — curated intro, shown right after Locations ── */}
-                    {(isOwn || social?.aiSummary) && (
+                    {showSection('summary') && (isOwn || social?.aiSummary) && (
                         <SectionCard title="Summary">
                             {social?.aiSummary ? (
                                 <Text style={s.aboutText}>{social.aiSummary}</Text>
@@ -630,7 +634,7 @@ export function SocialProfileScreen() {
                     )}
 
                     {/* ── About me ── */}
-                    {(isOwn || social?.bio) && (
+                    {showSection('about') && (isOwn || social?.bio) && (
                         <SectionCard title="About me" onEdit={isOwn ? goToEdit : undefined}>
                             {social?.bio ? (
                                 <Text style={s.aboutText}>{social.bio}</Text>
@@ -641,7 +645,7 @@ export function SocialProfileScreen() {
                     )}
 
                     {/* ── What I do ── */}
-                    {(isOwn || social?.whatIDo) && (
+                    {showSection('whatIDo') && (isOwn || social?.whatIDo) && (
                         <SectionCard title="What I do" onEdit={isOwn ? goToEdit : undefined}>
                             <View style={s.inlineRow}>
                                 <View style={s.inlineIcon}>
@@ -657,7 +661,7 @@ export function SocialProfileScreen() {
                     )}
 
                     {/* ── Looking to meet ── */}
-                    {(isOwn || hasMeetData) && (
+                    {showSection('meet') && (isOwn || hasMeetData) && (
                         <SectionCard title="Looking to meet" onEdit={isOwn ? goToEdit : undefined}>
                             {hasMeetData ? (
                                 <>
@@ -697,7 +701,7 @@ export function SocialProfileScreen() {
                     )}
 
                     {/* ── Hobbies ── */}
-                    {(isOwn || (social?.hobbies && social.hobbies.length > 0)) && (
+                    {showSection('hobbies') && (isOwn || (social?.hobbies && social.hobbies.length > 0)) && (
                         <SectionCard title="Hobbies" onEdit={isOwn ? goToEdit : undefined}>
                             {social?.hobbies && social.hobbies.length > 0 ? (
                                 <View style={s.hobbyWrap}>
@@ -721,7 +725,7 @@ export function SocialProfileScreen() {
                     )}
 
                     {/* ── Community ── */}
-                    {(isOwn || hasCommunity) && (
+                    {showSection('community') && (isOwn || hasCommunity) && (
                         <SectionCard title="Community" onEdit={isOwn ? goToEdit : undefined}>
                             {hasCommunity ? (
                                 <View style={{ gap: 10 }}>
@@ -766,7 +770,7 @@ export function SocialProfileScreen() {
                     )}
 
                     {/* ── Badges ── */}
-                    {earnedBadges.length > 0 && (
+                    {showSection('badges') && earnedBadges.length > 0 && (
                         <SectionCard
                             title="Badges"
                             right={
@@ -949,20 +953,21 @@ const s = StyleSheet.create({
     openBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        alignSelf: 'flex-start',
+        gap: 5,
         backgroundColor: C.accentSoft,
         borderWidth: 1, borderColor: C.accentBorder,
-        borderRadius: 20,
-        paddingHorizontal: 14, paddingVertical: 6,
-        marginTop: 12,
+        borderRadius: 13,
+        paddingHorizontal: 9, paddingVertical: 3,
+        marginTop: 8,
     },
     openDot: {
-        width: 7, height: 7, borderRadius: 3.5,
+        width: 6, height: 6, borderRadius: 3,
         backgroundColor: C.accent,
     },
     openText: {
         color: C.accent,
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '700',
     },
 

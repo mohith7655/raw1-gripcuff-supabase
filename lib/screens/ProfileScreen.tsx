@@ -255,6 +255,23 @@ export const ProfileScreen = () => {
     }
   };
 
+  // ── Per-section visibility (public/private) ──
+  const isSectionPrivate = (key: string) => !!social?.sectionVisibility?.[key];
+
+  const toggleSection = async (key: string) => {
+    if (!supabaseUserId) return;
+    const prev = social?.sectionVisibility ?? {};
+    const next = { ...prev, [key]: !prev[key] };
+    // Optimistic
+    setSocial(p => p ? { ...p, sectionVisibility: next } : p);
+    try {
+      await SocialProfileService.update(supabaseUserId, { sectionVisibility: next });
+    } catch (err) {
+      console.warn('Failed to update section visibility', err);
+      setSocial(p => p ? { ...p, sectionVisibility: prev } : p);
+    }
+  };
+
   const [editingField, setEditingField] = useState<'age' | 'gender' | 'dateOfBirth' | 'phone' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -632,7 +649,7 @@ export const ProfileScreen = () => {
           </View>
 
           {/* ── AI SUMMARY — curated intro, right after locations ───────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('summary')} onToggleVisibility={() => toggleSection('summary')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Summary</Text>
             </View>
@@ -667,7 +684,7 @@ export const ProfileScreen = () => {
           <StatPill streak={streak} workouts={workouts} prs={prs} />
 
           {/* ── FRIENDS ─────────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('friends')} onToggleVisibility={() => toggleSection('friends')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Friends</Text>
               <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')}>
@@ -688,7 +705,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── ABOUT ME ────────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('about')} onToggleVisibility={() => toggleSection('about')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>About me</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'about' })}>
@@ -699,7 +716,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── ACTIVITY TIME ────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('activity')} onToggleVisibility={() => toggleSection('activity')}>
             <View style={s.activityTimeRow}>
               <View style={s.activityTimeItem}>
                 <Text style={s.activityTimeValue}>
@@ -730,7 +747,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── BADGES ──────────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('badges')} onToggleVisibility={() => toggleSection('badges')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Badges</Text>
               <TouchableOpacity onPress={() => navigation.navigate('BadgesScreen')}>
@@ -795,7 +812,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── WHAT I DO ───────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('whatIDo')} onToggleVisibility={() => toggleSection('whatIDo')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>What I do</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'whatIDo' })}>
@@ -816,7 +833,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── HOBBIES ─────────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('hobbies')} onToggleVisibility={() => toggleSection('hobbies')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Hobbies</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'hobbies' })}>
@@ -838,7 +855,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── LOOKING TO MEET ─────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('meet')} onToggleVisibility={() => toggleSection('meet')}>
             <TouchableOpacity
               style={s.cardHeaderRow}
               onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'meet' })}
@@ -861,7 +878,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── PERSONAL INFO ───────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('personal')} onToggleVisibility={() => toggleSection('personal')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Personal Info</Text>
             </View>
@@ -1009,7 +1026,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── LOCATIONS ───────────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('locations')} onToggleVisibility={() => toggleSection('locations')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Locations</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'locations' })}>
@@ -1051,7 +1068,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── COMMUNITY SERVICE ───────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('community')} onToggleVisibility={() => toggleSection('community')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Community Service</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'community' })}>
@@ -1078,7 +1095,7 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── COMMUNITY NOTE ──────────────────────────────────────────────── */}
-          <ProfileCard>
+          <ProfileCard isPrivate={isSectionPrivate('communityNote')} onToggleVisibility={() => toggleSection('communityNote')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Community Note</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'community' })}>
