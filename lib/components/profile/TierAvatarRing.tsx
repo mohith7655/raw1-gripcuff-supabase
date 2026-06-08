@@ -2,13 +2,10 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { tierLevel } from './TierBars';
 
-// Tier colours, in level order. Dots light up in this order as the level rises.
-const SIDES = [
-    { color: '#60A5FA', level: 1 },  // Starter
-    { color: '#1E40AF', level: 2 },  // Lifter
-    { color: '#FB923C', level: 3 },  // Trainer
-    { color: '#C26A2D', level: 4 },  // Influencer
-] as const;
+// Four tier slots. Dots fill left-to-right as the level rises — all one orange,
+// so the *number* of orange dots equals the user's tier level.
+const TIER_LEVELS = [1, 2, 3, 4] as const;
+const ACTIVE_COLOR = '#E89951';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -82,14 +79,14 @@ export function TierAvatarRing({
 
             {wantDots && (
                 <View style={{ flexDirection: 'row', gap: dotGap, marginTop: -pad + 2 }}>
-                    {SIDES.map(({ color, level }) => (
+                    {TIER_LEVELS.map((level) => (
                         <View
                             key={level}
                             style={{
                                 width: dotSize,
                                 height: dotSize,
                                 borderRadius: dotSize / 2,
-                                backgroundColor: userLevel >= level ? color : INACTIVE,
+                                backgroundColor: userLevel >= level ? ACTIVE_COLOR : INACTIVE,
                             }}
                         />
                     ))}

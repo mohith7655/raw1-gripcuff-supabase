@@ -21,13 +21,10 @@ import {
   PlusCircle,
   Accessibility,
   ChevronRight,
-  Zap,
   Clock,
   Dumbbell,
   Video as VideoIcon,
   Users,
-
-  TrendingUp,
   Calendar,
   UserCircle,
   CircleUserRound,
@@ -64,7 +61,6 @@ import { DailyActivityService } from '../services/dailyActivity.service';
 import { supabase } from '../core/config/supabase';
 import { UnifiedProgressLeaderboard } from '../components/UnifiedProgressLeaderboard';
 import { DailyReminderCard } from '../components/DailyReminderCard';
-import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
 import { ChallengeSessionService, PreviousChallenge } from '../services/challengeSession.service';
 import { MoveReminderService, MoveReminder, AlarmConfig, formatMoveTime12h } from '../services/moveReminder.service';
 import { AlarmPillSheet } from '../components/AlarmPillSheet';
@@ -79,8 +75,21 @@ import { BADGE_FAMILIES, getTierName } from '../services/badge.types';
 import { getAllPrograms } from '../data/preRecordedPrograms';
 import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 import { getUserRank } from '../services/leaderboard.service';
+import { SocialProfileService } from '../services/socialProfile.service';
+import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META } from '../models/SocialProfile';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+// Single emoji-prefixed row used by the sectioned profile summary card.
+function StatRow({ emoji, text, onPress }: { emoji: string; text: string; onPress?: () => void }) {
+  const Wrap: any = onPress ? TouchableOpacity : View;
+  return (
+    <Wrap style={styles.statRow} onPress={onPress} activeOpacity={0.7}>
+      <Text style={styles.statRowEmoji}>{emoji}</Text>
+      <Text style={styles.statRowText}>{text}</Text>
+    </Wrap>
+  );
+}
 
 // Pulsing fire-glow border pill for the streak badge
 function FireGlowPill({ children, style }: { children: React.ReactNode; style?: any }) {
@@ -232,7 +241,6 @@ function formatChallengeDate(iso: string): string {
 
 const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
-  const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
   const { accessType } = useAccess();
@@ -289,6 +297,13 @@ const HomeScreenInner = () => {
     const interval = setInterval(computeExpiry, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Social profile (city, goals, hobbies) — powers the sectioned summary card
+  const [socialProfile, setSocialProfile] = useState<SocialProfile | null>(null);
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    SocialProfileService.get(supabaseUserId).then(setSocialProfile).catch(() => {});
+  }, [supabaseUserId]);
 
   // Club memberships for notification sections
   const [myClubs, setMyClubs] = useState<Array<{ id: string; name: string; avatar_url: string | null; unread: number }>>([]);
@@ -652,6 +667,31 @@ const HomeScreenInner = () => {
 
   const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
 
+  // ── Sectioned profile summary (Header / Identity / Social Proof) ─────────
+  const locationText = socialProfile?.city
+    ? [socialProfile.city, socialProfile.country].filter(Boolean).join(', ')
+    : (profile?.locations?.gym?.placeName || socialProfile?.gymArea || '');
+  const lastActiveRaw = profile?.lastActiveAt || profile?.lastVideoWatchAt || null;
+  const lastActive = lastActiveRaw ? new Date(lastActiveRaw) : null;
+  const minsSinceActive = lastActive ? (Date.now() - lastActive.getTime()) / 60000 : Infinity;
+  const isOnline = minsSinceActive < 5;
+  const isActiveToday = !!lastActive && lastActive.toDateString() === new Date().toDateString();
+  const activeText = isOnline
+    ? 'Active now'
+    : isActiveToday
+      ? 'Active today'
+      : lastActive ? `Active ${formatChallengeDate(lastActiveRaw!)}` : 'New here';
+  const firstGoal = socialProfile?.connectionGoals?.[0];
+  const goalText = firstGoal ? CONNECTION_GOAL_META[firstGoal]?.label : (socialProfile?.lookingToMeet || '');
+  const firstHobby = socialProfile?.hobbies?.[0];
+  const styleText = firstHobby ? HOBBY_META[firstHobby]?.label : (socialProfile?.whatIDo || '');
+  const completedWorkoutsCount = profile?.completedWorkouts ?? 0;
+  const currentStreakCount = profile?.currentStreak ?? 0;
+  const fitnessLevel = completedWorkoutsCount >= 50 ? 'Advanced'
+    : completedWorkoutsCount >= 10 ? 'Intermediate' : 'Beginner';
+  const trainedHours = Math.round((profile?.watchedSeconds ?? 0) / 3600);
+  const hasIdentity = !!goalText || !!styleText;
+
   const gripCuffLevel = completedCount === 0 ? 1
     : completedCount <= 3 ? 2
     : completedCount <= 6 ? 3
@@ -794,83 +834,73 @@ const HomeScreenInner = () => {
           ) : appMode === 'ai' ? (
             /* ── Mode 1: AI Personal Trainer ── */
             <>
-              {/* Quick Stats — Profile | Credits | Favourites (stacked vertically, centered) */}
-              <View style={styles.compactStatsCard}>
-                {/* Profile row */}
+              {/* ── Profile summary — sectioned (Header / Identity / Social Proof) ── */}
+              <View style={styles.profileCard}>
+                {/* HEADER */}
                 <TouchableOpacity
-                  style={[styles.compactStatRow, { flexDirection: 'row', paddingVertical: 18, alignItems: 'center', gap: 16 }]}
+                  style={styles.profileHeaderRow}
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
-                  <View style={{ alignItems: 'center', gap: 6 }}>
-                    <TierAvatar
-                      uri={profile?.profileImageUrl}
-                      size={72}
-                      accessType={accessType}
-                      name={profile?.fullName}
-                      radius={16}
-                      fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
-                    />
-                  </View>
+                  <TierAvatar
+                    uri={profile?.profileImageUrl}
+                    size={56}
+                    accessType={accessType}
+                    name={profile?.fullName}
+                    radius={14}
+                    fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
+                  />
                   <View style={{ flex: 1 }}>
-                  <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
-                  {/* Badge pills only */}
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                    {earnedBadges.length === 0 ? (
-                      <View style={styles.profileStatPill}>
-                        <Text style={styles.profileStatPillText}>🏅 No badges yet</Text>
+                    <Text style={styles.profileName}>{displayName}</Text>
+                    {!!locationText && (
+                      <View style={styles.statRow}>
+                        <Text style={styles.statRowEmoji}>📍</Text>
+                        <Text style={styles.statRowText}>{locationText}</Text>
                       </View>
-                    ) : (
-                      earnedBadges.map((b, i) =>
-                        b.label === 'Streak' ? (
-                          <FireGlowPill key={i} style={styles.profileStatPill}>
-                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
-                          </FireGlowPill>
-                        ) : (
-                          <View key={i} style={styles.profileStatPill}>
-                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
-                          </View>
-                        )
-                      )
                     )}
-                    <TouchableOpacity
-                      style={styles.profileStatPill}
-                      onPress={() => setShowTiersModal(true)}
-                      activeOpacity={0.75}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Text style={styles.profileStatPillText}>🏋️ Gripcuff Lv.{gripCuffLevel}</Text>
-                    </TouchableOpacity>
+                    <View style={styles.statRow}>
+                      <Text style={styles.statRowEmoji}>{(isOnline || isActiveToday) ? '🟢' : '⚪'}</Text>
+                      <Text style={styles.statRowText}>{activeText}</Text>
+                    </View>
                   </View>
-                  {/* Weekly time + global rating */}
-                  {(() => {
-                    const weeklyMins = streakData
-                      ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
-                      : 0;
-                    const weeklyLabel = weeklyMins >= 60
-                      ? `${Math.floor(weeklyMins / 60)}h ${weeklyMins % 60}m`
-                      : `${weeklyMins}m`;
-                    const rankLabel = globalRank != null ? `#${globalRank}` : '—';
-                    return (
-                      <View style={{ flexDirection: 'row', gap: 14, marginTop: 10 }}>
-                        <View>
-                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>⏱ {weeklyLabel}</Text>
-                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>This week</Text>
-                        </View>
-                        <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                        <View>
-                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>🏆 {rankLabel}</Text>
-                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>Global Ranking</Text>
-                        </View>
-                      </View>
-                    );
-                  })()}
-                  </View>
+                  <ChevronRight color={AppTheme.textGrey} size={18} />
                 </TouchableOpacity>
 
-                <View style={styles.compactHorizontalDivider} />
+                <View style={styles.profileDivider} />
 
-                {/* Credits row */}
+                {/* IDENTITY + SOCIAL PROOF side by side */}
+                <View style={styles.sectionColumns}>
+                  {/* IDENTITY */}
+                  <View style={styles.sectionCol}>
+                    <Text style={styles.sectionLabel}>Identity</Text>
+                    {!!goalText && <StatRow emoji="🎯" text={`Goal: ${goalText}`} />}
+                    {!!styleText && <StatRow emoji="💪" text={`Style: ${styleText}`} />}
+                    <StatRow emoji="🤸" text={`Level: ${fitnessLevel}`} />
+                    <StatRow emoji="🏋️" text={`Gripcuff Lv.${gripCuffLevel}`} onPress={() => setShowTiersModal(true)} />
+                    {!hasIdentity && (
+                      <StatRow emoji="➕" text="Add goals & interests" onPress={() => navigation.navigate('ProfileScreen')} />
+                    )}
+                  </View>
+
+                  <View style={styles.sectionColDivider} />
+
+                  {/* SOCIAL PROOF */}
+                  <View style={styles.sectionCol}>
+                    <Text style={styles.sectionLabel}>Social Proof</Text>
+                    <StatRow emoji="🔥" text={`${currentStreakCount} Day Streak`} />
+                    <StatRow emoji="✅" text={`${completedWorkoutsCount} Workouts`} />
+                    <StatRow emoji="🤝" text={`${trainedHours} Hours Trained`} />
+                    <StatRow
+                      emoji="🏆"
+                      text={globalRank != null ? `Rank #${globalRank}` : 'Rank —'}
+                      onPress={() => navigation.navigate('LeaderboardScreen')}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.profileDivider} />
+
+                {/* Credits row (kept for quick access) */}
                 <TouchableOpacity
                   style={[styles.compactStatRow, { gap: 0 }]}
                   onPress={() => navigation.navigate('CreditsScreen')}
@@ -905,33 +935,6 @@ const HomeScreenInner = () => {
 
               {/* Daily Reminder Scheduler */}
               <DailyReminderCard userId={supabaseUserId ?? undefined} />
-
-              {/* Challenge Lobby entry card */}
-              <TouchableOpacity
-                style={homeChallengeStyles.card}
-                onPress={() => setChallengeLobbyVisible(true)}
-                activeOpacity={0.85}
-              >
-                <View style={homeChallengeStyles.iconWrap}>
-                  <Zap color="#FF6B00" size={18} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={homeChallengeStyles.title}>Enter Challenge Lobby</Text>
-                  <Text style={homeChallengeStyles.sub}>Compete live with anyone in the lobby</Text>
-                </View>
-                <ChevronRight color="#FF6B00" size={18} />
-              </TouchableOpacity>
-
-              <ChallengeLobbyModal
-                visible={challengeLobbyVisible}
-                exerciseName="Squats"
-                workoutDurationSecs={60}
-                onClose={() => setChallengeLobbyVisible(false)}
-                onChallengeStarted={(params) => {
-                  setChallengeLobbyVisible(false);
-                  navigation.navigate('ChallengeVideoRoom', params);
-                }}
-              />
 
               {/* ── Recently Watched + Favourites (stacked) ── */}
               {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
@@ -1304,34 +1307,6 @@ const HomeScreenInner = () => {
                 );
               })()}
 
-
-              {/* ── Feed ── */}
-              <View style={styles.feedSection}>
-                <View style={styles.feedHeader}>
-                  <Text style={styles.feedTitle}>Feed</Text>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('FeedScreen')}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={styles.feedViewAll}>View All →</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.feedPlaceholder}>
-                  <TrendingUp color="#C26A2D" size={22} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.feedPlaceholderTitle}>Community Updates</Text>
-                    <Text style={styles.feedPlaceholderSub}>Workouts, achievements & more from your network</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.feedViewAllBtn}
-                    onPress={() => navigation.navigate('FeedScreen')}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.feedViewAllBtnText}>View All</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
 
             </>
           ) : (
@@ -1981,44 +1956,6 @@ const HomeScreenInner = () => {
 
 export const HomeScreen = React.memo(HomeScreenInner);
 
-const homeChallengeStyles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#111d2e',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.3)',
-    marginHorizontal: 4,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,107,0,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  sub: {
-    color: '#4a6480',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-});
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -2195,6 +2132,68 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.07)',
     marginBottom: 24,
     overflow: 'hidden',
+  },
+
+  // ── Sectioned profile summary card ──
+  profileCard: {
+    backgroundColor: '#131f2e',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    padding: 18,
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800' as any,
+    marginBottom: 8,
+  },
+  profileHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  profileName: {
+    color: AppTheme.textWhite,
+    fontSize: 17,
+    fontWeight: '700' as any,
+    marginBottom: 2,
+  },
+  profileDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    marginVertical: 16,
+  },
+  sectionColumns: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  sectionCol: {
+    flex: 1,
+  },
+  sectionColDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    marginHorizontal: 14,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  statRowEmoji: {
+    fontSize: 15,
+    width: 20,
+    textAlign: 'center',
+  },
+  statRowText: {
+    color: '#D4E4FA',
+    fontSize: 14,
+    fontWeight: '500' as any,
+    flex: 1,
   },
   compactStatCell: {
     flex: 1,
@@ -2631,58 +2630,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   notifActionBtnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  feedSection: {
-    marginBottom: 16,
-  },
-  feedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  feedTitle: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  feedViewAll: {
-    color: '#C26A2D',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  feedPlaceholder: {
-    backgroundColor: '#131f2e',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(194,106,45,0.15)',
-  },
-  feedPlaceholderTitle: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  feedPlaceholderSub: {
-    color: '#607a94',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  feedViewAllBtn: {
-    backgroundColor: '#E89951',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  feedViewAllBtnText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',

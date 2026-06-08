@@ -42,6 +42,7 @@ export interface User {
   todayWatchSeconds?: number;
   totalWatchSessions?: number;
   lastVideoWatchAt?: string | null;
+  lastActiveAt?: string | null;
   totalLiveSessions?: number;
   // ── Access / subscription fields (from users.has_access, etc.) ──────────────
   hasAccess?: boolean;

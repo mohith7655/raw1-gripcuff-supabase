@@ -470,13 +470,18 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                 const partnerName = isHost ? session.guestName : session.hostName;
                                 const partnerAvatar = isHost ? session.guestAvatarUrl : session.hostAvatarUrl;
 
-                                const diffMs = session.scheduledAt.toDate().getTime() - new Date().getTime();
+                                // scheduledAt may be a JS Date (Supabase model) or a
+                                // Firestore Timestamp (legacy) — handle both.
+                                const scheduledDate: Date = session.scheduledAt instanceof Date
+                                    ? session.scheduledAt
+                                    : (session.scheduledAt as any)?.toDate?.() ?? new Date(session.scheduledAt as any);
+                                const diffMs = scheduledDate.getTime() - new Date().getTime();
                                 const inHours = Math.floor(diffMs / 3600000);
                                 const inMins = Math.floor((diffMs % 3600000) / 60000);
                                 const countdownStr = diffMs < 0
                                     ? 'Starting now'
                                     : inHours >= 24
-                                        ? session.scheduledAt.toDate().toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+                                        ? scheduledDate.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
                                         : `in ${inHours}h ${inMins}m`;
 
                                 const isStartingNow = diffMs < 10 * 60 * 1000;

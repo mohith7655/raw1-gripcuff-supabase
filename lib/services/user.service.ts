@@ -52,6 +52,7 @@ const toAppUser = (row: any, uid: string): User => {
     todayWatchSeconds: Number(row?.today_watch_seconds ?? 0),
     totalWatchSessions: Number(row?.total_watch_sessions ?? 0),
     lastVideoWatchAt: row?.last_video_watch_at || null,
+    lastActiveAt: row?.last_active_at || null,
     totalLiveSessions: Number(row?.total_live_sessions ?? 0),
     // ── Access / subscription ──────────────────────────────────────────────────
     hasAccess: Boolean(row?.has_access),
@@ -83,6 +84,15 @@ export class UserService {
     }
 
     return toAppUser(data, uid);
+  }
+
+  /** Stamp the signed-in user's presence (last_active_at = now). Fire-and-forget. */
+  static async touchLastActive(): Promise<void> {
+    try {
+      await supabase.rpc('touch_last_active');
+    } catch {
+      /* presence is best-effort; never block the UI */
+    }
   }
 
   static async createProfile(uid: string, profile: User): Promise<void> {

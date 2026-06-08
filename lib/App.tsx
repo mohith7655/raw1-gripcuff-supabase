@@ -23,6 +23,7 @@ import { CastManager } from './services/cast/castManager';
 import { AuthProvider, useAuth } from './providers/AuthContext';
 import { UserProvider, useUser } from './providers/UserContext';
 import { FriendProvider } from './providers/FriendContext';
+import { UserService } from './services/user.service';
 import { LibraryProvider } from './providers/LibraryContext';
 import { WorkoutProvider } from './providers/WorkoutContext';
 import { WorkoutSessionProvider, useWorkoutSession } from './providers/WorkoutSessionContext';
@@ -289,6 +290,14 @@ function HomeTabs() {
         }}
       />
       <Tab.Screen
+        name="SocialTab"
+        component={FeedScreen}
+        options={{
+          tabBarLabel: 'Social',
+          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
         name="LibraryTab"
         component={LibraryScreen}
         options={{
@@ -496,6 +505,16 @@ function MainApp() {
   const profileReminderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const profileReminderVisibleRef = useRef(false);
   const leaderboardSeeded = useRef(false);
+
+  // Presence heartbeat — stamp last_active_at on login and every foreground.
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    UserService.touchLastActive();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') UserService.touchLastActive();
+    });
+    return () => sub.remove();
+  }, [supabaseUserId]);
 
   // Expire stale reminders whenever the app comes back to the foreground
   useEffect(() => {
