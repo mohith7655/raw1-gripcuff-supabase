@@ -37,7 +37,7 @@ const EARN_TASKS = [
   },
   {
     id: 'favourite-exercise',
-    title: 'Favourite an Exercise',
+    title: 'Favorite an Exercise',
     description: 'Save your favorite exercise to your library',
     reward: 20,
     icon: '🩷',
@@ -56,7 +56,7 @@ const SAMPLE_TRANSACTIONS = [
   },
   {
     id: '2',
-    description: 'Favourited an Exercise',
+    description: 'Favorited an Exercise',
     date: '2026-03-03',
     time: '11:15 AM',
     amount: 20,
@@ -218,7 +218,7 @@ export const CreditsScreen = () => {
                   </View>
                   {[
                     { icon: '🎬', label: 'Watch Gripcuff Training Intro', amount: '+50 credits' },
-                    { icon: '🩷', label: 'Favourite an Exercise', amount: '+20 credits' },
+                    { icon: '🩷', label: 'Favorite an Exercise', amount: '+20 credits' },
                     { icon: '📷', label: 'Upload a Photo or Video', amount: '+30 credits' },
                     { icon: '👥', label: 'Refer a Friend', amount: '+100 credits' },
                   ].map((item, idx) => (

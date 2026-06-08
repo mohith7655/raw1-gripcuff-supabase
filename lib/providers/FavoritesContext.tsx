@@ -91,7 +91,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     const toggleFavorite = useCallback(
         async (video: FavoriteVideo) => {
             if (!supabaseUserId) {
-                Alert.alert('Login required', 'Please log in to save favourites.');
+                Alert.alert('Login required', 'Please log in to save favorites.');
                 return;
             }
 

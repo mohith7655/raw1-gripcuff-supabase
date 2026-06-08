@@ -999,7 +999,7 @@ const HomeScreenInner = () => {
                     {favItems.length > 0 && (
                       <>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: recentlyWatched.length > 0 ? 16 : 0, marginBottom: 12 }}>
-                          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Favourites</Text>
+                          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Favorites</Text>
                           <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'all' })} activeOpacity={0.75}>
                             <Text style={{ color: '#C26A2D', fontSize: 12, fontWeight: '600' }}>View all →</Text>
                           </TouchableOpacity>
@@ -1030,7 +1030,7 @@ const HomeScreenInner = () => {
                               )}
                               <View style={{ padding: 8 }}>
                                 <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
-                                <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>♥ Favourite</Text>
+                                <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>♥ Favorite</Text>
                               </View>
                             </TouchableOpacity>
                           ))}

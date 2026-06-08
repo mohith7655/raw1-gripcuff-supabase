@@ -160,7 +160,7 @@ export function AllFavouritesScreen() {
                     exerciseFavorites.length === 0 ? (
                         <View style={styles.emptyState}>
                             <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
-                            <Text style={styles.emptyText}>No favourite exercises yet.{'\n'}Tap ♡ on any video to save it.</Text>
+                            <Text style={styles.emptyText}>No favorite exercises yet.{'\n'}Tap ♡ on any video to save it.</Text>
                         </View>
                     ) : (
                         <ScrollView contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingTop: 20, paddingBottom: 100 }}>
@@ -208,7 +208,7 @@ export function AllFavouritesScreen() {
                     uniqueWorkoutFavorites.length === 0 ? (
                         <View style={styles.emptyState}>
                             <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
-                            <Text style={styles.emptyText}>No favourite workouts yet.{'\n'}Tap ♡ on any workout to save it.</Text>
+                            <Text style={styles.emptyText}>No favorite workouts yet.{'\n'}Tap ♡ on any workout to save it.</Text>
                         </View>
                     ) : (
                         <ScrollView contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingTop: 20, paddingBottom: 100 }}>
