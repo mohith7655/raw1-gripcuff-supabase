@@ -553,6 +553,31 @@ export function SocialProfileScreen() {
 
                 <View style={s.body}>
 
+                    {/* ── Activity (Watch / Workout time) — hideable via the profile toggle ── */}
+                    {showSection('activity') && (() => {
+                        const fmtDur = (sec: number) => {
+                            if (!sec || sec < 60) return sec > 0 ? `${sec}s` : '0m';
+                            const h = Math.floor(sec / 3600);
+                            const m = Math.floor((sec % 3600) / 60);
+                            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                        };
+                        return (
+                            <SectionCard title="Activity">
+                                <View style={s.actRow}>
+                                    <View style={s.actItem}>
+                                        <Text style={s.actVal}>{fmtDur(user?.watchedSeconds ?? 0)}</Text>
+                                        <Text style={s.actLabel}>Watch Time</Text>
+                                    </View>
+                                    <View style={s.actDivider} />
+                                    <View style={s.actItem}>
+                                        <Text style={s.actVal}>{fmtDur((user as any)?.workoutSeconds ?? 0)}</Text>
+                                        <Text style={s.actLabel}>Workout Time</Text>
+                                    </View>
+                                </View>
+                            </SectionCard>
+                        );
+                    })()}
+
                     {/* ── Locations — one section: list of places, then ONE shared map ── */}
                     {showSection('locations') && (isOwn
                         || social?.gymName || social?.gymAddress
@@ -970,6 +995,13 @@ const s = StyleSheet.create({
         fontSize: 11,
         fontWeight: '700',
     },
+
+    // Activity (watch / workout time)
+    actRow: { flexDirection: 'row', alignItems: 'center' },
+    actItem: { flex: 1, alignItems: 'center', gap: 2 },
+    actVal: { color: '#fff', fontSize: 22, fontWeight: '800' },
+    actLabel: { color: C.textMuted, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    actDivider: { width: 1, height: 34, backgroundColor: C.border },
 
     // Stats
     statsRow: {

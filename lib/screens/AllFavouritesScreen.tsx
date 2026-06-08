@@ -127,7 +127,7 @@ export function AllFavouritesScreen() {
                 <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Text style={styles.backBtn}>‹ Back</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Favourites</Text>
+                <Text style={styles.headerTitle}>Favorites</Text>
                 <View style={{ width: 56 }} />
             </View>
 

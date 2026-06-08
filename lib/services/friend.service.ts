@@ -149,11 +149,13 @@ export class FriendService {
 
         if (updateErr) throw new Error(updateErr.message);
 
-        // Create canonical friendship (user_a < user_b alphabetically to avoid duplicates)
+        // Create canonical friendship (user_a < user_b alphabetically to avoid duplicates).
+        // ignoreDuplicates → ON CONFLICT DO NOTHING: idempotent, and avoids the
+        // UPDATE path (friendships has no UPDATE RLS policy, which 403s on a merge).
         const [user_a, user_b] = [fromUid, toUid].sort();
         const { error: friendErr } = await supabase
             .from('friendships')
-            .upsert({ user_a, user_b }, { onConflict: 'user_a,user_b' });
+            .upsert({ user_a, user_b }, { onConflict: 'user_a,user_b', ignoreDuplicates: true });
 
         if (friendErr) throw new Error(friendErr.message);
         console.log('[Friends] request accepted');
