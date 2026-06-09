@@ -834,73 +834,83 @@ const HomeScreenInner = () => {
           ) : appMode === 'ai' ? (
             /* ── Mode 1: AI Personal Trainer ── */
             <>
-              {/* ── Profile summary — sectioned (Header / Identity / Social Proof) ── */}
-              <View style={styles.profileCard}>
-                {/* HEADER */}
+              {/* Quick Stats — Profile | Credits | Favourites (stacked vertically, centered) */}
+              <View style={styles.compactStatsCard}>
+                {/* Profile row */}
                 <TouchableOpacity
-                  style={styles.profileHeaderRow}
+                  style={[styles.compactStatRow, { flexDirection: 'row', paddingVertical: 18, alignItems: 'center', gap: 16 }]}
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
-                  <TierAvatar
-                    uri={profile?.profileImageUrl}
-                    size={56}
-                    accessType={accessType}
-                    name={profile?.fullName}
-                    radius={14}
-                    fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.profileName}>{displayName}</Text>
-                    {!!locationText && (
-                      <View style={styles.statRow}>
-                        <Text style={styles.statRowEmoji}>📍</Text>
-                        <Text style={styles.statRowText}>{locationText}</Text>
-                      </View>
-                    )}
-                    <View style={styles.statRow}>
-                      <Text style={styles.statRowEmoji}>{(isOnline || isActiveToday) ? '🟢' : '⚪'}</Text>
-                      <Text style={styles.statRowText}>{activeText}</Text>
-                    </View>
-                  </View>
-                  <ChevronRight color={AppTheme.textGrey} size={18} />
-                </TouchableOpacity>
-
-                <View style={styles.profileDivider} />
-
-                {/* IDENTITY + SOCIAL PROOF side by side */}
-                <View style={styles.sectionColumns}>
-                  {/* IDENTITY */}
-                  <View style={styles.sectionCol}>
-                    <Text style={styles.sectionLabel}>Identity</Text>
-                    {!!goalText && <StatRow emoji="🎯" text={`Goal: ${goalText}`} />}
-                    {!!styleText && <StatRow emoji="💪" text={`Style: ${styleText}`} />}
-                    <StatRow emoji="🤸" text={`Level: ${fitnessLevel}`} />
-                    <StatRow emoji="🏋️" text={`Gripcuff Lv.${gripCuffLevel}`} onPress={() => setShowTiersModal(true)} />
-                    {!hasIdentity && (
-                      <StatRow emoji="➕" text="Add goals & interests" onPress={() => navigation.navigate('ProfileScreen')} />
-                    )}
-                  </View>
-
-                  <View style={styles.sectionColDivider} />
-
-                  {/* SOCIAL PROOF */}
-                  <View style={styles.sectionCol}>
-                    <Text style={styles.sectionLabel}>Social Proof</Text>
-                    <StatRow emoji="🔥" text={`${currentStreakCount} Day Streak`} />
-                    <StatRow emoji="✅" text={`${completedWorkoutsCount} Workouts`} />
-                    <StatRow emoji="🤝" text={`${trainedHours} Hours Trained`} />
-                    <StatRow
-                      emoji="🏆"
-                      text={globalRank != null ? `Rank #${globalRank}` : 'Rank —'}
-                      onPress={() => navigation.navigate('LeaderboardScreen')}
+                  <View style={{ alignItems: 'center', gap: 6 }}>
+                    <TierAvatar
+                      uri={profile?.profileImageUrl}
+                      size={72}
+                      accessType={accessType}
+                      name={profile?.fullName}
+                      radius={16}
+                      fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
                     />
                   </View>
-                </View>
+                  <View style={{ flex: 1 }}>
+                  <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
+                  {/* Badge pills only */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    {earnedBadges.length === 0 ? (
+                      <View style={styles.profileStatPill}>
+                        <Text style={styles.profileStatPillText}>🏅 No badges yet</Text>
+                      </View>
+                    ) : (
+                      earnedBadges.map((b, i) =>
+                        b.label === 'Streak' ? (
+                          <FireGlowPill key={i} style={styles.profileStatPill}>
+                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                          </FireGlowPill>
+                        ) : (
+                          <View key={i} style={styles.profileStatPill}>
+                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                          </View>
+                        )
+                      )
+                    )}
+                    <TouchableOpacity
+                      style={styles.profileStatPill}
+                      onPress={() => setShowTiersModal(true)}
+                      activeOpacity={0.75}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.profileStatPillText}>🏋️ Gripcuff Lv.{gripCuffLevel}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {/* Weekly time + global rating */}
+                  {(() => {
+                    const weeklyMins = streakData
+                      ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
+                      : 0;
+                    const weeklyLabel = weeklyMins >= 60
+                      ? `${Math.floor(weeklyMins / 60)}h ${weeklyMins % 60}m`
+                      : `${weeklyMins}m`;
+                    const rankLabel = globalRank != null ? `#${globalRank}` : '—';
+                    return (
+                      <View style={{ flexDirection: 'row', gap: 14, marginTop: 10 }}>
+                        <View>
+                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>⏱ {weeklyLabel}</Text>
+                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>This week</Text>
+                        </View>
+                        <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                        <View>
+                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>🏆 {rankLabel}</Text>
+                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>Global Ranking</Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
+                  </View>
+                </TouchableOpacity>
 
-                <View style={styles.profileDivider} />
+                <View style={styles.compactHorizontalDivider} />
 
-                {/* Credits row (kept for quick access) */}
+                {/* Credits row */}
                 <TouchableOpacity
                   style={[styles.compactStatRow, { gap: 0 }]}
                   onPress={() => navigation.navigate('CreditsScreen')}

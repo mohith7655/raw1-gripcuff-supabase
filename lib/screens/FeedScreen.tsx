@@ -170,11 +170,6 @@ export function FeedScreen() {
         </View>
         <ChevronRight color={ORANGE} size={18} />
       </TouchableOpacity>
-
-      <View style={[styles.sectionHead, styles.dailyHead]}>
-        <Rss size={18} color={ORANGE} />
-        <Text style={styles.sectionTitle}>Daily Feed</Text>
-      </View>
     </View>
   );
 
@@ -269,7 +264,6 @@ export function FeedScreen() {
           <ActivityIndicator color={ORANGE} />
         </View>
       )}
-      <ClubsSection />
     </>
   );
 
@@ -315,23 +309,17 @@ export function FeedScreen() {
 
       {/* ── Active view ── */}
       {activeTab === 'feed' ? (
-        <>
-          <FlatList
-            data={posts}
-            keyExtractor={keyExtractor}
-            renderItem={renderPost}
-            contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ORANGE} />}
-            onEndReached={hasMore ? loadMore : undefined}
-            onEndReachedThreshold={0.4}
-            ListHeaderComponent={ListHeader}
-            ListEmptyComponent={ListEmpty}
-            ListFooterComponent={ListFooter}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          />
-          <SpeedDial onSelect={handleSpeedDial} />
-        </>
+        <FlatList
+          data={[] as Post[]}
+          keyExtractor={keyExtractor}
+          renderItem={renderPost}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ORANGE} />}
+          ListHeaderComponent={ListHeader}
+          ListFooterComponent={ListFooter}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        />
       ) : activeTab === 'friends' ? (
         <FriendsHub />
       ) : (
