@@ -55,6 +55,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useFriend } from '../providers/FriendContext';
 import { SocialProfileService } from '../services/socialProfile.service';
+import { GalleryService, ProfilePhoto } from '../services/gallery.service';
 import { generateProfileSummary } from '../services/profileSummary.service';
 import { coarseLocality } from '../utils/locality';
 import { StreakService, StreakData } from '../services/streak.service';
@@ -199,6 +200,8 @@ export const ProfileScreen = () => {
 
   const [social,     setSocial]     = useState<SocialProfile | null>(null);
   const [streakData, setStreakData] = useState<StreakData | null>(null);
+  const [photos,     setPhotos]     = useState<ProfilePhoto[]>([]);
+  const [galleryUploading, setGalleryUploading] = useState(false);
   const [loading,    setLoading]    = useState(true);
   const [genningSummary, setGenningSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -210,12 +213,14 @@ export const ProfileScreen = () => {
     if (!supabaseUserId) return;
     if (!silent) setLoading(true);
     try {
-      const [sp, streak] = await Promise.all([
+      const [sp, streak, gallery] = await Promise.all([
         SocialProfileService.get(supabaseUserId),
         StreakService.getStreakData(supabaseUserId),
+        GalleryService.list(supabaseUserId),
       ]);
       setSocial(sp);
       setStreakData(streak);
+      setPhotos(gallery);
     } catch {}
     finally {
       setLoading(false);
@@ -326,6 +331,59 @@ export const ProfileScreen = () => {
     }
   };
 
+  // ── Gallery ─────────────────────────────────────────────────────────────────
+  const handleAddPhoto = async () => {
+    if (!supabaseUserId || galleryUploading) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setGalleryUploading(true);
+    try {
+      const url = await StorageService.uploadGalleryPhoto(supabaseUserId, result.assets[0].uri);
+      const nextOrder = photos.reduce((max, p) => Math.max(max, p.sortOrder), 0) + 1;
+      const created = await GalleryService.add(supabaseUserId, url, nextOrder);
+      setPhotos(prev => [...prev, created]);
+    } catch (e: any) {
+      Alert.alert('Upload failed', e?.message ?? 'Could not upload photo.');
+    } finally {
+      setGalleryUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photo: ProfilePhoto) => {
+    const confirmed = typeof window !== 'undefined' ? window.confirm('Remove this photo?') : true;
+    if (!confirmed) return;
+    const prev = photos;
+    setPhotos(p => p.filter(x => x.id !== photo.id)); // optimistic
+    try {
+      await GalleryService.remove(photo.id);
+      await StorageService.deleteByPublicUrl(photo.url).catch(() => {});
+    } catch {
+      setPhotos(prev); // revert
+    }
+  };
+
+  // ── Hobby ranks (inline 1–5 dot rating) ──────────────────────────────────────
+  const setHobbyRank = async (hobby: Hobby, rank: number) => {
+    if (!supabaseUserId) return;
+    const prev = social?.hobbyRanks ?? {};
+    // Tapping the current rank again clears it.
+    const next = { ...prev, [hobby]: prev[hobby] === rank ? 0 : rank };
+    setSocial(p => p ? { ...p, hobbyRanks: next } : p); // optimistic
+    try {
+      await SocialProfileService.update(supabaseUserId, { hobbyRanks: next });
+    } catch {
+      setSocial(p => p ? { ...p, hobbyRanks: prev } : p);
+    }
+  };
+
   const handleEditClick = (field: 'age' | 'gender' | 'dateOfBirth' | 'phone', initialValue: string) => {
     setEditingField(field);
     setEditValue(initialValue);
@@ -349,6 +407,7 @@ export const ProfileScreen = () => {
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const displayName = profile?.fullName  || 'User';
+  const firstName   = displayName.trim().split(/\s+/)[0];
   const username    = profile?.username   || 'username';
   const email       = profile?.email      || 'email@example.com';
   const bio         = social?.bio?.trim() || 'No bio yet.';
@@ -359,6 +418,21 @@ export const ProfileScreen = () => {
   const streak   = streakData?.currentStreak  ?? profile?.currentStreak    ?? 3;
   const workouts = streakData?.totalWorkouts  ?? profile?.completedWorkouts ?? 12;
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
+
+  // Weekly · Avg · Lifetime workout-time stats (mirrors the home profile card).
+  const fmtMins = (mins: number) => {
+    const m = Math.round(mins);
+    return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+  };
+  const weeklyMins = streakData
+    ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
+    : 0;
+  const lifetimeMins = Math.round(
+    profile?.watchedMinutes ??
+    (profile?.workoutSeconds ? profile.workoutSeconds / 60 : 0)
+  );
+  const totalWorkoutsForAvg = streakData?.totalWorkouts ?? profile?.completedWorkouts ?? 0;
+  const avgMins = totalWorkoutsForAvg > 0 ? Math.round(lifetimeMins / totalWorkoutsForAvg) : 0;
 
   // AI-curated intro blurb — generate from profile data, cache to DB.
   const handleGenerateSummary = async () => {
@@ -420,6 +494,13 @@ export const ProfileScreen = () => {
     ? social.hobbies
     : ['gym', 'cycling', 'photography', 'reading']) as Hobby[]
   ).filter(h => !!HOBBY_META[h]);
+
+  // Top 5 hobbies, ordered by their saved rank (highest first); unranked keep
+  // their original order behind ranked ones.
+  const hobbyRanks = social?.hobbyRanks ?? {};
+  const rankedHobbies = [...hobbyItems]
+    .sort((a, b) => (hobbyRanks[b] ?? 0) - (hobbyRanks[a] ?? 0))
+    .slice(0, 5);
 
   // Badges — new tier system, built from profile + streakData for accuracy
   const badgeStats: UserBadgeStats = {
@@ -590,9 +671,29 @@ export const ProfileScreen = () => {
               </View>
 
               <View style={s.heroInfoCol}>
-                <Text style={s.handle} numberOfLines={1}>@{username}</Text>
-                <Text style={s.name} numberOfLines={1}>{displayName}</Text>
+                <View style={s.nameLine}>
+                  <Text style={s.name} numberOfLines={1}>{firstName}</Text>
+                  <Text style={s.handle} numberOfLines={1}>@{username}</Text>
+                </View>
                 <Text style={s.email} numberOfLines={1}>{email}</Text>
+
+                {/* Weekly · Avg · Lifetime — compact, under the email */}
+                <View style={s.heroTimeRow}>
+                  <View style={s.heroTimeItem}>
+                    <Text style={s.heroTimeValue}>{fmtMins(weeklyMins)}</Text>
+                    <Text style={s.heroTimeLabel}>Weekly</Text>
+                  </View>
+                  <View style={s.heroTimeDivider} />
+                  <View style={s.heroTimeItem}>
+                    <Text style={s.heroTimeValue}>{fmtMins(avgMins)}</Text>
+                    <Text style={s.heroTimeLabel}>Avg</Text>
+                  </View>
+                  <View style={s.heroTimeDivider} />
+                  <View style={s.heroTimeItem}>
+                    <Text style={s.heroTimeValue}>{fmtMins(lifetimeMins)}</Text>
+                    <Text style={s.heroTimeLabel}>Lifetime</Text>
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -648,6 +749,137 @@ export const ProfileScreen = () => {
 
           </View>
 
+          {/* ── 3. PROFESSION — job title / what I do ────────────────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('whatIDo')} onToggleVisibility={() => toggleSection('whatIDo')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Profession</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'whatIDo' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={s.hobbiesRow}>
+              {whatIDoItems.length > 0 ? (
+                whatIDoItems.map((item, idx) => (
+                  <View key={`${item}-${idx}`} style={s.whatIDoCapsule}>
+                    <Text style={s.whatIDoCapsuleText}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={s.bodyText}>Add your profession or job title</Text>
+              )}
+            </View>
+          </ProfileCard>
+
+          {/* ── 4. FITNESS GOALS — reuses connection goals ───────────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('fitnessGoals')} onToggleVisibility={() => toggleSection('fitnessGoals')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Fitness Goals</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'meet' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={s.hobbiesRow}>
+              {(social?.connectionGoals?.length ?? 0) > 0 ? (
+                social!.connectionGoals!.map((g, idx) => (
+                  <View key={`${g}-${idx}`} style={s.meetCapsule}>
+                    <Text style={s.meetCapsuleText}>{CONNECTION_GOAL_META[g]?.label ?? g}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={s.bodyText}>Add your fitness goals</Text>
+              )}
+            </View>
+          </ProfileCard>
+
+          {/* ── 5. GALLERY — user-uploaded photos ────────────────────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('gallery')} onToggleVisibility={() => toggleSection('gallery')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Gallery</Text>
+            </View>
+            <View style={s.galleryGrid}>
+              {photos.map(p => (
+                <View key={p.id} style={s.galleryItem}>
+                  <Image source={{ uri: p.url }} style={s.galleryImg} />
+                  <TouchableOpacity
+                    style={s.galleryDelete}
+                    onPress={() => handleDeletePhoto(p)}
+                    activeOpacity={0.8}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <X size={13} color="#fff" strokeWidth={2.6} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity
+                style={[s.galleryItem, s.galleryAdd]}
+                onPress={handleAddPhoto}
+                disabled={galleryUploading}
+                activeOpacity={0.8}
+              >
+                {galleryUploading ? (
+                  <ActivityIndicator color={C.orange} />
+                ) : (
+                  <Camera size={22} color={C.orange} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </ProfileCard>
+
+          {/* ── 6. ABOUT ME — short bio (max 100 chars) ──────────────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('about')} onToggleVisibility={() => toggleSection('about')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>About me</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'about' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <Text style={s.bodyText}>
+              {bio.length > 100 ? `${bio.slice(0, 100).trimEnd()}…` : bio}
+            </Text>
+          </ProfileCard>
+
+          {/* ── 7. TOP HOBBIES — ranked 1–5 dots ─────────────────────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('hobbies')} onToggleVisibility={() => toggleSection('hobbies')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Top Hobbies</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'hobbies' })}>
+                <Pencil size={16} color={C.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={s.hobbiesRow}>
+              {rankedHobbies.length === 0 ? (
+                <Text style={s.bodyText}>Add your hobbies</Text>
+              ) : (
+                rankedHobbies.map(hobby => {
+                  const meta = HOBBY_META[hobby];
+                  return (
+                    <View key={hobby} style={s.hobbyCapsule}>
+                      <Text style={s.hobbyRankEmoji}>{meta.emoji}</Text>
+                      <Text style={s.hobbyCapsuleText}>{meta.label}</Text>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </ProfileCard>
+
+          {/* ── 8. LOCATION MAP — moved below hobbies ────────────────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('locationMap')} onToggleVisibility={() => toggleSection('locationMap')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Map</Text>
+            </View>
+            {/* Shared interactive map highlighting every set location */}
+            <LocationsMap
+              points={[
+                { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
+                { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
+                { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
+              ]}
+              onMapTouchStart={() => setScrollEnabled(false)}
+              onMapTouchEnd={() => setScrollEnabled(true)}
+            />
+          </ProfileCard>
+
           {/* ── AI SUMMARY — curated intro, right after locations ───────────── */}
           <ProfileCard isPrivate={isSectionPrivate('summary')} onToggleVisibility={() => toggleSection('summary')}>
             <View style={s.cardHeaderRow}>
@@ -702,17 +934,6 @@ export const ProfileScreen = () => {
                 <Text style={s.bodyText}>No friends yet.</Text>
               )}
             </View>
-          </ProfileCard>
-
-          {/* ── ABOUT ME ────────────────────────────────────────────────────── */}
-          <ProfileCard isPrivate={isSectionPrivate('about')} onToggleVisibility={() => toggleSection('about')}>
-            <View style={s.cardHeaderRow}>
-              <Text style={s.cardTitle}>About me</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'about' })}>
-                <Pencil size={16} color={C.muted} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <Text style={s.bodyText}>{bio}</Text>
           </ProfileCard>
 
           {/* ── ACTIVITY TIME ────────────────────────────────────────────────── */}
@@ -809,49 +1030,6 @@ export const ProfileScreen = () => {
                 );
               })}
             </ScrollView>
-          </ProfileCard>
-
-          {/* ── WHAT I DO ───────────────────────────────────────────────────── */}
-          <ProfileCard isPrivate={isSectionPrivate('whatIDo')} onToggleVisibility={() => toggleSection('whatIDo')}>
-            <View style={s.cardHeaderRow}>
-              <Text style={s.cardTitle}>What I do</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'whatIDo' })}>
-                <Pencil size={16} color={C.muted} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <View style={s.hobbiesRow}>
-              {whatIDoItems.length > 0 ? (
-                whatIDoItems.map((item, idx) => (
-                  <View key={`${item}-${idx}`} style={s.whatIDoCapsule}>
-                    <Text style={s.whatIDoCapsuleText}>{item}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={s.bodyText}>Add what you do</Text>
-              )}
-            </View>
-          </ProfileCard>
-
-          {/* ── HOBBIES ─────────────────────────────────────────────────────── */}
-          <ProfileCard isPrivate={isSectionPrivate('hobbies')} onToggleVisibility={() => toggleSection('hobbies')}>
-            <View style={s.cardHeaderRow}>
-              <Text style={s.cardTitle}>Hobbies</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'hobbies' })}>
-                <Pencil size={16} color={C.muted} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <View style={s.hobbiesRow}>
-              {hobbyItems.map(hobby => {
-                const meta = HOBBY_META[hobby];
-                const Icon = HOBBY_ICONS[hobby] ?? Dumbbell;
-                return (
-                  <View key={hobby} style={s.hobbyCapsule}>
-                    <Icon size={14} color={C.orange} strokeWidth={2.2} />
-                    <Text style={s.hobbyCapsuleText}>{meta.label}</Text>
-                  </View>
-                );
-              })}
-            </View>
           </ProfileCard>
 
           {/* ── LOOKING TO MEET ─────────────────────────────────────────────── */}
@@ -1025,48 +1203,6 @@ export const ProfileScreen = () => {
             </View>
           </ProfileCard>
 
-          {/* ── LOCATIONS ───────────────────────────────────────────────────── */}
-          <ProfileCard isPrivate={isSectionPrivate('locations')} onToggleVisibility={() => toggleSection('locations')}>
-            <View style={s.cardHeaderRow}>
-              <Text style={s.cardTitle}>Locations</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'locations' })}>
-                <Pencil size={16} color={C.muted} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            {(() => {
-              // Self view → full address. Compact: just label + address text.
-              const items = [
-                { label: 'Workout Area', address: social?.gymAddress || social?.gymArea || '' },
-                { label: 'Home area',    address: social?.houseAddress || '' },
-                { label: 'Hangout Area', address: social?.parkAddress || '' },
-              ].filter(it => it.address.trim());
-
-              if (items.length === 0) {
-                return <Text style={s.bodyText}>Add your favorite locations</Text>;
-              }
-              return (
-                <View style={{ gap: 12, marginTop: 4 }}>
-                  {items.map(it => (
-                    <View key={it.label}>
-                      <Text style={s.locItemLabel}>{it.label}</Text>
-                      <Text style={s.locItemAddr}>{it.address}</Text>
-                    </View>
-                  ))}
-                </View>
-              );
-            })()}
-            {/* Shared interactive map highlighting every set location */}
-            <LocationsMap
-              points={[
-                { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
-                { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
-                { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
-              ]}
-              onMapTouchStart={() => setScrollEnabled(false)}
-              onMapTouchEnd={() => setScrollEnabled(true)}
-            />
-          </ProfileCard>
-
           {/* ── COMMUNITY SERVICE ───────────────────────────────────────────── */}
           <ProfileCard isPrivate={isSectionPrivate('community')} onToggleVisibility={() => toggleSection('community')}>
             <View style={s.cardHeaderRow}>
@@ -1230,15 +1366,20 @@ const s = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: C.bg,
   },
+  nameLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   name: {
     color: C.text,
     fontSize: 22,
     fontWeight: '800',
-    marginTop: 4,
   },
   handle: {
     color: C.muted,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginTop: 0,
   },
@@ -1246,6 +1387,33 @@ const s = StyleSheet.create({
     color: C.muted,
     fontSize: 14,
     marginTop: 2,
+  },
+  heroTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+  },
+  heroTimeItem: {
+    alignItems: 'flex-start',
+  },
+  heroTimeValue: {
+    color: C.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  heroTimeLabel: {
+    color: C.muted,
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginTop: 1,
+  },
+  heroTimeDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   privacyRow: {
     flexDirection: 'row',
@@ -1403,6 +1571,88 @@ const s = StyleSheet.create({
     color: C.text,
     fontSize: 14,
     lineHeight: 19,
+  },
+  radiusNote: {
+    color: C.muted,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+
+  // Gallery
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 4,
+  },
+  galleryItem: {
+    width: 92,
+    height: 92,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  galleryImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  galleryDelete: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryAdd: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.accentSoft,
+    borderWidth: 1,
+    borderColor: C.accentBorder,
+    borderStyle: 'dashed',
+  },
+
+  // Hobby ranking
+  hobbyRankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  hobbyRankLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  hobbyRankEmoji: {
+    fontSize: 15,
+  },
+  hobbyRankLabel: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rankDot: {
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  rankDotActive: {
+    backgroundColor: C.orange,
   },
   aiBtn: {
     flexDirection: 'row',

@@ -98,6 +98,12 @@ export interface SocialProfile {
      * profiles.section_visibility (jsonb).
      */
     sectionVisibility?: Record<string, boolean>;
+
+    /**
+     * Per-hobby rank (1–5) powering the "Top Hobbies" star/dot ranking.
+     * Maps hobby key -> rank. Missing = unranked. Maps to profiles.hobby_ranks (jsonb).
+     */
+    hobbyRanks?: Record<string, number>;
 }
 
 export const CONNECTION_GOAL_META: Record<ConnectionGoal, { label: string; emoji: string }> = {

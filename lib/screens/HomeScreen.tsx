@@ -666,6 +666,7 @@ const HomeScreenInner = () => {
   const isCoaching = appMode === 'coaching';
 
   const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
+  const firstName = displayName.trim().split(/\s+/)[0];
 
   // ── Sectioned profile summary (Header / Identity / Social Proof) ─────────
   const locationText = socialProfile?.city
@@ -853,7 +854,12 @@ const HomeScreenInner = () => {
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                  <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{displayName}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
+                    <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{firstName}</Text>
+                    {!!profile?.username && (
+                      <Text style={{ color: '#7b84a0', fontSize: 13, fontWeight: '500' }}>@{profile.username}</Text>
+                    )}
+                  </View>
                   {/* Badge pills only */}
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     {earnedBadges.length === 0 ? (
@@ -882,26 +888,35 @@ const HomeScreenInner = () => {
                       <Text style={styles.profileStatPillText}>🏋️ Gripcuff Lv.{gripCuffLevel}</Text>
                     </TouchableOpacity>
                   </View>
-                  {/* Weekly time + global rating */}
+                  {/* Workout time — Weekly · Avg · Lifetime */}
                   {(() => {
+                    const fmt = (mins: number) =>
+                      mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
                     const weeklyMins = streakData
                       ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
                       : 0;
-                    const weeklyLabel = weeklyMins >= 60
-                      ? `${Math.floor(weeklyMins / 60)}h ${weeklyMins % 60}m`
-                      : `${weeklyMins}m`;
-                    const rankLabel = globalRank != null ? `#${globalRank}` : '—';
+                    const lifetimeMins = Math.round(
+                      profile?.watchedMinutes ??
+                      (profile?.workoutSeconds ? profile.workoutSeconds / 60 : 0)
+                    );
+                    const totalWorkouts = streakData?.totalWorkouts ?? profile?.completedWorkouts ?? 0;
+                    const avgMins = totalWorkouts > 0 ? Math.round(lifetimeMins / totalWorkouts) : 0;
+                    const Divider = () => (
+                      <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                    );
+                    const Stat = ({ value, label }: { value: string; label: string }) => (
+                      <View style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>{value}</Text>
+                        <Text style={{ color: '#7b84a0', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 }}>{label}</Text>
+                      </View>
+                    );
                     return (
-                      <View style={{ flexDirection: 'row', gap: 14, marginTop: 10 }}>
-                        <View>
-                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>⏱ {weeklyLabel}</Text>
-                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>This week</Text>
-                        </View>
-                        <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                        <View>
-                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>🏆 {rankLabel}</Text>
-                          <Text style={{ color: '#7b84a0', fontSize: 11, marginTop: 1 }}>Global Ranking</Text>
-                        </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                        <Stat value={fmt(weeklyMins)} label="WEEKLY" />
+                        <Divider />
+                        <Stat value={fmt(avgMins)} label="AVG" />
+                        <Divider />
+                        <Stat value={fmt(lifetimeMins)} label="LIFETIME" />
                       </View>
                     );
                   })()}

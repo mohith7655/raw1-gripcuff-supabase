@@ -62,6 +62,9 @@ const fromRow = (row: any): SocialProfile => ({
     sectionVisibility: (row.section_visibility && typeof row.section_visibility === 'object' && !Array.isArray(row.section_visibility))
         ? row.section_visibility
         : {},
+    hobbyRanks: (row.hobby_ranks && typeof row.hobby_ranks === 'object' && !Array.isArray(row.hobby_ranks))
+        ? row.hobby_ranks
+        : {},
 });
 
 const ALL_COLS = [
@@ -97,6 +100,7 @@ const ALL_COLS = [
     'country',
     'ai_summary',
     'section_visibility',
+    'hobby_ranks',
 ].join(', ');
 
 export class SocialProfileService {
@@ -223,6 +227,7 @@ export class SocialProfileService {
             payload.ai_summary_updated_at = new Date().toISOString();
         }
         if (patch.sectionVisibility !== undefined)      payload.section_visibility = patch.sectionVisibility;
+        if (patch.hobbyRanks !== undefined)             payload.hobby_ranks = patch.hobbyRanks;
 
         if (Object.keys(payload).length === 0) return;
 

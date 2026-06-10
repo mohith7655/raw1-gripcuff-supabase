@@ -62,7 +62,7 @@ export function TierAvatarRing({
                     {userLevel > 0 && (
                         <View style={{
                             position: 'absolute',
-                            bottom: badgeOffset, right: badgeOffset,
+                            top: badgeOffset, right: badgeOffset,
                             width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2,
                             backgroundColor: '#000000',
                             alignItems: 'center', justifyContent: 'center',
@@ -78,18 +78,25 @@ export function TierAvatarRing({
             </View>
 
             {wantDots && (
-                <View style={{ flexDirection: 'row', gap: dotGap, marginTop: -pad + 2 }}>
-                    {TIER_LEVELS.map((level) => (
-                        <View
-                            key={level}
-                            style={{
-                                width: dotSize,
-                                height: dotSize,
-                                borderRadius: dotSize / 2,
-                                backgroundColor: userLevel >= level ? ACTIVE_COLOR : INACTIVE,
-                            }}
-                        />
-                    ))}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: dotGap, marginTop: -pad + 2 }}>
+                    {TIER_LEVELS.map((level) => {
+                        // The user's current level (the last active dot) is rendered
+                        // larger and in a deeper orange to mark where they are.
+                        const isCurrent = level === userLevel;
+                        const size = isCurrent ? Math.round(dotSize * 1.45) : dotSize;
+                        const activeColor = isCurrent ? '#C26A2D' : ACTIVE_COLOR;
+                        return (
+                            <View
+                                key={level}
+                                style={{
+                                    width: size,
+                                    height: size,
+                                    borderRadius: size / 2,
+                                    backgroundColor: userLevel >= level ? activeColor : INACTIVE,
+                                }}
+                            />
+                        );
+                    })}
                 </View>
             )}
         </View>

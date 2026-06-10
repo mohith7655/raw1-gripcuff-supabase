@@ -32,6 +32,31 @@ export class StorageService {
         return publicUrl;
     }
 
+    /** Upload one gallery photo to the public avatars bucket under gallery/<uid>/. */
+    static async uploadGalleryPhoto(uid: string, localUri: string): Promise<string> {
+        const response = await fetch(localUri);
+        const blob = await response.blob();
+        const path = `gallery/${uid}/${Date.now()}.jpg`;
+        const { error } = await supabase.storage
+            .from('avatars')
+            .upload(path, blob, { contentType: 'image/jpeg' });
+
+        if (error) {
+            console.error('gallery upload failed', error);
+            throw new Error(error.message);
+        }
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        return data.publicUrl;
+    }
+
+    /** Best-effort removal of an avatars-bucket object given its public URL. */
+    static async deleteByPublicUrl(url: string): Promise<void> {
+        const marker = '/object/public/avatars/';
+        const path = url.includes(marker) ? url.split(marker)[1] : null;
+        if (!path) return;
+        await supabase.storage.from('avatars').remove([path]);
+    }
+
     static async deleteProfilePicture(uid: string): Promise<void> {
         const { data, error } = await supabase.storage
             .from('avatars')
