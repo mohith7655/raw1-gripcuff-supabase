@@ -11,7 +11,7 @@ import { Calendar, Dumbbell, UserPlus, X } from 'lucide-react-native';
 import { SocialOpenEntry, SocialScheduledEntry } from '../../hooks/useWorkoutSocialHub';
 import { TierAvatar } from '../profile/TierAvatar';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 
 type SocialUser = {
     uid: string;
@@ -43,7 +43,7 @@ type Props = {
 };
 
 function avatarColor(name: string): string {
-    const palette = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6'];
+    const palette = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     return palette[Math.abs(hash) % palette.length];
@@ -121,7 +121,7 @@ export function InviteStrangerModal({
                 <View style={styles.header}>
                     <Text style={styles.title}>Workout Social Hub</Text>
                     <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <X color="#9CA3AF" size={20} />
+                        <X color="#7A7C90" size={20} />
                     </TouchableOpacity>
                 </View>
 
@@ -150,7 +150,7 @@ export function InviteStrangerModal({
                                             <Text style={styles.softBtnText}>Add</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={styles.ctaBtn} onPress={() => onInvite(user)}>
-                                            <Dumbbell color="#fff" size={13} />
+                                            <Dumbbell color="#211832" size={13} />
                                             <Text style={styles.ctaBtnText}>Invite</Text>
                                         </TouchableOpacity>
                                     </View>
@@ -235,7 +235,7 @@ export function InviteStrangerModal({
                                         }}
                                         disabled={!item.hostUid || !item.hostName}
                                     >
-                                        <Calendar color="#fff" size={13} />
+                                        <Calendar color="#211832" size={13} />
                                         <Text style={styles.joinBtnText}>Join</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -254,14 +254,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.55)',
     },
     sheet: {
-        backgroundColor: '#111827',
+        backgroundColor: '#F8F8FC',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         paddingTop: 18,
         paddingBottom: 36,
         maxHeight: '80%',
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.08)',
+        borderTopColor: 'rgba(33,24,50,0.08)',
     },
     header: {
         paddingHorizontal: 20,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 18,
         fontWeight: '700',
     },
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         backgroundColor: 'rgba(255,255,255,0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: 'rgba(33,24,50,0.06)',
         paddingHorizontal: 10,
         paddingVertical: 8,
     },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     emptyText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 13,
         paddingVertical: 4,
     },
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     },
     rowBorder: {
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     avatar: {
         width: 36,
@@ -335,29 +335,29 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     avatarText: {
-        color: '#fff',
+        color: '#211832',
         fontWeight: '700',
     },
     userBlock: {
         flex: 1,
     },
     userName: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '700',
     },
     userMeta: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 12,
     },
     scheduleTop: {
-        color: '#F3F4F6',
+        color: '#211832',
         fontSize: 12,
         fontWeight: '700',
         marginTop: 2,
     },
     scheduleBottom: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 12,
     },
     rowActions: {
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 4,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.4)',
+        borderColor: 'rgba(242,89,18,0.4)',
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 6,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 8,
         paddingHorizontal: 9,
         paddingVertical: 6,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
     },
     joinBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -413,10 +413,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
     },
     scheduledBadgeText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '600',
     },

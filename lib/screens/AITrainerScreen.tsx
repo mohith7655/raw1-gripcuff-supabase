@@ -13,7 +13,7 @@ export const AITrainerScreen = () => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>AI Personal Trainer</Text>
                 <View style={{ width: 40 }} />
@@ -28,7 +28,7 @@ export const AITrainerScreen = () => {
 
                 <TouchableOpacity style={styles.ctaButton} activeOpacity={0.8}>
                     <LinearGradient
-                        colors={[AppTheme.primaryColor, '#ff8534']}
+                        colors={[AppTheme.primaryColor, '#F25912']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.ctaGradient}
@@ -44,7 +44,7 @@ export const AITrainerScreen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#1d2337',
+        backgroundColor: '#F8F8FC',
     },
     header: {
         flexDirection: 'row',
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
     },
     content: {
         flex: 1,
@@ -75,14 +75,14 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: 'rgba(232,153,81, 0.15)',
+        backgroundColor: 'rgba(242,89,18, 0.15)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 24,
     },
     messageText: {
         fontSize: 18,
-        color: '#a6afc2',
+        color: '#7A7C90',
         textAlign: 'center',
         marginBottom: 40,
     },
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     ctaText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: 'bold',
     },

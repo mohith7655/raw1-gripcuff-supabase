@@ -14,16 +14,16 @@ export type MapPoint = { lat: number; lng: number; label?: string };
 // (the old approach inverted the whole document via CSS, which would flip the
 // highlight colour to blue once we draw real overlays).
 const DARK_STYLE = [
-    { elementType: 'geometry', stylers: [{ color: '#1d2530' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#1d2530' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#8aa0b6' }] },
+    { elementType: 'geometry', stylers: [{ color: '#F8F8FC' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#F8F8FC' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#7A7C90' }] },
     { featureType: 'poi', stylers: [{ visibility: 'off' }] },
     { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a3441' }] },
-    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6b7d91' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a4654' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#F8F8FC' }] },
+    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#D8D8E4' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#F8F8FC' }] },
     { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#141b24' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#EEEEF2' }] },
 ];
 
 // Concentric rings → soft radial-blob look (radius in metres, fill opacity).
@@ -45,7 +45,7 @@ export function buildLocationsMapHtml(points: MapPoint[], apiKey: string): strin
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<style>html,body,#map{height:100%;margin:0;padding:0;background:#1d2530;}</style>
+<style>html,body,#map{height:100%;margin:0;padding:0;background:#F8F8FC;}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -101,7 +101,7 @@ export function buildLocationsMapHtml(points: MapPoint[], apiKey: string): strin
       zoomControl: true,        // +/- buttons
       fullscreenControl: true,  // expand to fill the section / screen
       gestureHandling: 'greedy',// one-finger pan + pinch-zoom inside the map
-      backgroundColor: '#1d2530',
+      backgroundColor: '#F8F8FC',
       clickableIcons: false,
       zoom: 11,
       center: { lat: 0, lng: 0 }
@@ -114,7 +114,7 @@ export function buildLocationsMapHtml(points: MapPoint[], apiKey: string): strin
       RINGS.forEach(function (ring) {
         new google.maps.Circle({
           map: map, center: center, radius: ring.r,
-          fillColor: '#E89951', fillOpacity: ring.o,
+          fillColor: '#F25912', fillOpacity: ring.o,
           strokeOpacity: 0, clickable: false,
           zIndex: Math.round(ring.o * 100)
         });

@@ -31,8 +31,8 @@ import { VideoModal } from '../components/feed/VideoModal';
 import { Post } from '../services/feed.service';
 import type { Club } from './ClubsScreen';
 
-const ORANGE = '#E89951';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const TEXT_SECONDARY = '#7A7C90';
 
 type SocialTab = 'feed' | 'friends' | 'chat';
 
@@ -147,13 +147,13 @@ export function FeedScreen() {
         activeOpacity={0.85}
       >
         <View style={styles.challengeIcon}>
-          <Zap color="#FF6B00" size={18} />
+          <Zap color="#F25912" size={18} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.challengeTitle}>Enter Challenge Lobby</Text>
           <Text style={styles.challengeSub}>Compete live with anyone in the lobby</Text>
         </View>
-        <ChevronRight color="#FF6B00" size={18} />
+        <ChevronRight color="#F25912" size={18} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -278,7 +278,7 @@ export function FeedScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={22} color="#211832" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Social</Text>
         <View style={{ width: 34 }} />
@@ -372,10 +372,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   backBtn: { padding: 4 },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  headerTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
 
   // Segmented control
   segmentRow: {
@@ -395,11 +395,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
   },
   segmentActive: {
-    backgroundColor: 'rgba(232,153,81,0.12)',
-    borderColor: 'rgba(232,153,81,0.45)',
+    backgroundColor: 'rgba(242,89,18,0.12)',
+    borderColor: 'rgba(242,89,18,0.45)',
   },
   segmentText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '700' },
   segmentTextActive: { color: ORANGE },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 5,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  sectionTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
   seeAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, padding: 4 },
   seeAll: { color: ORANGE, fontSize: 13, fontWeight: '700' },
 
@@ -434,10 +434,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#111d2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.3)',
+    borderColor: 'rgba(242,89,18,0.3)',
     marginHorizontal: 16,
     marginTop: 12,
     paddingHorizontal: 14,
@@ -447,25 +447,25 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,107,0,0.1)',
+    backgroundColor: 'rgba(242,89,18,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.25)',
+    borderColor: 'rgba(242,89,18,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  challengeTitle: { color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  challengeSub: { color: '#4a6480', fontSize: 12, fontWeight: '500' },
+  challengeTitle: { color: '#211832', fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  challengeSub: { color: '#7A7C90', fontSize: 12, fontWeight: '500' },
 
   // Invite a Friend to Workout entry card
   inviteCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#111d2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.3)',
+    borderColor: 'rgba(242,89,18,0.3)',
     marginHorizontal: 16,
     marginTop: 10,
     paddingHorizontal: 14,
@@ -475,9 +475,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(232,153,81,0.1)',
+    backgroundColor: 'rgba(242,89,18,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.25)',
+    borderColor: 'rgba(242,89,18,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingVertical: 32,
   },
-  emptyTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  emptyTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
   emptySub: {
     color: TEXT_SECONDARY,
     fontSize: 13,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
 
   errorText: { color: '#ef4444', fontSize: 14, textAlign: 'center', marginBottom: 12 },
   retryBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 8,
@@ -519,31 +519,31 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
+    borderTopColor: 'rgba(33,24,50,0.07)',
     gap: 10,
   },
   clubsEmptyCard: {
     alignItems: 'center',
     gap: 8,
     paddingVertical: 24,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8F8FC',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(33,24,50,0.05)',
   },
   clubCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8F8FC',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(33,24,50,0.05)',
   },
   clubAvatar: { width: 48, height: 48, borderRadius: 11 },
   clubAvatarFallback: { backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center' },
-  clubAvatarLetter: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  clubName: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  clubAvatarLetter: { color: '#211832', fontSize: 18, fontWeight: '800' },
+  clubName: { color: '#211832', fontSize: 14, fontWeight: '700' },
   clubMeta: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 2 },
 });

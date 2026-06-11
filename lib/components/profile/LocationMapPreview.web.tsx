@@ -92,7 +92,7 @@ export function LocationMapPreview({
                             width: 170,
                             height: 170,
                             borderRadius: '50%',
-                            background: 'radial-gradient(circle, rgba(232,153,81,0.55) 0%, rgba(232,153,81,0.30) 35%, rgba(232,153,81,0.10) 65%, transparent 100%)',
+                            background: 'radial-gradient(circle, rgba(242,89,18,0.55) 0%, rgba(242,89,18,0.30) 35%, rgba(242,89,18,0.10) 65%, transparent 100%)',
                             filter: 'blur(6px)',
                             pointerEvents: 'none',
                         }} />
@@ -106,7 +106,7 @@ export function LocationMapPreview({
 const styles = StyleSheet.create({
     container: { marginTop: 12, marginBottom: 8 },
     placeLabel: {
-        color: '#E89951', fontSize: 14, fontWeight: '700', marginBottom: 6,
+        color: '#F25912', fontSize: 14, fontWeight: '700', marginBottom: 6,
     },
     mapWrap: {
         height: 180,
@@ -115,20 +115,20 @@ const styles = StyleSheet.create({
         position: 'relative',
     } as any,
     fallback: {
-        flex: 1, backgroundColor: '#0d1825', borderRadius: 12,
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        flex: 1, backgroundColor: '#EEEEF2', borderRadius: 12,
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
         alignItems: 'center', justifyContent: 'center',
         paddingHorizontal: 16, gap: 4,
     },
     fallbackIcon: { fontSize: 28, marginBottom: 4 },
-    fallbackTitle: { color: '#fff', fontSize: 14, fontWeight: '700', textAlign: 'center' },
+    fallbackTitle: { color: '#211832', fontSize: 14, fontWeight: '700', textAlign: 'center' },
     fallbackSub: {
         color: 'rgba(150,180,210,0.6)', fontSize: 11, textAlign: 'center',
     } as any,
     fallbackBtn: {
         marginTop: 8, paddingHorizontal: 14, paddingVertical: 7,
-        borderRadius: 20, backgroundColor: 'rgba(232,153,81,0.15)',
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.4)',
+        borderRadius: 20, backgroundColor: 'rgba(242,89,18,0.15)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.4)',
     },
-    fallbackBtnText: { color: '#E89951', fontSize: 12, fontWeight: '700' },
+    fallbackBtnText: { color: '#F25912', fontSize: 12, fontWeight: '700' },
 });

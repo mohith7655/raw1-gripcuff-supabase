@@ -27,17 +27,16 @@ export const VIEW_MODE_OPTIONS: { key: ViewMode; label: string; icon: string }[]
     { key: 'list', label: 'List', icon: '☰' },
 ];
 
+// Muted earthy / slate thumbnail gradients (Ash & Midnight)
 const GRADIENTS: [string, string][] = [
-    ['#FF6B35', '#E84100'],
-    ['#7C3AED', '#4F46E5'],
-    ['#059669', '#047857'],
-    ['#DB2777', '#9D174D'],
-    ['#2563EB', '#1D4ED8'],
-    ['#D97706', '#B45309'],
-    ['#0891B2', '#0E7490'],
-    ['#E11D48', '#BE185D'],
-    ['#16A34A', '#15803D'],
-    ['#8B5CF6', '#6D28D9'],
+    ['#8B7355', '#6B5B45'],   // tan / brown
+    ['#7A8A8A', '#5A6A6A'],   // slate green-grey
+    ['#4A5568', '#2D3748'],   // slate-blue
+    ['#6B4226', '#4A2E1A'],   // brown
+    ['#2A2A3E', '#1A1A2E'],   // dark navy
+    ['#0D2137', '#1A3A5C'],   // deep blue
+    ['#C4B8A8', '#A09488'],   // beige
+    ['#3B1F0B', '#5C3319'],   // dark amber
 ];
 
 function parseDurationLabel(value: unknown): string {
@@ -105,7 +104,7 @@ export function MultiColVideoCard({
                 style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 9, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
             >
                 <View style={{ width: playSize, height: playSize, borderRadius: playSize / 2, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="#fff" size={iconSize} fill="#fff" />
+                    <Play color="#211832" size={iconSize} fill="#211832" />
                 </View>
                 <View style={{ position: 'absolute', top: 4, left: 4 }}>
                     <Raw1Logo fontSize={7} />
@@ -116,7 +115,7 @@ export function MultiColVideoCard({
             </LinearGradient>
 
             <View style={{ paddingTop: 4, paddingHorizontal: 1 }}>
-                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
+                <Text style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
                     {displayTitle}
                 </Text>
             </View>
@@ -151,7 +150,7 @@ export function ListVideoCard({
 
     return (
         <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#1a2d42', gap: 12 }}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#F8F8FC', gap: 12 }}
             onPress={onPress}
             activeOpacity={0.82}
         >
@@ -162,7 +161,7 @@ export function ListVideoCard({
                 style={{ width: 78, height: 54, borderRadius: 8, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 }}
             >
                 <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="#fff" size={10} fill="#fff" />
+                    <Play color="#211832" size={10} fill="#211832" />
                 </View>
                 <View style={{ position: 'absolute', top: 3, left: 3 }}>
                     <Raw1Logo fontSize={6} />
@@ -173,10 +172,10 @@ export function ListVideoCard({
             </LinearGradient>
 
             <View style={{ flex: 1 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', lineHeight: 18 }} numberOfLines={2}>
+                <Text style={{ color: '#211832', fontSize: 13, fontWeight: '600', lineHeight: 18 }} numberOfLines={2}>
                     {displayTitle}
                 </Text>
-                <Text style={{ color: '#607a94', fontSize: 11, marginTop: 2 }}>
+                <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>
                     {video.category} · {durationLabel}
                 </Text>
             </View>

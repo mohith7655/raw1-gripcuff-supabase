@@ -10,8 +10,8 @@ import { View } from 'react-native';
 export const TIERS = [
     { key: 'starter',    color: '#60A5FA', level: 1 },
     { key: 'lifter',     color: '#1E40AF', level: 2 },
-    { key: 'trainer',    color: '#FB923C', level: 3 },
-    { key: 'influencer', color: '#C26A2D', level: 4 },
+    { key: 'trainer',    color: '#F25912', level: 3 },
+    { key: 'influencer', color: '#F25912', level: 4 },
 ] as const;
 
 const TIER_ORDER = TIERS.map(t => t.key);
@@ -58,7 +58,7 @@ export function TierBars({ accessType, width = 56 }: Props) {
                         flex: 1,
                         height: HEIGHTS[idx],
                         borderRadius: 2,
-                        backgroundColor: userIdx >= idx ? color : 'rgba(255,255,255,0.12)',
+                        backgroundColor: userIdx >= idx ? color : 'rgba(33,24,50,0.12)',
                     }}
                 />
             ))}

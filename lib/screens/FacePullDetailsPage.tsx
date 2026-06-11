@@ -72,7 +72,7 @@ export const FacePullDetailsPage = () => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Exercise</Text>
                 <View style={{ width: 40 }} />
@@ -84,22 +84,22 @@ export const FacePullDetailsPage = () => {
                     <Text style={styles.exerciseName}>Face Pull</Text>
 
                     <View style={styles.detailRow}>
-                        <Settings color="#e46600" size={16} />
+                        <Settings color="#F25912" size={16} />
                         <Text style={styles.detailLabel}>Equipment: <Text style={styles.detailValue}>Machine</Text></Text>
                     </View>
                     <View style={styles.detailRow}>
-                        <Accessibility color="#e46600" size={16} />
+                        <Accessibility color="#F25912" size={16} />
                         <Text style={styles.detailLabel}>Primary Muscle Group: <Text style={styles.detailValue}>Shoulders</Text></Text>
                     </View>
                     <View style={styles.detailRow}>
-                        <Dumbbell color="#e46600" size={16} />
+                        <Dumbbell color="#F25912" size={16} />
                         <Text style={styles.detailLabel}>Secondary Muscle Group: <Text style={styles.detailValue}>Biceps</Text></Text>
                     </View>
                 </View>
 
                 <View style={styles.gifContainer}>
                     <View style={styles.gifPlaceholder}>
-                        <Play color="#1d2337" size={32} />
+                        <Play color="#F8F8FC" size={32} />
                     </View>
                 </View>
             </View>
@@ -136,7 +136,7 @@ export const FacePullDetailsPage = () => {
                         <View style={styles.howToHeader}>
                             <Text style={styles.howToTitle}>Instructions</Text>
                             <TouchableOpacity>
-                                <Play color="#e46600" size={32} />
+                                <Play color="#F25912" size={32} />
                             </TouchableOpacity>
                         </View>
 
@@ -158,7 +158,7 @@ export const FacePullDetailsPage = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#1d2337',
+        backgroundColor: '#F8F8FC',
     },
     header: {
         flexDirection: 'row',
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
     },
     infoCard: {
         flexDirection: 'row',
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(70, 80, 96, 0.5)',
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(228, 102, 0, 0.25)',
+        borderColor: 'rgba(242,89,18, 0.25)',
     },
     infoContent: {
         flex: 3,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     exerciseName: {
         fontSize: 26,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
         marginBottom: 14,
     },
     detailRow: {
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     detailLabel: {
-        color: '#a6afc2',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '600',
         marginLeft: 6,
@@ -214,10 +214,10 @@ const styles = StyleSheet.create({
     },
     gifPlaceholder: {
         height: 160,
-        backgroundColor: '#a6afc2',
+        backgroundColor: '#7A7C90',
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: 'rgba(228, 102, 0, 0.4)',
+        borderColor: 'rgba(242,89,18, 0.4)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -235,15 +235,15 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     tabButtonActive: {
-        backgroundColor: '#1d2337',
+        backgroundColor: '#F8F8FC',
     },
     tabText: {
-        color: '#a6afc2',
+        color: '#7A7C90',
         fontWeight: 'bold',
         fontSize: 14,
     },
     tabTextActive: {
-        color: '#e46600',
+        color: '#F25912',
     },
     tabContentContainer: {
         flex: 1,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     placeholderText: {
-        color: '#a6afc2',
+        color: '#7A7C90',
         marginTop: 12,
         fontSize: 16,
     },
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     howToTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
     },
     instructionStep: {
         flexDirection: 'row',
@@ -281,13 +281,13 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: 'rgba(228, 102, 0, 0.12)',
+        borderColor: 'rgba(242,89,18, 0.12)',
     },
     stepNumberBadge: {
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: '#e46600',
+        backgroundColor: '#F25912',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     },
     instructionText: {
         flex: 1,
-        color: 'rgba(255, 255, 255, 0.9)',
+        color: 'rgba(33,24,50, 0.9)',
         fontSize: 14,
         lineHeight: 21,
     }

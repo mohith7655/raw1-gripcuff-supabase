@@ -79,7 +79,7 @@ export const GripCuffTrainingScreen = () => {
             {/* HEADER */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft color="#ffffff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <View style={styles.headerTitles}>
                     <Text style={styles.headerTitle}>Gripcuff Training</Text>
@@ -131,7 +131,7 @@ export const GripCuffTrainingScreen = () => {
                                 {/* Thumbnail Left */}
                                 <View style={styles.thumbnailContainer}>
                                     <View style={styles.thumbnailPlaceholder}>
-                                        <Play color="#D4622A" size={24} fill="#D4622A" />
+                                        <Play color="#F25912" size={24} fill="#F25912" />
                                     </View>
                                     <View style={styles.durationBadge}>
                                         <Text style={styles.durationText}>{video.duration}</Text>
@@ -156,7 +156,7 @@ export const GripCuffTrainingScreen = () => {
                                             </>
                                         ) : (
                                             <>
-                                                <Lock color="#D4622A" size={14} />
+                                                <Lock color="#F25912" size={14} />
                                                 <Text style={styles.costText}>{video.cost} Credits</Text>
                                             </>
                                         )}
@@ -178,7 +178,7 @@ export const GripCuffTrainingScreen = () => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalIconContainer}>
-                            <Lock color="#D4622A" size={32} />
+                            <Lock color="#F25912" size={32} />
                         </View>
                         <Text style={styles.modalTitle}>Unlock Video</Text>
                         <Text style={styles.modalSubtitle}>
@@ -212,7 +212,7 @@ export const GripCuffTrainingScreen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
     },
     header: {
         flexDirection: 'row',
@@ -231,12 +231,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerTitle: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 20,
         fontWeight: 'bold',
     },
     headerSubtitle: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 13,
         marginTop: 2,
     },
@@ -247,14 +247,14 @@ const styles = StyleSheet.create({
 
     /* ── PROGRESS CARD ── */
     progressCard: {
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 16,
         padding: 20,
         marginTop: 8,
         marginBottom: 24,
     },
     progressLabel: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: 'bold',
         marginBottom: 12,
@@ -266,17 +266,17 @@ const styles = StyleSheet.create({
     progressBarBg: {
         flex: 1,
         height: 6,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         borderRadius: 3,
         marginRight: 12,
     },
     progressBarFill: {
         height: '100%',
-        backgroundColor: '#D4622A',
+        backgroundColor: '#F25912',
         borderRadius: 3,
     },
     progressPercent: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 13,
         fontWeight: 'bold',
         width: 30,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         marginBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+        borderBottomColor: 'rgba(33,24,50, 0.05)',
     },
     tabBtn: {
         flex: 1,
@@ -297,15 +297,15 @@ const styles = StyleSheet.create({
     },
     tabBtnActive: {
         borderBottomWidth: 2,
-        borderBottomColor: '#D4622A',
+        borderBottomColor: '#F25912',
     },
     tabText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 14,
         fontWeight: '600',
     },
     tabTextActive: {
-        color: '#ffffff',
+        color: '#211832',
     },
 
     /* ── VIDEO LIST ── */
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     },
     videoCard: {
         flexDirection: 'row',
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 12,
         padding: 12,
         alignItems: 'center',
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     },
     thumbnailPlaceholder: {
         flex: 1,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     durationText: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 10,
         fontWeight: 'bold',
     },
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     levelBadge: {
-        backgroundColor: '#D4622A',
+        backgroundColor: '#F25912',
         alignSelf: 'flex-start',
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -362,18 +362,18 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     levelText: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 10,
         fontWeight: 'bold',
     },
     videoTitle: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: 'bold',
         marginBottom: 2,
     },
     videoSubtitle: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 12,
         marginBottom: 6,
     },
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     costText: {
-        color: '#D4622A',
+        color: '#F25912',
         fontSize: 13,
         fontWeight: 'bold',
     },
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
         padding: SCREEN_PADDING,
     },
     modalContent: {
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 20,
         width: '100%',
         padding: 24,
@@ -412,20 +412,20 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: 'rgba(212, 98, 42, 0.1)',
+        backgroundColor: 'rgba(242,89,18, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
     },
     modalTitle: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 8,
         textAlign: 'center',
     },
     modalSubtitle: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 24,
@@ -440,11 +440,11 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         alignItems: 'center',
     },
     modalCancelText: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: 'bold',
     },
@@ -452,11 +452,11 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: '#D4622A',
+        backgroundColor: '#F25912',
         alignItems: 'center',
     },
     modalUnlockText: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 15,
         fontWeight: 'bold',
     },

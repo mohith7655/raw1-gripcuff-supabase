@@ -144,7 +144,7 @@ export const ChatRoomScreen = () => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.headerCenter}
@@ -220,9 +220,9 @@ export const ChatRoomScreen = () => {
                         activeOpacity={0.7}
                     >
                         {sending ? (
-                            <ActivityIndicator color="#fff" size="small" />
+                            <ActivityIndicator color="#211832" size="small" />
                         ) : (
-                            <Send color="#fff" size={18} />
+                            <Send color="#211832" size={18} />
                         )}
                     </TouchableOpacity>
                 </View>
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
     headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
@@ -252,11 +252,11 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    headerName: { fontSize: FontSizes.body, fontWeight: FontWeights.bold as any, color: '#fff', maxWidth: 180 },
+    headerName: { fontSize: FontSizes.body, fontWeight: FontWeights.bold as any, color: '#211832', maxWidth: 180 },
 
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     messagesContent: { paddingHorizontal: 16, paddingVertical: 12, flexGrow: 1 },
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 6,
@@ -297,11 +297,11 @@ const styles = StyleSheet.create({
         backgroundColor: AppTheme.cardColor,
         borderBottomLeftRadius: 4,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
     },
     bubbleText: { fontSize: FontSizes.body, lineHeight: 20 },
-    bubbleTextMe: { color: '#fff' },
-    bubbleTextThem: { color: '#fff' },
+    bubbleTextMe: { color: '#211832' },
+    bubbleTextThem: { color: '#211832' },
 
     emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
     emptyChatText: { color: AppTheme.textGrey, fontSize: FontSizes.body },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.06)',
+        borderTopColor: 'rgba(33,24,50,0.06)',
         backgroundColor: AppTheme.background,
         gap: 10,
     },
@@ -322,11 +322,11 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         paddingHorizontal: 16,
         paddingVertical: 10,
-        color: '#fff',
+        color: '#211832',
         fontSize: FontSizes.body,
         maxHeight: 120,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
     },
     sendButton: {
         width: 42,
@@ -337,6 +337,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     sendButtonDisabled: {
-        backgroundColor: 'rgba(232,153,81,0.35)',
+        backgroundColor: 'rgba(242,89,18,0.35)',
     },
 });

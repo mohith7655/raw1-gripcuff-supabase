@@ -27,11 +27,11 @@ import {
 } from '../services/moveReminder.service';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 
-const ACCENT = '#E89951';        // warm orange — general accent (pills, toggle, slider, number accents)
-const CTA = '#FF6B00';           // bright orange — primary actions only (Save, Challenge a Friend)
-const BG = '#0d1825';
-const CARD = '#111d2e';
-const BORDER = 'rgba(232,153,81,0.2)'; // accent card border
+const ACCENT = '#F25912';        // warm orange — general accent (pills, toggle, slider, number accents)
+const CTA = '#F25912';           // bright orange — primary actions only (Save, Challenge a Friend)
+const BG = '#EEEEF2';
+const CARD = '#F8F8FC';
+const BORDER = 'rgba(242,89,18,0.2)'; // accent card border
 
 type IntervalMode = '1hr' | '2hr' | 'custom';
 type ExerciseSelection = ExerciseName | 'Random';
@@ -238,7 +238,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                             <Text style={s.titleSubtitle}>Set minutes every hour to break the cycle.</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={s.closeBtn}>
-                            <X color="#4a6480" size={22} />
+                            <X color="#7A7C90" size={22} />
                         </TouchableOpacity>
                     </View>
 
@@ -252,7 +252,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 onPress={() => { setPickerExercise(resolveExercise(exerciseName)); setChallengePickerVisible(true); }}
                                 activeOpacity={0.85}
                             >
-                                <Zap color="#fff" size={16} />
+                                <Zap color="#211832" size={16} />
                                 <Text style={s.challengeBtnText}>Enter Challenge Lobby</Text>
                             </TouchableOpacity>
 
@@ -376,7 +376,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                                 value={customIntervalMins}
                                                 onChangeText={setCustomIntervalMins}
                                                 placeholder="60"
-                                                placeholderTextColor="#3a5a7a"
+                                                placeholderTextColor="#D8D8E4"
                                                 maxLength={4}
                                             />
                                         </View>
@@ -460,7 +460,7 @@ export function MoveReminderModal({ visible, userId, onClose, onSaved, navigatio
                                 activeOpacity={0.8}
                             >
                                 {saving
-                                    ? <ActivityIndicator color="#fff" size="small" />
+                                    ? <ActivityIndicator color="#211832" size="small" />
                                     : <Text style={s.saveBtnText}>{saved ? 'Saved! ✓' : 'Save Reminder to Move'}</Text>
                                 }
                             </TouchableOpacity>
@@ -492,9 +492,9 @@ const s = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: 'rgba(255,107,0,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.35)',
+        borderColor: 'rgba(242,89,18,0.35)',
         borderRadius: 12,
         paddingVertical: 12,
         marginBottom: 18,
@@ -523,14 +523,14 @@ const s = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     titleBlock: {
         flex: 1,
         marginRight: 12,
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
     },
@@ -556,7 +556,7 @@ const s = StyleSheet.create({
         marginBottom: 18,
     },
     sectionLabel: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 0.7,
@@ -589,7 +589,7 @@ const s = StyleSheet.create({
         flex: 1,
     },
     dualArrow: {
-        color: 'rgba(232,153,81,0.5)',
+        color: 'rgba(242,89,18,0.5)',
         fontSize: 16,
         fontWeight: '600',
         marginTop: 28,
@@ -605,33 +605,33 @@ const s = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: CARD,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     chipActive: {
         backgroundColor: ACCENT,
         borderColor: ACCENT,
     },
     chipText: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '600',
     },
     chipTextActive: {
-        color: '#fff',
+        color: '#211832',
     },
     numericInput: {
         backgroundColor: CARD,
         borderRadius: 10,
         borderWidth: 1,
         borderColor: BORDER,
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         paddingHorizontal: 14,
         paddingVertical: 10,
         width: 120,
     },
     durationDisplay: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(33,24,50,0.7)',
         fontSize: 14,
         fontWeight: '600',
         marginBottom: 12,
@@ -667,21 +667,21 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     sliderLabelText: {
-        color: '#2a4060',
+        color: '#D8D8E4',
         fontSize: 11,
         fontWeight: '600',
     },
     summaryCard: {
         marginTop: 20,
-        backgroundColor: '#071120',
+        backgroundColor: '#EEEEF2',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.15)',
+        borderColor: 'rgba(242,89,18,0.15)',
         paddingVertical: 14,
         paddingHorizontal: 16,
     },
     summaryTitle: {
-        color: '#2a4060',
+        color: '#D8D8E4',
         fontSize: 10,
         fontWeight: '800',
         letterSpacing: 0.8,
@@ -716,7 +716,7 @@ const s = StyleSheet.create({
         marginHorizontal: 12,
     },
     summaryWarning: {
-        color: 'rgba(232,153,81,0.7)',
+        color: 'rgba(242,89,18,0.7)',
         fontSize: 12,
         fontWeight: '600',
         textAlign: 'center',
@@ -724,19 +724,19 @@ const s = StyleSheet.create({
     },
     timesCard: {
         marginTop: 16,
-        backgroundColor: '#071120',
+        backgroundColor: '#EEEEF2',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
         paddingVertical: 12,
         paddingHorizontal: 14,
     },
     alarmListCard: {
         marginTop: 16,
-        backgroundColor: '#071120',
+        backgroundColor: '#EEEEF2',
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
         paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 4,
@@ -748,13 +748,13 @@ const s = StyleSheet.create({
         marginBottom: 10,
     },
     timesTitle: {
-        color: '#2a4060',
+        color: '#D8D8E4',
         fontSize: 10,
         fontWeight: '800',
         letterSpacing: 0.8,
     },
     timesCount: {
-        color: 'rgba(232,153,81,0.6)',
+        color: 'rgba(242,89,18,0.6)',
         fontSize: 11,
         fontWeight: '700',
     },
@@ -772,11 +772,11 @@ const s = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
     },
     timesPillStop: {
-        backgroundColor: 'rgba(232,153,81,0.08)',
-        borderColor: 'rgba(232,153,81,0.3)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
+        borderColor: 'rgba(242,89,18,0.3)',
     },
     timesPillText: {
         color: 'rgba(150,180,210,0.7)',
@@ -788,14 +788,14 @@ const s = StyleSheet.create({
     },
     timesPillDisabled: {
         backgroundColor: 'rgba(255,255,255,0.03)',
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: 'rgba(33,24,50,0.06)',
         opacity: 0.5,
     },
     timesPillTextDisabled: {
         color: 'rgba(150,180,210,0.35)',
     },
     offBadge: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 8,
         fontWeight: '800',
         letterSpacing: 0.5,
@@ -809,7 +809,7 @@ const s = StyleSheet.create({
         fontSize: 8,
         fontWeight: '800',
         letterSpacing: 0.5,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         paddingHorizontal: 4,
         paddingVertical: 1,
         borderRadius: 4,
@@ -820,11 +820,11 @@ const s = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
     },
     timesEditBtnActive: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
-        borderColor: 'rgba(232,153,81,0.4)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
+        borderColor: 'rgba(242,89,18,0.4)',
     },
     timesEditBtnText: {
         color: 'rgba(150,180,210,0.7)',
@@ -858,7 +858,7 @@ const s = StyleSheet.create({
         alignItems: 'center',
     },
     saveBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '700',
     },
@@ -866,21 +866,21 @@ const s = StyleSheet.create({
         width: 50,
         height: 28,
         borderRadius: 14,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         justifyContent: 'center',
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: '#E89951',
-        borderColor: '#E89951',
+        backgroundColor: '#F25912',
+        borderColor: '#F25912',
     },
     toggleThumb: {
         width: 22,
         height: 22,
         borderRadius: 11,
-        backgroundColor: '#4a6480',
+        backgroundColor: '#7A7C90',
     },
     toggleThumbOn: {
         backgroundColor: '#fff',

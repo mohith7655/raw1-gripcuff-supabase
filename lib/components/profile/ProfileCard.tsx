@@ -9,7 +9,7 @@ import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle, Text, TouchableOpacity } from 'react-native';
 import { Globe, Lock } from 'lucide-react-native';
 
-const MUTED = '#94A3B8';
+const MUTED = '#7A7C90';
 
 interface Props {
   children: React.ReactNode;
@@ -54,10 +54,10 @@ export function ProfileCard({ children, style, padding = 16, isPrivate, onToggle
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#F8F8FC',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
   },
   visFooter: {
     flexDirection: 'row',
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(33,24,50,0.06)',
   },
   visLabel: { color: MUTED, fontSize: 11, fontWeight: '600' },
   visSeg: {
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(33,24,50,0.07)',
   },
   segOpt: {
     flexDirection: 'row',
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 10,
   },
-  segOptPublic: { backgroundColor: '#FF6B00' },
-  segOptPrivate: { backgroundColor: '#475569' },
+  segOptPublic: { backgroundColor: '#F25912' },
+  segOptPrivate: { backgroundColor: '#D8D8E4' },
   segText: { fontSize: 11, fontWeight: '700' },
 });

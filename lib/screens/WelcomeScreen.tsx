@@ -21,7 +21,7 @@ import { useAuth } from '../providers/AuthContext';
 
 import { getWorkoutVideoUrl } from '../constants/videoUrls';
 
-const ORANGE = '#E89951';
+const ORANGE = '#F25912';
 const BG_VIDEO_URL = getWorkoutVideoUrl('welcome');
 
 type ModalType = 'login' | 'signup' | null;
@@ -340,7 +340,7 @@ export const WelcomeScreen = () => {
           <button
             onClick={() => openModal('signup')}
             style={({
-              backgroundColor: '#FF6B00',
+              backgroundColor: '#F25912',
               border: 'none',
               borderRadius: 14,
               padding: '16px',
@@ -360,7 +360,7 @@ export const WelcomeScreen = () => {
               border: '1.5px solid rgba(255,255,255,0.85)',
               borderRadius: 14,
               padding: '15px',
-              color: '#fff',
+              color: '#211832',
               fontSize: 16,
               fontWeight: '600',
               cursor: 'pointer',
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   signUpBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -516,10 +516,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.85)',
+    borderColor: 'rgba(33,24,50,0.85)',
   },
   loginBtnText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -573,16 +573,16 @@ const styles = StyleSheet.create({
   sheetSubtitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#fff',
+    color: '#211832',
     marginTop: 2,
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#C8C8D0',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     marginBottom: 12,
     borderWidth: 1.5,
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     borderColor: ORANGE,
   },
   submitBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

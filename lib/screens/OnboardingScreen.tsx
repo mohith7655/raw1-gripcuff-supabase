@@ -20,9 +20,9 @@ import { useAuth } from '../providers/AuthContext';
 
 const BASE_SPOTS = ['gym', 'home', 'park'];
 
-const ORANGE = '#E89951';
-const BG = '#0d1520';
-const CARD = '#131f2e';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD = '#F8F8FC';
 
 const MIN_AGE = 13;
 const MAX_AGE = 100;
@@ -130,7 +130,7 @@ function DOBPicker({ label, placeholder, options, value, onChange, flex = 1, req
 
 const pickerStyles = StyleSheet.create({
     fieldLabel: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '600',
         textTransform: 'uppercase',
@@ -144,26 +144,26 @@ const pickerStyles = StyleSheet.create({
         backgroundColor: CARD,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
         paddingHorizontal: 12,
         paddingVertical: 13,
     },
     triggerEmpty: {
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
     },
     triggerText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
         flex: 1,
     },
     placeholderText: {
-        color: '#4B5563',
+        color: '#D8D8E4',
         fontSize: 14,
         flex: 1,
     },
     chevron: {
-        color: '#6B7280',
+        color: '#7A7C90',
         fontSize: 12,
         marginLeft: 4,
     },
@@ -176,7 +176,7 @@ const pickerStyles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#1a2535',
+        backgroundColor: '#EEEEF2',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         paddingHorizontal: 16,
@@ -185,11 +185,11 @@ const pickerStyles = StyleSheet.create({
     },
     sheetHandle: {
         width: 36, height: 4, borderRadius: 2,
-        backgroundColor: '#374151',
+        backgroundColor: '#D8D8E4',
         alignSelf: 'center', marginBottom: 12,
     },
     sheetTitle: {
-        color: '#fff', fontSize: 16, fontWeight: '700',
+        color: '#211832', fontSize: 16, fontWeight: '700',
         marginBottom: 10, paddingHorizontal: 4,
     },
     option: {
@@ -199,15 +199,15 @@ const pickerStyles = StyleSheet.create({
         marginBottom: 4,
     },
     optionSelected: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
     },
     optionText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 15,
         fontWeight: '500',
     },
     optionTextSelected: {
-        color: '#E89951',
+        color: '#F25912',
         fontWeight: '700',
     },
 });
@@ -436,7 +436,7 @@ export function OnboardingScreen({ navigation }: any) {
                                 <TextInput
                                     style={[styles.usernameInput, !!usernameError && styles.inputError]}
                                     placeholder="e.g. irongrip_99"
-                                    placeholderTextColor="#4B5563"
+                                    placeholderTextColor="#D8D8E4"
                                     autoCapitalize="none"
                                     autoCorrect={false}
                                     value={username}
@@ -616,7 +616,7 @@ export function OnboardingScreen({ navigation }: any) {
                         activeOpacity={0.85}
                     >
                         {saving
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color="#211832" />
                             : <Text style={styles.nextBtnText}>
                                 {step === TOTAL_STEPS ? 'Finish' : 'Continue'}
                               </Text>
@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
         backgroundColor: ORANGE,
     },
     stepLabel: {
-        color: '#6B7280',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '600',
         minWidth: 28,
@@ -672,13 +672,13 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
     },
     stepTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 26,
         fontWeight: '700',
         marginBottom: 8,
     },
     stepSubtitle: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
         lineHeight: 20,
         marginBottom: 32,
@@ -690,13 +690,13 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     requiredBadge: {
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         borderRadius: 6,
         paddingHorizontal: 7,
         paddingVertical: 2,
     },
     requiredBadgeText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 10,
         fontWeight: '600',
     },
@@ -708,12 +708,12 @@ const styles = StyleSheet.create({
     agePill: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderRadius: 10,
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.25)',
+        borderColor: 'rgba(242,89,18,0.25)',
         marginBottom: 4,
     },
     agePillError: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
         color: '#EF4444',
     },
     inputLabel: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '600',
         textTransform: 'uppercase',
@@ -741,11 +741,11 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     inputError: {
         borderColor: '#EF4444',
@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
         backgroundColor: CARD,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         marginBottom: 8,
         paddingLeft: 14,
     },
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 14,
         paddingRight: 16,
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         borderWidth: 0,
     },
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     checkingText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 13,
     },
     genderGrid: {
@@ -800,20 +800,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18,
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
         backgroundColor: CARD,
     },
     genderPillSelected: {
-        borderColor: '#E89951',
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        borderColor: '#F25912',
+        backgroundColor: 'rgba(242,89,18,0.12)',
     },
     genderPillText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
         fontWeight: '600',
     },
     genderPillTextSelected: {
-        color: '#E89951',
+        color: '#F25912',
     },
     locationWrap: {
         zIndex: 9999,
@@ -830,25 +830,25 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     locTabActive: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
-        borderColor: '#E89951',
+        backgroundColor: 'rgba(242,89,18,0.15)',
+        borderColor: '#F25912',
     },
     locTabHasData: {
-        borderColor: 'rgba(232,153,81,0.5)',
+        borderColor: 'rgba(242,89,18,0.5)',
     },
     locTabText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
         fontWeight: '600',
     },
     locTabTextActive: {
-        color: '#E89951',
+        color: '#F25912',
     },
     locTabTextHasData: {
-        color: 'rgba(232,153,81,0.8)',
+        color: 'rgba(242,89,18,0.8)',
     },
     footer: {
         paddingHorizontal: 24,
@@ -856,10 +856,10 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         gap: 12,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.06)',
+        borderTopColor: 'rgba(33,24,50,0.06)',
     },
     nextBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 14,
         paddingVertical: 16,
         alignItems: 'center',
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
     },
     skipText: {
-        color: '#6B7280',
+        color: '#7A7C90',
         fontSize: 14,
     },
 });

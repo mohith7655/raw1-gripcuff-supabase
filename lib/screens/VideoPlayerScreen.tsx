@@ -162,7 +162,7 @@ const engagementStyles = StyleSheet.create({
         paddingVertical: 10,
         gap: 6,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
         justifyContent: 'center',
     },
     pill: {
@@ -174,29 +174,29 @@ const engagementStyles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     pillActive: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
-        borderColor: '#E89951',
+        backgroundColor: 'rgba(242,89,18,0.15)',
+        borderColor: '#F25912',
     },
     pillIcon: {
         fontSize: 13,
     },
     pillLabel: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 12,
         fontWeight: '600',
     },
     pillLabelActive: {
-        color: '#E89951',
+        color: '#F25912',
     },
     modeGroup: {
         flexDirection: 'row',
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#FF6B00',
+        borderColor: '#F25912',
         padding: 3,
         gap: 3,
     },
@@ -209,7 +209,7 @@ const engagementStyles = StyleSheet.create({
         backgroundColor: '#000',
     },
     modeText: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '600',
     },
@@ -218,8 +218,8 @@ const engagementStyles = StyleSheet.create({
     },
 });
 
-const ACCENT = '#E89951';
-const PANEL_BG = '#1a1a2e';
+const ACCENT = '#F25912';
+const PANEL_BG = '#F8F8FC';
 
 const FAQ_ITEMS = [
     {
@@ -1264,7 +1264,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
     };
 
     const getAvatarColor = (name: string) => {
-        const colors = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6', '#E8732A'];
+        const colors = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6', '#F25912'];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -1453,7 +1453,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     const renderSocialContent = () => {
         const otherViewers = liveViewers.filter(v => v.uid !== supabaseUserId);
-        const avatarPalette = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6'];
+        const avatarPalette = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6'];
         const avatarColor = (name: string) => {
             let hash = 0;
             for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -1567,7 +1567,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                     disabled={!entry.hostUid}
                                     activeOpacity={0.8}
                                 >
-                                    <Ionicons name="calendar-outline" size={13} color="#fff" />
+                                    <Ionicons name="calendar-outline" size={13} color="#211832" />
                                     <Text style={socialStyles.joinBtnText}>Join</Text>
                                 </TouchableOpacity>
                             </View>
@@ -1607,7 +1607,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             <View key={type} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
                                 borderColor: active ? ACCENT : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? 'rgba(232,153,81,0.15)' : 'transparent',
+                                backgroundColor: active ? 'rgba(242,89,18,0.15)' : 'transparent',
                             }}>
                                 <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
                                     {type}
@@ -1632,7 +1632,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
                                 borderColor: active ? ACCENT : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? 'rgba(232,153,81,0.15)' : 'transparent',
+                                backgroundColor: active ? 'rgba(242,89,18,0.15)' : 'transparent',
                             }}>
                                 <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
                                     {label}
@@ -1663,11 +1663,11 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                     key={i}
                                     style={[
                                         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-                                        i < featuredExercises.length - 1 && { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+                                        i < featuredExercises.length - 1 && { borderBottomWidth: 1, borderBottomColor: 'rgba(33,24,50,0.06)' },
                                     ]}
                                 >
                                     <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: ACCENT, flexShrink: 0 }} />
-                                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500', flex: 1 }}>{ex.name}</Text>
+                                    <Text style={{ color: '#211832', fontSize: 14, fontWeight: '500', flex: 1 }}>{ex.name}</Text>
                                     {!!label && <Text style={{ color: ACCENT, fontSize: 12, fontWeight: '600', flexShrink: 0 }}>{label}</Text>}
                                 </View>
                             );
@@ -1692,7 +1692,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
             {/* Similar Workouts */}
             {similarPrograms.length > 0 && (
                 <View style={{ marginTop: 16, paddingBottom: 8 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', paddingHorizontal: 16, marginBottom: 0 }}>
+                    <Text style={{ color: 'rgba(33,24,50,0.55)', fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', paddingHorizontal: 16, marginBottom: 0 }}>
                         Similar Workouts
                     </Text>
                     <ScrollView
@@ -1718,7 +1718,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                     overflow: 'hidden',
                                     backgroundColor: 'rgba(255,255,255,0.05)',
                                     borderWidth: 1,
-                                    borderColor: 'rgba(255,255,255,0.08)',
+                                    borderColor: 'rgba(33,24,50,0.08)',
                                 }}
                                 activeOpacity={0.8}
                             >
@@ -1743,7 +1743,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                             paddingVertical: 2,
                                         }}
                                     >
-                                        <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>
+                                        <Text style={{ color: '#211832', fontSize: 8, fontWeight: '700' }}>
                                             {item.level.toUpperCase()}
                                         </Text>
                                     </View>
@@ -1751,7 +1751,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                 <View style={{ padding: 7 }}>
                                     <Text
                                         numberOfLines={2}
-                                        style={{ color: '#fff', fontSize: 11, fontWeight: '700', lineHeight: 15 }}
+                                        style={{ color: '#211832', fontSize: 11, fontWeight: '700', lineHeight: 15 }}
                                     >
                                         {item.title}
                                     </Text>
@@ -1785,7 +1785,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 <TextInput
                     style={commentStyles.input}
                     placeholder="Ask a question or leave feedback..."
-                    placeholderTextColor="#3a5a7a"
+                    placeholderTextColor="#D8D8E4"
                     value={newComment}
                     onChangeText={setNewComment}
                     multiline
@@ -1905,7 +1905,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                         style={{
                                             color: comment.likedBy?.includes(supabaseUserId)
                                                 ? ACCENT
-                                                : '#607a94',
+                                                : '#7A7C90',
                                             fontSize: 13,
                                         }}
                                     >
@@ -1964,7 +1964,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             style={s.ytBackBtn}
                             onPress={() => navigation.goBack()}
                         >
-                            <Ionicons name="arrow-back" size={22} color="#fff" />
+                            <Ionicons name="arrow-back" size={22} color="#211832" />
                         </TouchableOpacity>
                     </View>
                 ) : sourceVideo?.videoUrl ? (
@@ -1991,7 +1991,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onDurationChange={handleDurationChange}
                         inviteCta={allowInvite ? {
                             title: 'Workout Together',
-                            subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#E89951' }}>your way.</Text></Text>,
+                            subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F25912' }}>your way.</Text></Text>,
                             onWorkoutTogether: () => setShowWorkoutTogetherModal(true),
                             onStartNow: () => setShowInviteModal(true),
                             viewerCount: (() => {
@@ -2414,7 +2414,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                                     cx={RING_SIZE / 2}
                                                     cy={RING_SIZE / 2}
                                                     r={RADIUS}
-                                                    stroke="#FF6B00"
+                                                    stroke="#F25912"
                                                     strokeWidth={STROKE}
                                                     fill="none"
                                                     strokeDasharray={CIRCUMFERENCE}
@@ -2502,25 +2502,25 @@ const navStyles = StyleSheet.create({
         gap: 8,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         borderRadius: 10,
         paddingHorizontal: 8,
         paddingVertical: 8,
     },
     cardLeft: { justifyContent: 'flex-start' },
     cardRight: { justifyContent: 'flex-end' },
-    arrow: { color: '#FF6B00', fontSize: 22, fontWeight: '800' },
+    arrow: { color: '#F25912', fontSize: 22, fontWeight: '800' },
     thumb: { width: 40, height: 40, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)' },
-    thumbFallback: { backgroundColor: 'rgba(255,107,0,0.18)' },
+    thumbFallback: { backgroundColor: 'rgba(242,89,18,0.18)' },
     textCol: { flex: 1, minWidth: 0 },
     label: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 10,
         fontWeight: '700',
         letterSpacing: 0.4,
         textTransform: 'uppercase',
     },
-    titleText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    titleText: { color: '#211832', fontSize: 13, fontWeight: '600' },
 });
 
 const s = StyleSheet.create({
@@ -2541,18 +2541,18 @@ const s = StyleSheet.create({
         backgroundColor: '#000',
     },
     missingVideoText: {
-        color: 'white',
+        color: '#fff',
         fontSize: 18,
         marginBottom: 16,
     },
     missingVideoAction: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingHorizontal: 18,
         paddingVertical: 10,
         borderRadius: 10,
     },
     missingVideoActionText: {
-        color: 'white',
+        color: '#fff',
         fontSize: 14,
         fontWeight: '700',
     },
@@ -2622,10 +2622,10 @@ const panelStyles = StyleSheet.create({
         borderRadius: 10,
     },
     tabActive: {
-        backgroundColor: '#E89951',
+        backgroundColor: '#F25912',
     },
     tabText: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -2636,7 +2636,7 @@ const panelStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: 'rgba(232,153,81,0.2)',
+        backgroundColor: 'rgba(242,89,18,0.2)',
         paddingHorizontal: 5,
         paddingVertical: 2,
         borderRadius: 6,
@@ -2648,14 +2648,14 @@ const panelStyles = StyleSheet.create({
         backgroundColor: '#22c55e',
     },
     socialLiveChipText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 10,
         fontWeight: '700',
     },
     sectionHeading: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#E89951',
+        color: '#F25912',
         textTransform: 'uppercase',
         letterSpacing: 1,
         paddingHorizontal: 16,
@@ -2663,7 +2663,7 @@ const panelStyles = StyleSheet.create({
     },
     sectionDivider: {
         height: 1,
-        backgroundColor: '#1e2d3d',
+        backgroundColor: '#F8F8FC',
         marginHorizontal: 16,
         marginVertical: 8,
     },
@@ -2679,7 +2679,7 @@ const panelStyles = StyleSheet.create({
         alignItems: 'center',
     },
     faqQuestion: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
         flex: 1,
@@ -2690,7 +2690,7 @@ const panelStyles = StyleSheet.create({
         fontSize: 10,
     },
     faqAnswer: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 13,
         lineHeight: 20,
         marginTop: 10,
@@ -2705,25 +2705,25 @@ const panelStyles = StyleSheet.create({
         gap: 12,
     },
     timerText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 56,
         fontWeight: '900',
         letterSpacing: 2,
     },
     timerLabel: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '500',
         marginTop: 2,
     },
     countdownText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 80,
         fontWeight: '900',
         letterSpacing: 2,
     },
     startBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingHorizontal: 56,
         paddingVertical: 16,
         borderRadius: 30,
@@ -2744,7 +2744,7 @@ const panelStyles = StyleSheet.create({
     },
     pauseBtn: {
         flex: 1,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingVertical: 16,
         borderRadius: 30,
         alignItems: 'center',
@@ -2761,11 +2761,11 @@ const panelStyles = StyleSheet.create({
         paddingVertical: 16,
         borderRadius: 30,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'rgba(33,24,50,0.15)',
         alignItems: 'center',
     },
     resetBtnText: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 18,
         fontWeight: '700',
     },
@@ -2777,13 +2777,13 @@ const panelStyles = StyleSheet.create({
         marginHorizontal: -16,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.25)',
+        borderColor: 'rgba(242,89,18,0.25)',
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 14,
     },
     cuePhase: {
-        color: '#FF6B00',
+        color: '#F25912',
         fontSize: 13,
         fontWeight: '800',
         letterSpacing: 0.5,
@@ -2799,16 +2799,16 @@ const panelStyles = StyleSheet.create({
     },
     cueStat: { flex: 1, alignItems: 'center', paddingHorizontal: 4, minWidth: 0 },
     cueStatWide: { flex: 1.5 },
-    cueStatValue: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
+    cueStatValue: { color: '#211832', fontSize: 17, fontWeight: '800', textAlign: 'center' },
     cueStatLabel: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 11,
         fontWeight: '600',
         marginTop: 4,
     },
     cueDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.1)' },
     cueTip: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(33,24,50,0.7)',
         fontSize: 12,
         textAlign: 'center',
         marginTop: 12,
@@ -2825,7 +2825,7 @@ const commentStyles = StyleSheet.create({
         paddingTop: 12,
         paddingBottom: 10,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
+        borderBottomColor: 'rgba(33,24,50,0.08)',
     },
     myAvatar: {
         width: 36,
@@ -2837,14 +2837,14 @@ const commentStyles = StyleSheet.create({
         flexShrink: 0,
     },
     myAvatarText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '700',
     },
     input: {
         flex: 1,
-        backgroundColor: '#1c3a56',
-        color: '#ffffff',
+        backgroundColor: '#F8F8FC',
+        color: '#211832',
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingTop: 12,
@@ -2854,18 +2854,18 @@ const commentStyles = StyleSheet.create({
         fontSize: 14,
     },
     postBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 10,
     },
     postBtnText: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 14,
         fontWeight: '700',
     },
     empty: {
-        color: '#607a94',
+        color: '#7A7C90',
         textAlign: 'center',
         marginTop: 20,
         fontSize: 14,
@@ -2884,7 +2884,7 @@ const commentStyles = StyleSheet.create({
         flexShrink: 0,
     },
     avatarText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '700',
     },
@@ -2898,16 +2898,16 @@ const commentStyles = StyleSheet.create({
         marginBottom: 2,
     },
     username: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
     },
     timestamp: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 12,
     },
     commentText: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 14,
         lineHeight: 20,
         opacity: 0.9,
@@ -2925,10 +2925,10 @@ const commentStyles = StyleSheet.create({
         paddingTop: 8,
         paddingBottom: 10,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
+        borderBottomColor: 'rgba(33,24,50,0.08)',
     },
     typeLabel: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '500',
     },
@@ -2938,14 +2938,14 @@ const commentStyles = StyleSheet.create({
         borderRadius: 16,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     typeChipActive: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderColor: ACCENT,
     },
     typeChipText: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '600',
     },
@@ -2968,7 +2968,7 @@ const socialStyles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: 'rgba(33,24,50,0.06)',
         paddingHorizontal: 10,
         paddingVertical: 8,
         marginBottom: 14,
@@ -2987,7 +2987,7 @@ const socialStyles = StyleSheet.create({
     },
     rowBorder: {
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     avatar: {
         width: 36,
@@ -2996,17 +2996,17 @@ const socialStyles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    avatarText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-    name: { color: '#fff', fontSize: 14, fontWeight: '700' },
-    sub: { color: '#9CA3AF', fontSize: 12, marginTop: 1 },
-    scheduleTop: { color: '#F3F4F6', fontSize: 12, fontWeight: '700', marginTop: 2 },
-    emptyText: { color: '#9CA3AF', fontSize: 13, paddingVertical: 4 },
+    avatarText: { color: '#211832', fontSize: 14, fontWeight: '700' },
+    name: { color: '#211832', fontSize: 14, fontWeight: '700' },
+    sub: { color: '#7A7C90', fontSize: 12, marginTop: 1 },
+    scheduleTop: { color: '#211832', fontSize: 12, fontWeight: '700', marginTop: 2 },
+    emptyText: { color: '#7A7C90', fontSize: 13, paddingVertical: 4 },
     softBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.4)',
+        borderColor: 'rgba(242,89,18,0.4)',
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 6,
@@ -3016,7 +3016,7 @@ const socialStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 8,
         paddingHorizontal: 9,
         paddingVertical: 6,
@@ -3031,17 +3031,17 @@ const socialStyles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 6,
     },
-    joinBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    joinBtnText: { color: '#211832', fontSize: 12, fontWeight: '700' },
     scheduledBadge: {
         backgroundColor: 'rgba(255,255,255,0.08)',
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
     },
-    scheduledBtnText: { color: '#9CA3AF', fontSize: 11, fontWeight: '600' },
-    scheduledBadgeText: { color: '#9CA3AF', fontSize: 11, fontWeight: '600' },
+    scheduledBtnText: { color: '#7A7C90', fontSize: 11, fontWeight: '600' },
+    scheduledBadgeText: { color: '#7A7C90', fontSize: 11, fontWeight: '600' },
 });
 
 const reqStyles = StyleSheet.create({
@@ -3051,7 +3051,7 @@ const reqStyles = StyleSheet.create({
         padding: 14,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: 'rgba(33,24,50,0.06)',
     },
     sectionRow: {
         flexDirection: 'row',
@@ -3064,10 +3064,10 @@ const reqStyles = StyleSheet.create({
         borderRadius: 12,
         padding: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: 'rgba(33,24,50,0.06)',
     },
     metaLabel: {
-        color: 'rgba(255,255,255,0.45)',
+        color: 'rgba(33,24,50,0.45)',
         fontSize: 11,
         fontWeight: '600',
         letterSpacing: 0.5,
@@ -3075,7 +3075,7 @@ const reqStyles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     metaValue: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 13,
         marginTop: 6,
         lineHeight: 18,

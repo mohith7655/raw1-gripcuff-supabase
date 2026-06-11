@@ -501,7 +501,7 @@ export const ChallengeVideoRoom: React.FC = () => {
 
                             {iMeReady && !opponentReady && (
                                 <View style={st.waitingForOpponent}>
-                                    <ActivityIndicator color="#E89951" size="small" />
+                                    <ActivityIndicator color="#F25912" size="small" />
                                     <Text style={st.waitingForText}>Waiting for {opponentName}…</Text>
                                 </View>
                             )}
@@ -601,7 +601,7 @@ export const ChallengeVideoRoom: React.FC = () => {
 
                 {isConnecting && (
                     <View style={st.connectingBadge}>
-                        <ActivityIndicator color="#E89951" size="small" />
+                        <ActivityIndicator color="#F25912" size="small" />
                         <Text style={st.connectingText}>Connecting voice…</Text>
                     </View>
                 )}
@@ -620,10 +620,10 @@ export const ChallengeVideoRoom: React.FC = () => {
     );
 };
 
-const ORANGE = '#E89951';
+const ORANGE = '#F25912';
 
 const st = StyleSheet.create({
-    root:      { flex: 1, backgroundColor: '#080e18', overflow: 'hidden' },
+    root:      { flex: 1, backgroundColor: '#EEEEF2', overflow: 'hidden' },
     scrimTop:    { position: 'absolute', top: 0, left: 0, right: 0, height: height * 0.22, backgroundColor: 'rgba(8,14,24,0.55)' },
     scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: height * 0.28, backgroundColor: 'rgba(6,12,20,0.6)' },
     safe:      { flex: 1 },
@@ -634,9 +634,9 @@ const st = StyleSheet.create({
     },
     challengePill: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: 'rgba(232,153,81,0.15)', borderRadius: 20,
+        backgroundColor: 'rgba(242,89,18,0.15)', borderRadius: 20,
         paddingHorizontal: 12, paddingVertical: 6,
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.3)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.3)',
     },
     fireEmoji: { fontSize: 14 },
     challengeLabel: { color: ORANGE, fontSize: 13, fontWeight: '700' },
@@ -652,7 +652,7 @@ const st = StyleSheet.create({
         alignItems: 'center', gap: 12,
         backgroundColor: 'rgba(8,14,24,0.7)',
         borderRadius: 22, paddingHorizontal: 28, paddingVertical: 24,
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
     },
     introTitle: {
         color: ORANGE, fontSize: 13, fontWeight: '800',
@@ -672,12 +672,12 @@ const st = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 10,
         marginTop: 8, marginBottom: 4,
     },
-    readyDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#1c2e42' },
+    readyDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#F8F8FC' },
     readyDotOn: { backgroundColor: '#4ade80' },
     readyStatusText: { color: 'rgba(150,180,210,0.5)', fontSize: 12 },
     readyBtn: {
         marginTop: 24,
-        backgroundColor: '#FF6B00', borderRadius: 16,
+        backgroundColor: '#F25912', borderRadius: 16,
         paddingHorizontal: 36, paddingVertical: 16,
     },
     readyBtnText: { color: '#fff', fontSize: 18, fontWeight: '800' },
@@ -728,7 +728,7 @@ const st = StyleSheet.create({
     },
     endWorkoutBtn: {
         marginTop: 20, flexDirection: 'row', alignItems: 'center', gap: 10,
-        backgroundColor: '#FF6B00', borderRadius: 16,
+        backgroundColor: '#F25912', borderRadius: 16,
         paddingHorizontal: 36, paddingVertical: 16,
     },
     endWorkoutBtnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
@@ -743,7 +743,7 @@ const st = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.1)',
         alignItems: 'center', justifyContent: 'center',
     },
-    ctrlBtnActive: { backgroundColor: 'rgba(232,153,81,0.3)' },
+    ctrlBtnActive: { backgroundColor: 'rgba(242,89,18,0.3)' },
     endBtn: {
         width: 64, height: 64, borderRadius: 32,
         backgroundColor: '#e53935',

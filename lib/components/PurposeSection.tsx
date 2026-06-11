@@ -26,7 +26,7 @@ export function PurposeSection({ purpose }: Props) {
         <Text style={{ color: GREEN, fontSize: 13, fontWeight: '700', letterSpacing: 0.3 }}>PURPOSE</Text>
       </View>
 
-      <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 20, marginBottom: 10 }}>
+      <Text style={{ color: 'rgba(33,24,50,0.85)', fontSize: 13, lineHeight: 20, marginBottom: 10 }}>
         {purpose.summary}
       </Text>
 
@@ -36,7 +36,7 @@ export function PurposeSection({ purpose }: Props) {
             width: 6, height: 6, borderRadius: 3,
             backgroundColor: GREEN, marginTop: 7, flexShrink: 0,
           }} />
-          <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, flex: 1 }}>
+          <Text style={{ color: 'rgba(33,24,50,0.72)', fontSize: 13, lineHeight: 20, flex: 1 }}>
             {benefit}
           </Text>
         </View>

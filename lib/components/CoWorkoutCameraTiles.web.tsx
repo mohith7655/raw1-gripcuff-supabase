@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     permissionText: {
-        color: 'white',
+        color: '#fff',
         fontWeight: 'bold',
         fontSize: 14,
         textAlign: 'center',
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.08)',
     },
     comingSoonPrimary: {
-        color: 'rgba(255,255,255,0.55)',
+        color: 'rgba(33,24,50,0.55)',
         fontSize: 13,
         textTransform: 'uppercase',
         fontStyle: 'italic',
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     comingSoonSecondary: {
-        color: 'rgba(255,255,255,0.4)',
+        color: 'rgba(33,24,50,0.4)',
         fontSize: 13,
         textTransform: 'uppercase',
         fontStyle: 'italic',
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 8,
         left: 12,
-        color: 'white',
+        color: '#211832',
         fontSize: 12,
         zIndex: 2,
     },
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
         bottom: 4,
         width: '100%',
         textAlign: 'center',
-        color: 'white',
+        color: '#211832',
         fontSize: 10,
         zIndex: 2,
     },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     cameraPlaceholderText: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 12,
         zIndex: 2,
     },

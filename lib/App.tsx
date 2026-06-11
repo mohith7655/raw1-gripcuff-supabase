@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
-import { NavigationContainer, DarkTheme, getStateFromPath as navGetStateFromPath } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, getStateFromPath as navGetStateFromPath } from '@react-navigation/native';
 import * as ExpoLinking from 'expo-linking';
 import { navigationRef } from './core/navigation';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -111,18 +111,18 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any
     if (this.state.hasError) {
       return (
         <View style={{
-          flex: 1, backgroundColor: '#0d1520',
+          flex: 1, backgroundColor: '#EEEEF2',
           justifyContent: 'center', alignItems: 'center', padding: 20
         }}>
-          <Text style={{ color: '#D4622A', fontSize: 18, fontWeight: '700' }}>
+          <Text style={{ color: '#F25912', fontSize: 18, fontWeight: '700' }}>
             Something went wrong
           </Text>
-          <Text style={{ color: '#607a94', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+          <Text style={{ color: '#7A7C90', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
             {this.state.error ? String(this.state.error) : ''}
           </Text>
           <TouchableOpacity
             onPress={() => this.setState({ hasError: false })}
-            style={{ marginTop: 20, backgroundColor: '#D4622A', padding: 12, borderRadius: 10 }}>
+            style={{ marginTop: 20, backgroundColor: '#F25912', padding: 12, borderRadius: 10 }}>
             <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -326,7 +326,7 @@ function AppStack({
       initialRouteName={initialPublicProfile ? 'ScannedProfileScreen' : (initialRoute ?? 'HomeTabs')}
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0d1520' }
+        contentStyle: { backgroundColor: '#EEEEF2' }
       }}
     >
       <Stack.Screen name="HomeTabs" component={HomeTabs} />
@@ -339,7 +339,7 @@ function AppStack({
       <Stack.Group
         screenOptions={{
           presentation: 'card',
-          contentStyle: { backgroundColor: '#0d1520' }
+          contentStyle: { backgroundColor: '#EEEEF2' }
         }}
       >
         <Stack.Screen name="WorkoutStep1" component={WorkoutStep1Screen} />
@@ -462,21 +462,21 @@ function ChallengeInviteAlert({
 const challengeAlertStyles = StyleSheet.create({
   card: {
     position: 'absolute', bottom: 120, left: 16, right: 16, zIndex: 9999,
-    backgroundColor: '#0d1825', borderRadius: 18, padding: 20,
-    borderWidth: 1, borderColor: 'rgba(232,153,81,0.35)',
-    shadowColor: '#E89951', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10,
+    backgroundColor: '#EEEEF2', borderRadius: 18, padding: 20,
+    borderWidth: 1, borderColor: 'rgba(242,89,18,0.35)',
+    shadowColor: '#F25912', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10,
   },
-  title: { color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  title: { color: '#211832', fontSize: 16, fontWeight: '800', marginBottom: 4 },
   body:  { color: 'rgba(150,180,210,0.7)', fontSize: 13, marginBottom: 16 },
   row:   { flexDirection: 'row', gap: 10 },
   acceptBtn: {
-    flex: 1, backgroundColor: '#FF6B00', borderRadius: 12,
+    flex: 1, backgroundColor: '#F25912', borderRadius: 12,
     paddingVertical: 12, alignItems: 'center',
   },
   acceptText:  { color: '#fff', fontWeight: '700', fontSize: 14 },
   declineBtn: {
     flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.1)',
     paddingVertical: 12, alignItems: 'center',
   },
   declineText: { color: 'rgba(150,180,210,0.7)', fontWeight: '700', fontSize: 14 },
@@ -880,11 +880,11 @@ function MainApp() {
     return (
       <View style={{
         flex: 1,
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
         justifyContent: 'center',
         alignItems: 'center'
       }}>
-        <ActivityIndicator color="#D4622A" size="large" />
+        <ActivityIndicator color="#F25912" size="large" />
       </View>
     );
   }
@@ -895,15 +895,15 @@ function MainApp() {
         ref={navigationRef}
         linking={linking as any}
         theme={{
-          ...DarkTheme,
+          ...DefaultTheme,
           colors: {
-            ...DarkTheme.colors,
-            background: '#0d1520',
-            card: '#131f2e',
-            text: '#ffffff',
-            border: '#1c3a56',
-            primary: '#D4622A',
-            notification: '#D4622A',
+            ...DefaultTheme.colors,
+            background: '#EEEEF2',
+            card: '#F8F8FC',
+            text: '#211832',
+            border: '#D8D8E4',
+            primary: '#F25912',
+            notification: '#F25912',
           },
         }}
       >
@@ -1071,7 +1071,7 @@ export default function App() {
 const styles = StyleSheet.create({
   gateContainer: {
     flex: 1,
-    backgroundColor: '#1d2337',
+    backgroundColor: '#F8F8FC',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -1079,18 +1079,18 @@ const styles = StyleSheet.create({
   gateTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
     marginBottom: 24,
   },
   gateInput: {
     width: '100%',
     maxWidth: 320,
-    backgroundColor: '#2a3143',
-    color: '#ffffff',
+    backgroundColor: '#F8F8FC',
+    color: '#211832',
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#3a4155',
+    borderColor: '#F8F8FC',
     marginBottom: 16,
     fontSize: 16,
   },
@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gateButtonText: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 16,
     fontWeight: 'bold',
   },

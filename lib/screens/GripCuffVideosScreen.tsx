@@ -19,12 +19,12 @@ import { AppTheme } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 
 const tierCardStyle = {
-    backgroundColor: '#1A1A35',
+    backgroundColor: '#EEEEF2',
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(33,24,50,0.07)',
 };
 
 const tierBadge = {
@@ -35,14 +35,14 @@ const tierBadge = {
 };
 
 const tierBadgeText = {
-    color: '#fff',
+    color: '#211832',
     fontSize: 11,
     fontWeight: '700' as const,
     letterSpacing: 1,
 };
 
 const tierPrice = {
-    color: '#E89951',
+    color: '#F25912',
     fontSize: 13,
     fontWeight: '600' as const,
 };
@@ -67,7 +67,7 @@ const CARD_WIDTH = (width - (SCREEN_PADDING * 2) - CARD_GAP) / 2;
 
 // Ordered array of specific gradient colors
 const BG_COLORS = [
-    ['#E8732A', '#D4622A'], // Orange
+    ['#F25912', '#F25912'], // Orange
     ['#8B5CF6', '#7C3AED'], // Purple
     ['#3B82F6', '#2563EB'], // Blue
     ['#10B981', '#059669'], // Green
@@ -139,7 +139,7 @@ export const GripCuffVideosScreen = () => {
                 style={{ alignItems: 'center', marginTop: 2, marginBottom: 8 }}
             >
                 <Text style={{
-                    color: '#E89951',
+                    color: '#F25912',
                     fontSize: 13,
                     fontWeight: '600',
                     textDecorationLine: 'underline',
@@ -191,12 +191,12 @@ export const GripCuffVideosScreen = () => {
                     >
                         {isUnlocked ? (
                             <View style={styles.playIconCircle}>
-                                <Play color="#fff" size={16} fill="#fff" />
+                                <Play color="#211832" size={16} fill="#211832" />
                             </View>
                         ) : (
                             <>
                                 <View style={styles.lockedOverlay} />
-                                <Lock color="#ffffff" size={20} style={{ zIndex: 2 }} />
+                                <Lock color="#211832" size={20} style={{ zIndex: 2 }} />
                             </>
                         )}
                     </LinearGradient>
@@ -208,7 +208,7 @@ export const GripCuffVideosScreen = () => {
 
                 <View style={styles.cardContent}>
                     <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                    <Heart color="#607a94" size={16} />
+                    <Heart color="#7A7C90" size={16} />
                 </View>
             </TouchableOpacity>
         );
@@ -250,7 +250,7 @@ export const GripCuffVideosScreen = () => {
                     }}>
                         {/* Header */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>
+                            <Text style={{ color: '#211832', fontSize: 20, fontWeight: '700' }}>
                                 Gripcuff Memberships
                             </Text>
                             <TouchableOpacity onPress={() => setShowTiersModal(false)}>
@@ -262,7 +262,7 @@ export const GripCuffVideosScreen = () => {
                             {/* STARTER */}
                             <View style={tierCardStyle}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                    <View style={[tierBadge, { backgroundColor: '#1E3A5F' }]}>
+                                    <View style={[tierBadge, { backgroundColor: '#F8F8FC' }]}>
                                         <Text style={tierBadgeText}>STARTER</Text>
                                     </View>
                                     <Text style={tierPrice}>Free</Text>
@@ -300,7 +300,7 @@ export const GripCuffVideosScreen = () => {
                             {/* TRAINER */}
                             <View style={tierCardStyle}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                    <View style={[tierBadge, { backgroundColor: '#F97316' }]}>
+                                    <View style={[tierBadge, { backgroundColor: '#F25912' }]}>
                                         <Text style={tierBadgeText}>TRAINER</Text>
                                     </View>
                                 </View>
@@ -341,14 +341,14 @@ export const GripCuffVideosScreen = () => {
                         <TouchableOpacity
                             onPress={() => setShowTiersModal(false)}
                             style={{
-                                backgroundColor: '#FF6B00',
+                                backgroundColor: '#F25912',
                                 borderRadius: 12,
                                 paddingVertical: 14,
                                 alignItems: 'center',
                                 marginTop: 16,
                             }}
                         >
-                            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
+                            <Text style={{ color: '#211832', fontWeight: '700', fontSize: 15 }}>
                                 Got It
                             </Text>
                         </TouchableOpacity>
@@ -417,11 +417,11 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
     },
     progressCard: {
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 16,
         padding: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(33,24,50,0.05)',
     },
     progressHeader: {
         flexDirection: 'row',
@@ -430,12 +430,12 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     progressTitle: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: 'bold',
     },
     progressPercentText: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 13,
         fontWeight: 'bold',
     },
@@ -446,17 +446,17 @@ const styles = StyleSheet.create({
     progressBarBg: {
         flex: 1,
         height: 6,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         borderRadius: 3,
         marginRight: 12,
     },
     progressBarFill: {
         height: '100%',
-        backgroundColor: '#D4622A',
+        backgroundColor: '#F25912',
         borderRadius: 3,
     },
     progressPercent: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '600',
         width: 32,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     durationText: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 10,
     },
     cardContent: {
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         flex: 1,
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: 'bold',
         marginTop: 0,

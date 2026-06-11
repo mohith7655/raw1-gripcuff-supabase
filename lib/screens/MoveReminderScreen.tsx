@@ -16,11 +16,11 @@ import {
 } from '../services/moveReminder.service';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 
-const ACCENT = '#E89951';
-const CTA    = '#FF6B00';
-const BG     = '#0d1825';
-const CARD   = '#111d2e';
-const BORDER = 'rgba(232,153,81,0.2)';
+const ACCENT = '#F25912';
+const CTA    = '#F25912';
+const BG     = '#EEEEF2';
+const CARD   = '#F8F8FC';
+const BORDER = 'rgba(242,89,18,0.2)';
 
 type IntervalMode = '1hr' | '2hr' | 'custom';
 type ExerciseSelection = ExerciseName | 'Random';
@@ -197,7 +197,7 @@ export function MoveReminderScreen() {
             {/* Header */}
             <View style={s.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <ArrowLeft color="#fff" size={22} />
+                    <ArrowLeft color="#211832" size={22} />
                 </TouchableOpacity>
                 <View style={s.titleBlock}>
                     <Text style={s.title}>Stay Active All Day</Text>
@@ -244,13 +244,13 @@ export function MoveReminderScreen() {
                         <TouchableOpacity style={[s.timeCard, s.timeHalf]} onPress={() => openTimeSheet('start')} activeOpacity={0.75}>
                             <Text style={s.sectionLabel}>Start Time</Text>
                             <Text style={s.timeValue}>{fmtTime(startHour, startMinute, startAmPm)}</Text>
-                            <ChevronRight color="#4a6480" size={14} style={{ position: 'absolute', right: 12, top: '50%' } as any} />
+                            <ChevronRight color="#7A7C90" size={14} style={{ position: 'absolute', right: 12, top: '50%' } as any} />
                         </TouchableOpacity>
                         <Text style={s.dualArrow}>→</Text>
                         <TouchableOpacity style={[s.timeCard, s.timeHalf]} onPress={() => openTimeSheet('end')} activeOpacity={0.75}>
                             <Text style={s.sectionLabel}>End Time</Text>
                             <Text style={s.timeValue}>{fmtTime(endHour, endMinute, endAmPm)}</Text>
-                            <ChevronRight color="#4a6480" size={14} style={{ position: 'absolute', right: 12, top: '50%' } as any} />
+                            <ChevronRight color="#7A7C90" size={14} style={{ position: 'absolute', right: 12, top: '50%' } as any} />
                         </TouchableOpacity>
                     </View>
 
@@ -305,7 +305,7 @@ export function MoveReminderScreen() {
                                         value={customIntervalMins}
                                         onChangeText={setCustomIntervalMins}
                                         placeholder="60"
-                                        placeholderTextColor="#3a5a7a"
+                                        placeholderTextColor="#D8D8E4"
                                         maxLength={4}
                                     />
                                 </View>
@@ -339,7 +339,7 @@ export function MoveReminderScreen() {
                         onPress={() => { setPickerExercise(resolveExercise(exerciseName)); setChallengePickerVisible(true); }}
                         activeOpacity={0.85}
                     >
-                        <Zap color="#fff" size={16} />
+                        <Zap color="#211832" size={16} />
                         <Text style={s.challengeBtnText}>Enter Challenge Lobby</Text>
                     </TouchableOpacity>
 
@@ -398,7 +398,7 @@ export function MoveReminderScreen() {
                         activeOpacity={0.8}
                     >
                         {saving
-                            ? <ActivityIndicator color="#fff" size="small" />
+                            ? <ActivityIndicator color="#211832" size="small" />
                             : <Text style={s.saveBtnText}>{saved ? 'Saved! ✓' : 'Save Reminder to Move'}</Text>
                         }
                     </TouchableOpacity>
@@ -455,7 +455,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
         gap: 12,
     },
     backBtn: {
@@ -468,7 +468,7 @@ const s = StyleSheet.create({
         justifyContent: 'center',
     },
     titleBlock: { flex: 1 },
-    title: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    title: { color: '#211832', fontSize: 17, fontWeight: '700' },
     titleSubtitle: {
         color: 'rgba(150,180,210,0.7)', fontSize: 12,
         fontWeight: '400', lineHeight: 18, marginTop: 4,
@@ -476,8 +476,8 @@ const s = StyleSheet.create({
     body: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 16 },
     challengeBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 8, backgroundColor: 'rgba(255,107,0,0.12)',
-        borderWidth: 1, borderColor: 'rgba(255,107,0,0.35)',
+        gap: 8, backgroundColor: 'rgba(242,89,18,0.12)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.35)',
         borderRadius: 12, paddingVertical: 12, marginTop: 16, marginBottom: 18,
     },
     challengeBtnText: { color: CTA, fontSize: 14, fontWeight: '700' },
@@ -486,7 +486,7 @@ const s = StyleSheet.create({
         justifyContent: 'space-between', marginBottom: 18,
     },
     sectionLabel: {
-        color: '#4a6480', fontSize: 11, fontWeight: '700',
+        color: '#7A7C90', fontSize: 11, fontWeight: '700',
         letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 10,
     },
     card: {
@@ -506,7 +506,7 @@ const s = StyleSheet.create({
         position: 'relative',
     },
     timeValue: {
-        color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 2,
+        color: '#211832', fontSize: 20, fontWeight: '700', marginTop: 2,
     },
     // Bottom sheet
     sheetOverlay: {
@@ -515,7 +515,7 @@ const s = StyleSheet.create({
     } as any,
     sheet: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: '#111d2e',
+        backgroundColor: '#F8F8FC',
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
         paddingBottom: 36,
     } as any,
@@ -537,26 +537,26 @@ const s = StyleSheet.create({
         backgroundColor: CTA, borderRadius: 14,
         paddingVertical: 16, alignItems: 'center',
     },
-    sheetDoneText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    sheetDoneText: { color: '#211832', fontSize: 16, fontWeight: '700' },
     dualRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
     dualHalf: { flex: 1 },
     dualArrow: {
-        color: 'rgba(232,153,81,0.5)', fontSize: 16, fontWeight: '600', marginTop: 28,
+        color: 'rgba(242,89,18,0.5)', fontSize: 16, fontWeight: '600', marginTop: 28,
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: {
         paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-        backgroundColor: CARD, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: CARD, borderWidth: 1, borderColor: 'rgba(33,24,50,0.1)',
     },
     chipActive: { backgroundColor: ACCENT, borderColor: ACCENT },
-    chipText: { color: '#4a6480', fontSize: 13, fontWeight: '600' },
-    chipTextActive: { color: '#fff' },
+    chipText: { color: '#7A7C90', fontSize: 13, fontWeight: '600' },
+    chipTextActive: { color: '#211832' },
     numericInput: {
         backgroundColor: CARD, borderRadius: 10, borderWidth: 1,
-        borderColor: BORDER, color: '#fff', fontSize: 15,
+        borderColor: BORDER, color: '#211832', fontSize: 15,
         paddingHorizontal: 14, paddingVertical: 10, width: 120,
     },
-    durationDisplay: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600', marginBottom: 12 },
+    durationDisplay: { color: 'rgba(33,24,50,0.7)', fontSize: 14, fontWeight: '600', marginBottom: 12 },
     sliderTrack: {
         height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.1)',
         position: 'relative', marginVertical: 8,
@@ -569,14 +569,14 @@ const s = StyleSheet.create({
         borderRadius: 10, backgroundColor: ACCENT, marginLeft: -10,
     },
     sliderLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, marginBottom: 2 },
-    sliderLabelText: { color: '#2a4060', fontSize: 11, fontWeight: '600' },
+    sliderLabelText: { color: '#D8D8E4', fontSize: 11, fontWeight: '600' },
     summaryCard: {
-        marginTop: 20, backgroundColor: '#071120', borderRadius: 14,
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.15)',
+        marginTop: 20, backgroundColor: '#EEEEF2', borderRadius: 14,
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.15)',
         paddingVertical: 14, paddingHorizontal: 16,
     },
     summaryTitle: {
-        color: '#2a4060', fontSize: 10, fontWeight: '800',
+        color: '#D8D8E4', fontSize: 10, fontWeight: '800',
         letterSpacing: 0.8, textAlign: 'center', marginBottom: 12,
     },
     summaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
@@ -584,26 +584,26 @@ const s = StyleSheet.create({
     summaryStatValue: { color: ACCENT, fontSize: 28, fontWeight: '800', lineHeight: 32 },
     summaryStatLabel: { color: 'rgba(150,180,210,0.6)', fontSize: 11, fontWeight: '600', marginTop: 2 },
     summaryDivider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 12 },
-    summaryWarning: { color: 'rgba(232,153,81,0.7)', fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: 4 },
+    summaryWarning: { color: 'rgba(242,89,18,0.7)', fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: 4 },
     alarmListCard: {
-        marginTop: 16, backgroundColor: '#071120', borderRadius: 16,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+        marginTop: 16, backgroundColor: '#EEEEF2', borderRadius: 16,
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.07)',
         paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
     },
     timesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    timesTitle: { color: '#2a4060', fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
-    timesCount: { color: 'rgba(232,153,81,0.6)', fontSize: 11, fontWeight: '700' },
+    timesTitle: { color: '#D8D8E4', fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
+    timesCount: { color: 'rgba(242,89,18,0.6)', fontSize: 11, fontWeight: '700' },
     saveBtn: {
         marginTop: 24, backgroundColor: CTA, borderRadius: 12,
         paddingVertical: 16, alignItems: 'center',
     },
-    saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    saveBtnText: { color: '#211832', fontSize: 16, fontWeight: '700' },
     togglePill: {
-        width: 50, height: 28, borderRadius: 14, backgroundColor: '#1c2e42',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        width: 50, height: 28, borderRadius: 14, backgroundColor: '#F8F8FC',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.1)',
         justifyContent: 'center', paddingHorizontal: 3,
     },
-    togglePillOn: { backgroundColor: '#E89951', borderColor: '#E89951' },
-    toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4a6480' },
+    togglePillOn: { backgroundColor: '#F25912', borderColor: '#F25912' },
+    toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#7A7C90' },
     toggleThumbOn: { backgroundColor: '#fff', alignSelf: 'flex-end' },
 });

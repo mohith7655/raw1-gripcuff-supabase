@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { X, PlayCircle } from 'lucide-react-native';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 
 interface Props {
     visible: boolean;
@@ -68,7 +68,7 @@ export function InviteTypeSelectorModal({
 
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
                     <TouchableOpacity
-                        style={[s.compactBtn, { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: 'rgba(232,153,81,0.4)' }]}
+                        style={[s.compactBtn, { backgroundColor: 'rgba(242,89,18,0.15)', borderColor: 'rgba(242,89,18,0.4)' }]}
                         onPress={onStartNow}
                         activeOpacity={0.82}
                     >
@@ -93,7 +93,7 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.65)',
     },
     sheet: {
-        backgroundColor: '#0f1923',
+        backgroundColor: '#EEEEF2',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         paddingHorizontal: 20,
@@ -115,7 +115,7 @@ const s = StyleSheet.create({
         paddingVertical: 14,
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 18,
         fontWeight: '700',
     },
@@ -128,9 +128,9 @@ const s = StyleSheet.create({
     workoutBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.2)',
+        borderColor: 'rgba(242,89,18,0.2)',
         borderRadius: 12,
         padding: 12,
         marginBottom: 20,
@@ -146,14 +146,14 @@ const s = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
     bannerText: { flex: 1 },
     bannerMeta: {
-        color: 'rgba(232,153,81,0.7)',
+        color: 'rgba(242,89,18,0.7)',
         fontSize: 11,
         fontWeight: '600',
         letterSpacing: 0.4,
@@ -161,7 +161,7 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     bannerTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -171,7 +171,7 @@ const s = StyleSheet.create({
         gap: 14,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
@@ -186,13 +186,13 @@ const s = StyleSheet.create({
     },
     optionText: { flex: 1 },
     optionTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
     },
     optionSub: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 13,
         lineHeight: 18,
     },
@@ -212,7 +212,7 @@ const s = StyleSheet.create({
         justifyContent: 'center',
     },
     compactBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '700',
     },

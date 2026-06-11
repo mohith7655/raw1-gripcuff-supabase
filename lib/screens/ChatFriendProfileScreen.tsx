@@ -64,7 +64,7 @@ export const ChatFriendProfileScreen = () => {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Friend Profile</Text>
                 <View style={{ width: 40 }} />
@@ -107,10 +107,10 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#211832' },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     content: { padding: 20, paddingBottom: 40 },
     hero: { alignItems: 'center', marginBottom: 20 },
@@ -120,24 +120,24 @@ const styles = StyleSheet.create({
         height: 92,
         borderRadius: 20,
         marginBottom: 12,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    name: { color: '#fff', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
+    name: { color: '#211832', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
     username: { color: AppTheme.textGrey, fontSize: FontSizes.body, marginTop: 2 },
     card: {
         backgroundColor: AppTheme.cardColor,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
         overflow: 'hidden',
     },
     fieldRow: {
         paddingHorizontal: 14,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     fieldLabel: {
         color: AppTheme.textGrey,
@@ -146,5 +146,5 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.4,
     },
-    fieldValue: { color: '#fff', fontSize: 14, fontWeight: '500' },
+    fieldValue: { color: '#211832', fontSize: 14, fontWeight: '500' },
 });

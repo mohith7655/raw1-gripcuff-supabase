@@ -7,7 +7,7 @@ import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
 
-const THUMBNAIL_COLORS = ['#F97316', '#8B5CF6', '#3B82F6', '#10B981'];
+const THUMBNAIL_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
 
 export const GridVideoCard = ({
     video,
@@ -58,7 +58,7 @@ export const GridVideoCard = ({
                     <Raw1Logo fontSize={8} />
                 </View>
                 <View style={styles.playIconContainer}>
-                    <Play color="#fff" size={16} fill="#fff" />
+                    <Play color="#211832" size={16} fill="#211832" />
                 </View>
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{video.duration}</Text>
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     },
     videoTitle: {
         flex: 1,
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         marginTop: 8,
     },

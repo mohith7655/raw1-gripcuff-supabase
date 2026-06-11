@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 
 const { height: SH } = Dimensions.get('window');
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const RED = '#FF4444';
-const ORANGE = '#E89951';
+const ORANGE = '#F25912';
 
 export interface ActionSheetOption {
   label: string;
@@ -128,10 +128,10 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(33,24,50,0.06)',
   },
   iconWrap: { width: 24, alignItems: 'center' },
-  rowLabel: { color: '#fff', fontSize: 16, fontWeight: '500' },
+  rowLabel: { color: '#211832', fontSize: 16, fontWeight: '500' },
   rowLabelDestructive: { color: RED },
   cancelSeparator: {
     height: 1,

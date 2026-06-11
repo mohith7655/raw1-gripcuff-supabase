@@ -50,13 +50,13 @@ import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
-  bg:           '#0d1520',
+  bg:           '#EEEEF2',
   bgCard:       'rgba(255,255,255,0.04)',
   bgInner:      'rgba(255,255,255,0.06)',
   border:       'rgba(255,255,255,0.06)',
-  orange:       '#ff7a00',
-  accentSoft:   'rgba(255,122,0,0.12)',
-  accentBorder: 'rgba(255,122,0,0.28)',
+  orange:       '#F25912',
+  accentSoft:   'rgba(242,89,18,0.12)',
+  accentBorder: 'rgba(242,89,18,0.28)',
   green:        '#22c55e',
   greenSoft:    'rgba(34,197,94,0.12)',
   greenBorder:  'rgba(34,197,94,0.28)',
@@ -67,8 +67,8 @@ const C = {
   purpleSoft:   'rgba(167,139,250,0.12)',
   purpleBorder: 'rgba(167,139,250,0.28)',
   text:         '#ffffff',
-  muted:        '#9ca3af',
-  dim:          '#64748b',
+  muted:        '#7A7C90',
+  dim:          '#7A7C90',
 };
 
 const APP_WEB_BASE_URL = (process.env.EXPO_PUBLIC_APP_WEB_URL || 'https://raw1.app').replace(/\/+$/, '');
@@ -89,7 +89,7 @@ function Avatar({ uri, size }: { uri?: string | null; size: number }) {
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
-      backgroundColor: '#0f2030',
+      backgroundColor: '#EEEEF2',
       alignItems: 'center', justifyContent: 'center',
     }}>
       <Text style={{ fontSize: size * 0.38 }}>👤</Text>
@@ -474,7 +474,7 @@ export function QRCodeScreen() {
                   {BADGE_FAMILIES.map(family => {
                     const state  = badgeStates.find(bs => bs.familyKey === family.key);
                     const tier   = state?.currentTier ?? 0;
-                    const color  = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
+                    const color  = tier > 0 ? TIER_COLORS[tier - 1] : '#7A7C90';
                     const name   = tier > 0 ? getTierName(family, tier) : 'Locked';
                     const locked = tier === 0;
                     return (
@@ -552,7 +552,7 @@ const s = StyleSheet.create({
   qrOuter: {
     borderWidth: 3, borderColor: C.orange, borderRadius: 24, padding: 14,
     backgroundColor: '#ffffff',
-    ...(Platform.OS !== 'web' ? {} : { boxShadow: '0 0 24px rgba(255,122,0,0.22)' } as any),
+    ...(Platform.OS !== 'web' ? {} : { boxShadow: '0 0 24px rgba(242,89,18,0.22)' } as any),
   },
   qrInner: { backgroundColor: '#ffffff' },
   qrCodeWrap: {
@@ -562,13 +562,13 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: '50%', left: '50%',
     transform: [{ translateX: -40 }, { translateY: -22 }],
-    backgroundColor: '#0d1520',
+    backgroundColor: '#EEEEF2',
     borderRadius: 999,
     paddingVertical: 6, paddingHorizontal: 12,
     flexDirection: 'row', alignItems: 'center',
   },
-  qrLogoRaw: { color: '#ffffff', fontWeight: '800', fontSize: 18, letterSpacing: 1 },
-  qrLogoOne: { color: '#ff7a00', fontWeight: '800', fontSize: 18, letterSpacing: 1 },
+  qrLogoRaw: { color: '#211832', fontWeight: '800', fontSize: 18, letterSpacing: 1 },
+  qrLogoOne: { color: '#F25912', fontWeight: '800', fontSize: 18, letterSpacing: 1 },
 
   caption: {
     fontSize: 13, color: C.muted, textAlign: 'center', lineHeight: 19,
@@ -647,7 +647,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
 
-  bioText: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 20 },
+  bioText: { fontSize: 14, color: 'rgba(33,24,50,0.8)', lineHeight: 20 },
 
   inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   inlineIconBox: {
@@ -717,7 +717,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(33,24,50,0.04)',
   },
   basicInfoLabel: {
     color: C.dim,
@@ -766,7 +766,7 @@ const s = StyleSheet.create({
   },
   badgeShape: {
     width: 52, height: 52, borderRadius: 14,
-    backgroundColor: 'rgba(255,122,0,0.1)',
+    backgroundColor: 'rgba(242,89,18,0.1)',
     borderWidth: 1.5, borderColor: C.orange,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -776,7 +776,7 @@ const s = StyleSheet.create({
   },
   badgeShapeLocked: {
     backgroundColor: C.bgCard,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
     opacity: 0.5,
   },
   badgeEmoji: { fontSize: 24 },
@@ -791,7 +791,7 @@ const s = StyleSheet.create({
   moreBadge: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
   moreBadgeText: { color: C.muted, fontSize: 12, fontWeight: '700' },

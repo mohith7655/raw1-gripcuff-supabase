@@ -485,8 +485,8 @@ export const SyncedVideoPlayerScreen = () => {
             <SafeAreaView style={styles.centerContainer}>
                 <Text style={styles.errorText}>Video not found.</Text>
                 <TouchableOpacity style={styles.backBtnWrapper} onPress={() => navigation.goBack()}>
-                    <ArrowLeft color="white" size={24} />
-                    <Text style={{ color: 'white', marginLeft: 8 }}>Go Back</Text>
+                    <ArrowLeft color="#211832" size={24} />
+                    <Text style={{ color: '#211832', marginLeft: 8 }}>Go Back</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -498,7 +498,7 @@ export const SyncedVideoPlayerScreen = () => {
             {/* ── 1. Header ── */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft color="white" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle}>{friendName}</Text>
@@ -558,7 +558,7 @@ export const SyncedVideoPlayerScreen = () => {
                                 />
                                 {(!isLoaded || isBuffering) && (
                                     <View style={styles.loadingOverlay}>
-                                        <ActivityIndicator size="large" color="#E89951" />
+                                        <ActivityIndicator size="large" color="#F25912" />
                                         <Text style={styles.loadingText}>Buffering video...</Text>
                                     </View>
                                 )}
@@ -570,7 +570,7 @@ export const SyncedVideoPlayerScreen = () => {
                                 <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                                 <View style={styles.mainControls}>
                                     <TouchableOpacity style={styles.controlBtn} onPress={() => handleSeek(-10)}>
-                                        <RotateCcw color="white" size={24} />
+                                        <RotateCcw color="#211832" size={24} />
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.playBtn} onPress={handlePlayPause}>
                                         {isPlaying
@@ -578,7 +578,7 @@ export const SyncedVideoPlayerScreen = () => {
                                             : <Play color="black" size={28} style={{ marginLeft: 4 }} />}
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.controlBtn} onPress={() => handleSeek(10)}>
-                                        <RotateCw color="white" size={24} />
+                                        <RotateCw color="#211832" size={24} />
                                     </TouchableOpacity>
                                 </View>
                                 <Text style={styles.timeText}>{formatTime(duration)}</Text>
@@ -612,7 +612,7 @@ export const SyncedVideoPlayerScreen = () => {
                                 top: 4,
                                 left: `${clampedPct}%`,
                                 width: 12, height: 12, borderRadius: 6,
-                                backgroundColor: '#E89951',
+                                backgroundColor: '#F25912',
                                 marginLeft: -6,
                             } as any} />
                         </View>
@@ -630,12 +630,12 @@ export const SyncedVideoPlayerScreen = () => {
                         backgroundColor: 'rgba(255,255,255,0.03)',
                         borderTopWidth: 1,
                         borderBottomWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.08)',
+                        borderColor: 'rgba(33,24,50,0.08)',
                     } as any}>
-                        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: 1.5, textAlign: 'center', marginBottom: 12 }}>
+                        <Text style={{ color: 'rgba(33,24,50,0.55)', fontSize: 13, textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: 1.5, textAlign: 'center', marginBottom: 12 }}>
                             ✦ Live reactions & chat — coming soon
                         </Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: 1.5, textAlign: 'center' }}>
+                        <Text style={{ color: 'rgba(33,24,50,0.4)', fontSize: 13, textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: 1.5, textAlign: 'center' }}>
                             ✦ Shared workout stats — coming soon
                         </Text>
                     </View>
@@ -720,19 +720,19 @@ export const SyncedVideoPlayerScreen = () => {
                                     style={[styles.camOverlayBtn, isMuted && styles.camOverlayBtnActive]}
                                     onPress={() => toggleMic()}
                                 >
-                                    {isMuted ? <MicOff color="white" size={18} /> : <Mic color="white" size={18} />}
+                                    {isMuted ? <MicOff color="#211832" size={18} /> : <Mic color="#211832" size={18} />}
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.camOverlayBtn, isCameraOff && styles.camOverlayBtnActive]}
                                     onPress={() => toggleCamera()}
                                 >
-                                    {isCameraOff ? <CameraOff color="white" size={18} /> : <Camera color="white" size={18} />}
+                                    {isCameraOff ? <CameraOff color="#211832" size={18} /> : <Camera color="#211832" size={18} />}
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={styles.camOverlayBtn}
                                     onPress={() => flipCamera()}
                                 >
-                                    <RefreshCw color="white" size={18} />
+                                    <RefreshCw color="#211832" size={18} />
                                 </TouchableOpacity>
                             </Animated.View>
                         </View>
@@ -794,12 +794,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    errorText: { color: 'white', fontSize: 18, marginBottom: 16 },
+    errorText: { color: '#fff', fontSize: 18, marginBottom: 16 },
     backBtnWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
-        backgroundColor: 'rgba(232,153,81,0.2)',
+        backgroundColor: 'rgba(242,89,18,0.2)',
         borderRadius: 12,
     },
 
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     },
     headerBtn: { padding: 8 },
     headerTitleContainer: { alignItems: 'center' },
-    headerTitle: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+    headerTitle: { color: '#211832', fontWeight: 'bold', fontSize: 16 },
     liveIndicatorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginLeft: 12,
     },
-    endSessionText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+    endSessionText: { color: '#211832', fontWeight: 'bold', fontSize: 12 },
 
     /* ── Permission banner ── */
     permissionBanner: {
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     permissionText: {
-        color: 'white',
+        color: '#211832',
         fontWeight: 'bold',
         fontSize: 14,
         textAlign: 'center',
@@ -886,7 +886,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
     },
-    friendStatusText: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '500' },
+    friendStatusText: { color: 'rgba(33,24,50,0.75)', fontSize: 13, fontWeight: '500' },
 
     /* ── Controls bar — below video ── */
     controlsBar: {
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
         borderRadius: 2,
         overflow: 'hidden',
     },
-    progressBarFill: { height: 4, backgroundColor: '#E89951', borderRadius: 2 },
+    progressBarFill: { height: 4, backgroundColor: '#F25912', borderRadius: 2 },
     controlsOverlay: {
         position: 'absolute',
         top: 0,
@@ -929,9 +929,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    timeText: { color: 'white', fontSize: 12, fontWeight: '600', width: 40, textAlign: 'center' },
+    timeText: { color: '#211832', fontSize: 12, fontWeight: '600', width: 40, textAlign: 'center' },
     controlledByText: {
-        color: 'rgba(255,255,255,0.6)',
+        color: 'rgba(33,24,50,0.6)',
         fontSize: 10,
         textAlign: 'center',
         marginTop: 6,
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 8,
         left: 12,
-        color: 'white',
+        color: '#211832',
         fontSize: 12,
         zIndex: 2,
     },
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
         bottom: 4,
         width: '100%',
         textAlign: 'center',
-        color: 'white',
+        color: '#211832',
         fontSize: 10,
         zIndex: 2,
     },
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     cameraPlaceholderText: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 12,
         zIndex: 2,
     },
@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 6,
         alignSelf: 'center',
-        color: 'white',
+        color: '#211832',
         fontSize: 11,
         fontWeight: 'bold',
         backgroundColor: 'rgba(0,0,0,0.6)',
@@ -1032,8 +1032,8 @@ const styles = StyleSheet.create({
         padding: 14,
         zIndex: 1000,
     },
-    agoraErrorTitle: { color: 'white', fontWeight: 'bold', fontSize: 13, marginBottom: 4 },
-    agoraErrorBody: { color: 'rgba(255,255,255,0.9)', fontSize: 12, lineHeight: 18 },
+    agoraErrorTitle: { color: '#211832', fontWeight: 'bold', fontSize: 13, marginBottom: 4 },
+    agoraErrorBody: { color: 'rgba(33,24,50,0.9)', fontSize: 12, lineHeight: 18 },
 
     /* ── Join request overlay ── */
     joinRequestsOverlay: {
@@ -1048,14 +1048,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(13,21,32,0.97)',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(212,98,42,0.6)',
+        borderColor: 'rgba(242,89,18,0.6)',
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
     },
     joinRequestTitle: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase',
@@ -1063,12 +1063,12 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     joinRequestName: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '700',
     },
     joinRequestSub: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 12,
         marginTop: 2,
     },
@@ -1077,7 +1077,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     joinAllowBtn: {
-        backgroundColor: '#D4622A',
+        backgroundColor: '#F25912',
         borderRadius: 8,
         paddingHorizontal: 14,
         paddingVertical: 8,
@@ -1093,10 +1093,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'rgba(33,24,50,0.15)',
     },
     joinDenyText: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(33,24,50,0.7)',
         fontWeight: '600',
         fontSize: 13,
     },
@@ -1201,19 +1201,19 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     errorSubtext: {
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: 'rgba(33,24,50, 0.6)',
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 20,
     },
     retryBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
     },
     retryBtnText: {
-        color: 'white',
+        color: '#fff',
         fontWeight: 'bold',
         fontSize: 14,
     },
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
         zIndex: 99,
     },
     loadingText: {
-        color: 'white',
+        color: '#fff',
         fontSize: 14,
         marginTop: 12,
         fontWeight: '600',

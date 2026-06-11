@@ -21,10 +21,10 @@ import { getCroppedImg, PixelCrop } from '../../utils/cropImage';
 import { MentionTextInput } from './MentionTextInput';
 
 const { width: SW, height: SH } = Dimensions.get('window');
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 
 // ─── Filter definitions ─────────────────────────────────────────────────────
 const FILTERS = [
@@ -202,7 +202,7 @@ export function CreatePostModal({ visible, onClose, onPostCreated }: CreatePostM
                     <View key={i} style={styles.previewItem}>
                       <Image source={{ uri: file.uri }} style={styles.previewImg} resizeMode="cover" />
                       <TouchableOpacity style={styles.previewRemove} onPress={() => removeMedia(i)}>
-                        <X size={12} color="#fff" />
+                        <X size={12} color="#211832" />
                       </TouchableOpacity>
                       {file.type === 'video' && (
                         <View style={styles.videoTag}><Text style={styles.videoTagText}>VID</Text></View>
@@ -225,7 +225,7 @@ export function CreatePostModal({ visible, onClose, onPostCreated }: CreatePostM
           <View style={{ flex: 1 }}>
             <View style={styles.header}>
               <TouchableOpacity onPress={handleBack} style={styles.headerBtn} activeOpacity={0.7}>
-                <ArrowLeft size={22} color="#fff" />
+                <ArrowLeft size={22} color="#211832" />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Edit</Text>
               <TouchableOpacity
@@ -255,7 +255,7 @@ export function CreatePostModal({ visible, onClose, onPostCreated }: CreatePostM
                     setCropState(prev => ({ ...prev, pixelCrop }))
                   }
                   style={{
-                    containerStyle: { backgroundColor: '#0a0f18' },
+                    containerStyle: { backgroundColor: '#EEEEF2' },
                     mediaStyle: cropState.filter ? { filter: cropState.filter } : {},
                   }}
                   showGrid={false}
@@ -348,7 +348,7 @@ export function CreatePostModal({ visible, onClose, onPostCreated }: CreatePostM
                 activeOpacity={0.8}
               >
                 {uploading
-                  ? <ActivityIndicator size="small" color="#fff" />
+                  ? <ActivityIndicator size="small" color="#211832" />
                   : <Text style={styles.postBtnText}>Post</Text>
                 }
               </TouchableOpacity>
@@ -439,14 +439,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   headerBtn: { minWidth: 60 },
   cancelText: { color: TEXT_SECONDARY, fontSize: 15 },
   nextText: { color: ORANGE, fontSize: 15, fontWeight: '700', textAlign: 'right' },
-  headerTitle: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  headerTitle: { color: '#211832', fontSize: 17, fontWeight: '800' },
   postBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,
@@ -456,20 +456,20 @@ const styles = StyleSheet.create({
   postBtnDisabled: { opacity: 0.4 },
   postBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-  progressBar: { height: 3, backgroundColor: 'rgba(232,153,81,0.2)' },
+  progressBar: { height: 3, backgroundColor: 'rgba(242,89,18,0.2)' },
   progressFill: { height: 3, backgroundColor: ORANGE },
 
   // ── Step 2 ──
   cropArea: {
     height: CROP_AREA_HEIGHT,
     width: SW,
-    backgroundColor: '#0a0f18',
+    backgroundColor: '#EEEEF2',
     position: 'relative',
   },
   aspectRow: {
     maxHeight: 44,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(33,24,50,0.06)',
   },
   aspectContent: {
     paddingHorizontal: 12,
@@ -484,11 +484,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(33,24,50,0.1)',
   },
   aspectPillActive: {
-    backgroundColor: '#E89951',
-    borderColor: '#E89951',
+    backgroundColor: '#F25912',
+    borderColor: '#F25912',
   },
   aspectPillText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
   aspectPillTextActive: { color: '#fff' },
@@ -510,9 +510,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  filterThumbActive: { borderColor: '#E89951' },
+  filterThumbActive: { borderColor: '#F25912' },
   filterLabel: { color: TEXT_SECONDARY, fontSize: 10, fontWeight: '600' },
-  filterLabelActive: { color: '#E89951' },
+  filterLabelActive: { color: '#F25912' },
 
   // ── Step 3 ──
   captionRow: {
@@ -525,11 +525,11 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 8,
     flexShrink: 0,
-    backgroundColor: '#0d1825',
+    backgroundColor: '#EEEEF2',
   },
   captionInput: {
     flex: 1,
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     lineHeight: 22,
     minHeight: 80,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.25)',
+    borderColor: 'rgba(242,89,18,0.25)',
     borderStyle: 'dashed',
     marginBottom: 16,
   },
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 8,
     overflow: 'hidden',
-    backgroundColor: '#0d1825',
+    backgroundColor: '#EEEEF2',
   },
   previewImg: { width: PREVIEW_SIZE, height: PREVIEW_SIZE },
   previewRemove: {
@@ -602,10 +602,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
   },
   linkRowError: { borderColor: '#ef4444' },
-  linkInput: { flex: 1, color: '#fff', fontSize: 14 },
+  linkInput: { flex: 1, color: '#211832', fontSize: 14 },
 
   errorRow: {
     flexDirection: 'row',

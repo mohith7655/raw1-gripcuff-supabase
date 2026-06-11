@@ -8,9 +8,9 @@ import {
   Animated,
 } from 'react-native';
 
-const CARD_BG = '#1A2332';
+const CARD_BG = '#F8F8FC';
 const RED = '#FF4444';
-const TEXT_SECONDARY = '#94A3B8';
+const TEXT_SECONDARY = '#7A7C90';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   title: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 17,
     fontWeight: '800',
     marginBottom: 8,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  cancelBtnText: { color: '#211832', fontSize: 15, fontWeight: '600' },
   confirmBtn: {
     flex: 1,
     height: 44,
@@ -124,5 +124,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  confirmBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  confirmBtnText: { color: '#211832', fontSize: 15, fontWeight: '700' },
 });

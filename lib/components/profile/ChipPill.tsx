@@ -1,6 +1,6 @@
 /**
  * ChipPill — solid-fill pill for "Looking to meet" section.
- * tone='orange' → #ff7a00 background
+ * tone='orange' → #F25912 background
  * tone='green'  → #22c55e background
  * Text and icon are always black for contrast.
  */
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function ChipPill({ icon: Icon, label, tone }: Props) {
-  const bg = tone === 'orange' ? '#ff7a00' : '#22c55e';
+  const bg = tone === 'orange' ? '#F25912' : '#22c55e';
   return (
     <View style={[s.pill, { backgroundColor: bg }]}>
       <Icon size={16} color="#000" strokeWidth={2.3} />

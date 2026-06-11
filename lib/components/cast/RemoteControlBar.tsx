@@ -132,14 +132,14 @@ export function RemoteControlBar(props: RemoteControlBarProps) {
           activeOpacity={0.75}
         >
           {isMuted
-            ? <MicOff color="#fff" size={24} />
-            : <Mic color="#fff" size={24} />
+            ? <MicOff color="#211832" size={24} />
+            : <Mic color="#211832" size={24} />
           }
           <Text style={styles.iconBtnLabel}>{isMuted ? 'Unmute' : 'Mute'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.endBtn} onPress={onEndCall} activeOpacity={0.8}>
-          <PhoneOff color="#fff" size={26} />
+          <PhoneOff color="#211832" size={26} />
           <Text style={styles.endBtnLabel}>End</Text>
         </TouchableOpacity>
 
@@ -149,8 +149,8 @@ export function RemoteControlBar(props: RemoteControlBarProps) {
           activeOpacity={0.75}
         >
           {isCameraOff
-            ? <VideoOff color="#fff" size={24} />
-            : <Video color="#fff" size={24} />
+            ? <VideoOff color="#211832" size={24} />
+            : <Video color="#211832" size={24} />
           }
           <Text style={styles.iconBtnLabel}>{isCameraOff ? 'Show' : 'Camera'}</Text>
         </TouchableOpacity>
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 16,
     fontWeight: '600',
     minWidth: 44,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   skipText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   endBtnLabel: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 9,
     fontWeight: '700',
     marginTop: 3,

@@ -23,17 +23,17 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const BG = '#0d1520';
-const CARD_BG = '#111e2e';
+const BG = '#EEEEF2';
+const CARD_BG = '#EEEEF2';
 const TEAL = '#14b8a6';
 const FRIEND_GREEN = '#22c55e';
-const ACCENT = '#E89951';
-const MUTED = '#607a94';
+const ACCENT = '#F25912';
+const MUTED = '#7A7C90';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function avatarColor(name: string): string {
-    const palette = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6', '#E8732A'];
+    const palette = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6', '#F25912'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -335,7 +335,7 @@ export function VideoDetailScreen({ route, navigation }: any) {
                     onPress={() => navigation.goBack()}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                    <Ionicons name="arrow-back" size={22} color="#fff" />
+                    <Ionicons name="arrow-back" size={22} color="#211832" />
                 </TouchableOpacity>
                 {hasYT ? (
                     <WebYouTubePlayer ytId={youtubeId} />
@@ -441,7 +441,7 @@ const s = StyleSheet.create({
         marginBottom: 12,
     },
     sectionTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '700',
     },
@@ -482,7 +482,7 @@ const row = StyleSheet.create({
         flexShrink: 0,
     },
     avatarText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '700',
     },
@@ -497,7 +497,7 @@ const row = StyleSheet.create({
         gap: 6,
     },
     name: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -535,7 +535,7 @@ const row = StyleSheet.create({
         flexShrink: 0,
     },
     joinBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 13,
         fontWeight: '700',
     },
@@ -544,11 +544,11 @@ const row = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.18)',
+        borderColor: 'rgba(33,24,50,0.18)',
         flexShrink: 0,
     },
     inviteBtnText: {
-        color: '#cbd5e1',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '600',
     },

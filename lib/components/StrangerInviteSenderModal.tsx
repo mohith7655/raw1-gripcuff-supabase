@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { X, Clock, CheckCircle, XCircle } from 'lucide-react-native';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 const TIMEOUT_SEC = 10;
 
 type Phase = 'sending' | 'waiting' | 'accepted' | 'declined' | 'expired' | 'error';
@@ -97,7 +97,7 @@ export function StrangerInviteSenderModal({
                         </Text>
                         {!isDone && (
                             <TouchableOpacity onPress={onCancel} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                <X color="#6B7280" size={20} />
+                                <X color="#7A7C90" size={20} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -148,7 +148,7 @@ export function StrangerInviteSenderModal({
                     {(phase === 'expired' || phase === 'error') && (
                         <View style={styles.body}>
                             <View style={styles.resultIcon}>
-                                <Clock color="#6B7280" size={56} />
+                                <Clock color="#7A7C90" size={56} />
                             </View>
                             <Text style={styles.bodyTitle}>
                                 {phase === 'error' ? 'Something went wrong' : 'Invite Expired'}
@@ -187,11 +187,11 @@ const styles = StyleSheet.create({
     card: {
         width: '100%',
         maxWidth: 360,
-        backgroundColor: '#111827',
+        backgroundColor: '#F8F8FC',
         borderRadius: 24,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.2)',
+        borderColor: 'rgba(242,89,18,0.2)',
     },
     header: {
         flexDirection: 'row',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
         paddingBottom: 8,
     },
     headerTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
         flex: 1,
@@ -241,23 +241,23 @@ const styles = StyleSheet.create({
         lineHeight: 40,
     },
     countdownLabel: {
-        color: '#6B7280',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '600',
     },
     bodyTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 18,
         fontWeight: '700',
         textAlign: 'center',
     },
     bodySubtitle: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
         textAlign: 'center',
     },
     bodyHint: {
-        color: '#4B5563',
+        color: '#D8D8E4',
         fontSize: 12,
         textAlign: 'center',
         marginTop: 4,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
     },
     dismissBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '600',
     },

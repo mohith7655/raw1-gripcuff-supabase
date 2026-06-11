@@ -26,10 +26,10 @@ import { TierAvatar } from './profile/TierAvatar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT   = '#E89951';
-const SHEET_BG = '#0f1923';
+const ACCENT   = '#F25912';
+const SHEET_BG = '#EEEEF2';
 const CARD_BG  = 'rgba(255,255,255,0.04)';
-const PALETTE  = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6', '#E84393'];
+const PALETTE  = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6', '#E84393'];
 
 function avatarColor(name: string): string {
     let h = 0;
@@ -52,7 +52,7 @@ function Avatar({ name, uri, size = 44, uid }: { name: string; uri?: string | nu
                     { width: size, height: size, alignItems: 'center', justifyContent: 'center' },
                     { backgroundColor: avatarColor(name) },
                 ]}>
-                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.38 }}>
+                    <Text style={{ color: '#211832', fontWeight: '800', fontSize: size * 0.38 }}>
                         {(name || '?')[0].toUpperCase()}
                     </Text>
                 </View>
@@ -83,7 +83,7 @@ export function StackedAvatars({ viewers, currentUid, maxVisible = 3, size = 24 
                         marginLeft: i === 0 ? 0 : -(size * 0.3),
                         borderRadius: size / 2,
                         borderWidth: 1.5,
-                        borderColor: '#0f1923',
+                        borderColor: '#EEEEF2',
                         zIndex: others.length - i,
                     }}
                 >
@@ -143,7 +143,7 @@ function ViewerRow({ viewer, status, onAdd }: ViewerRowProps) {
                     onPress={() => onAdd(viewer.uid)}
                     activeOpacity={0.75}
                 >
-                    <UserPlus size={13} color="#fff" />
+                    <UserPlus size={13} color="#211832" />
                     <Text style={row.addBtnText}>Add</Text>
                 </TouchableOpacity>
             )}
@@ -362,7 +362,7 @@ const s = StyleSheet.create({
         borderTopRightRadius: 20,
         paddingTop: 8,
         borderTopWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
     },
     handle: {
         alignSelf: 'center',
@@ -379,7 +379,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     headerLeft: {
         flexDirection: 'row',
@@ -387,7 +387,7 @@ const s = StyleSheet.create({
         gap: 8,
     },
     headerTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
     },
@@ -398,7 +398,7 @@ const s = StyleSheet.create({
         paddingVertical: 2,
     },
     countPillText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -425,12 +425,12 @@ const s = StyleSheet.create({
         marginBottom: 4,
     },
     emptyTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '700',
     },
     emptyBody: {
-        color: 'rgba(255,255,255,0.4)',
+        color: 'rgba(33,24,50,0.4)',
         fontSize: 13,
         textAlign: 'center',
     },
@@ -448,7 +448,7 @@ const row = StyleSheet.create({
         gap: 3,
     },
     username: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -458,14 +458,14 @@ const row = StyleSheet.create({
         gap: 3,
     },
     joinedText: {
-        color: 'rgba(255,255,255,0.35)',
+        color: 'rgba(33,24,50,0.35)',
         fontSize: 11,
     },
     addBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingHorizontal: 12,
         paddingVertical: 7,
         borderRadius: 10,
@@ -477,14 +477,14 @@ const row = StyleSheet.create({
     },
     badgeSelf: {
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.4)',
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        borderColor: 'rgba(242,89,18,0.4)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
     },
     badgeSelfText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -509,13 +509,13 @@ const row = StyleSheet.create({
         alignItems: 'center',
         gap: 5,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(33,24,50,0.12)',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
     },
     badgeRequestedText: {
-        color: 'rgba(255,255,255,0.4)',
+        color: 'rgba(33,24,50,0.4)',
         fontSize: 12,
         fontWeight: '500',
     },

@@ -160,7 +160,7 @@ export const WorkoutResultScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft color="#fff" size={24} />
+          <ArrowLeft color="#211832" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Your AI Workout</Text>
         <View style={{ width: 40 }} />
@@ -258,24 +258,24 @@ const WorkoutExerciseCard = ({
                 <TouchableOpacity style={styles.ttsButton} onPress={onPlay}>
                   {isPlaying ? (
                     <>
-                      <Pause color="#fff" size={16} style={{ marginRight: 8 }} />
+                      <Pause color="#211832" size={16} style={{ marginRight: 8 }} />
                       <Text style={styles.ttsButtonText}>Pause</Text>
                     </>
                   ) : isPaused ? (
                     <>
-                      <Play color="#fff" size={16} style={{ marginRight: 8 }} />
+                      <Play color="#211832" size={16} style={{ marginRight: 8 }} />
                       <Text style={styles.ttsButtonText}>Resume</Text>
                     </>
                   ) : (
                     <>
-                      <Play color="#fff" size={16} style={{ marginRight: 8 }} />
+                      <Play color="#211832" size={16} style={{ marginRight: 8 }} />
                       <Text style={styles.ttsButtonText}>Play Voiceover</Text>
                     </>
                   )}
                 </TouchableOpacity>
                 {(isPlaying || isPaused) && (
                   <TouchableOpacity style={styles.stopButton} onPress={onStop}>
-                    <X color="#fff" size={16} style={{ marginRight: 8 }} />
+                    <X color="#211832" size={16} style={{ marginRight: 8 }} />
                     <Text style={styles.ttsButtonText}>Stop</Text>
                   </TouchableOpacity>
                 )}
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#fff',
+    color: '#211832',
     fontWeight: FontWeights.bold as any,
   },
   listContainer: {
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   numberText: {
-    color: '#fff',
+    color: '#211832',
     fontWeight: FontWeights.bold as any,
     fontSize: FontSizes.body,
   },
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ttsButtonText: {
-    color: '#fff',
+    color: '#211832',
     fontWeight: FontWeights.semibold as any,
     fontSize: FontSizes.small,
   },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   finishButtonText: {
-    color: '#fff',
+    color: '#211832',
     fontWeight: FontWeights.bold as any,
     fontSize: FontSizes.h5,
   },

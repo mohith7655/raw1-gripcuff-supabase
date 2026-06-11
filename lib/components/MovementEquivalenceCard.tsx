@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     squatWord: {
         fontSize: 10,
         fontWeight: '500',
-        color: 'rgba(255,255,255,0.3)',
+        color: 'rgba(33,24,50,0.3)',
         marginTop: -2,
     },
     stepChip: {

@@ -294,7 +294,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
         return (
             <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
                 <View style={styles.successIcon}>
-                    <Check color="white" size={48} />
+                    <Check color="#211832" size={48} />
                 </View>
                 <Text style={styles.successTitle}>Invite Sent!</Text>
                 <Text style={styles.successSubtitle}>We'll let you know when {selectedFriend?.username} responds.</Text>
@@ -370,7 +370,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                     }}
                     style={styles.backButton}
                 >
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 {step > 0 ? (
                     <View style={styles.stepsIndicator}>
@@ -387,7 +387,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
             {/* Programme video banner - shown throughout the flow when coming from a programme */}
             {isFromProgramme && (
                 <View style={styles.programmeBanner}>
-                    <PlayCircle color="#E89951" size={16} />
+                    <PlayCircle color="#F25912" size={16} />
                     <Text style={styles.programmeBannerText} numberOfLines={1}>
                         {preselectedVideoTitle ?? selectedVideo?.title ?? 'Selected workout'}
                     </Text>
@@ -441,7 +441,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                 registeredPhones: registeredPhoneNumbers
                             })}
                         >
-                            <Contact color="white" size={20} />
+                            <Contact color="#211832" size={20} />
                             <Text style={styles.inviteContactsText}>Invite Friends from Contacts</Text>
                         </TouchableOpacity>
 
@@ -528,7 +528,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             style={styles.startNowButton}
                             onPress={handleStartNow}
                         >
-                            <Zap size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                            <Zap size={20} color="#211832" style={{ marginRight: 8 }} />
                             <Text style={styles.startNowText}>Start Now</Text>
                         </TouchableOpacity>
 
@@ -565,7 +565,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             />
                         </View>
                         <View style={styles.summaryBox}>
-                            <Clock color="#E89951" size={14} />
+                            <Clock color="#F25912" size={14} />
                             <Text style={styles.summaryBoxText}>{fmtPickerTime}</Text>
                         </View>
                     </View>
@@ -589,7 +589,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             {
                                                 marginBottom: 0,
                                                 borderColor: isSelected ? AppTheme.primaryColor : 'rgba(255,255,255,0.06)',
-                                                backgroundColor: isSelected ? 'rgba(232,153,81,0.08)' : AppTheme.cardColor,
+                                                backgroundColor: isSelected ? 'rgba(242,89,18,0.08)' : AppTheme.cardColor,
                                             }
                                         ]}
                                         onPress={() => openInviteCategory(category.key)}
@@ -615,7 +615,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                     const programs = getProgramsByCategory(selectedCategory!);
                     const catInfo = CATEGORY_OPTIONS.find(c => c.key === selectedCategory);
                     const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-                    const COLORS = ['#E89951', '#7C3AED', '#3B82F6', '#10B981'];
+                    const COLORS = ['#F25912', '#7C3AED', '#3B82F6', '#10B981'];
 
                     const handlePickVideo = (video: ProgramVideo, program: PreRecordedProgram) => {
                         setSelectedVideo({
@@ -643,7 +643,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                     {/* Program header */}
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 2 }}>{program.title}</Text>
+                                            <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700', marginBottom: 2 }}>{program.title}</Text>
                                             <Text style={{ color: AppTheme.primaryColor, fontSize: 12, fontWeight: '600' }}>
                                                 {program.durationWeeks} Week Series · {program.coachName}
                                             </Text>
@@ -701,14 +701,14 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                                         >
                                                             {isSelected && (
                                                                 <View style={{ position: 'absolute', top: 6, right: 6, backgroundColor: AppTheme.primaryColor, borderRadius: 10, padding: 3 }}>
-                                                                    <Check color="white" size={12} />
+                                                                    <Check color="#211832" size={12} />
                                                                 </View>
                                                             )}
                                                             <View style={{ backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-end' }}>
                                                                 <Text style={{ fontSize: 11, color: '#fff', fontWeight: '600' }}>{fmtDur(video.duration)}</Text>
                                                             </View>
                                                         </LinearGradient>
-                                                        <Text style={{ fontSize: 12, color: '#fff', fontWeight: '500', marginTop: 6 }} numberOfLines={2}>{video.title}</Text>
+                                                        <Text style={{ fontSize: 12, color: '#211832', fontWeight: '500', marginTop: 6 }} numberOfLines={2}>{video.title}</Text>
                                                         <Text style={{ fontSize: 11, color: AppTheme.textGrey, marginTop: 2 }}>{video.difficulty}</Text>
                                                     </View>
                                                 </TouchableOpacity>
@@ -739,7 +739,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                     )}
                                 </View>
                                 <View style={[styles.videoCheck, { position: 'relative', top: undefined, right: undefined, backgroundColor: AppTheme.primaryColor }]}>
-                                    <Check color="white" size={16} />
+                                    <Check color="#211832" size={16} />
                                 </View>
                             </View>
                         )}
@@ -776,32 +776,32 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                         {/* Bet Credits Section */}
                         {selectedFriend && selectedDate && (
                             <View style={{
-                                backgroundColor: '#1a2235',
+                                backgroundColor: '#F8F8FC',
                                 borderRadius: 16,
                                 padding: 20,
                                 marginTop: 24,
                                 borderWidth: 1.5,
                                 borderColor: betAmount > 0
-                                    ? 'rgba(232,153,81,0.4)'
+                                    ? 'rgba(242,89,18,0.4)'
                                     : 'rgba(255,255,255,0.07)',
                             }}>
 
                                 {/* Header */}
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                                    <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700' }}>
+                                    <Text style={{ color: '#211832', fontSize: 16, fontWeight: '700' }}>
                                         🏆 Bet Credits
                                     </Text>
                                     <View style={{
-                                        backgroundColor: 'rgba(232,153,81,0.15)',
+                                        backgroundColor: 'rgba(242,89,18,0.15)',
                                         borderRadius: 20,
                                         paddingHorizontal: 10,
                                         paddingVertical: 3,
                                     }}>
-                                        <Text style={{ color: '#E89951', fontSize: 11, fontWeight: '700' }}>OPTIONAL</Text>
+                                        <Text style={{ color: '#F25912', fontSize: 11, fontWeight: '700' }}>OPTIONAL</Text>
                                     </View>
                                 </View>
 
-                                <Text style={{ color: '#4a6a8a', fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
+                                <Text style={{ color: '#7A7C90', fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
                                     Hold your workout partner accountable!
                                 </Text>
 
@@ -809,7 +809,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                 <View style={{
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    backgroundColor: '#0d1520',
+                                    backgroundColor: '#EEEEF2',
                                     borderRadius: 14,
                                     padding: 6,
                                 }}>
@@ -822,13 +822,13 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             borderRadius: 12,
                                             backgroundColor: betAmount === MIN_BET
                                                 ? 'rgba(255,255,255,0.05)'
-                                                : 'rgba(232,153,81,0.15)',
+                                                : 'rgba(242,89,18,0.15)',
                                             justifyContent: 'center',
                                             alignItems: 'center',
                                         }}
                                     >
                                         <Text style={{
-                                            color: betAmount === MIN_BET ? '#3a5a7a' : '#E89951',
+                                            color: betAmount === MIN_BET ? '#D8D8E4' : '#F25912',
                                             fontSize: 24, fontWeight: '700', lineHeight: 28,
                                         }}>−</Text>
                                     </TouchableOpacity>
@@ -836,12 +836,12 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                     {/* Amount display */}
                                     <View style={{ flex: 1, alignItems: 'center' }}>
                                         <Text style={{
-                                            color: betAmount > 0 ? '#E89951' : '#ffffff',
+                                            color: betAmount > 0 ? '#F25912' : '#ffffff',
                                             fontSize: 32, fontWeight: '800', letterSpacing: -1,
                                         }}>
                                             {betAmount}
                                         </Text>
-                                        <Text style={{ color: '#4a6a8a', fontSize: 12, marginTop: 2 }}>credits</Text>
+                                        <Text style={{ color: '#7A7C90', fontSize: 12, marginTop: 2 }}>credits</Text>
                                     </View>
 
                                     {/* Plus button */}
@@ -853,13 +853,13 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                             borderRadius: 12,
                                             backgroundColor: betAmount === MAX_BET
                                                 ? 'rgba(255,255,255,0.05)'
-                                                : 'rgba(232,153,81,0.15)',
+                                                : 'rgba(242,89,18,0.15)',
                                             justifyContent: 'center',
                                             alignItems: 'center',
                                         }}
                                     >
                                         <Text style={{
-                                            color: betAmount === MAX_BET ? '#3a5a7a' : '#E89951',
+                                            color: betAmount === MAX_BET ? '#D8D8E4' : '#F25912',
                                             fontSize: 24, fontWeight: '700', lineHeight: 28,
                                         }}>+</Text>
                                     </TouchableOpacity>
@@ -881,16 +881,16 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                                 paddingVertical: 7,
                                                 borderRadius: 20,
                                                 backgroundColor: betAmount === amount
-                                                    ? '#E89951'
+                                                    ? '#F25912'
                                                     : 'rgba(255,255,255,0.06)',
                                                 borderWidth: 1,
                                                 borderColor: betAmount === amount
-                                                    ? '#E89951'
+                                                    ? '#F25912'
                                                     : 'rgba(255,255,255,0.08)',
                                             }}
                                         >
                                             <Text style={{
-                                                color: betAmount === amount ? '#ffffff' : '#607a94',
+                                                color: betAmount === amount ? '#ffffff' : '#7A7C90',
                                                 fontSize: 12,
                                                 fontWeight: '600',
                                             }}>
@@ -941,7 +941,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             onPress={handleSubmit}
                             disabled={isSubmitting || !selectedFriend || !selectedDate || !selectedVideo}
                             style={{
-                                backgroundColor: (selectedFriend && selectedDate && selectedVideo) ? '#FF6B00' : '#7c7c7c',
+                                backgroundColor: (selectedFriend && selectedDate && selectedVideo) ? '#F25912' : '#D8D8E4',
                                 borderRadius: 30,
                                 padding: 18,
                                 alignItems: 'center',
@@ -951,10 +951,10 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             }}
                         >
                             {isSubmitting ? (
-                                <ActivityIndicator color="white" />
+                                <ActivityIndicator color="#211832" />
                             ) : (
                                 <Text style={{
-                                    color: '#ffffff',
+                                    color: '#211832',
                                     fontSize: 16,
                                     fontWeight: '700',
                                 }}>
@@ -972,7 +972,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                             onPress={handleNext}
                         >
                             <LinearGradient
-                                colors={[AppTheme.primaryColor, '#ff8534']}
+                                colors={[AppTheme.primaryColor, '#F25912']}
                                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                                 style={styles.nextGradient}
                             >
@@ -997,17 +997,17 @@ const styles = StyleSheet.create({
     stepDotActive: { backgroundColor: AppTheme.primaryColor },
 
     scrollContent: { padding: 20 },
-    title: { fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 24 },
+    title: { fontSize: 24, fontWeight: 'bold', color: '#211832', marginBottom: 24 },
 
     // Step 1
     emptyContainer: { alignItems: 'center', padding: 40, backgroundColor: AppTheme.cardColor, borderRadius: 16 },
     emptyText: { color: AppTheme.textGrey, marginBottom: 16 },
-    goAddFriendBtn: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: 'rgba(232,153,81,0.1)', borderRadius: 20 },
+    goAddFriendBtn: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: 'rgba(242,89,18,0.1)', borderRadius: 20 },
 
     friendCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: AppTheme.cardColor, padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: 'transparent' },
-    friendCardSelected: { borderColor: AppTheme.primaryColor, backgroundColor: 'rgba(232,153,81,0.05)' },
+    friendCardSelected: { borderColor: AppTheme.primaryColor, backgroundColor: 'rgba(242,89,18,0.05)' },
     avatar: { width: 44, height: 44, borderRadius: 10 },
-    friendName: { color: 'white', fontSize: 16, fontWeight: '600' },
+    friendName: { color: '#211832', fontSize: 16, fontWeight: '600' },
     friendUsername: { color: AppTheme.textGrey, fontSize: 13, marginTop: 2 },
     iconContainerMini: {
         width: 40,
@@ -1023,11 +1023,11 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         padding: 10,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
     },
     categoryVideoRowSelected: {
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
     },
     categoryVideoThumb: {
         width: 90,
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
 
     // Step 2
     startNowButton: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 12,
         paddingVertical: 16,
         width: '100%',
@@ -1050,31 +1050,31 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     startNowText: {
-        color: '#FFFFFF',
+        color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
     },
     orDivider: {
-        color: '#888888',
+        color: '#7A7C90',
         textAlign: 'center',
         marginVertical: 12,
         fontSize: 13,
     },
-    sectionLabel: { color: 'white', fontSize: 16, fontWeight: '600', marginBottom: 12 },
+    sectionLabel: { color: '#211832', fontSize: 16, fontWeight: '600', marginBottom: 12 },
     dateScroll: { marginHorizontal: -20, paddingHorizontal: 20, marginBottom: 8 },
-    dateBubble: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: AppTheme.cardColor, borderRadius: 24, marginRight: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    dateBubble: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: AppTheme.cardColor, borderRadius: 24, marginRight: 12, borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)' },
     dateBubbleSelected: { backgroundColor: AppTheme.primaryColor, borderColor: AppTheme.primaryColor },
     dateText: { color: AppTheme.textGrey, fontWeight: '600' },
-    dateTextSelected: { color: 'white' },
+    dateTextSelected: { color: '#211832' },
 
     pickerWrap: { marginVertical: 16, alignItems: 'center' },
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.08)', borderRadius: 10,
+        backgroundColor: 'rgba(242,89,18,0.08)', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 10, marginTop: 4, marginBottom: 12,
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
     },
-    summaryBoxText: { color: '#E89951', fontSize: 14, fontWeight: '600', flex: 1 },
+    summaryBoxText: { color: '#F25912', fontSize: 14, fontWeight: '600', flex: 1 },
 
     // Video cards - library-style
     videoCard: {
@@ -1118,7 +1118,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     videoTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: '600',
         marginTop: 8,
@@ -1135,76 +1135,76 @@ const styles = StyleSheet.create({
         padding: 3,
     },
 
-    summaryCard: { backgroundColor: AppTheme.cardColor, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    summaryTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
+    summaryCard: { backgroundColor: AppTheme.cardColor, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)' },
+    summaryTitle: { color: '#211832', fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
     summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-    summaryText: { color: 'white', fontSize: 15 },
+    summaryText: { color: '#211832', fontSize: 15 },
 
-    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: AppTheme.background, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: AppTheme.background, borderTopWidth: 1, borderTopColor: 'rgba(33,24,50,0.05)' },
     nextBtn: { borderRadius: 16, overflow: 'hidden' },
     nextGradient: { paddingVertical: 18, alignItems: 'center', justifyContent: 'center' },
-    nextText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    nextText: { color: '#211832', fontSize: 16, fontWeight: 'bold' },
 
     successIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: AppTheme.primaryColor, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-    successTitle: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
+    successTitle: { color: '#211832', fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
     successSubtitle: { color: AppTheme.textGrey, fontSize: 16, textAlign: 'center', paddingHorizontal: 40, marginBottom: 40 },
     doneBtn: { paddingVertical: 16, paddingHorizontal: 32, backgroundColor: AppTheme.cardColor, borderRadius: 100 },
-    doneBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+    doneBtnText: { color: '#211832', fontWeight: 'bold', fontSize: 16 },
 
     // Step 0 - Landing page styles
-    headerTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    headerTitle: { color: '#211832', fontSize: 18, fontWeight: 'bold' },
     programmeBanner: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(232,153,81,0.25)',
+        borderBottomColor: 'rgba(242,89,18,0.25)',
         paddingHorizontal: 16,
         paddingVertical: 10,
     },
     programmeBannerText: {
         flex: 1,
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 13,
         fontWeight: '600',
     },
     inviteCta: { borderRadius: 16, overflow: 'hidden', marginBottom: 20 },
     inviteCtaGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 56, borderRadius: 16 },
-    inviteCtaText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    inviteCtaText: { color: '#211832', fontSize: 16, fontWeight: 'bold' },
 
-    pendingBadge: { backgroundColor: 'rgba(232,153,81, 0.15)', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: AppTheme.primaryColor },
-    pendingBadgeText: { color: 'white', fontWeight: 'bold', flex: 1 },
+    pendingBadge: { backgroundColor: 'rgba(242,89,18, 0.15)', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: AppTheme.primaryColor },
+    pendingBadgeText: { color: '#211832', fontWeight: 'bold', flex: 1 },
 
     sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: 'white' },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#211832' },
     viewAll: { color: AppTheme.primaryColor, fontWeight: '600', fontSize: 14 },
 
-    emptySessionsCard: { backgroundColor: AppTheme.cardColor, borderRadius: 12, padding: 20, alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    emptySessionsCard: { backgroundColor: AppTheme.cardColor, borderRadius: 12, padding: 20, alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)' },
     emptySessionsText: { color: AppTheme.textGrey },
 
-    sessionCard: { backgroundColor: AppTheme.cardColor, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    sessionCard: { backgroundColor: AppTheme.cardColor, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)' },
     sessionCardRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
     sessionAvatar: { width: 32, height: 32, borderRadius: 16, marginRight: 12 },
-    sessionPartner: { color: 'white', fontWeight: 'bold', fontSize: 15 },
+    sessionPartner: { color: '#211832', fontWeight: 'bold', fontSize: 15 },
     sessionCardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     sessionVideo: { color: AppTheme.textGrey, flex: 1, marginRight: 12, fontSize: 13 },
     sessionCountdown: { color: AppTheme.primaryColor, fontWeight: 'bold', fontSize: 13 },
 
     joinNowButton: { marginTop: 12, backgroundColor: AppTheme.primaryColor, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-    joinNowText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
+    joinNowText: { color: '#211832', fontWeight: 'bold', fontSize: 14 },
 
     // Share modal
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
     shareSheet: {
-        backgroundColor: '#1e2537',
+        backgroundColor: '#EEEEF2',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 24,
         paddingBottom: 36,
     },
     sheetHandle: { width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-    shareTitle: { color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 6 },
+    shareTitle: { color: '#211832', fontSize: 20, fontWeight: 'bold', marginBottom: 6 },
     shareSubtitle: { color: AppTheme.textGrey, fontSize: 14, marginBottom: 16 },
     messagePreview: {
         backgroundColor: 'rgba(255,255,255,0.06)',
@@ -1212,7 +1212,7 @@ const styles = StyleSheet.create({
         padding: 14,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     messagePreviewText: { color: '#ccc', fontSize: 13, lineHeight: 20 },
     sendSmsBtn: {
@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
-    sendSmsBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+    sendSmsBtnText: { color: '#211832', fontWeight: 'bold', fontSize: 16 },
     copyLinkBtn: {
         backgroundColor: 'rgba(255,255,255,0.08)',
         borderRadius: 14,
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
-    copyLinkBtnText: { color: 'white', fontWeight: '600', fontSize: 15 },
+    copyLinkBtnText: { color: '#211832', fontWeight: '600', fontSize: 15 },
     skipText: { color: AppTheme.textGrey, fontSize: 14, textAlign: 'center' },
 
     // Contacts UI
@@ -1243,11 +1243,11 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         gap: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         marginTop: 8,
     },
     inviteContactsText: {
-        color: 'white',
+        color: '#211832',
         fontWeight: 'bold',
         fontSize: 15,
     },
@@ -1260,9 +1260,9 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
         paddingTop: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
-    contactsModalHeaderTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    contactsModalHeaderTitle: { color: '#211832', fontSize: 18, fontWeight: 'bold' },
     modalCloseBtn: { paddingVertical: 4, paddingLeft: 12 },
     modalCloseText: { color: AppTheme.primaryColor, fontWeight: '600', fontSize: 16 },
     contactsSearchRow: {
@@ -1274,20 +1274,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
     },
-    contactsSearchInput: { flex: 1, color: 'white', fontSize: 16 },
+    contactsSearchInput: { flex: 1, color: '#211832', fontSize: 16 },
     contactRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     contactInitialCircle: {
         width: 44,
         height: 44,
         borderRadius: 10,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
     contactInitialText: { color: AppTheme.primaryColor, fontSize: 18, fontWeight: 'bold' },
     contactInfo: { flex: 1, justifyContent: 'center' },
-    contactName: { color: 'white', fontSize: 16, fontWeight: '600', marginBottom: 4 },
+    contactName: { color: '#211832', fontSize: 16, fontWeight: '600', marginBottom: 4 },
     contactPhone: { color: AppTheme.textGrey, fontSize: 13 },
     contactInviteBtn: {
         backgroundColor: AppTheme.cardColor,
@@ -1295,20 +1295,20 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
-    contactInviteText: { color: 'white', fontWeight: '600', fontSize: 13 },
+    contactInviteText: { color: '#211832', fontWeight: '600', fontSize: 13 },
     webFallbackContainer: { flex: 1, padding: 20, paddingTop: 40 },
     webFallbackText: { color: AppTheme.textGrey, fontSize: 15, marginBottom: 20 },
     webFallbackInput: {
         backgroundColor: AppTheme.cardColor,
-        color: 'white',
+        color: '#211832',
         borderRadius: 10,
         padding: 16,
         fontSize: 16,
         marginBottom: 24,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(33,24,50,0.05)',
     },
     webFallbackBtn: {
         backgroundColor: AppTheme.primaryColor,
@@ -1316,7 +1316,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
     },
-    webFallbackBtnText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    webFallbackBtnText: { color: '#211832', fontSize: 16, fontWeight: 'bold' },
 });
 
 

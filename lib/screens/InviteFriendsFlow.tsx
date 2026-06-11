@@ -25,17 +25,17 @@ import { Check, Search, Shield, ShieldAlert, ShieldCheck, User } from 'lucide-re
 
 // Theme Constants
 const THEME = {
-    bg: '#0d1520',
-    card: '#162336', // Used optionally if needed, but keeping main bg #0d1520
-    cardBorder: '#1e3a5a',
+    bg: '#EEEEF2',
+    card: '#EEEEF2', // Used optionally if needed, but keeping main bg #EEEEF2
+    cardBorder: '#F8F8FC',
     primaryGradStart: '#C86830',
     primaryGradEnd: '#A04E1E',
     textMain: '#ffffff',
-    textSub: '#607a94',
-    inputBg: '#13202e',
+    textSub: '#7A7C90',
+    inputBg: '#EEEEF2',
     btnCancel: '#C15F2A',
     success: '#10b981',
-    userIconBg: '#1a2a3e',
+    userIconBg: '#F8F8FC',
 };
 
 // --- Types ---
@@ -290,7 +290,7 @@ export const InviteFriendsFlow = ({ route, navigation }: any) => {
                         </View>
                     ) : (
                         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                            {isSelected && <Check color="#fff" size={14} />}
+                            {isSelected && <Check color="#211832" size={14} />}
                         </View>
                     )}
                 </View>
@@ -398,7 +398,7 @@ export const InviteFriendsFlow = ({ route, navigation }: any) => {
                         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                         style={styles.gradientBtn}
                     >
-                        {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.gradientBtnText}>Allow Contact Access</Text>}
+                        {isLoading ? <ActivityIndicator color="#211832" /> : <Text style={styles.gradientBtnText}>Allow Contact Access</Text>}
                     </LinearGradient>
                 </TouchableOpacity>
 
@@ -582,10 +582,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.03)',
+        borderBottomColor: 'rgba(33,24,50,0.03)',
     },
     avatar: { width: 40, height: 40, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-    avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    avatarText: { color: '#211832', fontWeight: 'bold', fontSize: 16 },
     contactInfo: { flex: 1, justifyContent: 'center' },
     contactName: { color: THEME.textMain, fontSize: 16, fontWeight: 'bold', marginBottom: 2 },
     contactPhone: { color: THEME.textSub, fontSize: 14 },

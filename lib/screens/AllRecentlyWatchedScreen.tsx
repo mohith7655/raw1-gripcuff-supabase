@@ -9,7 +9,7 @@ import { getAllPrograms } from '../data/preRecordedPrograms';
 import { AppTheme } from '../core/theme/app_theme';
 import { Raw1Logo } from '../raw1_logo';
 
-const COLORS = ['#FF6B35', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
+const COLORS = ['#F25912', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
 
 export function AllRecentlyWatchedScreen() {
     const navigation = useNavigation<any>();
@@ -22,7 +22,7 @@ export function AllRecentlyWatchedScreen() {
         <SafeAreaView style={s.safe}>
             <View style={s.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <ChevronLeft color="#fff" size={24} />
+                    <ChevronLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={s.title}>Recently Watched</Text>
                 <View style={{ width: 24 }} />
@@ -67,7 +67,7 @@ export function AllRecentlyWatchedScreen() {
 }
 
 const s = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#0d1520' },
+    safe: { flex: 1, backgroundColor: '#EEEEF2' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -75,9 +75,9 @@ const s = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
-    title: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    title: { color: '#211832', fontSize: 17, fontWeight: '700' },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -107,6 +107,6 @@ const s = StyleSheet.create({
     },
     playIcon: { color: '#fff', fontSize: 13, marginLeft: 2 },
     info: { padding: 10 },
-    cardTitle: { color: '#fff', fontSize: 12, fontWeight: '600', lineHeight: 16 },
-    cardSub: { color: '#C26A2D', fontSize: 10, marginTop: 4 },
+    cardTitle: { color: '#211832', fontSize: 12, fontWeight: '600', lineHeight: 16 },
+    cardSub: { color: '#F25912', fontSize: 10, marginTop: 4 },
 });

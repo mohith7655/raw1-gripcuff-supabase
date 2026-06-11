@@ -650,7 +650,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                     />
                                     {(!isLoaded || isBuffering) && (
                                         <View style={styles.loadingOverlay}>
-                                            <ActivityIndicator size="large" color="#E89951" />
+                                            <ActivityIndicator size="large" color="#F25912" />
                                             <Text style={styles.loadingText}>Buffering video...</Text>
                                         </View>
                                     )}
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     actionBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 8,
@@ -867,7 +867,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         gap: 12,
-        backgroundColor: '#060f1c',
+        backgroundColor: '#EEEEF2',
     },
     castPlaceholderTitle: {
         color: '#fff',
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     castPlaceholderDevice: {
-        color: 'rgba(255,255,255,0.45)',
+        color: 'rgba(33,24,50,0.45)',
         fontSize: 14,
         maxWidth: 240,
         textAlign: 'center',
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         height: 4,
-        backgroundColor: '#E89951',
+        backgroundColor: '#F25912',
         borderRadius: 2,
     },
     seekThumb: {
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#E89951',
+        backgroundColor: '#F25912',
         marginLeft: -6,
         top: 4,
     },
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
     },
     footerText: {
-        color: 'rgba(255,255,255,0.55)',
+        color: 'rgba(33,24,50,0.55)',
         fontSize: 13,
         textTransform: 'uppercase',
         fontStyle: 'italic',
@@ -981,12 +981,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 6,
         borderRadius: 12,
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.28)',
+        borderColor: 'rgba(242,89,18,0.28)',
     },
     footerBtnText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
         paddingVertical: 11,
         paddingHorizontal: 8,
         borderRadius: 12,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
     },
     footerBtnWorkoutTogetherText: {
         color: '#fff',
@@ -1034,12 +1034,12 @@ const styles = StyleSheet.create({
         paddingVertical: 11,
         paddingHorizontal: 6,
         borderRadius: 12,
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.28)',
+        borderColor: 'rgba(242,89,18,0.28)',
     },
     footerBtnStartNowText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -1077,7 +1077,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 6,
         borderRadius: 12,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
     },
     footerBtnSocialText: {
         color: '#fff',
@@ -1120,13 +1120,13 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     errorSubtext: {
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: 'rgba(33,24,50, 0.6)',
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 20,
     },
     retryBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,

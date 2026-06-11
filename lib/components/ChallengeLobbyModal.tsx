@@ -21,10 +21,10 @@ import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 import { TierBars } from './profile/TierBars';
 import { TierAvatar } from './profile/TierAvatar';
 
-const ACCENT = '#E89951';
-const CTA    = '#FF6B00';
-const BG     = '#0d1825';
-const CARD   = '#111d2e';
+const ACCENT = '#F25912';
+const CTA    = '#F25912';
+const BG     = '#EEEEF2';
+const CARD   = '#F8F8FC';
 
 const LOBBY_CHANNEL = 'challenge-lobby';
 
@@ -260,7 +260,7 @@ export function ChallengeLobbyModal({
                             <Text style={s.subtitle}>{exerciseName} · {workoutDurationSecs / 60} min</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <X color="#4a6480" size={22} />
+                            <X color="#7A7C90" size={22} />
                         </TouchableOpacity>
                     </View>
 
@@ -275,7 +275,7 @@ export function ChallengeLobbyModal({
                                     <Text style={s.declineBtnText}>Decline</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={s.acceptBtn} onPress={acceptIncoming} activeOpacity={0.85}>
-                                    <Zap color="#fff" size={14} />
+                                    <Zap color="#211832" size={14} />
                                     <Text style={s.acceptBtnText}>Accept</Text>
                                 </TouchableOpacity>
                             </View>
@@ -328,10 +328,10 @@ export function ChallengeLobbyModal({
                                         activeOpacity={0.8}
                                     >
                                         {loadingUid === member.uid ? (
-                                            <ActivityIndicator color="#fff" size="small" />
+                                            <ActivityIndicator color="#211832" size="small" />
                                         ) : (
                                             <>
-                                                <Zap color="#fff" size={13} />
+                                                <Zap color="#211832" size={13} />
                                                 <Text style={s.challengeBtnText}>Challenge</Text>
                                             </>
                                         )}
@@ -357,7 +357,7 @@ function Avatar({ member }: { member: LobbyMember }) {
             showBadge={false}
             fallback={
                 <View style={[s.avatar, s.avatarFallback]}>
-                    <CircleUserRound color="#4a6480" size={22} strokeWidth={1.5} />
+                    <CircleUserRound color="#7A7C90" size={22} strokeWidth={1.5} />
                 </View>
             }
         />
@@ -380,9 +380,9 @@ const s = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 18,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
-    title: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    title: { color: '#211832', fontSize: 17, fontWeight: '700' },
     subtitle: { color: 'rgba(150,180,210,0.6)', fontSize: 12, marginTop: 3 },
     waitBanner: {
         flexDirection: 'row',
@@ -393,9 +393,9 @@ const s = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,107,0,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.3)',
+        borderColor: 'rgba(242,89,18,0.3)',
     },
     waitDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: CTA },
     waitText: { color: CTA, fontSize: 13, fontWeight: '700' },
@@ -404,12 +404,12 @@ const s = StyleSheet.create({
         marginTop: 14,
         padding: 14,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,107,0,0.14)',
+        backgroundColor: 'rgba(242,89,18,0.14)',
         borderWidth: 1,
-        borderColor: 'rgba(255,107,0,0.45)',
+        borderColor: 'rgba(242,89,18,0.45)',
         gap: 12,
     },
-    incomingText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    incomingText: { color: '#211832', fontSize: 14, fontWeight: '600' },
     incomingBtns: { flexDirection: 'row', gap: 10 },
     acceptBtn: {
         flex: 1,
@@ -421,7 +421,7 @@ const s = StyleSheet.create({
         borderRadius: 10,
         paddingVertical: 11,
     },
-    acceptBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    acceptBtnText: { color: '#211832', fontSize: 14, fontWeight: '700' },
     declineBtn: {
         flex: 1,
         alignItems: 'center',
@@ -430,7 +430,7 @@ const s = StyleSheet.create({
         borderRadius: 10,
         paddingVertical: 11,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.18)',
+        borderColor: 'rgba(33,24,50,0.18)',
     },
     declineBtnText: { color: 'rgba(150,180,210,0.8)', fontSize: 14, fontWeight: '700' },
     list: { paddingHorizontal: 16, paddingTop: 12, gap: 4 },
@@ -440,10 +440,10 @@ const s = StyleSheet.create({
         paddingVertical: 10,
         gap: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     selfRow: {
-        backgroundColor: 'rgba(232,153,81,0.06)',
+        backgroundColor: 'rgba(242,89,18,0.06)',
         borderRadius: 12,
         paddingHorizontal: 10,
         borderBottomWidth: 0,
@@ -453,12 +453,12 @@ const s = StyleSheet.create({
     avatarFallback: {
         backgroundColor: CARD,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     rowInfo: { flex: 1, gap: 4 },
-    rowName: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    rowName: { color: '#211832', fontSize: 14, fontWeight: '600' },
     challengeBtn: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -470,17 +470,17 @@ const s = StyleSheet.create({
         minWidth: 90,
         justifyContent: 'center',
     },
-    challengeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    challengeBtnText: { color: '#211832', fontSize: 12, fontWeight: '700' },
     youBadge: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.4)',
+        borderColor: 'rgba(242,89,18,0.4)',
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 5,
     },
     youBadgeText: { color: ACCENT, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
     empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, gap: 12 },
-    emptyText: { color: '#2a4060', fontSize: 16, fontWeight: '600' },
-    emptyHint: { color: '#1a2e42', fontSize: 13, textAlign: 'center', paddingHorizontal: 32, lineHeight: 19 },
+    emptyText: { color: '#D8D8E4', fontSize: 16, fontWeight: '600' },
+    emptyHint: { color: '#F8F8FC', fontSize: 13, textAlign: 'center', paddingHorizontal: 32, lineHeight: 19 },
 });

@@ -118,7 +118,7 @@ export const ChatInboxScreen = () => {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Messages</Text>
                 <View style={{ width: 40 }} />
@@ -158,12 +158,12 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#211832' },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-    emptyTitle: { color: '#fff', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
+    emptyTitle: { color: '#211832', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
     emptySubtitle: { color: AppTheme.textGrey, fontSize: FontSizes.body },
     listContent: { paddingVertical: 8 },
     separator: { height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginLeft: 84 },
@@ -186,17 +186,17 @@ const styles = StyleSheet.create({
         width: 52,
         height: 52,
         borderRadius: 11,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     rowContent: { flex: 1 },
     rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-    friendName: { fontSize: FontSizes.body, fontWeight: FontWeights.bold as any, color: '#fff', flex: 1, marginRight: 8 },
+    friendName: { fontSize: FontSizes.body, fontWeight: FontWeights.bold as any, color: '#211832', flex: 1, marginRight: 8 },
     timeText: { fontSize: 12, color: AppTheme.textGrey },
     rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     lastMessage: { fontSize: FontSizes.small, color: AppTheme.textGrey, flex: 1, marginRight: 8 },
-    lastMessageUnread: { color: '#fff', fontWeight: '600' },
+    lastMessageUnread: { color: '#211832', fontWeight: '600' },
     unreadBadge: {
         backgroundColor: AppTheme.primaryColor,
         borderRadius: 10,
@@ -206,5 +206,5 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 5,
     },
-    unreadBadgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+    unreadBadgeText: { color: '#211832', fontSize: 11, fontWeight: 'bold' },
 });

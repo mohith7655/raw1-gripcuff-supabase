@@ -12,9 +12,9 @@ import {
 import { X, Video } from 'lucide-react-native';
 
 const { height: SH } = Dimensions.get('window');
-const ORANGE = '#E89951';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 
 interface VideoModalProps {
   visible: boolean;
@@ -122,12 +122,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(232,153,81,0.12)',
+    backgroundColor: 'rgba(242,89,18,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 20,
     fontWeight: '800',
   },

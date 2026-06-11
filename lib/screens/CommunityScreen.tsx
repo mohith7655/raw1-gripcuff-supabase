@@ -25,16 +25,16 @@ import { supabase } from '../core/config/supabase';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
-  bg:           '#0d1520',
+  bg:           '#EEEEF2',
   bgCard:       'rgba(255,255,255,0.04)',
   bgInput:      'rgba(255,255,255,0.06)',
   border:       'rgba(255,255,255,0.06)',
-  orange:       '#ff7a00',
-  accentSoft:   'rgba(255,122,0,0.12)',
-  accentBorder: 'rgba(255,122,0,0.28)',
+  orange:       '#F25912',
+  accentSoft:   'rgba(242,89,18,0.12)',
+  accentBorder: 'rgba(242,89,18,0.28)',
   text:         '#ffffff',
-  muted:        '#9ca3af',
-  modalBg:      '#111d2c',
+  muted:        '#7A7C90',
+  modalBg:      '#EEEEF2',
 };
 
 type Activity = {

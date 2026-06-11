@@ -14,7 +14,7 @@ import { X } from 'lucide-react-native';
 import { playReminderBeep } from '../utils/webAudio';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 import { getUserDateKey } from '../utils/userDate';
-const ACCENT = '#f97316';
+const ACCENT = '#F25912';
 const { width } = Dimensions.get('window');
 
 export interface ScheduledWorkoutData {
@@ -262,7 +262,7 @@ const s = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: 200,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#C8C8D0',
   },
   content: {
     paddingHorizontal: 20,
@@ -292,7 +292,7 @@ const s = StyleSheet.create({
   countdownContainer: {
     alignItems: 'center',
     paddingVertical: 16,
-    backgroundColor: 'rgba(232,153,81, 0.1)',
+    backgroundColor: 'rgba(242,89,18, 0.1)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: `${ACCENT}20`,
@@ -312,7 +312,7 @@ const s = StyleSheet.create({
     marginTop: 14,
   },
   startBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,
@@ -325,7 +325,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   snoozeBtn: {
-    backgroundColor: 'rgba(232,153,81, 0.15)',
+    backgroundColor: 'rgba(242,89,18, 0.15)',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,
@@ -340,7 +340,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
   dismissBtnLarge: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#C8C8D0',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',

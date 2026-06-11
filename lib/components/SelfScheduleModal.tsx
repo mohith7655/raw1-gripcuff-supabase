@@ -21,8 +21,8 @@ import { TimeArrowPicker } from './TimeArrowPicker';
 import { WorkoutReminderService } from '../services/workoutReminder.service';
 import { useAuth } from '../providers/AuthContext';
 
-const ACCENT = '#E89951';
-const BG = '#0f1923';
+const ACCENT = '#F25912';
+const BG = '#EEEEF2';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER = 'rgba(255,255,255,0.08)';
 
@@ -468,8 +468,8 @@ export function SelfScheduleModal({
                                         <Switch
                                             value={intervalEnabled}
                                             onValueChange={setIntervalEnabled}
-                                            trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
-                                            thumbColor={intervalEnabled ? ACCENT : '#94A3B8'}
+                                            trackColor={{ false: '#D8D8E4', true: 'rgba(242,89,18,0.4)' }}
+                                            thumbColor={intervalEnabled ? ACCENT : '#7A7C90'}
                                         />
                                     </View>
 
@@ -568,7 +568,7 @@ export function SelfScheduleModal({
                     {step === 'done' && (
                         <View style={s.centered}>
                             <View style={s.successIcon}>
-                                <Check color="#fff" size={32} />
+                                <Check color="#211832" size={32} />
                             </View>
                             <Text style={s.statusText}>Workout scheduled!</Text>
                             <Text style={s.statusSub}>{scheduledSummary}</Text>
@@ -619,33 +619,33 @@ const s = StyleSheet.create({
         paddingVertical: 14,
     },
     iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-    title: { color: '#fff', fontSize: 17, fontWeight: '700', flex: 1, textAlign: 'center' },
+    title: { color: '#211832', fontSize: 17, fontWeight: '700', flex: 1, textAlign: 'center' },
 
     banner: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(232,153,81,0.08)',
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
         borderRadius: 12, padding: 12, marginBottom: 16,
     },
     thumb: { width: 44, height: 44, borderRadius: 8, flexShrink: 0 },
     thumbPlaceholder: {
         width: 44, height: 44, borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(232,153,81,0.7)', fontSize: 10, fontWeight: '600',
+        color: 'rgba(242,89,18,0.7)', fontSize: 10, fontWeight: '600',
         letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2,
     },
-    bannerTitle: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    bannerTitle: { color: '#211832', fontSize: 13, fontWeight: '600' },
 
     labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, marginBottom: 8 },
     labelText: {
-        color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '600',
+        color: 'rgba(33,24,50,0.45)', fontSize: 11, fontWeight: '600',
         letterSpacing: 0.5, textTransform: 'uppercase',
     },
     miniLabel: {
-        color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '600',
+        color: 'rgba(33,24,50,0.45)', fontSize: 11, fontWeight: '600',
         letterSpacing: 0.5, textTransform: 'uppercase',
         marginTop: 14, marginBottom: 8,
     },
@@ -660,11 +660,11 @@ const s = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
+    chipActive: { backgroundColor: 'rgba(242,89,18,0.15)', borderColor: ACCENT },
 
-    chipTopText: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
-    chipBotText: { color: '#94A3B8', fontSize: 11, marginTop: 2 },
-    chipText:    { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
+    chipTopText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
+    chipBotText: { color: '#7A7C90', fontSize: 11, marginTop: 2 },
+    chipText:    { color: '#7A7C90', fontSize: 13, fontWeight: '600' },
     chipActiveText: { color: ACCENT },
 
     pickerWrap: {
@@ -674,12 +674,12 @@ const s = StyleSheet.create({
 
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.08)', borderRadius: 10,
+        backgroundColor: 'rgba(242,89,18,0.08)', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 10, marginTop: 16, marginBottom: 12,
     },
     summaryText: { color: ACCENT, fontSize: 14, fontWeight: '600', flex: 1 },
     soonHint: {
-        color: 'rgba(232,153,81,0.7)',
+        color: 'rgba(242,89,18,0.7)',
         fontSize: 12,
         fontWeight: '500',
         marginTop: 6,
@@ -687,7 +687,7 @@ const s = StyleSheet.create({
     },
 
     primaryBtn: {
-        backgroundColor: '#FF6B00', borderRadius: 14, paddingVertical: 14, alignItems: 'center',
+        backgroundColor: '#F25912', borderRadius: 14, paddingVertical: 14, alignItems: 'center',
     },
     primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
@@ -701,37 +701,37 @@ const s = StyleSheet.create({
         borderColor: BORDER,
         alignItems: 'center',
     },
-    segmentActive: { backgroundColor: 'rgba(232,153,81,0.18)', borderColor: '#E89951' },
-    segmentText: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '700' },
-    segmentTextActive: { color: '#E89951' },
+    segmentActive: { backgroundColor: 'rgba(242,89,18,0.18)', borderColor: '#F25912' },
+    segmentText: { color: 'rgba(33,24,50,0.5)', fontSize: 13, fontWeight: '700' },
+    segmentTextActive: { color: '#F25912' },
 
     recurringCompact: { marginTop: 10 },
     scheduleWrapper: { marginTop: 18 },
     summaryAndSchedule: { marginTop: 20 },
     summaryBoxInner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.08)', borderRadius: 10,
+        backgroundColor: 'rgba(242,89,18,0.08)', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14,
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
     },
     unitSelector: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: BORDER },
     unitBtn: { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: 'transparent' },
-    unitActive: { backgroundColor: 'rgba(232,153,81,0.12)' },
-    unitText: { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
+    unitActive: { backgroundColor: 'rgba(242,89,18,0.12)' },
+    unitText: { color: '#7A7C90', fontSize: 13, fontWeight: '600' },
     unitTextActive: { color: ACCENT },
 
     toggleRow: {
         flexDirection: 'row', alignItems: 'center',
         paddingVertical: 12,
-        borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+        borderBottomWidth: 1, borderBottomColor: 'rgba(33,24,50,0.08)',
     },
-    toggleLabel: { color: '#fff', fontSize: 14, fontWeight: '500' },
-    toggleSub:   { color: '#6B7280', fontSize: 12, marginTop: 2 },
+    toggleLabel: { color: '#211832', fontSize: 14, fontWeight: '500' },
+    toggleSub:   { color: '#7A7C90', fontSize: 12, marginTop: 2 },
 
     inlineInput: {
         marginTop: 8, backgroundColor: SURFACE, borderRadius: 12,
         borderWidth: 1, borderColor: BORDER,
-        color: '#fff', fontSize: 14, paddingHorizontal: 14, paddingVertical: 12,
+        color: '#211832', fontSize: 14, paddingHorizontal: 14, paddingVertical: 12,
     },
 
     centered: { alignItems: 'center', paddingVertical: 48 },
@@ -739,6 +739,6 @@ const s = StyleSheet.create({
         width: 72, height: 72, borderRadius: 36, backgroundColor: '#10B981',
         alignItems: 'center', justifyContent: 'center', marginBottom: 16,
     },
-    statusText: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 },
-    statusSub:  { color: '#9CA3AF', fontSize: 14, textAlign: 'center', lineHeight: 22 },
+    statusText: { color: '#211832', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 },
+    statusSub:  { color: '#7A7C90', fontSize: 14, textAlign: 'center', lineHeight: 22 },
 });

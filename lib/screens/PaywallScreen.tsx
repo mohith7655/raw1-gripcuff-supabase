@@ -20,7 +20,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { supabase } from '../core/config/supabase';
 
-const ORANGE = '#E89951';
+const ORANGE = '#F25912';
 
 // Netlify function URL for creating a Stripe Checkout session.
 // Set EXPO_PUBLIC_STRIPE_CHECKOUT_URL in .env.local for local dev.
@@ -452,7 +452,7 @@ const GripcuffCard = ({
       activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator size="small" color="#fff" />
+        <ActivityIndicator size="small" color="#211832" />
       ) : (
         <Text style={styles.cardBtnText}>Activate Free Access</Text>
       )}
@@ -489,7 +489,7 @@ const SubscriptionCard = ({
       activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator size="small" color="#fff" />
+        <ActivityIndicator size="small" color="#211832" />
       ) : (
         <Text style={styles.cardBtnText}>Start Subscription</Text>
       )}
@@ -556,16 +556,16 @@ const styles = StyleSheet.create({
   },
   cardFree: {
     borderColor: '#333',
-    backgroundColor: '#242424',
+    backgroundColor: '#C8C8D0',
   },
   cardSub: {
     borderColor: ORANGE,
-    backgroundColor: '#1f1408',
+    backgroundColor: '#F25912',
   },
 
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(232,153,81,0.15)',
+    backgroundColor: 'rgba(242,89,18,0.15)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -579,13 +579,13 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 4,
   },
   cardPrice: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 26,
     fontWeight: '800',
     marginBottom: 4,
@@ -597,11 +597,11 @@ const styles = StyleSheet.create({
   },
 
   orderInput: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#C8C8D0',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     borderWidth: 1.5,
     borderColor: '#333',
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
   },
 
   cardBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pendingTitle: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',

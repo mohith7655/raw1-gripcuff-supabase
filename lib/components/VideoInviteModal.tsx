@@ -20,7 +20,7 @@ import { useUser } from '../providers/UserContext';
 import { SessionService } from '../services/session.service';
 import type { User } from '../models/User';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 const WAIT_SECONDS = 60;
 
 interface Props {
@@ -281,7 +281,7 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                             />
                         </View>
                         <View style={s.countdownRow}>
-                            <Clock color="#6B7280" size={13} />
+                            <Clock color="#7A7C90" size={13} />
                             <Text style={s.countdownText}>{countdown}s remaining</Text>
                         </View>
 
@@ -295,7 +295,7 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                 {screen === 'accepted' && (
                     <View style={s.centeredContent}>
                         <View style={[s.resultIcon, { backgroundColor: '#10B981' }]}>
-                            <Check color="white" size={32} />
+                            <Check color="#211832" size={32} />
                         </View>
                         <Text style={s.waitTitle}>{selected?.fullName ?? 'Friend'} accepted!</Text>
                         <Text style={s.waitSub}>Starting workout together…</Text>
@@ -307,7 +307,7 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                 {screen === 'declined' && (
                     <View style={s.centeredContent}>
                         <View style={[s.resultIcon, { backgroundColor: '#EF4444' }]}>
-                            <X color="white" size={32} />
+                            <X color="#211832" size={32} />
                         </View>
                         <Text style={s.waitTitle}>{selected?.fullName ?? 'Friend'} declined</Text>
                         <Text style={s.waitSub}>Maybe next time!</Text>
@@ -320,8 +320,8 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                 {/* ── TIMEOUT ── */}
                 {screen === 'timeout' && (
                     <View style={s.centeredContent}>
-                        <View style={[s.resultIcon, { backgroundColor: '#6B7280' }]}>
-                            <Clock color="white" size={32} />
+                        <View style={[s.resultIcon, { backgroundColor: '#7A7C90' }]}>
+                            <Clock color="#211832" size={32} />
                         </View>
                         <Text style={s.waitTitle}>No response</Text>
                         <Text style={s.waitSub}>{selected?.fullName ?? 'Friend'} didn't respond in time.</Text>
@@ -341,7 +341,7 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.6)',
     },
     sheet: {
-        backgroundColor: '#0f1923',
+        backgroundColor: '#EEEEF2',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         paddingHorizontal: 20,
@@ -361,7 +361,7 @@ const s = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 14,
     },
-    title: { color: 'white', fontSize: 17, fontWeight: '700' },
+    title: { color: '#211832', fontSize: 17, fontWeight: '700' },
     closeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
     topClose: {
         position: 'absolute', top: 0, right: 0,
@@ -370,12 +370,12 @@ const s = StyleSheet.create({
     },
     videoBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.1)',
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.25)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.25)',
         borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
         marginBottom: 16,
     },
-    videoBannerMeta: { color: 'rgba(232,153,81,0.65)', fontSize: 10, fontWeight: '600', letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 1 },
+    videoBannerMeta: { color: 'rgba(242,89,18,0.65)', fontSize: 10, fontWeight: '600', letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 1 },
     videoBannerText: { color: ACCENT, fontSize: 13, fontWeight: '600' },
     sectionLabel: {
         color: '#aaa', fontSize: 12,
@@ -387,18 +387,18 @@ const s = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center',
         paddingVertical: 10, paddingHorizontal: 12,
         borderRadius: 12, marginBottom: 8,
-        backgroundColor: '#1a2530',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: '#F8F8FC',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)',
     },
     avatar: { width: 38, height: 38, borderRadius: 8 },
     friendInfo: { flex: 1, marginLeft: 12 },
-    friendName: { color: 'white', fontSize: 14, fontWeight: '600' },
+    friendName: { color: '#211832', fontSize: 14, fontWeight: '600' },
     friendUsername: { color: '#888', fontSize: 12, marginTop: 1 },
     inviteNowChip: {
         backgroundColor: ACCENT,
         borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5,
     },
-    inviteNowText: { color: 'white', fontSize: 12, fontWeight: '700' },
+    inviteNowText: { color: '#211832', fontSize: 12, fontWeight: '700' },
     empty: { paddingVertical: 32, alignItems: 'center' },
     emptyText: { color: '#666', fontSize: 14, textAlign: 'center' },
     errorBanner: {
@@ -419,39 +419,39 @@ const s = StyleSheet.create({
     },
     waitAvatarPlaceholder: {
         width: 72, height: 72, borderRadius: 16,
-        backgroundColor: 'rgba(232,153,81,0.2)',
+        backgroundColor: 'rgba(242,89,18,0.2)',
         borderWidth: 3, borderColor: ACCENT,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 16,
     },
     waitAvatarInitial: { color: ACCENT, fontSize: 30, fontWeight: '700' },
-    waitTitle: { color: 'white', fontSize: 18, fontWeight: '700', marginBottom: 4, textAlign: 'center' },
+    waitTitle: { color: '#211832', fontSize: 18, fontWeight: '700', marginBottom: 4, textAlign: 'center' },
     waitName: { color: ACCENT, fontSize: 20, fontWeight: '800', marginBottom: 4 },
-    waitSub: { color: '#9CA3AF', fontSize: 14, marginBottom: 20, textAlign: 'center' },
+    waitSub: { color: '#7A7C90', fontSize: 14, marginBottom: 20, textAlign: 'center' },
     countdownBarBg: {
-        width: '100%', height: 6, backgroundColor: '#1e2d3d',
+        width: '100%', height: 6, backgroundColor: '#F8F8FC',
         borderRadius: 3, overflow: 'hidden', marginBottom: 8,
     },
     countdownBarFill: {
         height: 6, backgroundColor: ACCENT, borderRadius: 3,
     },
     countdownRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 24 },
-    countdownText: { color: '#6B7280', fontSize: 13 },
+    countdownText: { color: '#7A7C90', fontSize: 13 },
     cancelBtn: {
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
         borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28,
     },
-    cancelBtnText: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
+    cancelBtnText: { color: '#7A7C90', fontSize: 14, fontWeight: '600' },
     resultIcon: {
         width: 72, height: 72, borderRadius: 16,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 16,
     },
     sendBtn: {
-        backgroundColor: '#FF6B00', borderRadius: 14,
+        backgroundColor: '#F25912', borderRadius: 14,
         paddingVertical: 14, paddingHorizontal: 40,
         alignItems: 'center', justifyContent: 'center',
         marginTop: 20,
     },
-    sendBtnText: { color: 'white', fontSize: 15, fontWeight: '700' },
+    sendBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

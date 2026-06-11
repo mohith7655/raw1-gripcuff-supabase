@@ -30,7 +30,7 @@ export function LocationRow({
     <View style={s.card}>
       <View style={s.row}>
         <View style={s.iconBox}>
-          <Icon size={20} color="#ff7a00" strokeWidth={2.2} />
+          <Icon size={20} color="#F25912" strokeWidth={2.2} />
         </View>
         <View style={s.textBlock}>
           <Text style={s.cardTitle}>{cardTitle}</Text>
@@ -59,7 +59,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
     padding: 16,
   },
   row: {
@@ -71,9 +71,9 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,122,0,0.12)',
+    backgroundColor: 'rgba(242,89,18,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,122,0,0.28)',
+    borderColor: 'rgba(242,89,18,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -81,18 +81,18 @@ const s = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    color: '#9ca3af',
+    color: '#7A7C90',
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
   },
   name: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 15,
     fontWeight: '700',
   },
   address: {
-    color: '#9ca3af',
+    color: '#7A7C90',
     fontSize: 13,
     marginTop: 2,
   },

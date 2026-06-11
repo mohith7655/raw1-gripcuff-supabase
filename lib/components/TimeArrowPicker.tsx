@@ -139,7 +139,7 @@ const s = StyleSheet.create({
         overflow: 'hidden' as any,
     },
     colon: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 20,
         fontWeight: '700',
         paddingHorizontal: 4,
@@ -156,10 +156,10 @@ const s = StyleSheet.create({
         left: 4,
         right: 4,
         height: ITEM_H,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: 'rgba(232,153,81,0.35)',
+        borderColor: 'rgba(242,89,18,0.35)',
         borderRadius: 8,
         zIndex: 1,
     },
@@ -169,14 +169,14 @@ const s = StyleSheet.create({
         justifyContent: 'center',
     },
     itemText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 22,
         fontWeight: '600',
     },
     itemTextSelected: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#fff',
+        color: '#211832',
     },
     itemTextNear: {
         fontSize: 19,

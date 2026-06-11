@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
   },
   text: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 12,
     fontWeight: '600',
     flex: 1,

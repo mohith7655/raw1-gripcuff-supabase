@@ -6,9 +6,9 @@ import { MoveReminder, MoveReminderService, formatMoveTime12h } from '../service
 import { useFocusEffect } from '@react-navigation/native';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 
-const ACCENT = '#E89951';
-const CARD_BG = '#111d2e';
-const BORDER = 'rgba(232,153,81,0.18)';
+const ACCENT = '#F25912';
+const CARD_BG = '#F8F8FC';
+const BORDER = 'rgba(242,89,18,0.18)';
 
 interface Props {
     userId?: string;
@@ -60,7 +60,7 @@ export function DailyReminderCard({ userId }: Props) {
         <View style={s.card}>
                 <View style={s.left}>
                     <View style={[s.iconWrap, enabled && s.iconWrapOn]}>
-                        <Bell color={enabled ? ACCENT : '#4a6480'} size={18} />
+                        <Bell color={enabled ? ACCENT : '#7A7C90'} size={18} />
                     </View>
                     <View style={s.textBlock}>
                         <Text style={s.cardTitle}>Stay Active All Day</Text>
@@ -96,7 +96,7 @@ export function DailyReminderCard({ userId }: Props) {
                         activeOpacity={0.8}
                     >
                         {toggling
-                            ? <ActivityIndicator color="#fff" size="small" style={{ width: 22, height: 22 }} />
+                            ? <ActivityIndicator color="#211832" size="small" style={{ width: 22, height: 22 }} />
                             : <View style={[s.toggleThumb, enabled && s.toggleThumbOn]} />
                         }
                     </TouchableOpacity>
@@ -131,24 +131,24 @@ const s = StyleSheet.create({
         borderRadius: 10,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
     iconWrapOn: {
-        backgroundColor: 'rgba(232,153,81,0.12)',
-        borderColor: 'rgba(232,153,81,0.35)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
+        borderColor: 'rgba(242,89,18,0.35)',
     },
     textBlock: { flex: 1 },
     cardTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '700',
         marginBottom: 2,
     },
     summaryText: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '500',
     },
@@ -172,9 +172,9 @@ const s = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.25)',
+        borderColor: 'rgba(242,89,18,0.25)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -182,21 +182,21 @@ const s = StyleSheet.create({
         width: 48,
         height: 26,
         borderRadius: 13,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         justifyContent: 'center',
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: '#E89951',
-        borderColor: '#E89951',
+        backgroundColor: '#F25912',
+        borderColor: '#F25912',
     },
     toggleThumb: {
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: '#4a6480',
+        backgroundColor: '#7A7C90',
     },
     toggleThumbOn: {
         backgroundColor: '#fff',

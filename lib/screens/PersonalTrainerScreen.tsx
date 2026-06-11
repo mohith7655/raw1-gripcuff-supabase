@@ -13,7 +13,7 @@ export const PersonalTrainerScreen = () => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Personal Trainer</Text>
                 <View style={{ width: 40 }} />

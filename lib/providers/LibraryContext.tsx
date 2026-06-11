@@ -345,7 +345,7 @@ function getMockBodyPartVideos(): Video[] {
 
   let videoId = 1;
   const gradients = [
-    ['#FF6B35', '#E84100'],
+    ['#F25912', '#F25912'],
     ['#7C3AED', '#4F46E5'],
     ['#059669', '#047857'],
     ['#DC2626', '#991B1B'],

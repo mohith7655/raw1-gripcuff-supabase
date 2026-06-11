@@ -1,7 +1,7 @@
 // ── Tier system (10 levels per badge) ─────────────────────────────────────────
 
 export const TIER_COLORS = [
-  '#9CA3AF', // L1 — grey
+  '#7A7C90', // L1 — grey
   '#6EE7B7', // L2 — mint
   '#10B981', // L3 — green
   '#34D399', // L4
@@ -9,7 +9,7 @@ export const TIER_COLORS = [
   '#60A5FA', // L6
   '#8B5CF6', // L7 — purple
   '#A78BFA', // L8
-  '#E89951', // L9 — orange
+  '#F25912', // L9 — orange
   '#FFD700', // L10 — gold / Mythic
 ] as const;
 

@@ -55,7 +55,7 @@ export function LocationPickerField({ value, onChange }: Props) {
                     separator: styles.separator,
                 }}
                 textInputProps={{
-                    placeholderTextColor: '#6B7280',
+                    placeholderTextColor: '#7A7C90',
                     autoCorrect: false,
                     autoCapitalize: 'none',
                 }}
@@ -64,7 +64,7 @@ export function LocationPickerField({ value, onChange }: Props) {
             />
             {!!value?.address && (
                 <View style={styles.selected}>
-                    <MapPin color="#E89951" size={14} />
+                    <MapPin color="#F25912" size={14} />
                     <Text style={styles.selectedText} numberOfLines={2}>
                         {value.placeName || value.address}
                     </Text>
@@ -94,18 +94,18 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderRadius: 10,
         paddingHorizontal: 14,
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         outlineStyle: 'none',
     } as any,
     listView: {
-        backgroundColor: '#1a2740',
+        backgroundColor: '#F8F8FC',
         borderRadius: 10,
         marginTop: 6,
         borderWidth: 1,
-        borderColor: '#1e2d40',
+        borderColor: '#F8F8FC',
         zIndex: 9999,
         boxShadow: '0 14px 28px rgba(0,0,0,0.22)',
     } as any,
@@ -115,12 +115,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
     },
     description: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
     },
     separator: {
         height: 1,
-        backgroundColor: '#1e2d40',
+        backgroundColor: '#F8F8FC',
     },
     selected: {
         flexDirection: 'row',
@@ -129,14 +129,14 @@ const styles = StyleSheet.create({
         marginTop: 8,
         paddingHorizontal: 10,
         paddingVertical: 8,
-        backgroundColor: 'rgba(232,153,81,0.11)',
+        backgroundColor: 'rgba(242,89,18,0.11)',
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.24)',
+        borderColor: 'rgba(242,89,18,0.24)',
     },
     selectedText: {
         flex: 1,
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 12,
         lineHeight: 16,
         fontWeight: '600',

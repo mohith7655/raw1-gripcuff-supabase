@@ -35,7 +35,7 @@ export const ChallengeVideoStage: React.FC<ChallengeVideoStageProps> = ({
                 <RtcSurfaceView style={StyleSheet.absoluteFill} canvas={{ uid: remoteUid }} />
             ) : (
                 <View style={styles.remotePlaceholder}>
-                    <CircleUserRound color="#2a4060" size={72} strokeWidth={1} />
+                    <CircleUserRound color="#D8D8E4" size={72} strokeWidth={1} />
                     <Text style={styles.remoteName}>{opponentName}</Text>
                 </View>
             )}
@@ -50,7 +50,7 @@ export const ChallengeVideoStage: React.FC<ChallengeVideoStageProps> = ({
                     />
                 ) : (
                     <View style={styles.pipOff}>
-                        <VideoOff color="#607a94" size={20} />
+                        <VideoOff color="#7A7C90" size={20} />
                     </View>
                 )}
                 <View style={styles.pipBadge}>
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 10,
     },
-    remoteName: { color: '#fff', fontSize: 20, fontWeight: '700' },
+    remoteName: { color: '#211832', fontSize: 20, fontWeight: '700' },
 
     pip: {
         position: 'absolute',
@@ -79,8 +79,8 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         overflow: 'hidden',
         borderWidth: 2,
-        borderColor: 'rgba(232,153,81,0.85)',
-        backgroundColor: '#1c2e42',
+        borderColor: 'rgba(242,89,18,0.85)',
+        backgroundColor: '#F8F8FC',
     },
     pipVideo: { width: 92, height: 128 },
     pipOff: {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
         height: 128,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
     },
     pipBadge: {
         position: 'absolute',

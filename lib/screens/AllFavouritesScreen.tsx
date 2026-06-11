@@ -20,7 +20,7 @@ import { AppTheme } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 import { getAllPrograms, PreRecordedProgram } from '../data/preRecordedPrograms';
 
-const PROGRAM_COLORS = ['#F97316', '#8B5CF6', '#3B82F6', '#10B981', '#EC4899', '#F59E0B'];
+const PROGRAM_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
 
 function WorkoutCard({
     program,
@@ -54,7 +54,7 @@ function WorkoutCard({
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={onPress}>
             <View style={[styles.thumbnail, { backgroundColor: bgColor }]}>
                 <View style={styles.playIconContainer}>
-                    <Play color="#fff" size={16} fill="#fff" />
+                    <Play color="#211832" size={16} fill="#211832" />
                 </View>
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{program.videos.length} videos</Text>
@@ -62,7 +62,7 @@ function WorkoutCard({
             </View>
             <View style={{ paddingHorizontal: 4 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <Text style={{ flex: 1, color: '#fff', fontSize: 12, marginTop: 8 }} numberOfLines={2}>
+                    <Text style={{ flex: 1, color: '#211832', fontSize: 12, marginTop: 8 }} numberOfLines={2}>
                         {program.title}
                     </Text>
                     <TouchableOpacity onPress={handleHeart} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -75,7 +75,7 @@ function WorkoutCard({
                         </Animated.View>
                     </TouchableOpacity>
                 </View>
-                <Text style={{ color: '#607a94', fontSize: 10, marginTop: 2 }}>
+                <Text style={{ color: '#7A7C90', fontSize: 10, marginTop: 2 }}>
                     {program.level}
                 </Text>
             </View>
@@ -138,7 +138,7 @@ export function AllFavouritesScreen() {
                     onPress={() => setActiveTab('exercises')}
                     activeOpacity={0.8}
                 >
-                    <LayoutGrid size={13} color={activeTab === 'exercises' ? AppTheme.primaryColor : '#607a94'} />
+                    <LayoutGrid size={13} color={activeTab === 'exercises' ? AppTheme.primaryColor : '#7A7C90'} />
                     <Text style={[styles.tabText, activeTab === 'exercises' && styles.tabTextActive]}>
                         Exercises {totalExercises > 0 ? `(${totalExercises})` : ''}
                     </Text>
@@ -148,7 +148,7 @@ export function AllFavouritesScreen() {
                     onPress={() => setActiveTab('workouts')}
                     activeOpacity={0.8}
                 >
-                    <Dumbbell size={13} color={activeTab === 'workouts' ? AppTheme.primaryColor : '#607a94'} />
+                    <Dumbbell size={13} color={activeTab === 'workouts' ? AppTheme.primaryColor : '#7A7C90'} />
                     <Text style={[styles.tabText, activeTab === 'workouts' && styles.tabTextActive]}>
                         Workouts {totalWorkouts > 0 ? `(${totalWorkouts})` : ''}
                     </Text>
@@ -159,7 +159,7 @@ export function AllFavouritesScreen() {
                 {activeTab === 'exercises' ? (
                     exerciseFavorites.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
+                            <Heart color="#7A7C90" size={48} style={{ marginBottom: 16 }} />
                             <Text style={styles.emptyText}>No favorite exercises yet.{'\n'}Tap ♡ on any video to save it.</Text>
                         </View>
                     ) : (
@@ -207,7 +207,7 @@ export function AllFavouritesScreen() {
                 ) : (
                     uniqueWorkoutFavorites.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Heart color="#607a94" size={48} style={{ marginBottom: 16 }} />
+                            <Heart color="#7A7C90" size={48} style={{ marginBottom: 16 }} />
                             <Text style={styles.emptyText}>No favorite workouts yet.{'\n'}Tap ♡ on any workout to save it.</Text>
                         </View>
                     ) : (
@@ -288,16 +288,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     backBtn: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 17,
         fontWeight: '600',
         width: 56,
     },
     headerTitle: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
         textAlign: 'center',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     },
     tabRow: {
         flexDirection: 'row',
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 12,
         padding: 4,
         marginHorizontal: 16,
@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#000000',
     },
     tabText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '500',
     },
     tabTextActive: {
-        color: '#ffffff',
+        color: '#fff',
         fontWeight: '700',
     },
     emptyState: {
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
     },
     emptyText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 15,
         textAlign: 'center',
         lineHeight: 22,
@@ -351,12 +351,12 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     sectionTitle: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 18,
         fontWeight: '700',
     },
     sectionCount: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '500',
     },

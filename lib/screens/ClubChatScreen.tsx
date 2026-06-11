@@ -18,12 +18,12 @@ import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { TierAvatar } from '../components/profile/TierAvatar';
 
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
-const MY_BUBBLE = '#E89951';
-const OTHER_BUBBLE = '#1A2332';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
+const MY_BUBBLE = '#F25912';
+const OTHER_BUBBLE = '#F8F8FC';
 
 interface ClubMessage {
   id: string;
@@ -165,7 +165,7 @@ export function ClubChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={22} color="#211832" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle} numberOfLines={1}>{clubName}</Text>
@@ -216,8 +216,8 @@ export function ClubChatScreen() {
             activeOpacity={0.85}
           >
             {sending
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Send size={18} color="#fff" />
+              ? <ActivityIndicator size="small" color="#211832" />
+              : <Send size={18} color="#211832" />
             }
           </TouchableOpacity>
         </View>
@@ -235,13 +235,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  headerTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
   headerSub: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -257,12 +257,12 @@ const styles = StyleSheet.create({
   msgAvatarSlot: { width: 32, marginRight: 6, alignItems: 'center', justifyContent: 'flex-end' },
   msgAvatar: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
   },
   msgAvatarImg: { width: 28, height: 28, borderRadius: 14 },
-  msgAvatarInitial: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  msgAvatarInitial: { color: '#211832', fontSize: 11, fontWeight: '700' },
 
   msgBubbleWrap: { maxWidth: '72%' },
   msgName: { color: TEXT_SECONDARY, fontSize: 11, marginBottom: 2, marginLeft: 4 },
@@ -280,10 +280,10 @@ const styles = StyleSheet.create({
     backgroundColor: OTHER_BUBBLE,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
   },
-  bubbleText: { color: '#94A3B8', fontSize: 14, lineHeight: 20 },
-  bubbleTextMe: { color: '#fff' },
+  bubbleText: { color: '#7A7C90', fontSize: 14, lineHeight: 20 },
+  bubbleTextMe: { color: '#211832' },
   msgTime: { color: 'rgba(148,163,184,0.5)', fontSize: 10, marginTop: 2, marginHorizontal: 4 },
 
   inputBar: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
+    borderTopColor: 'rgba(33,24,50,0.07)',
     backgroundColor: BG,
   },
   input: {
@@ -302,15 +302,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: '#fff',
+    color: '#211832',
     fontSize: 14,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     alignItems: 'center', justifyContent: 'center',
   },
   sendBtnDisabled: { opacity: 0.4 },

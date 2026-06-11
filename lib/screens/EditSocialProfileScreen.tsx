@@ -40,16 +40,16 @@ import {
 } from '../models/SocialProfile';
 
 const C = {
-    bg: '#070d1a',
-    bgCard: '#0f1923',
+    bg: '#EEEEF2',
+    bgCard: '#EEEEF2',
     bgInput: 'rgba(255,255,255,0.05)',
-    accent: '#ff7a00',
-    accentSoft: 'rgba(255,122,0,0.12)',
-    accentBorder: 'rgba(255,122,0,0.28)',
+    accent: '#F25912',
+    accentSoft: 'rgba(242,89,18,0.12)',
+    accentBorder: 'rgba(242,89,18,0.28)',
     green: '#22C55E',
     text: '#FFFFFF',
-    textMuted: '#94A3B8',
-    textDim: '#64748B',
+    textMuted: '#7A7C90',
+    textDim: '#7A7C90',
     border: 'rgba(255,255,255,0.08)',
 };
 
@@ -552,7 +552,7 @@ export function EditSocialProfileScreen() {
                     disabled={saving}
                     activeOpacity={0.82}
                 >
-                    {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.saveBtnText}>Save</Text>}
+                    {saving ? <ActivityIndicator size="small" color="#211832" /> : <Text style={s.saveBtnText}>Save</Text>}
                 </TouchableOpacity>
             </View>
 
@@ -578,7 +578,7 @@ export function EditSocialProfileScreen() {
                                 />
                                 {uploading && (
                                     <View style={s.uploadOverlay}>
-                                        <ActivityIndicator color="#fff" />
+                                        <ActivityIndicator color="#211832" />
                                         {uploadPct > 0 && <Text style={s.uploadText}>{uploadPct}%</Text>}
                                     </View>
                                 )}
@@ -836,7 +836,7 @@ export function EditSocialProfileScreen() {
                                 <Switch
                                     value={helpingBeginners}
                                     onValueChange={setHelpBeginners}
-                                    trackColor={{ false: '#2a3a4a', true: '#E89951' }}
+                                    trackColor={{ false: '#D8D8E4', true: '#F25912' }}
                                     thumbColor="#fff"
                                 />
                             </View>
@@ -854,7 +854,7 @@ export function EditSocialProfileScreen() {
                                             setAgeGroups(new Set(['seniors']));
                                         }
                                     }}
-                                    trackColor={{ false: '#2a3a4a', true: '#E89951' }}
+                                    trackColor={{ false: '#D8D8E4', true: '#F25912' }}
                                     thumbColor="#fff"
                                 />
                             </View>
@@ -883,7 +883,7 @@ export function EditSocialProfileScreen() {
                     disabled={saving}
                     activeOpacity={0.86}
                 >
-                    {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.bottomSaveText}>Save Profile</Text>}
+                    {saving ? <ActivityIndicator color="#211832" /> : <Text style={s.bottomSaveText}>Save Profile</Text>}
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -951,7 +951,7 @@ const s = StyleSheet.create({
         opacity: 0.62,
     },
     saveBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontWeight: '800',
         fontSize: 14,
     },
@@ -1123,7 +1123,7 @@ const s = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 9,
-        backgroundColor: 'rgba(255,122,0,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -1191,7 +1191,7 @@ const s = StyleSheet.create({
         borderColor: C.border,
     },
     pillActive: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderColor: C.accentBorder,
     },
     pillText: {
@@ -1200,7 +1200,7 @@ const s = StyleSheet.create({
         fontWeight: '700',
     },
     pillTextActive: {
-        color: '#E89951',
+        color: '#F25912',
         fontWeight: '800',
     },
     chipWrap: {
@@ -1266,10 +1266,10 @@ const s = StyleSheet.create({
         paddingVertical: 15,
         alignItems: 'center',
         marginTop: 8,
-        boxShadow: '0 12px 24px rgba(255,122,0,0.22)',
+        boxShadow: '0 12px 24px rgba(242,89,18,0.22)',
     },
     bottomSaveText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '900',
     },

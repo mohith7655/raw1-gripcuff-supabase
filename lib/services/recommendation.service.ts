@@ -19,10 +19,10 @@ const W = {
 
 // ── Category display metadata ──────────────────────────────────────────────────
 export const CAT_META: Record<string, { label: string; emoji: string; color: string }> = {
-    MuscleGrowth: { label: 'Muscle Growth', emoji: '💪', color: '#0f2a45' },
-    Stretching: { label: 'Stretching', emoji: '🧘', color: '#0f2a1a' },
-    AthleticPerformance: { label: 'Athletic Performance', emoji: '🏃', color: '#1e0f2e' },
-    InjuryRehab: { label: 'Injury Rehab', emoji: '🩹', color: '#2a1010' },
+    MuscleGrowth: { label: 'Muscle Growth', emoji: '💪', color: '#4A5568' },
+    Stretching: { label: 'Stretching', emoji: '🧘', color: '#7A8A8A' },
+    AthleticPerformance: { label: 'Athletic Performance', emoji: '🏃', color: '#8B7355' },
+    InjuryRehab: { label: 'Injury Rehab', emoji: '🩹', color: '#6B4226' },
 };
 
 // ── Internal types ─────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ function toRecommended(
     score: number,
     reason: string,
 ): RecommendedProgram {
-    const meta = CAT_META[catKey] ?? { label: catKey, emoji: '🏋️', color: '#1a2a3a' };
+    const meta = CAT_META[catKey] ?? { label: catKey, emoji: '🏋️', color: '#4A5568' };
     return {
         programId: prog.id,
         categoryKey: catKey,

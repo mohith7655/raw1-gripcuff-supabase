@@ -18,10 +18,10 @@ import {
     DailyReminderService,
 } from '../services/dailyReminder.service';
 
-const ACCENT = '#E89951';
-const BG = '#0d1825';
-const CARD = '#111d2e';
-const BORDER = 'rgba(232,153,81,0.2)';
+const ACCENT = '#F25912';
+const BG = '#EEEEF2';
+const CARD = '#F8F8FC';
+const BORDER = 'rgba(242,89,18,0.2)';
 
 const REMINDERS_PER_DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10];
 const INTERVAL_OPTIONS = [
@@ -72,19 +72,19 @@ function SpinnerField({
 
 const sp = StyleSheet.create({
     wrap: { alignItems: 'center', gap: 4 },
-    label: { color: '#4a6480', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 },
+    label: { color: '#7A7C90', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 },
     arrow: { padding: 4 },
     valueBox: {
         width: 56,
         height: 48,
-        backgroundColor: '#0a1628',
+        backgroundColor: '#EEEEF2',
         borderRadius: 10,
         borderWidth: 1,
         borderColor: BORDER,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    value: { color: '#fff', fontSize: 22, fontWeight: '800' },
+    value: { color: '#211832', fontSize: 22, fontWeight: '800' },
 });
 
 export function DailyReminderModal({ visible, userId, onClose, onSaved }: Props) {
@@ -145,7 +145,7 @@ export function DailyReminderModal({ visible, userId, onClose, onSaved }: Props)
                     <View style={s.header}>
                         <Text style={s.title}>Daily Reminder Schedule</Text>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <X color="#4a6480" size={22} />
+                            <X color="#7A7C90" size={22} />
                         </TouchableOpacity>
                     </View>
 
@@ -242,7 +242,7 @@ export function DailyReminderModal({ visible, userId, onClose, onSaved }: Props)
                                 activeOpacity={0.8}
                             >
                                 {saving
-                                    ? <ActivityIndicator color="#fff" size="small" />
+                                    ? <ActivityIndicator color="#211832" size="small" />
                                     : <Text style={s.saveBtnText}>Save Schedule</Text>
                                 }
                             </TouchableOpacity>
@@ -274,10 +274,10 @@ const s = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
     },
@@ -293,7 +293,7 @@ const s = StyleSheet.create({
         marginBottom: 18,
     },
     sectionLabel: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 0.7,
@@ -314,7 +314,7 @@ const s = StyleSheet.create({
         justifyContent: 'center',
     },
     colon: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 28,
         fontWeight: '800',
         marginBottom: 8,
@@ -329,7 +329,7 @@ const s = StyleSheet.create({
         justifyContent: 'center',
     },
     ampmText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '800',
     },
@@ -344,19 +344,19 @@ const s = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: CARD,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     chipActive: {
         backgroundColor: ACCENT,
         borderColor: ACCENT,
     },
     chipText: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '600',
     },
     chipTextActive: {
-        color: '#fff',
+        color: '#211832',
     },
     previewBox: {
         marginTop: 22,
@@ -367,7 +367,7 @@ const s = StyleSheet.create({
         padding: 16,
     },
     previewTitle: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 0.7,
@@ -383,7 +383,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 5,
@@ -401,7 +401,7 @@ const s = StyleSheet.create({
     },
     saveBtn: {
         marginTop: 24,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: 'center',
@@ -416,21 +416,21 @@ const s = StyleSheet.create({
         width: 50,
         height: 28,
         borderRadius: 14,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         justifyContent: 'center',
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: '#E89951',
-        borderColor: '#E89951',
+        backgroundColor: '#F25912',
+        borderColor: '#F25912',
     },
     toggleThumb: {
         width: 22,
         height: 22,
         borderRadius: 11,
-        backgroundColor: '#4a6480',
+        backgroundColor: '#7A7C90',
     },
     toggleThumbOn: {
         backgroundColor: '#fff',

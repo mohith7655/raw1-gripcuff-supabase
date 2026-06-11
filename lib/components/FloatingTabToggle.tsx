@@ -55,60 +55,52 @@ export function FloatingTabToggle({ activeTab, onTabChange, translateY, topOffse
       style={{
         position: 'absolute',
         top: topOffset,
-        left: 40,
-        right: 40,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
         transform: [{ translateY }],
         zIndex: 100,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.45,
-        shadowRadius: 12,
-        elevation: 12,
       }}
     >
+      {/* Compact pill — matches the Library Exercises/Workouts toggle */}
       <View style={{
         flexDirection: 'row',
-        backgroundColor: '#131f2e',
-        borderRadius: 30,
-        padding: 4,
+        backgroundColor: '#EEEEF2',
+        borderRadius: 100,
+        padding: 2,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: '#D8D8E4',
+        shadowColor: '#211832',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+        elevation: 6,
       }}>
         <TouchableOpacity
           style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingVertical: 10,
-            borderRadius: 26,
-            backgroundColor: activeTab === 'all' ? '#000000' : 'transparent',
+            paddingHorizontal: 22,
+            paddingVertical: 6,
+            borderRadius: 100,
+            backgroundColor: activeTab === 'all' ? '#211832' : 'transparent',
           }}
           onPress={() => onTabChange('all')}
           activeOpacity={0.8}
         >
-          <LayoutGrid size={13} color={activeTab === 'all' ? AppTheme.primaryColor : '#607a94'} />
-          <Text style={{ color: activeTab === 'all' ? '#fff' : '#607a94', fontSize: 12, fontWeight: activeTab === 'all' ? '700' : '500' }}>
+          <Text style={{ color: activeTab === 'all' ? '#fff' : '#7A7C90', fontSize: 12, fontWeight: '600' }}>
             Exercises
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingVertical: 10,
-            borderRadius: 26,
-            backgroundColor: activeTab === 'workouts' ? '#000000' : 'transparent',
+            paddingHorizontal: 22,
+            paddingVertical: 6,
+            borderRadius: 100,
+            backgroundColor: activeTab === 'workouts' ? '#211832' : 'transparent',
           }}
           onPress={() => onTabChange('workouts')}
           activeOpacity={0.8}
         >
-          <Dumbbell size={13} color={activeTab === 'workouts' ? AppTheme.primaryColor : '#607a94'} />
-          <Text style={{ color: activeTab === 'workouts' ? '#fff' : '#607a94', fontSize: 12, fontWeight: activeTab === 'workouts' ? '700' : '500' }}>
+          <Text style={{ color: activeTab === 'workouts' ? '#fff' : '#7A7C90', fontSize: 12, fontWeight: '600' }}>
             Workouts
           </Text>
         </TouchableOpacity>

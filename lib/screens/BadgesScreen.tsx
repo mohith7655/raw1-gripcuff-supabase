@@ -31,14 +31,14 @@ import { UserBadgeState } from '../services/badge.types';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
-  bg:     '#0d1520',
-  card:   '#111d2e',
+  bg:     '#EEEEF2',
+  card:   '#F8F8FC',
   border: 'rgba(255,255,255,0.07)',
   text:   '#ffffff',
-  muted:  '#607a94',
+  muted:  '#7A7C90',
 };
 
-const MYTHIC_COLORS = ['#E89951', '#8B5CF6', '#3B82F6', '#10B981', '#E89951'];
+const MYTHIC_COLORS = ['#F25912', '#8B5CF6', '#3B82F6', '#10B981', '#F25912'];
 
 // ── Mythic animated glow ──────────────────────────────────────────────────────
 function MythicGlow({ size }: { size: number }) {
@@ -60,7 +60,7 @@ function MythicGlow({ size }: { size: number }) {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: '#E89951',
+        backgroundColor: '#F25912',
         opacity,
         transform: [{ scale }],
       }}
@@ -96,7 +96,7 @@ function TierPips({ currentTier, family }: { currentTier: number; family: BadgeF
         return (
           <View key={t.tier} style={[s.pip, { backgroundColor: color }]}>
             {t.tier === 10 && earned && (
-              <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: 4, backgroundColor: '#E89951', opacity: 0.4 }]} />
+              <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: 4, backgroundColor: '#F25912', opacity: 0.4 }]} />
             )}
           </View>
         );
@@ -325,7 +325,7 @@ export function BadgesScreen() {
       <Text style={s.subtitle}>Evolve your badges by training harder</Text>
 
       {loading ? (
-        <ActivityIndicator color="#E89951" style={{ marginTop: 60 }} />
+        <ActivityIndicator color="#F25912" style={{ marginTop: 60 }} />
       ) : (
         <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
           {[...BADGE_FAMILIES]
@@ -430,7 +430,7 @@ const s = StyleSheet.create({
   earnedDot: { width: 8, height: 8, borderRadius: 4 },
 
   modalDismiss: {
-    marginTop: 20, backgroundColor: '#E89951',
+    marginTop: 20, backgroundColor: '#F25912',
     borderRadius: 14, paddingVertical: 14, alignItems: 'center',
   },
   modalDismissText: { color: '#fff', fontSize: 15, fontWeight: '700' },

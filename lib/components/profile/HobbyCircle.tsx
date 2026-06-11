@@ -16,7 +16,7 @@ export function HobbyCircle({ icon: Icon, label }: Props) {
   return (
     <View style={s.wrap}>
       <View style={s.circle}>
-        <Icon size={24} color="#ff7a00" strokeWidth={2} />
+        <Icon size={24} color="#F25912" strokeWidth={2} />
       </View>
       <Text style={s.label} numberOfLines={1}>{label}</Text>
     </View>
@@ -34,13 +34,13 @@ const s = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,122,0,0.5)',
-    backgroundColor: 'rgba(255,122,0,0.07)',
+    borderColor: 'rgba(242,89,18,0.5)',
+    backgroundColor: 'rgba(242,89,18,0.07)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    color: '#9ca3af',
+    color: '#7A7C90',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',

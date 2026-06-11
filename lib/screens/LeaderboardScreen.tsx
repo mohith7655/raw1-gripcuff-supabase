@@ -78,7 +78,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
     }, [isMe]);
 
     const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
-    const rankColor = index < 3 ? rankColors[index] : '#445566';
+    const rankColor = index < 3 ? rankColors[index] : '#D8D8E4';
     const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
     const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] });
 
@@ -128,7 +128,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
                 </Text>
             </View>
 
-            <Text style={[styles.scoreText, { color: (item.score || 0) > 0 ? '#E89951' : '#445566' }]}>
+            <Text style={[styles.scoreText, { color: (item.score || 0) > 0 ? '#F25912' : '#D8D8E4' }]}>
                 {formatWatchTime(item.score || 0)}
             </Text>
         </Animated.View>
@@ -277,7 +277,7 @@ export function LeaderboardScreen() {
                 />
             ) : (
                 (loading ? (
-                    <ActivityIndicator color="#E89951" style={{ marginTop: 40 }} />
+                    <ActivityIndicator color="#F25912" style={{ marginTop: 40 }} />
                 ) : users.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No users yet</Text>
@@ -385,7 +385,7 @@ function SelfStatsView({ profile, uid, weeklyTop, monthlyTop }: { profile: any; 
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0d1520' },
+    container: { flex: 1, backgroundColor: '#EEEEF2' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -393,24 +393,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 16,
     },
-    backBtn: { fontSize: 32, color: '#fff', fontWeight: '300', lineHeight: 36 },
-    title: { fontSize: 22, fontWeight: '700', color: '#fff' },
+    backBtn: { fontSize: 32, color: '#211832', fontWeight: '300', lineHeight: 36 },
+    title: { fontSize: 22, fontWeight: '700', color: '#211832' },
     tabs: {
         flexDirection: 'row',
         marginHorizontal: 16,
         marginBottom: 20,
-        backgroundColor: '#1e2d3d',
+        backgroundColor: '#F8F8FC',
         borderRadius: 12,
         padding: 4,
     },
     tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10 },
-    tabActive: { backgroundColor: '#E89951' },
-    tabText: { color: '#8899aa', fontSize: 13, fontWeight: '600' },
+    tabActive: { backgroundColor: '#F25912' },
+    tabText: { color: '#7A7C90', fontSize: 13, fontWeight: '600' },
     tabTextActive: { color: '#fff' },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#0f1923',
+        backgroundColor: '#EEEEF2',
         borderRadius: 14,
         paddingVertical: 12,
         paddingHorizontal: 14,
@@ -418,10 +418,10 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     rowHighlight: {
-        backgroundColor: '#1a1500',
+        backgroundColor: '#EEEEF2',
         borderWidth: 1.5,
-        borderColor: '#FF7A00',
-        shadowColor: '#FF7A00',
+        borderColor: '#F25912',
+        shadowColor: '#F25912',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.35,
         shadowRadius: 10,
@@ -439,13 +439,13 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     avatarImg: { width: 44, height: 44, borderRadius: 10 },
-    avatarLetter: { color: '#fff', fontSize: 18, fontWeight: '700' },
+    avatarLetter: { color: '#211832', fontSize: 18, fontWeight: '700' },
     infoCol: { flex: 1 },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    nameText: { color: '#fff', fontSize: 15, fontWeight: '600', flexShrink: 1 },
-    nameMeText: { color: '#FF7A00' },
+    nameText: { color: '#211832', fontSize: 15, fontWeight: '600', flexShrink: 1 },
+    nameMeText: { color: '#F25912' },
     youBadge: {
-        backgroundColor: '#FF7A00',
+        backgroundColor: '#F25912',
         borderRadius: 4,
         paddingHorizontal: 5,
         paddingVertical: 1,
@@ -462,31 +462,31 @@ const styles = StyleSheet.create({
         paddingHorizontal: 5, paddingVertical: 2,
     },
     badgePipText: { fontSize: 9, fontWeight: '700' },
-    subText: { color: '#8899aa', fontSize: 11, marginTop: 2 },
+    subText: { color: '#7A7C90', fontSize: 11, marginTop: 2 },
     scoreText: { fontSize: 13, fontWeight: '700', minWidth: 50, textAlign: 'right' },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    emptyText: { color: '#8899aa', fontSize: 15 },
+    emptyText: { color: '#7A7C90', fontSize: 15 },
     pinnedContainer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
         borderTopWidth: 1,
-        borderTopColor: 'rgba(232,153,81,0.25)',
+        borderTopColor: 'rgba(242,89,18,0.25)',
         paddingHorizontal: 16,
         paddingTop: 8,
         paddingBottom: 20,
     },
     pinnedLabel: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 10,
         fontWeight: '800',
         letterSpacing: 1,
         marginBottom: 6,
     },
     heroCard: {
-        backgroundColor: '#07121a',
+        backgroundColor: '#EEEEF2',
         borderRadius: 14,
         padding: 16,
         flexDirection: 'row',
@@ -495,15 +495,15 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     heroLeft: { flex: 1 },
-    heroLabel: { color: '#FFB88A', fontSize: 12, fontWeight: '700', marginBottom: 6 },
-    heroTime: { color: '#FF7A00', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
-    heroSub: { color: '#8899aa', fontSize: 12, marginTop: 6 },
+    heroLabel: { color: '#F25912', fontSize: 12, fontWeight: '700', marginBottom: 6 },
+    heroTime: { color: '#F25912', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
+    heroSub: { color: '#7A7C90', fontSize: 12, marginTop: 6 },
     heroRight: { width: 86, height: 86, alignItems: 'center', justifyContent: 'center' },
-    ringPlaceholder: { width: 80, height: 80, borderRadius: 40, borderWidth: 8, borderColor: 'rgba(255,122,0,0.35)' },
+    ringPlaceholder: { width: 80, height: 80, borderRadius: 40, borderWidth: 8, borderColor: 'rgba(242,89,18,0.35)' },
 
     statRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-    statCard: { flex: 1, backgroundColor: '#07121a', padding: 12, borderRadius: 12, alignItems: 'center' },
-    statLabel: { color: '#8899aa', fontSize: 12, fontWeight: '700' },
-    statValue: { color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 6 },
-    insightText: { color: '#FFB88A', marginTop: 6, fontWeight: '600' },
+    statCard: { flex: 1, backgroundColor: '#EEEEF2', padding: 12, borderRadius: 12, alignItems: 'center' },
+    statLabel: { color: '#7A7C90', fontSize: 12, fontWeight: '700' },
+    statValue: { color: '#211832', fontSize: 16, fontWeight: '800', marginTop: 6 },
+    insightText: { color: '#F25912', marginTop: 6, fontWeight: '600' },
 });

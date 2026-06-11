@@ -405,7 +405,7 @@ export const BookingBottomSheet: React.FC<BookingBottomSheetProps> = ({
                         activeOpacity={0.8}
                     >
                         {submitting ? (
-                            <ActivityIndicator color="#fff" />
+                            <ActivityIndicator color="#211832" />
                         ) : (
                             <Text style={styles.confirmButtonText}>Confirm Booking</Text>
                         )}
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
         color: CoachingTheme.textGrey,
     },
     chipTextActive: {
-        color: '#fff',
+        color: '#211832',
     },
 
     /* ── Date Chips ── */
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
         opacity: 0.45,
     },
     confirmButtonText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: FontSizes.h5,
         fontWeight: FontWeights.bold as any,
     },

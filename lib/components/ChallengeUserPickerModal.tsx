@@ -11,9 +11,9 @@ import { ChallengeSessionService } from '../services/challengeSession.service';
 import { NotificationService } from '../services/notification.service';
 import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 
-const ACCENT = '#E89951';
-const BG     = '#0d1825';
-const CARD   = '#111d2e';
+const ACCENT = '#F25912';
+const BG     = '#EEEEF2';
+const CARD   = '#F8F8FC';
 
 interface Props {
     visible: boolean;
@@ -90,13 +90,13 @@ export function ChallengeUserPickerModal({
                             <Text style={s.subtitle}>{exerciseName} · {workoutDurationSecs / 60} min</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <X color="#4a6480" size={22} />
+                            <X color="#7A7C90" size={22} />
                         </TouchableOpacity>
                     </View>
 
                     {friends.length === 0 ? (
                         <View style={s.empty}>
-                            <CircleUserRound color="#2a4060" size={48} strokeWidth={1.2} />
+                            <CircleUserRound color="#D8D8E4" size={48} strokeWidth={1.2} />
                             <Text style={s.emptyText}>No friends yet</Text>
                             <Text style={s.emptyHint}>Add friends to challenge them to a workout</Text>
                         </View>
@@ -125,10 +125,10 @@ export function ChallengeUserPickerModal({
                                         activeOpacity={0.8}
                                     >
                                         {loadingUid === friend.uid ? (
-                                            <ActivityIndicator color="#fff" size="small" />
+                                            <ActivityIndicator color="#211832" size="small" />
                                         ) : (
                                             <>
-                                                <Zap color="#fff" size={13} />
+                                                <Zap color="#211832" size={13} />
                                                 <Text style={s.challengeBtnText}>Challenge</Text>
                                             </>
                                         )}
@@ -159,9 +159,9 @@ const s = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 18,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
-    title: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    title: { color: '#211832', fontSize: 17, fontWeight: '700' },
     subtitle: { color: 'rgba(150,180,210,0.6)', fontSize: 12, marginTop: 3 },
     list: { paddingHorizontal: 16, paddingTop: 12, gap: 4 },
     row: {
@@ -170,24 +170,24 @@ const s = StyleSheet.create({
         paddingVertical: 10,
         gap: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     avatar: { width: 44, height: 44, borderRadius: 10 },
     avatarFallback: {
         backgroundColor: CARD,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     rowInfo: { flex: 1 },
-    rowName: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    rowName: { color: '#211832', fontSize: 14, fontWeight: '600' },
     rowStreak: { color: 'rgba(150,180,210,0.5)', fontSize: 12, marginTop: 2 },
     challengeBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 8,
@@ -196,6 +196,6 @@ const s = StyleSheet.create({
     },
     challengeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 10 },
-    emptyText: { color: '#2a4060', fontSize: 16, fontWeight: '600' },
-    emptyHint: { color: '#1a2e42', fontSize: 13, textAlign: 'center', paddingHorizontal: 32 },
+    emptyText: { color: '#D8D8E4', fontSize: 16, fontWeight: '600' },
+    emptyHint: { color: '#F8F8FC', fontSize: 13, textAlign: 'center', paddingHorizontal: 32 },
 });

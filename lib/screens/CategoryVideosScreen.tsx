@@ -192,9 +192,9 @@ export const CategoryVideosScreen = () => {
                                 }}
                             >
                                 <View style={introStyles.thumbnail}>
-                                    <BookOpen color="#E89951" size={26} />
+                                    <BookOpen color="#F25912" size={26} />
                                     <View style={introStyles.badge}>
-                                        <Lock color="#E89951" size={9} />
+                                        <Lock color="#F25912" size={9} />
                                         <Text style={introStyles.badgeText}>MANDATORY</Text>
                                     </View>
                                     <View style={introStyles.durationBadge}>
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SCREEN_PADDING,
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
         marginBottom: 4,
     },
     subtitleText: { color: AppTheme.textGrey, fontSize: 13 },
@@ -281,9 +281,9 @@ const introStyles = StyleSheet.create({
         width: '100%',
         aspectRatio: 16 / 9,
         borderRadius: 12,
-        backgroundColor: '#1a1a2e',
+        backgroundColor: '#F8F8FC',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.3)',
+        borderColor: 'rgba(242,89,18,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 6,
@@ -296,16 +296,16 @@ const introStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         paddingHorizontal: 6,
         paddingVertical: 3,
         borderRadius: 4,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.4)',
+        borderColor: 'rgba(242,89,18,0.4)',
     },
     badgeText: {
         fontSize: 9,
-        color: '#E89951',
+        color: '#F25912',
         fontWeight: '700',
         letterSpacing: 0.5,
     },
@@ -323,7 +323,7 @@ const introStyles = StyleSheet.create({
         fontSize: 10,
     },
     label: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 12,
         fontWeight: '600',
         marginTop: 8,

@@ -19,10 +19,10 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { useAuth } from '../../providers/AuthContext';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const RED = '#ef4444';
 
 const CATEGORIES = ['Walking', 'Jogging', 'Running', 'Stretching', 'Injury Rehab', 'Yoga', 'Pilates', 'Swimming', 'Cycling', 'CrossFit', 'Calisthenics', 'Martial Arts', 'Weight Lifting'];
@@ -127,7 +127,7 @@ function AgeRangeSlider({
 const sliderStyles = StyleSheet.create({
   wrapper: { marginTop: 8 },
   labelRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginBottom: 14 },
-  labelVal: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  labelVal: { color: '#211832', fontSize: 20, fontWeight: '800' },
   labelSep: { color: TEXT_SECONDARY, fontSize: 16 },
   labelUnit: { color: TEXT_SECONDARY, fontSize: 13, marginLeft: 2 },
   trackArea: {
@@ -194,15 +194,15 @@ function LocationCard({ loc, onRemove }: { loc: ClubLocation; onRemove: () => vo
 
 const locStyles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(232,153,81,0.07)',
+    backgroundColor: 'rgba(242,89,18,0.07)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.2)',
+    borderColor: 'rgba(242,89,18,0.2)',
     padding: 12,
     marginTop: 12,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  cardLabel: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '700' },
+  cardLabel: { flex: 1, color: '#211832', fontSize: 14, fontWeight: '700' },
   cardAddress: { color: TEXT_SECONDARY, fontSize: 12, marginBottom: 10 },
   mapWrap: { height: 160, borderRadius: 8, overflow: 'hidden' } as any,
 });
@@ -367,7 +367,7 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
             activeOpacity={0.85}
           >
             {creating
-              ? <ActivityIndicator size="small" color="#fff" />
+              ? <ActivityIndicator size="small" color="#211832" />
               : <Text style={styles.createBtnText}>Create</Text>
             }
           </TouchableOpacity>
@@ -466,7 +466,7 @@ export function CreateClubModal({ visible, onClose, onCreated }: CreateClubModal
             <View style={styles.addLocationBlock}>
               <View style={styles.addLocationRow}>
                 <View style={styles.addLocationIconWrap}>
-                  <Plus size={16} color="#fff" />
+                  <Plus size={16} color="#211832" />
                 </View>
                 <Text style={styles.addLocationLabel}>Add location</Text>
               </View>
@@ -531,13 +531,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   headerBtn: { minWidth: 60 },
   cancelText: { color: TEXT_SECONDARY, fontSize: 15 },
-  headerTitle: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  headerTitle: { color: '#211832', fontSize: 17, fontWeight: '800' },
   createBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: {
     width: 90, height: 90, borderRadius: 45,
     backgroundColor: CARD_BG,
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)', borderStyle: 'dashed',
+    borderWidth: 2, borderColor: 'rgba(33,24,50,0.1)', borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center', gap: 4,
   },
   avatarPlaceholderText: { color: TEXT_SECONDARY, fontSize: 11 },
@@ -568,10 +568,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   charCount: { color: TEXT_SECONDARY, fontSize: 11, textAlign: 'right' },
@@ -579,15 +579,15 @@ const styles = StyleSheet.create({
   categoryRow: { marginBottom: 4 },
   categoryPill: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: CARD_BG, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginRight: 8,
+    backgroundColor: CARD_BG, borderWidth: 1, borderColor: 'rgba(33,24,50,0.08)', marginRight: 8,
   },
-  categoryPillActive: { backgroundColor: '#E89951', borderColor: '#E89951' },
+  categoryPillActive: { backgroundColor: '#F25912', borderColor: '#F25912' },
   categoryPillText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
   categoryPillTextActive: { color: '#fff' },
 
   sectionCard: {
     backgroundColor: CARD_BG, borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.08)',
     paddingHorizontal: 16, paddingVertical: 16,
   },
 
@@ -637,32 +637,32 @@ const styles = StyleSheet.create({
     backgroundColor: CARD_BG,
     borderRadius: 10,
     paddingHorizontal: 14,
-    color: '#fff',
+    color: '#211832',
     fontSize: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
     height: 44,
     outlineStyle: 'none',
   } as any,
   placesListView: {
-    backgroundColor: '#1a2740',
+    backgroundColor: '#F8F8FC',
     borderRadius: 10,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#1e2d40',
+    borderColor: '#F8F8FC',
     zIndex: 200,
     boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
   } as any,
   placesRow: { backgroundColor: 'transparent', paddingVertical: 12, paddingHorizontal: 14 },
-  placesDescription: { color: '#fff', fontSize: 14 },
-  placesSeparator: { height: 1, backgroundColor: '#1e2d40' },
+  placesDescription: { color: '#211832', fontSize: 14 },
+  placesSeparator: { height: 1, backgroundColor: '#F8F8FC' },
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
     backgroundColor: CARD_BG, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 12,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.08)',
   },
-  toggleLabel: { flex: 1, color: '#fff', fontSize: 15 },
+  toggleLabel: { flex: 1, color: '#211832', fontSize: 15 },
   errorText: { color: RED, fontSize: 13, marginTop: 12, textAlign: 'center' },
 });

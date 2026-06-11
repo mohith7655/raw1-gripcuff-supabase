@@ -91,7 +91,7 @@ const s = StyleSheet.create({
         marginTop: 20,
     },
     header: {
-        color: '#2a4060',
+        color: '#D8D8E4',
         fontSize: 10,
         fontWeight: '800',
         letterSpacing: 0.8,
@@ -102,10 +102,10 @@ const s = StyleSheet.create({
     card: {
         flexDirection: 'row',
         alignItems: 'stretch',
-        backgroundColor: '#071120',
+        backgroundColor: '#EEEEF2',
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         overflow: 'hidden',
     },
     divider: {
@@ -114,7 +114,7 @@ const s = StyleSheet.create({
         marginVertical: 12,
     },
     footer: {
-        color: '#2a4060',
+        color: '#D8D8E4',
         fontSize: 11,
         fontWeight: '600',
         textAlign: 'center',

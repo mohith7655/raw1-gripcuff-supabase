@@ -48,18 +48,18 @@ import {
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
-  bg:           '#0d1520',
-  bgCard:       '#0f1923',
+  bg:           '#EEEEF2',
+  bgCard:       '#EEEEF2',
   bgInput:      'rgba(255,255,255,0.05)',
-  orange:       '#ff7a00',
-  accentSoft:   'rgba(255,122,0,0.12)',
-  accentBorder: 'rgba(255,122,0,0.28)',
+  orange:       '#F25912',
+  accentSoft:   'rgba(242,89,18,0.12)',
+  accentBorder: 'rgba(242,89,18,0.28)',
   green:        '#22c55e',
   greenSoft:    'rgba(34,197,94,0.1)',
   greenBorder:  'rgba(34,197,94,0.28)',
   text:         '#ffffff',
-  muted:        '#94a3b8',
-  dim:          '#64748b',
+  muted:        '#7A7C90',
+  dim:          '#7A7C90',
   border:       'rgba(255,255,255,0.08)',
 };
 
@@ -200,7 +200,7 @@ export function LookingToMeetEditScreen() {
           disabled={saving}
         >
           {saving
-            ? <ActivityIndicator size="small" color="#fff" />
+            ? <ActivityIndicator size="small" color="#211832" />
             : <Text style={s.saveBtnText}>Save</Text>
           }
         </TouchableOpacity>
@@ -342,7 +342,7 @@ export function LookingToMeetEditScreen() {
           activeOpacity={0.86}
         >
           {saving
-            ? <ActivityIndicator color="#fff" />
+            ? <ActivityIndicator color="#211832" />
             : <Text style={s.bottomSaveText}>Save</Text>
           }
         </TouchableOpacity>
@@ -372,7 +372,7 @@ const s = StyleSheet.create({
     backgroundColor: C.orange, borderRadius: 10,
     paddingVertical: 7, paddingHorizontal: 16,
   },
-  saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  saveBtnText: { color: '#211832', fontWeight: '800', fontSize: 14 },
 
   scroll: {
     paddingHorizontal: 16,
@@ -462,7 +462,7 @@ const s = StyleSheet.create({
     ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   gaList: {
-    backgroundColor: '#132231',
+    backgroundColor: '#EEEEF2',
     borderRadius: 12,
     marginTop: 6,
     borderWidth: 1,
@@ -507,5 +507,5 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  bottomSaveText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+  bottomSaveText: { color: '#211832', fontSize: 16, fontWeight: '900' },
 });

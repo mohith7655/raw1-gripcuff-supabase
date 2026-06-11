@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 import { ALL_BADGES, Badge } from '../../services/rewards.service';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 
 type Props = {
     visible: boolean;
@@ -111,16 +111,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
     },
     sheet: {
-        backgroundColor: '#111d2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 24,
         padding: 28,
         alignItems: 'center',
         width: '100%',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.3)',
+        borderColor: 'rgba(242,89,18,0.3)',
     },
     headline: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 20,
         fontWeight: '800',
         marginBottom: 24,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
         width: 88,
         height: 88,
         borderRadius: 44,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderWidth: 2,
         borderColor: ACCENT,
         justifyContent: 'center',
@@ -146,24 +146,24 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     badgeEmoji: { fontSize: 40 },
-    badgeLabel: { color: '#ffffff', fontSize: 18, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
-    badgeDesc: { color: '#607a94', fontSize: 13, textAlign: 'center', marginBottom: 12 },
+    badgeLabel: { color: '#211832', fontSize: 18, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
+    badgeDesc: { color: '#7A7C90', fontSize: 13, textAlign: 'center', marginBottom: 12 },
     creditPill: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 6,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.4)',
+        borderColor: 'rgba(242,89,18,0.4)',
     },
     creditPillText: { color: ACCENT, fontSize: 14, fontWeight: '700' },
-    extraBadges: { color: '#8aaccc', fontSize: 13, marginBottom: 16 },
+    extraBadges: { color: '#7A7C90', fontSize: 13, marginBottom: 16 },
     dismissBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 48,
         marginTop: 8,
     },
-    dismissText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+    dismissText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

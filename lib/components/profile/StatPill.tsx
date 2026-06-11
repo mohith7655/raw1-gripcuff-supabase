@@ -6,10 +6,10 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Flame, Dumbbell, Trophy } from 'lucide-react-native';
 
-const ORANGE = '#ff7a00';
-const TEXT   = '#ffffff';
-const MUTED  = '#9ca3af';
-const BORDER = 'rgba(255,255,255,0.06)';
+const ORANGE = '#F25912';
+const TEXT   = '#211832';
+const MUTED  = '#7A7C90';
+const BORDER = 'rgba(33,24,50,0.06)';
 
 interface Props {
   streak: number;
@@ -51,7 +51,7 @@ export function StatPill({ streak, workouts, prs }: Props) {
 const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#F8F8FC',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: BORDER,

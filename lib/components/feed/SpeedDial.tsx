@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { Plus, Pencil, Image as ImageIcon, Video } from 'lucide-react-native';
 
-const ORANGE = '#E89951';
-const PILL_BG = '#1A2332';
+const ORANGE = '#F25912';
+const PILL_BG = '#F8F8FC';
 const FAB_SIZE = 54;
 const PILL_STEP = 70;
 
@@ -130,7 +130,7 @@ export function SpeedDial({ onSelect }: SpeedDialProps) {
                 >
                   <Text style={styles.pillLabel}>{opt.label}</Text>
                   <View style={styles.iconCircle}>
-                    <opt.Icon size={18} color="#fff" />
+                    <opt.Icon size={18} color="#211832" />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -141,7 +141,7 @@ export function SpeedDial({ onSelect }: SpeedDialProps) {
         {/* FAB */}
         <TouchableOpacity style={styles.fab} onPress={handleFabPress} activeOpacity={0.88}>
           <Animated.View style={{ transform: [{ rotate }] }}>
-            <Plus size={26} color="#fff" />
+            <Plus size={26} color="#211832" />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: PILL_BG,
     borderRadius: 50,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
     paddingVertical: 10,
     paddingLeft: 14,
     paddingRight: 10,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   pillLabel: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     fontWeight: '500',
   },

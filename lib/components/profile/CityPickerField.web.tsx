@@ -63,7 +63,7 @@ export function CityPickerField({ value, onChange }: Props) {
                     separator: styles.separator,
                 }}
                 textInputProps={{
-                    placeholderTextColor: '#6B7280',
+                    placeholderTextColor: '#7A7C90',
                     autoCorrect: false,
                     autoCapitalize: 'none',
                 }}
@@ -72,7 +72,7 @@ export function CityPickerField({ value, onChange }: Props) {
             />
             {!!value && (
                 <View style={styles.selected}>
-                    <MapPin color="#E89951" size={14} />
+                    <MapPin color="#F25912" size={14} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.selectedTitle} numberOfLines={1}>{value.city}</Text>
                         <Text style={styles.selectedSub} numberOfLines={1}>
@@ -102,21 +102,21 @@ const styles = StyleSheet.create({
     },
     input: {
         height: 44,
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 10,
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         paddingHorizontal: 14,
         borderWidth: 1,
-        borderColor: '#1e2d40',
+        borderColor: '#F8F8FC',
         outlineStyle: 'none',
     } as any,
     listView: {
-        backgroundColor: '#1a2740',
+        backgroundColor: '#F8F8FC',
         borderRadius: 10,
         marginTop: 6,
         borderWidth: 1,
-        borderColor: '#1e2d40',
+        borderColor: '#F8F8FC',
         zIndex: 9999,
         boxShadow: '0 14px 28px rgba(0,0,0,0.22)',
     } as any,
@@ -126,12 +126,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
     },
     description: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
     },
     separator: {
         height: 1,
-        backgroundColor: '#1e2d40',
+        backgroundColor: '#F8F8FC',
     },
     selected: {
         flexDirection: 'row',
@@ -140,18 +140,18 @@ const styles = StyleSheet.create({
         marginTop: 8,
         paddingHorizontal: 10,
         paddingVertical: 8,
-        backgroundColor: 'rgba(232,153,81,0.11)',
+        backgroundColor: 'rgba(242,89,18,0.11)',
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.24)',
+        borderColor: 'rgba(242,89,18,0.24)',
     },
     selectedTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 13,
         fontWeight: '700',
     },
     selectedSub: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 11,
         marginTop: 1,
     },

@@ -24,6 +24,8 @@ interface Props {
     badgeBorderColor?: string;
     /** Opt out of the tap-to-open-profile behaviour (e.g. own avatar in editors). */
     disableProfileLink?: boolean;
+    /** Render just the picture — no tier ring dots and no corner number badge. */
+    bare?: boolean;
 }
 
 function initialsOf(name?: string | null): string {
@@ -39,7 +41,7 @@ function initialsOf(name?: string | null): string {
  * on the segments the user has activated (via accessType).
  */
 export function TierAvatar({
-    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink,
+    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink, bare,
 }: Props) {
     const navigation = useNavigation<any>();
     const r = radius ?? Math.round(size * 0.22);
@@ -51,11 +53,11 @@ export function TierAvatar({
     const defaultFallback = (
         <View style={{
             width: size, height: size, borderRadius: r,
-            backgroundColor: 'rgba(232,153,81,0.16)',
+            backgroundColor: 'rgba(242,89,18,0.16)',
             alignItems: 'center', justifyContent: 'center',
         }}>
             {initialsOf(name) ? (
-                <Text style={{ color: '#E89951', fontWeight: '800', fontSize: Math.round(size * 0.4) }}>
+                <Text style={{ color: '#F25912', fontWeight: '800', fontSize: Math.round(size * 0.4) }}>
                     {initialsOf(name)}
                 </Text>
             ) : (
@@ -64,7 +66,16 @@ export function TierAvatar({
         </View>
     );
 
-    const content = (
+    const avatar = (
+        <WebSafeAvatar
+            uri={uri}
+            size={size}
+            borderRadius={r}
+            fallback={fallback ?? defaultFallback}
+        />
+    );
+
+    const content = bare ? avatar : (
         <TierAvatarRing
             accessType={tier}
             avatarSize={size}
@@ -72,12 +83,7 @@ export function TierAvatar({
             showBadge={showBadge}
             badgeBorderColor={badgeBorderColor}
         >
-            <WebSafeAvatar
-                uri={uri}
-                size={size}
-                borderRadius={r}
-                fallback={fallback ?? defaultFallback}
-            />
+            {avatar}
         </TierAvatarRing>
     );
 

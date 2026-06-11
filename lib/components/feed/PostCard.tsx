@@ -19,9 +19,9 @@ import { TierAvatar } from '../profile/TierAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
-const ORANGE = '#E89951';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -51,7 +51,7 @@ function MediaGrid({ media }: MediaGridProps) {
         <View style={styles.mediaFull}>
           <Image source={{ uri: item.media_url }} style={styles.mediaFull} resizeMode="cover" />
           <View style={styles.playOverlay}>
-            <Play size={40} color="#fff" fill="#fff" />
+            <Play size={40} color="#211832" fill="#211832" />
           </View>
         </View>
       );
@@ -219,7 +219,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
     ? [
         {
           label: 'Edit tweet',
-          icon: <Pencil size={18} color="#E89951" />,
+          icon: <Pencil size={18} color="#F25912" />,
           onPress: () => setEditTweetVisible(true),
         },
         {
@@ -230,7 +230,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
         },
         {
           label: 'Cancel',
-          icon: <X size={18} color="#94A3B8" />,
+          icon: <X size={18} color="#7A7C90" />,
           cancel: true,
           onPress: () => {},
         },
@@ -238,7 +238,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
     : [
         {
           label: 'Edit caption',
-          icon: <Pencil size={18} color="#E89951" />,
+          icon: <Pencil size={18} color="#F25912" />,
           onPress: () => setEditPostVisible(true),
         },
         {
@@ -249,7 +249,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
         },
         {
           label: 'Cancel',
-          icon: <X size={18} color="#94A3B8" />,
+          icon: <X size={18} color="#7A7C90" />,
           cancel: true,
           onPress: () => {},
         },
@@ -302,7 +302,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
                   activeOpacity={0.7}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MoreHorizontal size={16} color="#94A3B8" />
+                  <MoreHorizontal size={16} color="#7A7C90" />
                 </TouchableOpacity>
               )}
             </View>
@@ -348,7 +348,7 @@ export function PostCard({ post, onLike, onComment, onDelete, onUpdate }: PostCa
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <MoreHorizontal size={20} color="#94A3B8" />
+            <MoreHorizontal size={20} color="#7A7C90" />
           </TouchableOpacity>
         )}
       </View>
@@ -406,25 +406,25 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarImg: { width: 38, height: 38, borderRadius: 8 },
-  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  displayName: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  avatarInitial: { color: '#211832', fontSize: 16, fontWeight: '700' },
+  displayName: { color: '#211832', fontSize: 14, fontWeight: '700' },
   timestamp: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
 
   captionWrap: { paddingHorizontal: 12, paddingBottom: 10 },
-  caption: { color: '#E2E8F0', fontSize: 14, lineHeight: 20 },
+  caption: { color: '#211832', fontSize: 14, lineHeight: 20 },
   more: { color: ORANGE, fontSize: 14, fontWeight: '600', marginTop: 2 },
 
   mediaWrap: { width: '100%' },
   mediaFull: {
     width: CARD_WIDTH,
     height: mediaFullHeight,
-    backgroundColor: '#0d1825',
+    backgroundColor: '#EEEEF2',
   },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   mediaHalf: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: '#0d1825',
+    backgroundColor: '#EEEEF2',
   },
   mediaMosaic: {
     flexDirection: 'row',
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 2,
     overflow: 'hidden',
-    backgroundColor: '#0d1825',
+    backgroundColor: '#EEEEF2',
   },
   mosaicRight: {
     flex: 1,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   mosaicSmall: {
     width: '100%',
     overflow: 'hidden',
-    backgroundColor: '#0d1825',
+    backgroundColor: '#EEEEF2',
   },
 
   linkCard: {
@@ -468,17 +468,17 @@ const styles = StyleSheet.create({
     gap: 10,
     marginHorizontal: 12,
     marginBottom: 10,
-    backgroundColor: '#0F1923',
+    backgroundColor: '#EEEEF2',
     borderRadius: 8,
     padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.2)',
+    borderColor: 'rgba(242,89,18,0.2)',
   },
   linkIcon: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(232,153,81,0.15)',
+    backgroundColor: 'rgba(242,89,18,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(33,24,50,0.06)',
     gap: 20,
   },
   actionBtn: {
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   actionCountActive: { color: ORANGE },
   mention: { color: ORANGE, fontWeight: '500' },
   menuBtn: { padding: 4, marginLeft: 4 },
-  editedLabel: { color: '#94A3B8', fontSize: 11 },
+  editedLabel: { color: '#7A7C90', fontSize: 11 },
 
   // Tweet layout
   tweetCard: {
@@ -524,13 +524,13 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarSmImg: { width: 34, height: 34, borderRadius: 17 },
-  avatarSmInitial: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  avatarSmInitial: { color: '#211832', fontSize: 13, fontWeight: '700' },
   tweetMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -539,5 +539,5 @@ const styles = StyleSheet.create({
   },
   tweetDot: { color: TEXT_SECONDARY, fontSize: 14 },
   tweetCaptionWrap: { marginBottom: 8 },
-  tweetCaption: { color: '#E2E8F0', fontSize: 15, lineHeight: 22 },
+  tweetCaption: { color: '#211832', fontSize: 15, lineHeight: 22 },
 });

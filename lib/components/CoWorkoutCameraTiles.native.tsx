@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     placeholder: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(33,24,50,0.5)',
         fontSize: 14,
         textAlign: 'center',
     },

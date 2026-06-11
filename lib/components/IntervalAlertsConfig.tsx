@@ -12,7 +12,7 @@ import {
 import { Bell } from 'lucide-react-native';
 import { IntervalAlertConfig, INTERVAL_PRESETS, MESSAGE_PRESETS } from '../hooks/useIntervalAlerts';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER = 'rgba(255,255,255,0.1)';
 
@@ -91,8 +91,8 @@ export function IntervalAlertsConfig({ value, onChange, compact = false }: Props
                 <Switch
                     value={value.enabled}
                     onValueChange={v => update({ enabled: v })}
-                    trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
-                    thumbColor={value.enabled ? ACCENT : '#94A3B8'}
+                    trackColor={{ false: '#D8D8E4', true: 'rgba(242,89,18,0.4)' }}
+                    thumbColor={value.enabled ? ACCENT : '#7A7C90'}
                 />
             </View>
 
@@ -227,8 +227,8 @@ function ToggleRow({
             <Switch
                 value={value}
                 onValueChange={onToggle}
-                trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
-                thumbColor={value ? ACCENT : '#94A3B8'}
+                trackColor={{ false: '#D8D8E4', true: 'rgba(242,89,18,0.4)' }}
+                thumbColor={value ? ACCENT : '#7A7C90'}
             />
         </View>
     );
@@ -243,9 +243,9 @@ const s = StyleSheet.create({
     headerRow: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
     },
-    heading: { color: '#fff', fontSize: 15, fontWeight: '700', flex: 1 },
+    heading: { color: '#211832', fontSize: 15, fontWeight: '700', flex: 1 },
     label: {
-        color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '600',
+        color: 'rgba(33,24,50,0.45)', fontSize: 11, fontWeight: '600',
         letterSpacing: 0.5, textTransform: 'uppercase',
         marginTop: 14, marginBottom: 8,
     },
@@ -254,21 +254,21 @@ const s = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
-    chipTxt: { color: '#9CA3AF', fontSize: 13, fontWeight: '600' },
+    chipActive: { backgroundColor: 'rgba(242,89,18,0.15)', borderColor: ACCENT },
+    chipTxt: { color: '#7A7C90', fontSize: 13, fontWeight: '600' },
     chipTxtActive: { color: ACCENT },
     msgList: { gap: 6 },
     msgChip: {
         paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    msgChipActive: { backgroundColor: 'rgba(232,153,81,0.1)', borderColor: ACCENT },
-    msgTxt: { color: '#9CA3AF', fontSize: 13 },
-    msgTxtActive: { color: '#fff' },
+    msgChipActive: { backgroundColor: 'rgba(242,89,18,0.1)', borderColor: ACCENT },
+    msgTxt: { color: '#7A7C90', fontSize: 13 },
+    msgTxtActive: { color: '#211832' },
     customInput: {
         marginTop: 8, backgroundColor: SURFACE, borderRadius: 12,
         borderWidth: 1, borderColor: BORDER,
-        color: '#fff', fontSize: 15, paddingHorizontal: 14, paddingVertical: 12,
+        color: '#211832', fontSize: 15, paddingHorizontal: 14, paddingVertical: 12,
     },
     infoBox: {
         marginTop: 12, padding: 10, borderRadius: 10,
@@ -279,7 +279,7 @@ const s = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center',
         paddingVertical: 10,
     },
-    toggleLabel: { color: '#fff', fontSize: 14, fontWeight: '500', marginBottom: 2 },
-    toggleSub: { color: '#6B7280', fontSize: 12 },
+    toggleLabel: { color: '#211832', fontSize: 14, fontWeight: '500', marginBottom: 2 },
+    toggleSub: { color: '#7A7C90', fontSize: 12 },
     compactBody: { paddingLeft: 4, marginTop: 4 },
 });

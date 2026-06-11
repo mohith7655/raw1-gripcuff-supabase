@@ -476,7 +476,7 @@ export const AccountSettingsScreen = () => {
                 <View style={styles.saveArea}>
                     <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
                         {saving
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color="#211832" />
                             : <Text style={styles.saveButtonText}>Save Changes</Text>
                         }
                     </TouchableOpacity>
@@ -496,7 +496,7 @@ export const AccountSettingsScreen = () => {
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SCREEN_PADDING,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     backButton: {
         width: 40,
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: AppTheme.cardColor,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: 'rgba(228,102,0,0.3)',
+        borderWidth: 2, borderColor: 'rgba(242,89,18,0.3)',
     },
     avatarOverlay: {
         position: 'absolute',
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8, paddingHorizontal: 14,
         borderRadius: 20,
         backgroundColor: AppTheme.cardColor,
-        borderWidth: 1, borderColor: 'rgba(228,102,0,0.3)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.3)',
     },
     avatarBtnDanger: {
         borderColor: 'rgba(255,82,82,0.3)',
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
         padding: 20,
         marginBottom: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: 'rgba(33,24,50,0.07)',
     } as any,
     locationCard: {
         zIndex: 9999,
@@ -613,14 +613,14 @@ const styles = StyleSheet.create({
         color: AppTheme.textWhite,
         marginBottom: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     usernameRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderRadius: 10,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.1)',
         marginBottom: 14, paddingLeft: 14,
     },
     atPrefix: {
@@ -639,14 +639,14 @@ const styles = StyleSheet.create({
         paddingVertical: 9, paddingHorizontal: 14,
         borderRadius: 10,
         backgroundColor: 'rgba(255,255,255,0.06)',
-        borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1.5, borderColor: 'rgba(33,24,50,0.12)',
     },
     genderBtnSelected: {
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
     },
     genderBtnText: {
-        fontSize: 13, color: '#9CA3AF', fontWeight: '600',
+        fontSize: 13, color: '#7A7C90', fontWeight: '600',
     },
     genderBtnTextSelected: {
         color: AppTheme.primaryColor,
@@ -663,14 +663,14 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     subscriberBadge: {
-        backgroundColor: '#E89951', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
+        backgroundColor: '#F25912', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
     },
     subscriberText: { color: '#fff', fontSize: 11, fontWeight: '600' },
     gripcuffBadge: {
         backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
-        borderWidth: 1, borderColor: '#E89951',
+        borderWidth: 1, borderColor: '#F25912',
     },
-    gripcuffText: { color: '#E89951', fontSize: 11, fontWeight: '600' },
+    gripcuffText: { color: '#F25912', fontSize: 11, fontWeight: '600' },
     inactiveBadge: {
         backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
         borderWidth: 1, borderColor: '#666',
@@ -678,12 +678,12 @@ const styles = StyleSheet.create({
     inactiveText: { color: '#888', fontSize: 11 },
     accessDesc: { fontSize: 12, color: '#888', flex: 1 },
     gcStatusCard: {
-        backgroundColor: '#242424', borderRadius: 10,
+        backgroundColor: '#C8C8D0', borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 11,
-        borderWidth: 1.5, borderColor: '#E89951',
+        borderWidth: 1.5, borderColor: '#F25912',
         marginTop: 4,
     },
-    gcStatusText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    gcStatusText: { color: '#211832', fontSize: 13, fontWeight: '600' },
 
     // Location tabs
     spotSubLabel: {
@@ -696,17 +696,17 @@ const styles = StyleSheet.create({
         flex: 0, minWidth: 88,
         paddingVertical: 9, paddingHorizontal: 12,
         borderRadius: 10,
-        backgroundColor: '#0f1923',
-        borderWidth: 1.5, borderColor: '#2a3a4a',
+        backgroundColor: '#EEEEF2',
+        borderWidth: 1.5, borderColor: '#D8D8E4',
         alignItems: 'center',
     },
-    locTabActive:   { backgroundColor: '#E89951', borderColor: '#E89951' },
-    locTabHasData:  { backgroundColor: 'rgba(232,153,81,0.1)', borderColor: 'rgba(232,153,81,0.5)' },
-    locTabText:     { color: '#8899aa', fontSize: 12, fontWeight: '600', textAlign: 'center' },
-    locTabTextActive:   { color: '#ffffff', fontWeight: '700' },
-    locTabTextHasData:  { color: '#E89951', fontWeight: '600' },
-    locTabSub:          { fontSize: 9, color: '#8899aa', textAlign: 'center', marginTop: 2 },
-    locTabSubActive:    { color: 'rgba(255,255,255,0.75)' },
+    locTabActive:   { backgroundColor: '#F25912', borderColor: '#F25912' },
+    locTabHasData:  { backgroundColor: 'rgba(242,89,18,0.1)', borderColor: 'rgba(242,89,18,0.5)' },
+    locTabText:     { color: '#7A7C90', fontSize: 12, fontWeight: '600', textAlign: 'center' },
+    locTabTextActive:   { color: '#fff', fontWeight: '700' },
+    locTabTextHasData:  { color: '#F25912', fontWeight: '600' },
+    locTabSub:          { fontSize: 9, color: '#7A7C90', textAlign: 'center', marginTop: 2 },
+    locTabSubActive:    { color: 'rgba(33,24,50,0.75)' },
     mapPlaceholder: {
         marginTop: 12, height: 160, borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.04)',
@@ -722,12 +722,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     saveButtonText: {
-        color: '#fff', fontSize: FontSizes.body, fontWeight: FontWeights.bold as any,
+        color: '#211832', fontSize: FontSizes.body, fontWeight: FontWeights.bold as any,
     },
     signOutButton: {
         borderRadius: 12, paddingVertical: 14,
         alignItems: 'center',
-        borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 1.5, borderColor: 'rgba(33,24,50,0.15)',
         backgroundColor: '#000',
     },
     signOutText: {

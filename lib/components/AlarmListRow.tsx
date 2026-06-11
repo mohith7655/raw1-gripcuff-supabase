@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
 import { Edit2 } from 'lucide-react-native';
 import { AlarmConfig } from '../services/moveReminder.service';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 
 interface Props {
     alarm: AlarmConfig;
@@ -53,7 +53,7 @@ export function AlarmListRow({ alarm, isLast, onPress, onToggle, compact }: Prop
             <Switch
                 value={alarm.enabled}
                 onValueChange={onToggle}
-                trackColor={{ false: '#1c2e42', true: ACCENT }}
+                trackColor={{ false: '#F8F8FC', true: ACCENT }}
                 thumbColor="#fff"
                 style={r.toggle}
             />
@@ -67,7 +67,7 @@ const r = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 9,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.07)',
+        borderBottomColor: 'rgba(33,24,50,0.07)',
     },
     rowLast: {
         borderBottomWidth: 0,
@@ -80,11 +80,11 @@ const r = StyleSheet.create({
         alignItems: 'flex-end',
     },
     timeText: {
-        color: '#fff',
+        color: '#211832',
         fontWeight: '600',
     },
     ampmText: {
-        color: '#fff',
+        color: '#211832',
         fontWeight: '600',
         marginBottom: 1,
     },
@@ -95,9 +95,9 @@ const r = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.25)',
+        borderColor: 'rgba(242,89,18,0.25)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 10,

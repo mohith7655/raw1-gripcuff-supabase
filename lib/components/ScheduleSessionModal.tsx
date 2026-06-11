@@ -19,7 +19,7 @@ import { TierAvatar } from './profile/TierAvatar';
 import { useInvite } from '../hooks/useInvite';
 import type { User } from '../models/User';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 
 type Step = 'datetime' | 'friends' | 'sending' | 'done' | 'error';
 
@@ -366,7 +366,7 @@ export function ScheduleSessionModal({
                 {step === 'done' && (
                     <View style={s.centered}>
                         <View style={s.successIcon}>
-                            <Check color="#fff" size={32} />
+                            <Check color="#211832" size={32} />
                         </View>
                         <Text style={s.statusText}>Session scheduled!</Text>
                         <Text style={s.statusSub}>
@@ -400,7 +400,7 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.65)',
     },
     sheet: {
-        backgroundColor: '#0f1923',
+        backgroundColor: '#EEEEF2',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         paddingHorizontal: 20,
@@ -435,16 +435,16 @@ const s = StyleSheet.create({
         justifyContent: 'center',
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
     },
     workoutBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.2)',
+        borderColor: 'rgba(242,89,18,0.2)',
         borderRadius: 12,
         padding: 12,
         marginBottom: 16,
@@ -459,13 +459,13 @@ const s = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(232,153,81,0.7)',
+        color: 'rgba(242,89,18,0.7)',
         fontSize: 10,
         fontWeight: '600',
         letterSpacing: 0.4,
@@ -473,7 +473,7 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     bannerTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 13,
         fontWeight: '600',
     },
@@ -485,7 +485,7 @@ const s = StyleSheet.create({
         marginTop: 12,
     },
     sectionLabel: {
-        color: 'rgba(255,255,255,0.45)',
+        color: 'rgba(33,24,50,0.45)',
         fontSize: 11,
         fontWeight: '600',
         letterSpacing: 0.5,
@@ -503,19 +503,19 @@ const s = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
     },
     chipActive: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderColor: ACCENT,
     },
     chipTopText: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '600',
     },
     chipBotText: {
-        color: '#94A3B8',
+        color: '#7A7C90',
         fontSize: 11,
         marginTop: 2,
     },
@@ -530,7 +530,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         borderRadius: 10,
         paddingHorizontal: 14,
         paddingVertical: 10,
@@ -544,7 +544,7 @@ const s = StyleSheet.create({
         flex: 1,
     },
     primaryBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 14,
         paddingVertical: 14,
         alignItems: 'center',
@@ -558,7 +558,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 8,
@@ -580,9 +580,9 @@ const s = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 12,
         marginBottom: 8,
-        backgroundColor: '#1a2530',
+        backgroundColor: '#F8F8FC',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(33,24,50,0.05)',
     },
     avatar: {
         width: 38,
@@ -594,7 +594,7 @@ const s = StyleSheet.create({
         marginLeft: 12,
     },
     friendName: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -610,7 +610,7 @@ const s = StyleSheet.create({
         paddingVertical: 5,
     },
     scheduleChipText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -638,7 +638,7 @@ const s = StyleSheet.create({
         marginBottom: 16,
     },
     statusText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 18,
         fontWeight: '700',
         marginTop: 16,
@@ -646,7 +646,7 @@ const s = StyleSheet.create({
         textAlign: 'center',
     },
     statusSub: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
         textAlign: 'center',
         paddingHorizontal: 24,

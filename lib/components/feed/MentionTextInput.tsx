@@ -19,10 +19,10 @@ import {
 import { supabase } from '../../core/config/supabase';
 import { TierAvatar } from '../profile/TierAvatar';
 
-const ORANGE = '#E89951';
-const CARD_BG = '#1A2332';
-const DROPDOWN_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const CARD_BG = '#F8F8FC';
+const DROPDOWN_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const ROW_HEIGHT = 60;
 const MAX_RESULTS = 8;
 
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     lineHeight: 22,
     paddingTop: 0,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: DROPDOWN_BG,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(33,24,50,0.1)',
     overflow: 'hidden',
     marginBottom: 6,
     ...Platform.select({
@@ -281,21 +281,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   resultRowHovered: {
-    backgroundColor: 'rgba(232,153,81,0.1)',
+    backgroundColor: 'rgba(242,89,18,0.1)',
   },
   resultAvatar: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     flexShrink: 0,
   },
   resultAvatarImg: { width: 36, height: 36, borderRadius: 8 },
-  resultAvatarInitial: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  resultName: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  resultAvatarInitial: { color: '#211832', fontSize: 14, fontWeight: '700' },
+  resultName: { color: '#211832', fontSize: 14, fontWeight: '700' },
   resultUsername: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
   emptyRow: {
     height: ROW_HEIGHT,

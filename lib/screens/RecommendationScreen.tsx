@@ -5,7 +5,7 @@ export default function RecommendationScreen({ navigation }: any) {
     return (
         <View style={{
             flex: 1,
-            backgroundColor: '#0d1520',
+            backgroundColor: '#EEEEF2',
         }}>
             {/* Header */}
             <View style={{
@@ -13,7 +13,7 @@ export default function RecommendationScreen({ navigation }: any) {
                 alignItems: 'center',
                 padding: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: '#1c3a56',
+                borderBottomColor: '#F8F8FC',
                 position: 'relative',
             }}>
                 <TouchableOpacity
@@ -21,14 +21,14 @@ export default function RecommendationScreen({ navigation }: any) {
                     style={{ position: 'absolute', left: 16, zIndex: 1 }}
                 >
                     <Text style={{
-                        color: '#D4622A',
+                        color: '#F25912',
                         fontSize: 15,
                         fontWeight: '600',
                     }}>← Back</Text>
                 </TouchableOpacity>
                 <Text style={{
                     flex: 1,
-                    color: '#ffffff',
+                    color: '#211832',
                     fontSize: 17,
                     fontWeight: '700',
                     textAlign: 'center',
@@ -44,14 +44,14 @@ export default function RecommendationScreen({ navigation }: any) {
             }}>
                 <Text style={{ fontSize: 64, marginBottom: 24 }}>🚀</Text>
                 <Text style={{
-                    color: '#ffffff',
+                    color: '#211832',
                     fontSize: 26,
                     fontWeight: '800',
                     marginBottom: 12,
                     textAlign: 'center',
                 }}>Coming Soon</Text>
                 <Text style={{
-                    color: '#607a94',
+                    color: '#7A7C90',
                     fontSize: 15,
                     textAlign: 'center',
                     lineHeight: 22,
@@ -61,15 +61,15 @@ export default function RecommendationScreen({ navigation }: any) {
                 </Text>
                 <View style={{
                     marginTop: 32,
-                    backgroundColor: '#131f2e',
+                    backgroundColor: '#F8F8FC',
                     borderRadius: 12,
                     padding: 16,
                     width: '100%',
                     borderWidth: 1,
-                    borderColor: '#1c3a56',
+                    borderColor: '#F8F8FC',
                 }}>
                     <Text style={{
-                        color: '#D4622A',
+                        color: '#F25912',
                         fontSize: 13,
                         fontWeight: '600',
                         textAlign: 'center',

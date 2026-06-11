@@ -15,10 +15,10 @@ import { useUser } from '../../providers/UserContext';
 import { useAuth } from '../../providers/AuthContext';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const GREEN = '#22c55e';
 
 const TIERS = [
@@ -284,7 +284,7 @@ export function BuyCreditsModal({ visible, onClose, onPurchased }: BuyCreditsMod
                   >
                     {isSelected && (
                       <View style={styles.checkBadge}>
-                        <Check size={12} color="#fff" />
+                        <Check size={12} color="#211832" />
                       </View>
                     )}
                     {isPopular && !isSelected && (
@@ -320,7 +320,7 @@ export function BuyCreditsModal({ visible, onClose, onPurchased }: BuyCreditsMod
                 activeOpacity={0.88}
               >
                 {buying
-                  ? <ActivityIndicator color="#fff" />
+                  ? <ActivityIndicator color="#211832" />
                   : <Text style={styles.buyBtnText}>
                       Buy {selected.credits} Credits for ${selected.price}
                     </Text>
@@ -343,10 +343,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   closeBtn: { padding: 4 },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  headerTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
 
   // Waiting screen
   waitingBody: {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   waitingTitle: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   pollCount: { color: TEXT_SECONDARY, fontSize: 12 },
   waitingBtnStack: { gap: 14, alignItems: 'center', width: '100%' },
   donePaying: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 14,
     height: 52,
     paddingHorizontal: 32,
@@ -399,16 +399,16 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: CARD_BG,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(33,24,50,0.06)',
   },
   balanceText: { color: TEXT_SECONDARY, fontSize: 14 },
-  balanceCount: { color: '#fff', fontWeight: '700' },
+  balanceCount: { color: '#211832', fontWeight: '700' },
   scrollContent: { padding: 16, gap: 10 },
   tierCard: {
     backgroundColor: CARD_BG,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -438,12 +438,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  popularBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  popularBadgeText: { color: '#211832', fontSize: 10, fontWeight: '700' },
   tierLeft: { flexDirection: 'row', alignItems: 'center' },
-  tierCredits: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  tierCredits: { color: '#211832', fontSize: 15, fontWeight: '700' },
   tierLabel: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 2 },
   tierRight: { alignItems: 'flex-end', gap: 4 },
-  tierPrice: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  tierPrice: { color: '#211832', fontSize: 16, fontWeight: '800' },
   bonusBadge: {
     backgroundColor: 'rgba(34,197,94,0.18)',
     borderRadius: 8,
@@ -456,11 +456,11 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
+    borderTopColor: 'rgba(33,24,50,0.07)',
     paddingBottom: Platform.OS === 'ios' ? 28 : 16,
   },
   buyBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 14,
     height: 52,
     alignItems: 'center',
@@ -473,5 +473,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rText: { color: '#fff', fontWeight: '700' },
+  rText: { color: '#211832', fontWeight: '700' },
 });

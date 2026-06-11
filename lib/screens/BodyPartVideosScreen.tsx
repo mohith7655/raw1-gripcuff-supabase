@@ -68,7 +68,7 @@ export const BodyPartVideosScreen = () => {
                 onPress={() => navigation.goBack()}
                 style={styles.breadcrumbRow}
             >
-                <Ionicons name="chevron-back" size={16} color="#888888" />
+                <Ionicons name="chevron-back" size={16} color="#7A7C90" />
                 <Text style={styles.breadcrumbText1}>Go back to all videos</Text>
             </TouchableOpacity>
 
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     },
     breadcrumbText1: {
         fontSize: 13,
-        color: '#888888',
+        color: '#7A7C90',
         fontWeight: '400',
     },
     breadcrumbText2: {

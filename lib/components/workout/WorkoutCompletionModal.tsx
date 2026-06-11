@@ -121,7 +121,7 @@ export function WorkoutCompletionModal({
                         <>
                             <Text style={styles.title}>When should we remind you?</Text>
                             {scheduling ? (
-                                <ActivityIndicator color="#E89951" style={{ marginTop: 20 }} />
+                                <ActivityIndicator color="#F25912" style={{ marginTop: 20 }} />
                             ) : (
                                 <>
                                     {REMINDER_OPTIONS.map((opt) => (
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: '100%',
-        backgroundColor: '#1F2937',
+        backgroundColor: '#F8F8FC',
         borderRadius: 16,
         padding: 24,
     },
@@ -206,13 +206,13 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     subtitle: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 20,
     },
     primaryBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 10,
         paddingVertical: 14,
         alignItems: 'center',
@@ -226,19 +226,19 @@ const styles = StyleSheet.create({
     secondaryBtn: {
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#374151',
+        borderColor: '#D8D8E4',
         paddingVertical: 14,
         alignItems: 'center',
         marginTop: 10,
     },
     secondaryBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '600',
     },
     divider: {
         height: 1,
-        backgroundColor: '#374151',
+        backgroundColor: '#D8D8E4',
         marginTop: 16,
         marginBottom: 4,
     },
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     ghostBtnText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 14,
         fontWeight: '500',
     },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     confirmedText: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 18,
         fontWeight: '700',
     },

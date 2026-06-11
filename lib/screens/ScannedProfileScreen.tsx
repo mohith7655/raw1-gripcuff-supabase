@@ -59,18 +59,18 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
-  bg:           '#0d1520',
+  bg:           '#EEEEF2',
   bgCard:       'rgba(255,255,255,0.04)',
   border:       'rgba(255,255,255,0.06)',
-  orange:       '#ff7a00',
-  accentSoft:   'rgba(255,122,0,0.12)',
-  accentBorder: 'rgba(255,122,0,0.28)',
+  orange:       '#F25912',
+  accentSoft:   'rgba(242,89,18,0.12)',
+  accentBorder: 'rgba(242,89,18,0.28)',
   purple:       '#8b5cf6',
   purpleSoft:   'rgba(139,92,246,0.12)',
   purpleBorder: 'rgba(139,92,246,0.35)',
   green:        '#22c55e',
   text:         '#ffffff',
-  muted:        '#9ca3af',
+  muted:        '#7A7C90',
 };
 
 type IconComp = React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
@@ -97,7 +97,7 @@ function Avatar({ uri, size }: { uri?: string | null; size: number }) {
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
-      backgroundColor: '#0f2030',
+      backgroundColor: '#EEEEF2',
       alignItems: 'center', justifyContent: 'center',
     }}>
       <CircleUserRound size={Math.round(size * 0.45)} color={C.orange} strokeWidth={1.8} />
@@ -563,7 +563,7 @@ export function ScannedProfileScreen() {
             {BADGE_FAMILIES.map(family => {
               const state  = badgeStates.find(bs => bs.familyKey === family.key);
               const tier   = state?.currentTier ?? 0;
-              const color  = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
+              const color  = tier > 0 ? TIER_COLORS[tier - 1] : '#7A7C90';
               const name   = tier > 0 ? getTierName(family, tier) : 'Locked';
               const locked = tier === 0;
               return (
@@ -730,7 +730,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(33,24,50,0.06)',
   },
   basicInfoLabel: {
     color: C.muted,
@@ -779,7 +779,7 @@ const s = StyleSheet.create({
   },
   badgeShape: {
     width: 64, height: 64, borderRadius: 18,
-    backgroundColor: 'rgba(255,122,0,0.1)',
+    backgroundColor: 'rgba(242,89,18,0.1)',
     borderWidth: 1.5, borderColor: C.orange,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -789,7 +789,7 @@ const s = StyleSheet.create({
   },
   badgeShapeLocked: {
     backgroundColor: C.bgCard,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
     opacity: 0.5,
   },
   badgeEmoji: { fontSize: 30 },
@@ -804,7 +804,7 @@ const s = StyleSheet.create({
   moreBadge: {
     width: 52, height: 52, borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
   moreBadgeText: { color: C.muted, fontSize: 13, fontWeight: '700' },
@@ -821,7 +821,7 @@ const s = StyleSheet.create({
   },
   messageBtn: {
     flex: 1, height: 50, borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)',
     alignItems: 'center', justifyContent: 'center',
   },
   messageBtnText: { color: C.text, fontSize: 15, fontWeight: '700' },

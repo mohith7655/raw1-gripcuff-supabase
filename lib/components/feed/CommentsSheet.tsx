@@ -21,10 +21,10 @@ import { ActionSheet } from './ActionSheet';
 import { TierAvatar } from '../profile/TierAvatar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const RED = '#FF4444';
 
 function timeAgo(dateStr: string): string {
@@ -138,7 +138,7 @@ function CommentItem({ comment, currentUserId, onEdit, onDelete }: CommentItemPr
                   activeOpacity={0.8}
                 >
                   {saving
-                    ? <ActivityIndicator size="small" color="#fff" />
+                    ? <ActivityIndicator size="small" color="#211832" />
                     : <Text style={styles.editSaveText}>Save</Text>
                   }
                 </TouchableOpacity>
@@ -314,8 +314,8 @@ export function CommentsSheet({
               activeOpacity={0.8}
             >
               {submitting
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Send size={18} color="#fff" />
+                ? <ActivityIndicator size="small" color="#211832" />
+                : <Send size={18} color="#211832" />
               }
             </TouchableOpacity>
           </View>
@@ -356,9 +356,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
-  title: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  title: { color: '#211832', fontSize: 16, fontWeight: '800' },
   closeBtn: { position: 'absolute', right: 16, padding: 4 },
   center: {
     flex: 1,
@@ -380,14 +380,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     flexShrink: 0,
   },
   commentAvatarImg: { width: 32, height: 32, borderRadius: 16 },
-  commentAvatarInitial: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  commentAvatarInitial: { color: '#211832', fontSize: 13, fontWeight: '700' },
   commentBubble: {
     flex: 1,
     backgroundColor: BG,
@@ -400,17 +400,17 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-  commentName: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  commentName: { color: '#211832', fontSize: 13, fontWeight: '700' },
   commentTime: { color: TEXT_SECONDARY, fontSize: 11 },
   commentMenuBtn: { marginLeft: 'auto' as any },
-  commentText: { color: '#E2E8F0', fontSize: 13, lineHeight: 18 },
+  commentText: { color: '#211832', fontSize: 13, lineHeight: 18 },
 
   editInput: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 13,
     lineHeight: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(232,153,81,0.4)',
+    borderBottomColor: 'rgba(242,89,18,0.4)',
     paddingVertical: 4,
     marginBottom: 8,
   },
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     minWidth: 52,
     alignItems: 'center',
   },
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
+    borderTopColor: 'rgba(33,24,50,0.07)',
     gap: 10,
     backgroundColor: CARD_BG,
   },
@@ -452,17 +452,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    color: '#fff',
+    color: '#211832',
     fontSize: 14,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(33,24,50,0.1)',
   },
   sendBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     alignItems: 'center',
     justifyContent: 'center',
   },

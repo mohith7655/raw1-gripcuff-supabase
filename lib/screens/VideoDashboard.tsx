@@ -15,13 +15,13 @@ export const VideoDashboard = () => {
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: '#1d2337',
+                    backgroundColor: '#F8F8FC',
                     borderTopColor: 'rgba(0,0,0,0.2)',
                     boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
                     elevation: 8,
                 },
-                tabBarActiveTintColor: '#e46600',
-                tabBarInactiveTintColor: '#a6afc2',
+                tabBarActiveTintColor: '#F25912',
+                tabBarInactiveTintColor: '#7A7C90',
                 tabBarShowLabel: true,
                 tabBarLabelStyle: {
                     fontSize: 11,

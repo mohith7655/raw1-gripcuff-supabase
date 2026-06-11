@@ -50,8 +50,8 @@ import { WorkoutReminderService } from '../services/workoutReminder.service';
 import type { User } from '../models/User';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const ACCENT  = '#E89951';
-const BG      = '#0f1923';
+const ACCENT  = '#F25912';
+const BG      = '#EEEEF2';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER  = 'rgba(255,255,255,0.08)';
 
@@ -457,7 +457,7 @@ export function WorkoutTogetherModal({
                                 onPress={() => setSelectedType('friend')}
                                 activeOpacity={0.82}
                             >
-                                <View style={[s.iconCircle, { backgroundColor: 'rgba(232,153,81,0.12)' }]}>
+                                <View style={[s.iconCircle, { backgroundColor: 'rgba(242,89,18,0.12)' }]}>
                                     <Users color={ACCENT} size={20} />
                                 </View>
                                 <View style={{ flex: 1 }}>
@@ -477,11 +477,11 @@ export function WorkoutTogetherModal({
                     <View style={s.friendSelectWrap}>
                         {/* Search */}
                         <View style={s.searchRow}>
-                            <Search color="#64748B" size={15} />
+                            <Search color="#7A7C90" size={15} />
                             <TextInput
                                 style={s.searchInput}
                                 placeholder="Search friends…"
-                                placeholderTextColor="#475569"
+                                placeholderTextColor="#D8D8E4"
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoCapitalize="none"
@@ -491,7 +491,7 @@ export function WorkoutTogetherModal({
 
                         {filteredFriends.length === 0 ? (
                             <View style={s.emptyState}>
-                                <CircleUserRound color="#334155" size={36} />
+                                <CircleUserRound color="#D8D8E4" size={36} />
                                 <Text style={s.emptyText}>
                                     {friends.length === 0
                                         ? 'No friends yet. Add some first!'
@@ -523,7 +523,7 @@ export function WorkoutTogetherModal({
                                         </View>
                                         {selectedFriend?.uid === item.uid && (
                                             <View style={s.checkBadge}>
-                                                <Check color="#fff" size={11} />
+                                                <Check color="#211832" size={11} />
                                             </View>
                                         )}
                                     </TouchableOpacity>
@@ -547,7 +547,7 @@ export function WorkoutTogetherModal({
                 {currentStep === 'done' && (
                     <View style={s.statusWrap}>
                         <View style={s.successCircle}>
-                            <Check color="#fff" size={30} />
+                            <Check color="#211832" size={30} />
                         </View>
                         <Text style={s.statusTitle}>
                             {selectedType === 'friend' ? 'Invite Sent!' : 'Workout Scheduled!'}
@@ -627,28 +627,28 @@ const s = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     title: {
-        color: '#fff', fontSize: 17, fontWeight: '700',
+        color: '#211832', fontSize: 17, fontWeight: '700',
         flex: 1, textAlign: 'center',
     },
 
     // Banner
     banner: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(232,153,81,0.08)',
-        borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
+        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
         borderRadius: 12, padding: 12, marginBottom: 14,
     },
     thumb: { width: 44, height: 44, borderRadius: 8, flexShrink: 0 },
     thumbPlaceholder: {
         width: 44, height: 44, borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(232,153,81,0.7)', fontSize: 10, fontWeight: '600',
+        color: 'rgba(242,89,18,0.7)', fontSize: 10, fontWeight: '600',
         letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2,
     },
-    bannerTitle: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    bannerTitle: { color: '#211832', fontSize: 13, fontWeight: '600' },
 
     // Date chips
     labelRow: {
@@ -656,7 +656,7 @@ const s = StyleSheet.create({
         gap: 6, marginTop: 12, marginBottom: 8,
     },
     labelText: {
-        color: 'rgba(255,255,255,0.45)', fontSize: 11,
+        color: 'rgba(33,24,50,0.45)', fontSize: 11,
         fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase',
     },
     chipRow: { gap: 8, paddingBottom: 4 },
@@ -666,9 +666,9 @@ const s = StyleSheet.create({
         borderRadius: 12, backgroundColor: SURFACE,
         borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
-    chipTopText: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
-    chipBotText: { color: '#94A3B8', fontSize: 11, marginTop: 2 },
+    chipActive: { backgroundColor: 'rgba(242,89,18,0.15)', borderColor: ACCENT },
+    chipTopText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
+    chipBotText: { color: '#7A7C90', fontSize: 11, marginTop: 2 },
     chipActiveText: { color: ACCENT },
 
     // Time picker
@@ -677,9 +677,9 @@ const s = StyleSheet.create({
     // Summary pill
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-        marginBottom: 12, borderWidth: 1, borderColor: 'rgba(232,153,81,0.2)',
+        marginBottom: 12, borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
     },
     summaryText: { color: ACCENT, fontSize: 13, fontWeight: '600', flex: 1 },
 
@@ -693,15 +693,15 @@ const s = StyleSheet.create({
         borderRadius: 14, padding: 14,
     },
     optionCardSelected: {
-        borderColor: '#E89951',
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        borderColor: '#F25912',
+        backgroundColor: 'rgba(242,89,18,0.08)',
     },
     iconCircle: {
         width: 36, height: 36, borderRadius: 18,
         alignItems: 'center', justifyContent: 'center',
     },
-    optionTitle: { color: '#fff', fontSize: 13, fontWeight: '700' },
-    optionSub:   { color: '#64748B', fontSize: 11, lineHeight: 15, marginTop: 2 },
+    optionTitle: { color: '#211832', fontSize: 13, fontWeight: '700' },
+    optionSub:   { color: '#7A7C90', fontSize: 11, lineHeight: 15, marginTop: 2 },
 
     // Friend selector
     friendSelectWrap: { flex: 1, minHeight: 220 },
@@ -713,7 +713,7 @@ const s = StyleSheet.create({
         marginBottom: 10,
     },
     searchInput: {
-        flex: 1, color: '#fff', fontSize: 14,
+        flex: 1, color: '#211832', fontSize: 14,
         paddingVertical: 0,
     },
     friendList: { maxHeight: 260 },
@@ -725,18 +725,18 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     friendRowSelected: {
-        backgroundColor: 'rgba(232,153,81,0.07)',
-        borderColor: 'rgba(232,153,81,0.25)',
+        backgroundColor: 'rgba(242,89,18,0.07)',
+        borderColor: 'rgba(242,89,18,0.25)',
     },
     avatar: { width: 40, height: 40, borderRadius: 9, flexShrink: 0 },
     avatarPlaceholder: {
         width: 40, height: 40, borderRadius: 9,
-        backgroundColor: 'rgba(232,153,81,0.1)',
+        backgroundColor: 'rgba(242,89,18,0.1)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     friendInfo: { flex: 1 },
-    friendName: { color: '#fff', fontSize: 14, fontWeight: '600' },
-    friendHandle: { color: '#64748B', fontSize: 12, marginTop: 1 },
+    friendName: { color: '#211832', fontSize: 14, fontWeight: '600' },
+    friendHandle: { color: '#7A7C90', fontSize: 12, marginTop: 1 },
     checkBadge: {
         width: 22, height: 22, borderRadius: 11,
         backgroundColor: ACCENT,
@@ -745,14 +745,14 @@ const s = StyleSheet.create({
     emptyState: {
         alignItems: 'center', paddingVertical: 32, gap: 10,
     },
-    emptyText: { color: '#475569', fontSize: 14, textAlign: 'center' },
+    emptyText: { color: '#D8D8E4', fontSize: 14, textAlign: 'center' },
 
     // Status screens
     statusWrap: {
         alignItems: 'center', paddingVertical: 36, gap: 8,
     },
-    statusTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center' },
-    statusSub:   { color: '#94A3B8', fontSize: 14, textAlign: 'center', lineHeight: 20 },
+    statusTitle: { color: '#211832', fontSize: 18, fontWeight: '700', textAlign: 'center' },
+    statusSub:   { color: '#7A7C90', fontSize: 14, textAlign: 'center', lineHeight: 20 },
     successCircle: {
         width: 68, height: 68, borderRadius: 34,
         backgroundColor: '#10B981',
@@ -761,10 +761,10 @@ const s = StyleSheet.create({
 
     // CTA button
     ctaBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 14, paddingVertical: 14,
         alignItems: 'center', marginTop: 6,
     },
-    ctaBtnDisabled: { backgroundColor: 'rgba(232,153,81,0.35)' },
+    ctaBtnDisabled: { backgroundColor: 'rgba(242,89,18,0.35)' },
     ctaBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

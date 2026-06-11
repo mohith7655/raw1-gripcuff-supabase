@@ -19,9 +19,9 @@ import { useAuth } from '../providers/AuthContext';
 import { SessionService } from '../services/session.service';
 import { WorkoutSession } from '../models/WorkoutSession';
 
-const ACCENT = '#E89951';
-const NAVY   = '#0F172A';
-const CARD   = '#111827';
+const ACCENT = '#F25912';
+const NAVY   = '#EEEEF2';
+const CARD   = '#F8F8FC';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -31,7 +31,7 @@ const { width: SW } = Dimensions.get('window');
 
 function InviterAvatar({ name, photo }: { name: string; photo?: string | null }) {
     const initial = name?.charAt(0)?.toUpperCase() ?? '?';
-    const palette = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6'];
+    const palette = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6'];
     let h = 0;
     for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
     const bg = palette[Math.abs(h) % palette.length];
@@ -99,7 +99,7 @@ function AcceptButton({ onPress, disabled }: { onPress: () => void; disabled: bo
                 disabled={disabled}
                 activeOpacity={0.82}
             >
-                <Dumbbell color="#fff" size={17} />
+                <Dumbbell color="#211832" size={17} />
                 <Text style={s.acceptText}>Accept</Text>
             </TouchableOpacity>
         </Animated.View>
@@ -283,7 +283,7 @@ export function WorkoutInviteModal() {
             >
                 {/* Close button */}
                 <TouchableOpacity style={s.closeBtn} onPress={handleDismiss} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                    <X color="#4B5563" size={20} />
+                    <X color="#D8D8E4" size={20} />
                 </TouchableOpacity>
 
                 {/* Badge */}
@@ -317,7 +317,7 @@ export function WorkoutInviteModal() {
                             {scheduledStr ? (
                                 <View style={s.sessionRow}>
                                     <View style={s.sessionIconWrap}>
-                                        <Calendar color="#6B7280" size={13} />
+                                        <Calendar color="#7A7C90" size={13} />
                                     </View>
                                     <Text style={s.sessionMeta}>{scheduledStr}</Text>
                                 </View>
@@ -375,7 +375,7 @@ const s = StyleSheet.create({
         backgroundColor: CARD,
         borderRadius: 28,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.30)',
+        borderColor: 'rgba(242,89,18,0.30)',
         paddingHorizontal: 24,
         paddingTop: 20,
         paddingBottom: 24,
@@ -397,9 +397,9 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.28)',
+        borderColor: 'rgba(242,89,18,0.28)',
         borderRadius: 20,
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -441,27 +441,27 @@ const s = StyleSheet.create({
         borderColor: ACCENT,
     },
     avatarInitial: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 28,
         fontWeight: '700',
     },
     inviterName: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 20,
         fontWeight: '800',
         marginBottom: 4,
     },
     inviterSub: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 14,
     },
     // ── Session card ──
     sessionCard: {
         width: '100%',
-        backgroundColor: 'rgba(232,153,81,0.07)',
+        backgroundColor: 'rgba(242,89,18,0.07)',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.15)',
+        borderColor: 'rgba(242,89,18,0.15)',
         paddingHorizontal: 14,
         paddingVertical: 12,
         gap: 8,
@@ -476,18 +476,18 @@ const s = StyleSheet.create({
         width: 26,
         height: 26,
         borderRadius: 8,
-        backgroundColor: 'rgba(232,153,81,0.10)',
+        backgroundColor: 'rgba(242,89,18,0.10)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     sessionTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '700',
         flex: 1,
     },
     sessionMeta: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 13,
         flex: 1,
     },
@@ -502,7 +502,7 @@ const s = StyleSheet.create({
         flex: 1,
     },
     acceptBtn: {
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 14,
         paddingVertical: 14,
         flexDirection: 'row',
@@ -513,7 +513,7 @@ const s = StyleSheet.create({
         elevation: 8,
     },
     acceptText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '800',
     },
@@ -537,7 +537,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 16,
     },
     detailsText: {
-        color: '#4B5563',
+        color: '#D8D8E4',
         fontSize: 13,
         fontWeight: '600',
     },

@@ -10,7 +10,7 @@ const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
 const DARK_MAP_CSS = `
   (function() {
     var s = document.createElement('style');
-    s.innerHTML = 'html{filter:invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9);background:#1d2530 !important;}';
+    s.innerHTML = 'html{filter:invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9);background:#F8F8FC !important;}';
     document.head.appendChild(s);
   })();
   true;
@@ -78,7 +78,7 @@ export function LocationMapPreview({
                         width: size,
                         height: size,
                         borderRadius: size / 2,
-                        backgroundColor: `rgba(232,153,81,${opacity})`,
+                        backgroundColor: `rgba(242,89,18,${opacity})`,
                     }} />
                 ))}
             </View>
@@ -89,7 +89,7 @@ export function LocationMapPreview({
 const styles = StyleSheet.create({
     container: { marginTop: 12, marginBottom: 8 },
     gymName: {
-        color: '#E89951', fontSize: 14, fontWeight: '700', marginBottom: 6,
+        color: '#F25912', fontSize: 14, fontWeight: '700', marginBottom: 6,
     },
     mapWrap: {
         height: 180,
@@ -98,6 +98,6 @@ const styles = StyleSheet.create({
     },
     map: {
         flex: 1,
-        backgroundColor: '#0d1825',
+        backgroundColor: '#EEEEF2',
     },
 });

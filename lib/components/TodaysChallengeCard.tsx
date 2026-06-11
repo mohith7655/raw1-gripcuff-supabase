@@ -149,24 +149,24 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#ffffff',
+        color: '#211832',
     },
     refreshLabel: {
         fontSize: 11,
-        color: '#8899aa',
+        color: '#7A7C90',
     },
     challengeCard: {
-        backgroundColor: '#0f1923',
+        backgroundColor: '#EEEEF2',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: '#E89951',
+        borderColor: '#F25912',
         flexDirection: 'row',
         overflow: 'hidden',
         minHeight: 110,
     },
     challengeAccent: {
         width: 4,
-        backgroundColor: '#E89951',
+        backgroundColor: '#F25912',
     },
     challengeContent: {
         flex: 1,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     challengeBadge: {
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         borderRadius: 4,
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -187,16 +187,16 @@ const styles = StyleSheet.create({
     challengeBadgeText: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#E89951',
+        color: '#F25912',
         letterSpacing: 0.5,
     },
     challengeDuration: {
         fontSize: 12,
-        color: '#8899aa',
+        color: '#7A7C90',
     },
     challengeProgramName: {
         fontSize: 11,
-        color: '#E89951',
+        color: '#F25912',
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     challengeTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#ffffff',
+        color: '#211832',
         lineHeight: 22,
     },
     challengeMeta: {
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     },
     challengeMetaText: {
         fontSize: 12,
-        color: '#8899aa',
+        color: '#7A7C90',
     },
     challengeFooter: {
         marginTop: 4,
@@ -222,6 +222,6 @@ const styles = StyleSheet.create({
     challengeStart: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#E89951',
+        color: '#F25912',
     },
 });

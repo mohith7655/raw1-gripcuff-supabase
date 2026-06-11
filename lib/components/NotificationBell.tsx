@@ -20,6 +20,7 @@ import { ChatConversation } from '../models/Chat';
 import { MoveReminderService, MoveReminder, formatMoveTime12h } from '../services/moveReminder.service';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
+import { TierAvatar } from './profile/TierAvatar';
 
 export function NotificationBell({ color = AppTheme.primaryColor, size = 24, containerStyle }: { color?: string; size?: number; containerStyle?: any }) {
   const navigation = useNavigation<any>();
@@ -124,13 +125,13 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
                             });
                           }}
                         >
-                          {friend.profileImageUrl ? (
-                            <Image source={{ uri: friend.profileImageUrl }} style={styles.avatar} />
-                          ) : (
-                            <View style={[styles.avatar, { backgroundColor: 'rgba(79,195,247,0.12)', justifyContent: 'center', alignItems: 'center' }]}>
-                              <CircleUserRound color="#4FC3F7" size={18} />
-                            </View>
-                          )}
+                          <TierAvatar
+                            uri={friend.profileImageUrl}
+                            size={36}
+                            uid={friend.uid}
+                            name={friend.fullName || friend.username}
+                            disableProfileLink
+                          />
                           <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={styles.rowName} numberOfLines={1}>{friend.fullName || friend.username}</Text>
                             <Text style={styles.rowSub} numberOfLines={1}>{convo?.lastMessage || 'Say hi!'}</Text>
@@ -158,10 +159,10 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
               {/* Workout Invites */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <View style={[styles.dot, { backgroundColor: '#E89951' }]} />
+                  <View style={[styles.dot, { backgroundColor: '#F25912' }]} />
                   <Text style={styles.sectionTitle}>Workout Invites</Text>
                   {pendingInvites.length > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#E89951', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#F25912', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{pendingInvites.length}</Text>
                     </View>
                   )}
@@ -176,18 +177,18 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
                       activeOpacity={0.7}
                       onPress={() => { setModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                     >
-                      {invite.hostAvatarUrl ? (
-                        <Image source={{ uri: invite.hostAvatarUrl }} style={styles.avatar} />
-                      ) : (
-                        <View style={[styles.avatar, { backgroundColor: 'rgba(232,153,81,0.12)', justifyContent: 'center', alignItems: 'center' }]}>
-                          <VideoIcon color="#E89951" size={18} />
-                        </View>
-                      )}
+                      <TierAvatar
+                        uri={invite.hostAvatarUrl}
+                        size={36}
+                        uid={invite.hostUid}
+                        name={invite.hostName}
+                        disableProfileLink
+                      />
                       <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.rowName} numberOfLines={1}>{invite.hostName || 'Friend'}</Text>
                         <Text style={styles.rowSub} numberOfLines={1}>{invite.videoTitle || 'Workout invite'}</Text>
                       </View>
-                      <View style={[styles.countBadge, { backgroundColor: '#E89951' }]}>
+                      <View style={[styles.countBadge, { backgroundColor: '#F25912' }]}>
                         <Text style={styles.countBadgeText}>View</Text>
                       </View>
                     </TouchableOpacity>
@@ -198,7 +199,7 @@ export function NotificationBell({ color = AppTheme.primaryColor, size = 24, con
                   onPress={() => { setModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.viewAllText, { color: '#E89951' }]}>View all invites &gt;</Text>
+                  <Text style={[styles.viewAllText, { color: '#F25912' }]}>View all invites &gt;</Text>
                 </TouchableOpacity>
               </View>
 
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   badgeText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 10,
     fontWeight: '700',
     lineHeight: 12,
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
     paddingTop: SCREEN_PADDING,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: 'rgba(33,24,50,0.1)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -332,17 +333,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   rowName: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 14,
     fontWeight: '600',
   },
   rowSub: {
-    color: '#94A3B8',
+    color: '#7A7C90',
     fontSize: 12,
     marginTop: 2,
   },
   emptyText: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 13,
     paddingVertical: 8,
   },
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   countBadgeText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 11,
     fontWeight: 'bold',
   },
@@ -392,11 +393,11 @@ const styles = StyleSheet.create({
   },
   moveTimePillPaused: {
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
   },
   moveTimePillStop: {
-    backgroundColor: 'rgba(232,153,81,0.08)',
-    borderColor: 'rgba(232,153,81,0.3)',
+    backgroundColor: 'rgba(242,89,18,0.08)',
+    borderColor: 'rgba(242,89,18,0.3)',
   },
   moveTimePillText: {
     color: '#4ade80',
@@ -407,14 +408,14 @@ const styles = StyleSheet.create({
     color: 'rgba(150,180,210,0.5)',
   },
   moveTimePillTextStop: {
-    color: '#E89951',
+    color: '#F25912',
   },
   moveStopBadge: {
-    color: '#E89951',
+    color: '#F25912',
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
-    backgroundColor: 'rgba(232,153,81,0.15)',
+    backgroundColor: 'rgba(242,89,18,0.15)',
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionBtnText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 12,
     fontWeight: '700',
   },

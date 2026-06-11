@@ -225,7 +225,7 @@ export const AgoraVideoRoom: React.FC = () => {
     if (permissionError) {
         return (
             <View style={styles.center}>
-                <StatusBar barStyle="light-content" backgroundColor="#0d1520" />
+                <StatusBar barStyle="dark-content" backgroundColor="#EEEEF2" />
                 <Text style={styles.errorIcon}>🎥</Text>
                 <Text style={styles.errorTitle}>Permission Required</Text>
                 <Text style={styles.errorBody}>{permissionError}</Text>
@@ -240,7 +240,7 @@ export const AgoraVideoRoom: React.FC = () => {
     if (isConnecting) {
         return (
             <View style={styles.center}>
-                <StatusBar barStyle="light-content" backgroundColor="#0d1520" />
+                <StatusBar barStyle="dark-content" backgroundColor="#EEEEF2" />
                 <ActivityIndicator size="large" color="#4FC3F7" />
                 <Text style={styles.connectingTitle}>Joining session…</Text>
                 <Text style={styles.connectingSubtitle}>{channelName}</Text>
@@ -273,7 +273,7 @@ export const AgoraVideoRoom: React.FC = () => {
             ) : (
                 <View style={styles.remotePlaceholder}>
                     <View style={styles.avatarCircle}>
-                        <VideoOff color="#607a94" size={40} />
+                        <VideoOff color="#7A7C90" size={40} />
                     </View>
                     <Text style={styles.waitingText}>Waiting for partner to join…</Text>
                 </View>
@@ -311,7 +311,7 @@ export const AgoraVideoRoom: React.FC = () => {
                         />
                     ) : (
                         <View style={styles.cameraOffPlaceholder}>
-                            <VideoOff color="#607a94" size={22} />
+                            <VideoOff color="#7A7C90" size={22} />
                         </View>
                     )}
                     <View style={styles.localNameBadge}>
@@ -333,7 +333,7 @@ export const AgoraVideoRoom: React.FC = () => {
             {/* Viewer count badge — top left below channel pill */}
             {isJoined && (
                 <View style={[styles.viewerPill, { top: Platform.OS === 'ios' ? 100 : 64 }]}>
-                    <Eye color="#fff" size={11} />
+                    <Eye color="#211832" size={11} />
                     <Text style={styles.viewerPillText}>{viewerCount} watching</Text>
                 </View>
             )}
@@ -370,12 +370,12 @@ export const AgoraVideoRoom: React.FC = () => {
                             onPress={toggleMic}
                             activeOpacity={0.75}
                         >
-                            {isMuted ? <MicOff color="#fff" size={24} /> : <Mic color="#fff" size={24} />}
+                            {isMuted ? <MicOff color="#211832" size={24} /> : <Mic color="#211832" size={24} />}
                             <Text style={styles.btnLabel}>{isMuted ? 'Unmute' : 'Mute'}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.endBtn} onPress={leave} activeOpacity={0.8}>
-                            <PhoneOff color="#fff" size={26} />
+                            <PhoneOff color="#211832" size={26} />
                             <Text style={styles.endBtnLabel}>Leave</Text>
                         </TouchableOpacity>
 
@@ -384,7 +384,7 @@ export const AgoraVideoRoom: React.FC = () => {
                             onPress={toggleCamera}
                             activeOpacity={0.75}
                         >
-                            {isCameraOff ? <VideoOff color="#fff" size={24} /> : <Video color="#fff" size={24} />}
+                            {isCameraOff ? <VideoOff color="#211832" size={24} /> : <Video color="#211832" size={24} />}
                             <Text style={styles.btnLabel}>{isCameraOff ? 'Show' : 'Camera'}</Text>
                         </TouchableOpacity>
                     </View>
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     /* Shared center container for loading/error */
     center: {
         flex: 1,
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 32,
@@ -421,16 +421,16 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     connectingSubtitle: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 13,
         marginTop: 6,
     },
 
     /* Error */
     errorIcon: { fontSize: 48, marginBottom: 14 },
-    errorTitle: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 10 },
+    errorTitle: { color: '#211832', fontSize: 20, fontWeight: '700', marginBottom: 10 },
     errorBody: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 14,
         textAlign: 'center',
         lineHeight: 21,
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     },
     remotePlaceholder: {
         flex: 1,
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -462,13 +462,13 @@ const styles = StyleSheet.create({
         width: 88,
         height: 88,
         borderRadius: 44,
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 18,
     },
     waitingText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 15,
         fontWeight: '500',
         textAlign: 'center',
@@ -478,19 +478,19 @@ const styles = StyleSheet.create({
     /* Cast placeholder */
     castPlaceholder: {
         flex: 1,
-        backgroundColor: '#060f1c',
+        backgroundColor: '#EEEEF2',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 12,
     },
     castTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 22,
         fontWeight: '700',
         marginTop: 8,
     },
     castDevice: {
-        color: 'rgba(255,255,255,0.45)',
+        color: 'rgba(33,24,50,0.45)',
         fontSize: 14,
         maxWidth: 240,
         textAlign: 'center',
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 2,
         borderColor: '#4FC3F7',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
     },
     localVideo: { width: 96, height: 134 },
     cameraOffPlaceholder: {
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
         height: 134,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
     },
     localNameBadge: {
         position: 'absolute',
@@ -601,5 +601,5 @@ const styles = StyleSheet.create({
         borderRadius: 36,
         backgroundColor: '#C62828',
     },
-    endBtnLabel: { color: '#fff', fontSize: 10, fontWeight: '700', marginTop: 3 },
+    endBtnLabel: { color: '#211832', fontSize: 10, fontWeight: '700', marginTop: 3 },
 });

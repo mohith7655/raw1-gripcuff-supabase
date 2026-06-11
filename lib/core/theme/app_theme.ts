@@ -1,47 +1,55 @@
-// ── Brand accent system ──────────────────────────────────────────────
-// BRAND_ACCENT (warm orange #E89951) is the general brand accent: secondary buttons,
-// selected pills/chips, toggles, sliders, text/number accents, icons, borders, glows.
-// CTA_ORANGE (bright orange #FF6B00) is reserved ONLY for primary-action buttons that
-// commit something (Save, Update, Post, Buy, Start Workout, Send Invite, Challenge, Join, Schedule…).
-export const BRAND_ACCENT = '#E89951';
-export const CTA_ORANGE = '#FF6B00';
+// ── Ash & Midnight palette ───────────────────────────────────────────
+// Light "washed slate" canvas, deep-indigo text, indigo brand, preserved accent oranges.
+//   canvas #EEEEF2 · card #F8F8FC · text #211832 · muted #7A7C90
+//   inactive #D8D8E4 · CTA #F25912 · brand #4C4E78
+//
+// BRAND_ACCENT is the general accent (selected pills/chips, toggles, sliders, text/number
+// accents, icons, borders, glows). CTA_ORANGE is reserved ONLY for primary-action buttons
+// that commit something (Save, Update, Post, Buy, Start Workout, Send Invite, Challenge…).
+// Both resolve to the same accent orange in this palette (#F25912 = rgb 242,89,18).
+export const BRAND_ACCENT = '#F25912';
+export const CTA_ORANGE = '#F25912';
+// Deep-indigo brand color: logo accent, brand chips, badges.
+export const BRAND_INDIGO = '#4C4E78';
 // Translucent accent for soft backgrounds / borders / glows.
-export const accentAlpha = (a: number) => `rgba(232,153,81,${a})`;
+export const accentAlpha = (a: number) => `rgba(242,89,18,${a})`;
+// Translucent indigo for soft brand backgrounds / borders.
+export const indigoAlpha = (a: number) => `rgba(76,78,120,${a})`;
 
-// Theme colors and styles matching Flutter app exactly
+// Theme colors and styles — Ash & Midnight (light)
 export const AppTheme = {
   // Colors
-  background: '#0F172A',
-  cardColor: '#1E293B',
-  primaryColor: '#F97316', // Orange
-  textWhite: '#FFFFFF',
-  textGrey: '#94A3B8', // Slate 400
-  inactiveColor: '#334155', // Slate 700
+  background: '#EEEEF2',   // canvas
+  cardColor: '#F8F8FC',    // card surface
+  primaryColor: '#F25912', // CTA / accent orange
+  textWhite: '#211832',    // primary text (deep indigo) — name kept for compatibility
+  textGrey: '#7A7C90',     // muted secondary text
+  inactiveColor: '#D8D8E4', // borders, empty states
 
   // Additional colors for UI elements
-  metalGray: '#465060',
-  silver: '#a6afc2',
-  orange: '#e46600',
-  darkBackground: '#1d2337',
+  metalGray: '#7A7C90',
+  silver: '#C8C8D0',
+  orange: '#F25912',
+  darkBackground: '#E4E4EC',
 };
 
-// Premium Theme for Personal Coaching section
+// Premium Theme for Personal Coaching section — Ash & Midnight (light), indigo brand
 export const CoachingTheme = {
-  background: '#020509',   // deep black-blue
-  darkBg: '#030b12',   // dark navy-black
-  cardColor: '#0a1628',   // dark blue card
-  cardDark: '#060e1c',   // very dark blue
-  primaryColor: '#4E87A0',   // muted steel blue
-  primaryLight: '#6BA3B8',   // soft muted blue
-  primaryGlow: 'rgba(78,135,160,0.12)',
-  primaryBorder: 'rgba(78,135,160,0.2)',
-  textWhite: '#f0f8ff',   // soft white-blue
-  textGrey: '#4a7a9b',   // muted blue-grey
-  textMuted: '#2d5a7a',
-  border: 'rgba(78,135,160,0.1)',
-  borderStrong: 'rgba(78,135,160,0.2)',
-  tabActive: '#4E87A0',
-  statCard: '#0a1628',
+  background: '#EEEEF2',   // canvas
+  darkBg: '#E4E4EC',       // slightly deeper canvas
+  cardColor: '#F8F8FC',    // card
+  cardDark: '#EEEEF2',     // recessed card
+  primaryColor: '#4C4E78',   // brand indigo
+  primaryLight: '#6A6CA0',   // lighter indigo
+  primaryGlow: 'rgba(76,78,120,0.12)',
+  primaryBorder: 'rgba(76,78,120,0.2)',
+  textWhite: '#211832',    // primary text
+  textGrey: '#7A7C90',     // muted
+  textMuted: '#9A9CB0',
+  border: 'rgba(76,78,120,0.1)',
+  borderStrong: 'rgba(76,78,120,0.2)',
+  tabActive: '#4C4E78',
+  statCard: '#F8F8FC',
 };
 
 export const FontSizes = {

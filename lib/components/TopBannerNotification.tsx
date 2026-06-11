@@ -10,7 +10,7 @@ type Props = {
 };
 
 const TYPE_COLOR: Record<string, string> = {
-  workout_invite: '#E89951',
+  workout_invite: '#F25912',
   friend_request: '#4FC3F7',
   chat_message: '#22C55E',
   stranger_invite: '#EAB308',
@@ -66,7 +66,7 @@ export function TopBannerNotification({ notification, onDismiss, onPress }: Prop
 
   if (!notification) return null;
 
-  const accent = TYPE_COLOR[notification.type] ?? '#E89951';
+  const accent = TYPE_COLOR[notification.type] ?? '#F25912';
 
   return (
     <Animated.View style={[styles.container, { transform: [{ translateY }], opacity }]} pointerEvents="box-none">
@@ -93,7 +93,7 @@ export function TopBannerNotification({ notification, onDismiss, onPress }: Prop
             <Text style={styles.body} numberOfLines={2}>{notification.body}</Text>
           </View>
           <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="close" size={16} color="#94A3B8" />
+            <Ionicons name="close" size={16} color="#7A7C90" />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#FFFFFF',
+    color: '#211832',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 2,

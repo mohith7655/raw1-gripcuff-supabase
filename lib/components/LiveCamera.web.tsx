@@ -371,7 +371,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
                     Live · {channelName}
                 </Text>
                 <View style={styles.viewerBadge}>
-                    <Eye color="#fff" size={11} />
+                    <Eye color="#211832" size={11} />
                     <Text style={styles.viewerBadgeText}>{viewerCount} watching</Text>
                 </View>
             </View>
@@ -392,7 +392,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
                         />
                     ) : (
                         <View style={styles.waitingPlaceholder}>
-                            <VideoOff color="#607a94" size={20} />
+                            <VideoOff color="#7A7C90" size={20} />
                             <Text style={styles.waitingText}>Waiting…</Text>
                         </View>
                     )}
@@ -404,8 +404,8 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
                                 activeOpacity={0.75}
                             >
                                 {isRemoteMuted
-                                    ? <MicOff color="#fff" size={16} />
-                                    : <Mic color="#fff" size={16} />}
+                                    ? <MicOff color="#211832" size={16} />
+                                    : <Mic color="#211832" size={16} />}
                             </TouchableOpacity>
                         </View>
                     )}
@@ -427,7 +427,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
                     />
                     {isCameraOff && (
                         <View style={styles.waitingPlaceholder}>
-                            <VideoOff color="#607a94" size={20} />
+                            <VideoOff color="#7A7C90" size={20} />
                         </View>
                     )}
                     {showLocalControls && (
@@ -437,21 +437,21 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
                                 onPress={e => { e.stopPropagation?.(); toggleMic(); }}
                                 activeOpacity={0.75}
                             >
-                                {isMuted ? <MicOff color="#fff" size={16} /> : <Mic color="#fff" size={16} />}
+                                {isMuted ? <MicOff color="#211832" size={16} /> : <Mic color="#211832" size={16} />}
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.overlayBtn, isCameraOff && styles.overlayBtnActive]}
                                 onPress={e => { e.stopPropagation?.(); toggleCamera(); }}
                                 activeOpacity={0.75}
                             >
-                                {isCameraOff ? <VideoOff color="#fff" size={16} /> : <Video color="#fff" size={16} />}
+                                {isCameraOff ? <VideoOff color="#211832" size={16} /> : <Video color="#211832" size={16} />}
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.overlayEndBtn}
                                 onPress={e => { e.stopPropagation?.(); leave(); }}
                                 activeOpacity={0.8}
                             >
-                                <PhoneOff color="#fff" size={16} />
+                                <PhoneOff color="#211832" size={16} />
                             </TouchableOpacity>
                         </View>
                     )}
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     /* ── Shared loading / error center layout ── */
     center: {
         flex: 1,
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 36,
@@ -481,14 +481,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     errorTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 20,
         fontWeight: '700',
         marginBottom: 14,
         textAlign: 'center',
     },
     errorBody: {
-        color: '#7a9ab8',
+        color: '#7A7C90',
         fontSize: 14,
         lineHeight: 22,
         textAlign: 'left',
@@ -517,17 +517,17 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     ghostBtnText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 14,
     },
     connectingTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
         marginTop: 22,
     },
     connectingSubtitle: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 13,
         marginTop: 6,
     },
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     root: {
         width: '100%',
         height: '100dvh',
-        backgroundColor: '#0d1520',
+        backgroundColor: '#EEEEF2',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
         height: 56,
         borderRadius: 10,
         overflow: 'hidden',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         position: 'relative',
     } as any,
     localWrapper: {
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 2,
         borderColor: '#4FC3F7',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
         position: 'relative',
     } as any,
 
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     cardVideo: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
     } as any,
 
     /* Waiting / camera-off placeholder inside card */
@@ -584,10 +584,10 @@ const styles = StyleSheet.create({
         top: 0, left: 0, right: 0, bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1c2e42',
+        backgroundColor: '#F8F8FC',
     },
     waitingText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 9,
         marginTop: 2,
         textAlign: 'center',
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
         marginRight: 7,
     },
     channelPillText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: '700',
     },
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
         gap: 4,
     } as any,
     viewerBadgeText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 11,
         fontWeight: '600',
         opacity: 0.85,
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
     },
     cameraOffText: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 10,
         marginTop: 4,
     },

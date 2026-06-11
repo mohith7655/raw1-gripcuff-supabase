@@ -5,9 +5,9 @@ import { StreakData } from '../../services/streak.service';
 import { getDateKey, getWeekdayIndex, getYesterdayKey, buildWeekDates } from '../../utils/streakDate';
 import { getResolvedTimezone } from '../../utils/timezone';
 
-const ACCENT = '#E89951';
-const CARD_BG = '#111d2e';
-const BORDER = 'rgba(232,153,81,0.18)';
+const ACCENT = '#F25912';
+const CARD_BG = '#F8F8FC';
+const BORDER = 'rgba(242,89,18,0.18)';
 const WEEKLY_TOTAL = 7;
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -233,7 +233,7 @@ export function StreakCard({ data, onPress }: Props) {
                 <View style={styles.rightBlock}>
                     <Text style={styles.bestLabel}>Best</Text>
                     <Text style={styles.bestValue}>{best}d</Text>
-                    <ChevronRight color="#4a6480" size={16} style={{ marginTop: 4 }} />
+                    <ChevronRight color="#7A7C90" size={16} style={{ marginTop: 4 }} />
                 </View>
             </View>
 
@@ -263,9 +263,9 @@ const styles = StyleSheet.create({
     },
     leftBlock: { alignItems: 'center', minWidth: 50 },
     flameEmoji: { fontSize: 22, lineHeight: 26 },
-    streakNumber: { color: '#ffffff', fontSize: 24, fontWeight: '800', lineHeight: 28 },
+    streakNumber: { color: '#211832', fontSize: 24, fontWeight: '800', lineHeight: 28 },
     streakLabel: { color: ACCENT, fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
-    motivationText: { color: '#4a6480', fontSize: 9, fontWeight: '500', marginTop: 2, textAlign: 'center' },
+    motivationText: { color: '#7A7C90', fontSize: 9, fontWeight: '500', marginTop: 2, textAlign: 'center' },
     centerBlock: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     dayCol: { alignItems: 'center', gap: 5 },
     dayDot: {
@@ -274,17 +274,17 @@ const styles = StyleSheet.create({
         borderRadius: DOT_SIZE / 2,
         backgroundColor: 'rgba(255,255,255,0.07)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
     },
     // Completed day — solid orange fill + glow
     dayDotActive: {
-        backgroundColor: '#FF7A00',
-        borderColor: '#FF7A00',
+        backgroundColor: '#F25912',
+        borderColor: '#F25912',
         borderWidth: 2,
-        shadowColor: '#FF7A00',
+        shadowColor: '#F25912',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -292,10 +292,10 @@ const styles = StyleSheet.create({
     },
     // Today, streak alive, not yet completed — orange ring, dark center
     dayDotStreakActive: {
-        backgroundColor: '#1A2238',
-        borderColor: '#FF7A00',
+        backgroundColor: '#EEEEF2',
+        borderColor: '#F25912',
         borderWidth: 2,
-        shadowColor: '#FF7A00',
+        shadowColor: '#F25912',
         shadowOpacity: 0.25,
         shadowRadius: 8,
         elevation: 3,
@@ -305,19 +305,19 @@ const styles = StyleSheet.create({
         borderColor: ACCENT,
         borderWidth: 2,
     },
-    dayLabel: { color: '#3a5470', fontSize: 11, fontWeight: '600' },
+    dayLabel: { color: '#D8D8E4', fontSize: 11, fontWeight: '600' },
     dayLabelActive: { color: ACCENT },
     dayLabelStreakActive: { color: ACCENT },
     dayDotText: {
-        color: '#ffffff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '800',
         lineHeight: 16,
         textAlign: 'center',
     },
     rightBlock: { alignItems: 'center', minWidth: 28 },
-    bestLabel: { color: '#3a5470', fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-    bestValue: { color: '#8aaccc', fontSize: 13, fontWeight: '700' },
+    bestLabel: { color: '#D8D8E4', fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    bestValue: { color: '#7A7C90', fontSize: 13, fontWeight: '700' },
 
     // Challenges section
     challengesSection: { marginTop: 10 },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
         gap: 5,
     },
     challengesLabel: {
-        color: '#8aaccc',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '600',
     },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     challengesCountSuffix: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 10,
         fontWeight: '500',
     },

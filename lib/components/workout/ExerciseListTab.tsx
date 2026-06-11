@@ -60,7 +60,7 @@ export function ExerciseListTab({ videoId, programId, exercises: propExercises }
     };
 
     if (loading) {
-        return <ActivityIndicator color="#E89951" style={{ marginTop: 24 }} />;
+        return <ActivityIndicator color="#F25912" style={{ marginTop: 24 }} />;
     }
 
     return (
@@ -100,7 +100,7 @@ export function ExerciseListTab({ videoId, programId, exercises: propExercises }
                                 >
                                     <Timer
                                         size={16}
-                                        color={hasTimer ? '#E89951' : '#4B5563'}
+                                        color={hasTimer ? '#F25912' : '#D8D8E4'}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
     empty: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         textAlign: 'center',
         marginTop: 24,
         fontSize: 14,
@@ -143,13 +143,13 @@ const styles = StyleSheet.create({
     },
     rowBorder: {
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
     },
     dot: {
         width: 7,
         height: 7,
         borderRadius: 3.5,
-        backgroundColor: '#E89951',
+        backgroundColor: '#F25912',
         flexShrink: 0,
     },
     info: { flex: 1 },
@@ -159,12 +159,12 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     timerBadge: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 11,
         marginTop: 2,
     },
     reps: {
-        color: '#E89951',
+        color: '#F25912',
         fontSize: 12,
         fontWeight: '600',
         flexShrink: 0,
@@ -177,11 +177,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(33,24,50,0.08)',
         flexShrink: 0,
     },
     timerBtnActive: {
-        backgroundColor: 'rgba(232,153,81,0.12)',
-        borderColor: '#E89951',
+        backgroundColor: 'rgba(242,89,18,0.12)',
+        borderColor: '#F25912',
     },
 });

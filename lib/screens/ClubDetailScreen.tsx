@@ -20,10 +20,10 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 import type { Club } from './ClubsScreen';
 
 const { width: SW } = Dimensions.get('window');
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const COVER_HEIGHT = 200;
 const GREEN = '#22c55e';
 
@@ -179,7 +179,7 @@ function InviteModal({
                     activeOpacity={0.85}
                   >
                     {isLoading
-                      ? <ActivityIndicator size="small" color="#fff" />
+                      ? <ActivityIndicator size="small" color="#211832" />
                       : <Text style={inviteStyles.inviteBtnText}>Invite</Text>
                     }
                   </TouchableOpacity>
@@ -210,9 +210,9 @@ const inviteStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
-  title: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  title: { color: '#211832', fontSize: 17, fontWeight: '800' },
   closeBtn: { padding: 4 },
   searchRow: {
     flexDirection: 'row',
@@ -224,9 +224,9 @@ const inviteStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
   },
-  searchInput: { flex: 1, color: '#fff', fontSize: 15 },
+  searchInput: { flex: 1, color: '#211832', fontSize: 15 },
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,20 +234,20 @@ const inviteStyles = StyleSheet.create({
     paddingVertical: 10,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(33,24,50,0.05)',
   },
   avatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', flexShrink: 0,
   },
   avatarImg: { width: 40, height: 40, borderRadius: 20 },
-  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  name: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  avatarInitial: { color: '#211832', fontSize: 16, fontWeight: '700' },
+  name: { color: '#211832', fontSize: 14, fontWeight: '600' },
   username: { color: TEXT_SECONDARY, fontSize: 12, marginTop: 1 },
   inviteBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -387,7 +387,7 @@ export function ClubDetailScreen() {
           : <View style={[StyleSheet.absoluteFill, styles.coverGradient]} />
         }
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={22} color="#211832" />
         </TouchableOpacity>
         {/* Club Chat button — visible to all members */}
         {isMember && (
@@ -396,7 +396,7 @@ export function ClubDetailScreen() {
             onPress={() => navigation.navigate('ClubChatScreen', { clubId: club.id, clubName: club.name })}
             activeOpacity={0.85}
           >
-            <MessageSquare size={16} color="#fff" />
+            <MessageSquare size={16} color="#211832" />
             <Text style={styles.chatBtnText}>Chat</Text>
           </TouchableOpacity>
         )}
@@ -408,7 +408,7 @@ export function ClubDetailScreen() {
             activeOpacity={0.85}
           >
             {joining
-              ? <ActivityIndicator size="small" color="#fff" />
+              ? <ActivityIndicator size="small" color="#211832" />
               : <Text style={styles.joinLeaveBtnText}>{isMember ? 'Leave' : 'Join'}</Text>
             }
           </TouchableOpacity>
@@ -464,7 +464,7 @@ export function ClubDetailScreen() {
             onPress={() => setInviteVisible(true)}
             activeOpacity={0.85}
           >
-            <UserPlus size={15} color="#fff" />
+            <UserPlus size={15} color="#211832" />
             <Text style={styles.inviteBtnText}>Invite</Text>
           </TouchableOpacity>
         </View>
@@ -516,14 +516,14 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
   cover: {
     height: COVER_HEIGHT,
-    backgroundColor: '#0a1520',
+    backgroundColor: '#EEEEF2',
     position: 'relative',
     justifyContent: 'space-between',
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 16,
   },
-  coverGradient: { backgroundColor: '#0d1825' },
+  coverGradient: { backgroundColor: '#EEEEF2' },
   backBtn: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -539,11 +539,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(33,24,50,0.2)',
   },
   chatBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   joinBtnLarge: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 8,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   },
   leaveBtn: {
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(33,24,50,0.4)',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 8,
@@ -566,11 +566,11 @@ const styles = StyleSheet.create({
   clubAvatarWrap: { marginTop: -32, marginBottom: 8 },
   clubAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: BG },
   clubAvatarFallback: { backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center' },
-  clubAvatarInitial: { color: '#fff', fontSize: 24, fontWeight: '800' },
-  clubName: { color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 6 },
+  clubAvatarInitial: { color: '#211832', fontSize: 24, fontWeight: '800' },
+  clubName: { color: '#211832', fontSize: 20, fontWeight: '800', marginBottom: 6 },
   clubMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   categoryPill: {
-    backgroundColor: 'rgba(232,153,81,0.15)',
+    backgroundColor: 'rgba(242,89,18,0.15)',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   tabBtn: {
     flex: 1,
@@ -591,9 +591,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabBtnActive: { borderBottomColor: '#E89951' },
+  tabBtnActive: { borderBottomColor: '#F25912' },
   tabBtnText: { color: TEXT_SECONDARY, fontSize: 14, fontWeight: '600' },
-  tabBtnTextActive: { color: '#fff' },
+  tabBtnTextActive: { color: '#211832' },
 
   membersHeader: {
     flexDirection: 'row',
@@ -602,14 +602,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(33,24,50,0.05)',
   },
   membersCount: { color: TEXT_SECONDARY, fontSize: 13 },
   inviteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -626,24 +626,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(33,24,50,0.05)',
   },
   memberAvatar: {
     width: 38, height: 38, borderRadius: 8,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', flexShrink: 0,
   },
   memberAvatarImg: { width: 38, height: 38, borderRadius: 8 },
-  memberAvatarInitial: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  memberName: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '600' },
+  memberAvatarInitial: { color: '#211832', fontSize: 15, fontWeight: '700' },
+  memberName: { flex: 1, color: '#211832', fontSize: 14, fontWeight: '600' },
   roleBadge: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  roleBadgeOwner: { backgroundColor: 'rgba(232,153,81,0.2)' },
+  roleBadgeOwner: { backgroundColor: 'rgba(242,89,18,0.2)' },
   roleBadgeText: { color: ORANGE, fontSize: 11, fontWeight: '700' },
 
   postCard: {
@@ -652,8 +652,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(33,24,50,0.06)',
   },
   postAuthor: { color: ORANGE, fontSize: 13, fontWeight: '700', marginBottom: 4 },
-  postCaption: { color: '#E2E8F0', fontSize: 14, lineHeight: 20 },
+  postCaption: { color: '#211832', fontSize: 14, lineHeight: 20 },
 });

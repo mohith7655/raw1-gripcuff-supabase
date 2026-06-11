@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 
-const ACCENT = '#FF6B35';
+const ACCENT = '#F25912';
 const { width, height } = Dimensions.get('window');
 
 interface Props {
@@ -110,7 +110,7 @@ export function WorkoutStartModal({
               resizeMode="cover"
             />
           ) : (
-            <View style={[s.thumbnail, { backgroundColor: '#2a2a2a' }]} />
+            <View style={[s.thumbnail, { backgroundColor: '#C8C8D0' }]} />
           )}
 
           {/* Content */}
@@ -163,7 +163,7 @@ const s = StyleSheet.create({
   card: {
     width: Math.min(width - 32, 400),
     borderRadius: 16,
-    backgroundColor: '#1a1f2e',
+    backgroundColor: '#EEEEF2',
     overflow: 'hidden',
     paddingBottom: 24,
   },
@@ -179,7 +179,7 @@ const s = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: 200,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#C8C8D0',
   },
   content: {
     paddingHorizontal: 20,
@@ -219,7 +219,7 @@ const s = StyleSheet.create({
     gap: 12,
   },
   startBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 10,

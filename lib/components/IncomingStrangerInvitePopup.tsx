@@ -13,7 +13,7 @@ import { Dumbbell, Clock } from 'lucide-react-native';
 import { StrangerInvite } from '../services/StrangerInviteService';
 import { TierAvatar } from './profile/TierAvatar';
 
-const ACCENT = '#E89951';
+const ACCENT = '#F25912';
 const TIMEOUT_SEC = 10;
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -25,7 +25,7 @@ type Props = {
 
 function AvatarCircle({ name, photo, uid }: { name: string; photo: string | null; uid?: string | null }) {
     const initial = name.charAt(0).toUpperCase();
-    const colors = ['#D4622A', '#8B5CF6', '#10B981', '#3B82F6'];
+    const colors = ['#F25912', '#8B5CF6', '#10B981', '#3B82F6'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     const bg = colors[Math.abs(hash) % colors.length];
@@ -136,7 +136,7 @@ export function IncomingStrangerInvitePopup({ invite, onAccept, onDecline }: Pro
                         <Text style={styles.liveBadgeText}>GYM PARTNER</Text>
                     </View>
                     <View style={styles.timerPill}>
-                        <Clock size={12} color={secondsLeft <= 3 ? '#ef4444' : '#9CA3AF'} />
+                        <Clock size={12} color={secondsLeft <= 3 ? '#ef4444' : '#7A7C90'} />
                         <Text style={[styles.timerText, secondsLeft <= 3 && { color: '#ef4444' }]}>
                             {secondsLeft}s
                         </Text>
@@ -204,11 +204,11 @@ const styles = StyleSheet.create({
     card: {
         width: '100%',
         maxWidth: 420,
-        backgroundColor: '#111827',
+        backgroundColor: '#F8F8FC',
         borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.35)',
+        borderColor: 'rgba(242,89,18,0.35)',
         boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
         elevation: 20,
     },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     timerText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 13,
         fontWeight: '700',
     },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
         flexShrink: 0,
     },
     avatarText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 22,
         fontWeight: '700',
     },
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     inviterName: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 17,
         fontWeight: '700',
     },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     inviteLabel: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 13,
     },
     workoutRow: {
@@ -309,17 +309,17 @@ const styles = StyleSheet.create({
         gap: 12,
         marginHorizontal: 16,
         marginBottom: 14,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.15)',
+        borderColor: 'rgba(242,89,18,0.15)',
     },
     workoutIconWrap: {
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
@@ -328,14 +328,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     workoutLabel: {
-        color: '#6B7280',
+        color: '#7A7C90',
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     workoutTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: '600',
         marginTop: 2,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
         paddingVertical: 13,
         borderRadius: 14,
         alignItems: 'center',
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
     },
     acceptBtnText: {
         color: '#fff',

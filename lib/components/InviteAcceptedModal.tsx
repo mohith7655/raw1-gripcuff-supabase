@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ORANGE = '#E89951';
+const ORANGE = '#F25912';
 
 type Props = {
     guestName: string;
@@ -91,7 +91,7 @@ export function InviteAcceptedModal({ guestName, videoTitle, onClose, onJoin }: 
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={dismiss} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="close" size={18} color="#6B7280" />
+                    <Ionicons name="close" size={18} color="#7A7C90" />
                 </TouchableOpacity>
             </View>
         </Animated.View>
@@ -113,13 +113,13 @@ const styles = StyleSheet.create({
         maxWidth: 420,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1a2740',
+        backgroundColor: '#F8F8FC',
         borderRadius: 16,
         paddingVertical: 14,
         paddingHorizontal: 16,
         gap: 12,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.3)',
+        borderColor: 'rgba(242,89,18,0.3)',
         boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
         elevation: 12,
     },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(232,153,81,0.12)',
+        backgroundColor: 'rgba(242,89,18,0.12)',
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
@@ -136,13 +136,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '700',
         marginBottom: 2,
     },
     body: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 13,
         lineHeight: 18,
     },
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     video: {
-        color: '#fff',
+        color: '#211832',
         fontWeight: '500',
     },
     joinBtn: {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
     },
     joinBtnText: {
         color: '#fff',

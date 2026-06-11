@@ -11,10 +11,10 @@ import { AlarmConfig, formatMoveTime12h } from '../services/moveReminder.service
 import { reminderWatcherService } from '../services/reminderWatcher.service';
 import { getUserDateKey } from '../utils/userDate';
 
-const ACCENT   = '#E89951';
-const BG       = '#0d1825';
-const CARD     = '#111d2e';
-const BORDER   = 'rgba(232,153,81,0.2)';
+const ACCENT   = '#F25912';
+const BG       = '#EEEEF2';
+const CARD     = '#F8F8FC';
+const BORDER   = 'rgba(242,89,18,0.2)';
 const SNOOZE_OPTIONS = [
     { label: 'Skip today',  mins: 0,  color: '#f87171' },
     { label: '+15 min',     mins: 15, color: '#f59e0b' },
@@ -106,7 +106,7 @@ export function AlarmPillSheet({ visible, alarm, reminderId, onClose, onUpdate, 
                     <View style={ss.header}>
                         <Text style={ss.headerTitle}>Alarm Settings</Text>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <X color="#4a6480" size={22} />
+                            <X color="#7A7C90" size={22} />
                         </TouchableOpacity>
                     </View>
 
@@ -146,7 +146,7 @@ export function AlarmPillSheet({ visible, alarm, reminderId, onClose, onUpdate, 
 
                         {timeChanged && (
                             <TouchableOpacity style={ss.saveTimeBtn} onPress={handleSaveTime} activeOpacity={0.8}>
-                                <Clock color="#fff" size={13} />
+                                <Clock color="#211832" size={13} />
                                 <Text style={ss.saveTimeBtnText}>Save new time</Text>
                             </TouchableOpacity>
                         )}
@@ -160,7 +160,7 @@ export function AlarmPillSheet({ visible, alarm, reminderId, onClose, onUpdate, 
                         onChangeText={setLabel}
                         onBlur={handleLabelBlur}
                         placeholder="e.g. Stretch break"
-                        placeholderTextColor="#2a4060"
+                        placeholderTextColor="#D8D8E4"
                         maxLength={40}
                     />
 
@@ -170,7 +170,7 @@ export function AlarmPillSheet({ visible, alarm, reminderId, onClose, onUpdate, 
                         <Switch
                             value={enabled}
                             onValueChange={handleToggle}
-                            trackColor={{ false: '#1c2e42', true: ACCENT }}
+                            trackColor={{ false: '#F8F8FC', true: ACCENT }}
                             thumbColor="#fff"
                         />
                     </View>
@@ -229,10 +229,10 @@ const ss = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
         marginBottom: 18,
     },
-    headerTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    headerTitle: { color: '#211832', fontSize: 16, fontWeight: '700' },
     timeCard: {
         backgroundColor: CARD,
         borderRadius: 16,
@@ -253,22 +253,22 @@ const ss = StyleSheet.create({
     timeBox: {
         width: 64,
         height: 56,
-        backgroundColor: '#0a1628',
+        backgroundColor: '#EEEEF2',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: BORDER,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    timeBoxText: { color: '#fff', fontSize: 28, fontWeight: '800' },
-    colon: { color: '#fff', fontSize: 28, fontWeight: '800', marginBottom: 4 },
+    timeBoxText: { color: '#211832', fontSize: 28, fontWeight: '800' },
+    colon: { color: '#211832', fontSize: 28, fontWeight: '800', marginBottom: 4 },
     ampm: { color: ACCENT, fontSize: 16, fontWeight: '700', marginLeft: 4, alignSelf: 'center' },
     saveTimeBtn: {
         marginTop: 14,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: '#FF6B00',
+        backgroundColor: '#F25912',
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 8,
@@ -280,12 +280,12 @@ const ss = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.06)',
+        borderBottomColor: 'rgba(33,24,50,0.06)',
         marginBottom: 16,
     },
     rowLabel: { color: 'rgba(200,220,240,0.85)', fontSize: 14, fontWeight: '600' },
     sectionLabel: {
-        color: '#4a6480',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 0.7,
@@ -297,7 +297,7 @@ const ss = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: BORDER,
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         paddingHorizontal: 14,
         paddingVertical: 10,
@@ -309,7 +309,7 @@ const ss = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         backgroundColor: CARD,
         alignItems: 'center',
     },

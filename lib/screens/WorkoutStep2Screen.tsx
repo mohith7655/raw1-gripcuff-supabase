@@ -65,7 +65,7 @@ export const WorkoutStep2Screen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft color="#fff" size={24} />
+          <ArrowLeft color="#211832" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Step 2: Preferences</Text>
         <View style={{ width: 40 }} />
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   equipmentCardSelected: {
     borderColor: AppTheme.primaryColor,
-    backgroundColor: `rgba(232,153,81, 0.1)`,
+    backgroundColor: `rgba(242,89,18, 0.1)`,
   },
   equipmentText: {
     color: AppTheme.textWhite,
@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   optionButtonSelected: {
-    borderColor: '#E89951',
-    backgroundColor: `rgba(232,153,81, 0.2)`,
+    borderColor: '#F25912',
+    backgroundColor: `rgba(242,89,18, 0.2)`,
   },
   optionText: {
     color: AppTheme.textWhite,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold as any,
   },
   optionTextSelected: {
-    color: '#E89951',
+    color: '#F25912',
   },
   footer: {
     position: 'absolute',
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.cardColor,
   },
   continueButtonText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: FontSizes.h5,
     fontWeight: FontWeights.bold as any,
   },

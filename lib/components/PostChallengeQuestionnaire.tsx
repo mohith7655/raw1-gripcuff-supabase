@@ -4,8 +4,8 @@ import {
 } from 'react-native';
 import { Star } from 'lucide-react-native';
 
-const ORANGE = '#FF6B00';
-const ACCENT = '#E89951';
+const ORANGE = '#F25912';
+const ACCENT = '#F25912';
 
 export interface PostChallengeAnswers {
     feeling: number;       // 1–5
@@ -124,7 +124,7 @@ export function PostChallengeQuestionnaire({
                             disabled={!complete || submitting}
                         >
                             {submitting
-                                ? <ActivityIndicator color="#fff" size="small" />
+                                ? <ActivityIndicator color="#211832" size="small" />
                                 : <Text style={st.submitText}>Submit</Text>}
                         </TouchableOpacity>
 
@@ -142,13 +142,13 @@ const st = StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     sheet: {
         maxHeight: '90%',
-        backgroundColor: '#0c1422',
+        backgroundColor: '#EEEEF2',
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
         paddingHorizontal: 24, paddingTop: 22, paddingBottom: 28,
-        borderTopWidth: 1, borderTopColor: 'rgba(255,107,0,0.25)',
+        borderTopWidth: 1, borderTopColor: 'rgba(242,89,18,0.25)',
     },
     kicker: { color: ORANGE, fontSize: 12, fontWeight: '800', letterSpacing: 1.5 },
-    title: { color: '#fff', fontSize: 24, fontWeight: '800', marginTop: 4 },
+    title: { color: '#211832', fontSize: 24, fontWeight: '800', marginTop: 4 },
     subtitle: { color: 'rgba(150,180,210,0.6)', fontSize: 13, marginTop: 2, marginBottom: 4 },
 
     qBlock: { marginTop: 22 },
@@ -159,28 +159,28 @@ const st = StyleSheet.create({
 
     repsInput: {
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
         borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
-        color: '#fff', fontSize: 18, fontWeight: '700',
+        color: '#211832', fontSize: 18, fontWeight: '700',
     },
 
     winnerRow: { flexDirection: 'row', gap: 12 },
     winnerPill: {
         flex: 1, paddingVertical: 14, borderRadius: 14,
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.1)',
         alignItems: 'center',
     },
-    winnerPillActive: { backgroundColor: 'rgba(255,107,0,0.18)', borderColor: ORANGE },
+    winnerPillActive: { backgroundColor: 'rgba(242,89,18,0.18)', borderColor: ORANGE },
     winnerText: { color: 'rgba(200,220,240,0.7)', fontSize: 15, fontWeight: '700' },
-    winnerTextActive: { color: '#fff' },
+    winnerTextActive: { color: '#211832' },
 
     submitBtn: {
         marginTop: 28, backgroundColor: ORANGE, borderRadius: 16,
         paddingVertical: 16, alignItems: 'center',
     },
-    submitBtnDisabled: { backgroundColor: 'rgba(255,107,0,0.3)' },
-    submitText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+    submitBtnDisabled: { backgroundColor: 'rgba(242,89,18,0.3)' },
+    submitText: { color: '#211832', fontSize: 17, fontWeight: '800' },
 
     skipBtn: { marginTop: 12, alignItems: 'center', paddingVertical: 8 },
     skipText: { color: 'rgba(150,180,210,0.55)', fontSize: 14, fontWeight: '600' },

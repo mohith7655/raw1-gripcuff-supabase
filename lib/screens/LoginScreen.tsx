@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(33,24,50,0.1)',
   },
   button: {
     backgroundColor: AppTheme.primaryColor,

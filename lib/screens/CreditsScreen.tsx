@@ -75,8 +75,8 @@ function SmallAvatar({ uri, size }: { uri?: string | null; size: number }) {
     );
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
-      <CircleUserRound size={Math.round(size * 0.5)} color="#ff7a00" strokeWidth={1.8} />
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#EEEEF2', alignItems: 'center', justifyContent: 'center' }}>
+      <CircleUserRound size={Math.round(size * 0.5)} color="#F25912" strokeWidth={1.8} />
     </View>
   );
 }
@@ -103,7 +103,7 @@ export const CreditsScreen = () => {
             style={styles.backButton}
             activeOpacity={0.8}
           >
-            <ArrowLeft color="#ffffff" size={24} />
+            <ArrowLeft color="#211832" size={24} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Credits</Text>
           <View style={{ width: 40 }} />
@@ -364,12 +364,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
   },
 
   /* ── Balance Card ── */
   balanceCard: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 16,
     padding: 24,
     marginBottom: 32,
@@ -378,30 +378,30 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#211832',
     marginTop: 10,
     marginBottom: 16,
   },
   balanceLabel: {
     fontSize: 13,
-    color: '#888888',
+    color: '#7A7C90',
     fontWeight: '500',
     marginBottom: 4,
   },
   balanceAmount: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
     marginBottom: 16,
   },
   buyButton: {
-    backgroundColor: '#D4622A',
+    backgroundColor: '#F25912',
     paddingHorizontal: 32,
     paddingVertical: 11,
     borderRadius: 20,
   },
   buyButtonText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   howItWorksText: {
     fontSize: 12,
-    color: '#607a94',
+    color: '#7A7C90',
     textDecorationLine: 'underline',
     fontWeight: '600',
   },
@@ -424,18 +424,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#888888',
+    color: '#7A7C90',
     marginBottom: 16,
   },
 
   /* ── Task Card ── */
   taskCard: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -455,38 +455,38 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
     marginBottom: 4,
   },
   taskDescription: {
     fontSize: 13,
-    color: '#888888',
+    color: '#7A7C90',
     lineHeight: 18,
   },
   rewardBadge: {
-    backgroundColor: 'rgba(212, 98, 42, 0.1)',
+    backgroundColor: 'rgba(242,89,18, 0.1)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D4622A',
+    borderColor: '#F25912',
   },
   rewardText: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#D4622A',
+    color: '#F25912',
   },
   taskFooter: {
     alignItems: 'flex-start',
   },
   actionButton: {
-    backgroundColor: '#D4622A',
+    backgroundColor: '#F25912',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
   actionButtonText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(33,24,50, 0.05)',
   },
   dot: {
     width: 8,
@@ -523,12 +523,12 @@ const styles = StyleSheet.create({
   txDesc: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#211832',
     marginBottom: 4,
   },
   txDate: {
     fontSize: 12,
-    color: '#888888',
+    color: '#7A7C90',
   },
   txAmount: {
     fontSize: 16,
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#0d1520',
+    backgroundColor: '#EEEEF2',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: SCREEN_PADDING,
@@ -563,31 +563,31 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
   },
   closeButton: {
     fontSize: 24,
-    color: '#888888',
+    color: '#7A7C90',
     fontWeight: 'bold',
   },
   packageCard: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(33,24,50, 0.1)',
   },
   packageCardPopular: {
-    borderColor: '#D4622A',
-    backgroundColor: 'rgba(212, 98, 42, 0.08)',
+    borderColor: '#F25912',
+    backgroundColor: 'rgba(242,89,18, 0.08)',
   },
   popularBadge: {
     position: 'absolute',
     top: -10,
     right: 16,
-    backgroundColor: '#D4622A',
+    backgroundColor: '#F25912',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -600,24 +600,24 @@ const styles = StyleSheet.create({
   packageCredits: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#fff',
     marginBottom: 4,
   },
   packagePrice: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#D4622A',
+    color: '#F25912',
     marginBottom: 4,
   },
   packageCostPerCredit: {
     fontSize: 11,
-    color: '#888888',
+    color: '#7A7C90',
     fontWeight: '600',
   },
 
   /* ── How It Works Modal ── */
   hiwModalContent: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
@@ -628,12 +628,12 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(33,24,50, 0.05)',
   },
   hiwTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
     textAlign: 'center',
   },
   hiwScrollContent: {
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   hiwSectionTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#211832',
     letterSpacing: 1,
   },
   hiwRow: {
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.03)',
+    borderBottomColor: 'rgba(33,24,50, 0.03)',
   },
   hiwRowLeft: {
     flexDirection: 'row',
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
   },
   hiwLabel: {
     fontSize: 14,
-    color: '#ffffff',
+    color: '#211832',
     fontWeight: '500',
   },
   hiwAmount: {
@@ -688,18 +688,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
-    backgroundColor: '#131f2e',
+    borderTopColor: 'rgba(33,24,50, 0.05)',
+    backgroundColor: '#F8F8FC',
   },
   hiwBuyButton: {
-    backgroundColor: '#D4622A',
+    backgroundColor: '#F25912',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 16,
   },
   hiwBuyButtonText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   hiwCloseButtonText: {
-    color: '#888888',
+    color: '#7A7C90',
     fontSize: 13,
     fontWeight: '600',
   },

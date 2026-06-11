@@ -51,7 +51,7 @@ export const WorkoutStep1Screen = () => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Step 1: Select Target Area</Text>
                 <View style={{ width: 40 }} />
@@ -141,7 +141,7 @@ export const WorkoutStep1Screen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#1d2337',
+        backgroundColor: '#F8F8FC',
     },
     header: {
         flexDirection: 'row',
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
     },
     subtitleContainer: {
         alignItems: 'center',
@@ -164,12 +164,12 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 14,
-        color: '#a6afc2',
+        color: '#7A7C90',
     },
     genderToggleContainer: {
         flexDirection: 'row',
         marginHorizontal: 24,
-        backgroundColor: '#465060',
+        backgroundColor: '#7A7C90',
         borderRadius: 24,
         padding: 4,
         marginBottom: 24,
@@ -181,10 +181,10 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     genderButtonSelected: {
-        backgroundColor: '#e46600',
+        backgroundColor: '#F25912',
     },
     genderText: {
-        color: '#a6afc2',
+        color: '#7A7C90',
         fontWeight: 'bold',
     },
     genderTextSelected: {
@@ -199,13 +199,13 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         marginRight: 12,
         borderRadius: 20,
-        backgroundColor: '#465060',
+        backgroundColor: '#7A7C90',
     },
     tabButtonSelected: {
-        backgroundColor: '#e46600',
+        backgroundColor: '#F25912',
     },
     tabText: {
-        color: '#a6afc2',
+        color: '#7A7C90',
         fontWeight: '600',
     },
     tabTextSelected: {
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     },
     muscleCard: {
         width: '48%',
-        backgroundColor: '#465060',
+        backgroundColor: '#7A7C90',
         borderRadius: 16,
         paddingVertical: 24,
         alignItems: 'center',
@@ -229,46 +229,46 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     muscleCardSelected: {
-        backgroundColor: 'rgba(228, 102, 0, 0.12)',
-        borderColor: '#e46600',
+        backgroundColor: 'rgba(242,89,18, 0.12)',
+        borderColor: '#F25912',
     },
     muscleText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: 'bold',
     },
     muscleTextSelected: {
-        color: '#e46600',
+        color: '#F25912',
     },
     footer: {
         padding: 16,
         borderTopWidth: 1,
-        borderTopColor: '#465060',
-        backgroundColor: '#1d2337',
+        borderTopColor: '#7A7C90',
+        backgroundColor: '#F8F8FC',
     },
     chipsContainer: {
         flexDirection: 'row',
         marginBottom: 16,
     },
     chip: {
-        backgroundColor: '#465060',
+        backgroundColor: '#7A7C90',
         borderRadius: 16,
         paddingVertical: 8,
         paddingHorizontal: 12,
         marginRight: 8,
     },
     chipText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
     },
     continueButton: {
-        backgroundColor: '#e46600',
+        backgroundColor: '#F25912',
         paddingVertical: 16,
         borderRadius: 16,
         alignItems: 'center',
     },
     continueButtonDisabled: {
-        backgroundColor: '#465060',
+        backgroundColor: '#7A7C90',
     },
     continueButtonText: {
         color: '#fff',
@@ -276,6 +276,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     continueButtonTextDisabled: {
-        color: '#a6afc2',
+        color: '#7A7C90',
     },
 });

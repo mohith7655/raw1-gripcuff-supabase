@@ -30,5 +30,5 @@ export const AgoraVideoRoom: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: '#0d1520' },
+    root: { flex: 1, backgroundColor: '#EEEEF2' },
 });

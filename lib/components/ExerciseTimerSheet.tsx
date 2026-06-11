@@ -12,8 +12,8 @@ import {
 import { X, Timer, BedDouble } from 'lucide-react-native';
 import { TimerConfig, TimerMode, useWorkoutTimer } from '../hooks/useWorkoutTimer';
 
-const ACCENT = '#E89951';
-const BG = '#0f1923';
+const ACCENT = '#F25912';
+const BG = '#EEEEF2';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER = 'rgba(255,255,255,0.1)';
 
@@ -133,8 +133,8 @@ export function ExerciseTimerSheet({ visible, exerciseName, initialConfig, onSav
                                     activeOpacity={0.8}
                                 >
                                     {m === 'countdown'
-                                        ? <Timer size={15} color={mode === m ? ACCENT : '#9CA3AF'} />
-                                        : <BedDouble size={15} color={mode === m ? '#818CF8' : '#9CA3AF'} />
+                                        ? <Timer size={15} color={mode === m ? ACCENT : '#7A7C90'} />
+                                        : <BedDouble size={15} color={mode === m ? '#818CF8' : '#7A7C90'} />
                                     }
                                     <Text style={[s.modeTxt, mode === m && (m === 'countdown' ? s.modeTxtAccent : s.modeTxtIndigo)]}>
                                         {m === 'countdown' ? 'Countdown' : 'Rest'}
@@ -213,8 +213,8 @@ function ToggleRow({
             <Switch
                 value={value}
                 onValueChange={onToggle}
-                trackColor={{ false: '#334155', true: 'rgba(232,153,81,0.4)' }}
-                thumbColor={value ? ACCENT : '#94A3B8'}
+                trackColor={{ false: '#D8D8E4', true: 'rgba(242,89,18,0.4)' }}
+                thumbColor={value ? ACCENT : '#7A7C90'}
             />
         </View>
     );
@@ -231,7 +231,7 @@ const s = StyleSheet.create({
         maxHeight: '85%',
     },
     handle: {
-        width: 40, height: 4, backgroundColor: '#2d3748',
+        width: 40, height: 4, backgroundColor: '#F8F8FC',
         borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 4,
     },
     header: {
@@ -239,9 +239,9 @@ const s = StyleSheet.create({
         justifyContent: 'space-between', paddingVertical: 14,
     },
     iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-    title: { color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
+    title: { color: '#211832', fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
     label: {
-        color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '600',
+        color: 'rgba(33,24,50,0.45)', fontSize: 11, fontWeight: '600',
         letterSpacing: 0.5, textTransform: 'uppercase',
         marginTop: 16, marginBottom: 8,
     },
@@ -251,8 +251,8 @@ const s = StyleSheet.create({
         gap: 6, paddingVertical: 12, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    modeBtnActive: { borderColor: ACCENT, backgroundColor: 'rgba(232,153,81,0.1)' },
-    modeTxt: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
+    modeBtnActive: { borderColor: ACCENT, backgroundColor: 'rgba(242,89,18,0.1)' },
+    modeTxt: { color: '#7A7C90', fontSize: 14, fontWeight: '600' },
     modeTxtAccent: { color: ACCENT },
     modeTxtIndigo: { color: '#818CF8' },
     presetRow: { gap: 8, paddingBottom: 4 },
@@ -260,24 +260,24 @@ const s = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    presetChipActive: { backgroundColor: 'rgba(232,153,81,0.15)', borderColor: ACCENT },
-    presetTxt: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
+    presetChipActive: { backgroundColor: 'rgba(242,89,18,0.15)', borderColor: ACCENT },
+    presetTxt: { color: '#7A7C90', fontSize: 14, fontWeight: '600' },
     presetTxtActive: { color: ACCENT },
     toggleRow: {
         flexDirection: 'row', alignItems: 'center',
         paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: BORDER,
     },
-    toggleLabel: { color: '#fff', fontSize: 14, fontWeight: '500', marginBottom: 2 },
-    toggleSub: { color: '#6B7280', fontSize: 12 },
+    toggleLabel: { color: '#211832', fontSize: 14, fontWeight: '500', marginBottom: 2 },
+    toggleSub: { color: '#7A7C90', fontSize: 12 },
     actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
     startNowBtn: {
         flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center',
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    startNowTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    startNowTxt: { color: '#211832', fontSize: 14, fontWeight: '700' },
     saveBtn: {
         flex: 1, paddingVertical: 14, borderRadius: 14,
-        alignItems: 'center', backgroundColor: '#FF6B00',
+        alignItems: 'center', backgroundColor: '#F25912',
     },
     saveTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });
@@ -297,9 +297,9 @@ const at = StyleSheet.create({
         borderColor: ACCENT,
     },
     arcInner: { alignItems: 'center' },
-    timerFmt: { color: '#fff', fontSize: 40, fontWeight: '800', letterSpacing: 2 },
+    timerFmt: { color: '#211832', fontSize: 40, fontWeight: '800', letterSpacing: 2 },
     timerMode: {
-        color: '#9CA3AF', fontSize: 11, fontWeight: '700',
+        color: '#7A7C90', fontSize: 11, fontWeight: '700',
         letterSpacing: 1, textTransform: 'uppercase', marginTop: 2,
     },
     controls: { flexDirection: 'row', gap: 12, marginBottom: 16 },
@@ -307,13 +307,13 @@ const at = StyleSheet.create({
         paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12,
         backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
     },
-    resetTxt: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
+    resetTxt: { color: '#7A7C90', fontSize: 14, fontWeight: '600' },
     playBtn: {
         paddingHorizontal: 36, paddingVertical: 12,
-        borderRadius: 12, backgroundColor: '#FF6B00',
+        borderRadius: 12, backgroundColor: '#F25912',
     },
     pauseBtn: { backgroundColor: '#1d4ed8' },
     playTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
     doneBtn: { marginTop: 8 },
-    doneTxt: { color: '#6B7280', fontSize: 14 },
+    doneTxt: { color: '#7A7C90', fontSize: 14 },
 });

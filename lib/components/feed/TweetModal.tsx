@@ -16,12 +16,13 @@ import { X } from 'lucide-react-native';
 import { useUser } from '../../providers/UserContext';
 import { FeedService, Post } from '../../services/feed.service';
 import { MentionTextInput } from './MentionTextInput';
+import { TierAvatar } from '../profile/TierAvatar';
 
 const { height: SH } = Dimensions.get('window');
-const ORANGE = '#E89951';
-const BG = '#0F1923';
-const CARD_BG = '#1A2332';
-const TEXT_SECONDARY = '#94A3B8';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT_SECONDARY = '#7A7C90';
 const MAX_CHARS = 280;
 
 interface TweetModalProps {
@@ -118,7 +119,7 @@ export function TweetModal({ visible, onClose, onTweetCreated }: TweetModalProps
               activeOpacity={0.8}
             >
               {submitting
-                ? <ActivityIndicator size="small" color="#fff" />
+                ? <ActivityIndicator size="small" color="#211832" />
                 : <Text style={styles.postBtnText}>Post</Text>
               }
             </TouchableOpacity>
@@ -128,14 +129,13 @@ export function TweetModal({ visible, onClose, onTweetCreated }: TweetModalProps
           <View style={styles.body}>
             {/* Avatar */}
             <View style={styles.avatarCol}>
-              <View style={styles.avatar}>
-                {profile?.profileImageUrl
-                  ? <Image source={{ uri: profile.profileImageUrl }} style={styles.avatarImg} />
-                  : <Text style={styles.avatarInitial}>
-                      {(profile?.fullName ?? 'U').charAt(0).toUpperCase()}
-                    </Text>
-                }
-              </View>
+              <TierAvatar
+                uri={profile?.profileImageUrl}
+                size={40}
+                accessType={profile?.accessType}
+                name={profile?.fullName}
+                disableProfileLink
+              />
             </View>
 
             {/* Textarea with @mention */}
@@ -198,12 +198,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   closeBtn: { padding: 4 },
-  headerTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  headerTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
   postBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 7,
@@ -224,17 +224,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 9,
-    backgroundColor: '#2a3a4a',
+    backgroundColor: '#D8D8E4',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     flexShrink: 0,
   },
   avatarImg: { width: 40, height: 40, borderRadius: 9 },
-  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  avatarInitial: { color: '#211832', fontSize: 16, fontWeight: '700' },
   input: {
     flex: 1,
-    color: '#fff',
+    color: '#211832',
     fontSize: 17,
     lineHeight: 24,
     paddingTop: 0,

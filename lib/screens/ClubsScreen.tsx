@@ -33,14 +33,14 @@ import { CreateClubModal } from '../components/clubs/CreateClubModal';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const ORANGE = '#E89951';
-const BG = '#051424';
-const CARD_BG = '#1E293B';
-const TEXT = '#D4E4FA';
+const ORANGE = '#F25912';
+const BG = '#EEEEF2';
+const CARD_BG = '#F8F8FC';
+const TEXT = '#211832';
 const TEXT_SUB = '#E0C0B1';
 const BORDER = 'rgba(255,255,255,0.05)';
-const SURFACE_HIGH = '#1C2B3C';
-const SURFACE_VAR = '#273647';
+const SURFACE_HIGH = '#F8F8FC';
+const SURFACE_VAR = '#F8F8FC';
 
 type Tab = 'community' | 'classroom' | 'calendar' | 'leaderboard' | 'profile';
 
@@ -63,7 +63,7 @@ function ClubAvatar({ club, size = 48 }: { club: Club; size?: number }) {
   }
   return (
     <View style={[s.clubAvatarFallback, { width: size, height: size, borderRadius: Math.round(size * 0.22) }]}>
-      <Text style={{ color: '#fff', fontSize: size * 0.38, fontWeight: '800' }}>
+      <Text style={{ color: '#211832', fontSize: size * 0.38, fontWeight: '800' }}>
         {club.name.charAt(0).toUpperCase()}
       </Text>
     </View>
@@ -138,7 +138,7 @@ function CommunityTab({
                         activeOpacity={0.8}
                       >
                         {joiningId === club.id
-                          ? <ActivityIndicator size="small" color="#fff" />
+                          ? <ActivityIndicator size="small" color="#211832" />
                           : <Text style={s.joinBtnText}>Join</Text>
                         }
                       </TouchableOpacity>
@@ -637,11 +637,11 @@ export function ClubsScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.7}>
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={22} color="#211832" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Clubs</Text>
         <TouchableOpacity style={s.createBtn} onPress={() => setCreateVisible(true)} activeOpacity={0.85}>
-          <Plus size={16} color="#fff" />
+          <Plus size={16} color="#211832" />
           <Text style={s.createBtnText}>Create Club</Text>
         </TouchableOpacity>
       </View>
@@ -691,10 +691,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: BORDER,
   },
   backBtn: { padding: 4 },
-  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800', flex: 1, marginLeft: 8 },
+  headerTitle: { color: '#211832', fontSize: 22, fontWeight: '800', flex: 1, marginLeft: 8 },
   createBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#FF6B00', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: '#F25912', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
   },
   createBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
@@ -708,7 +708,7 @@ const s = StyleSheet.create({
     paddingTop: 18, paddingBottom: 8, textTransform: 'uppercase',
   },
   sectionHeader2: {
-    color: '#fff', fontSize: 17, fontWeight: '700', marginTop: 20, marginBottom: 12,
+    color: '#211832', fontSize: 17, fontWeight: '700', marginTop: 20, marginBottom: 12,
   },
 
   // Club cards
@@ -719,16 +719,16 @@ const s = StyleSheet.create({
   },
   clubAvatarFallback: { backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center' },
   clubInfo: { flex: 1 },
-  clubName: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  clubName: { color: '#211832', fontSize: 14, fontWeight: '700' },
   clubMeta: { color: TEXT_SUB, fontSize: 12, marginTop: 2 },
-  joinBtn: { backgroundColor: '#FF6B00', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, minWidth: 54, alignItems: 'center' },
+  joinBtn: { backgroundColor: '#F25912', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, minWidth: 54, alignItems: 'center' },
   joinBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  joinedPill: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(232,153,81,0.4)' },
+  joinedPill: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(242,89,18,0.4)' },
   joinedText: { color: ORANGE, fontSize: 12, fontWeight: '600' },
 
   // Empty states
   emptySection: { alignItems: 'center', paddingVertical: 24, gap: 6 },
-  emptyTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  emptyTitle: { color: '#211832', fontSize: 15, fontWeight: '700' },
   emptySub: { color: TEXT_SUB, fontSize: 13 },
 
   // Placeholder
@@ -737,7 +737,7 @@ const s = StyleSheet.create({
     alignItems: 'center', gap: 12, marginTop: 12,
     borderWidth: 1, borderColor: BORDER,
   },
-  placeholderTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  placeholderTitle: { color: '#211832', fontSize: 18, fontWeight: '700' },
   placeholderSub: { color: TEXT_SUB, fontSize: 14, textAlign: 'center' },
 
   // ── Calendar ──
@@ -748,7 +748,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER,
   },
   pillBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999 },
-  pillBtnActive: { backgroundColor: '#E89951' },
+  pillBtnActive: { backgroundColor: '#F25912' },
   pillBtnText: { color: TEXT_SUB, fontSize: 13, fontWeight: '700' },
   pillBtnTextActive: { color: '#fff' },
 
@@ -757,14 +757,14 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER, marginBottom: 8,
   },
   calHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  calMonthTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  calMonthTitle: { color: '#211832', fontSize: 17, fontWeight: '700' },
   calNavRow: { flexDirection: 'row', gap: 4 },
   calNavBtn: { padding: 6, borderRadius: 999, backgroundColor: SURFACE_VAR },
   calGridRow: { flexDirection: 'row', marginBottom: 2 },
   calCell: { flex: 1, alignItems: 'center', paddingVertical: 2 },
   calDayLabel: { color: TEXT_SUB, fontSize: 11, fontWeight: '700', paddingBottom: 6 },
   calDayBtn: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  calDayToday: { backgroundColor: 'rgba(232,153,81,0.2)' },
+  calDayToday: { backgroundColor: 'rgba(242,89,18,0.2)' },
   calDayNum: { color: TEXT_SUB, fontSize: 13 },
   calDayNumToday: { color: ORANGE, fontWeight: '800' },
   calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: ORANGE, marginTop: 1 },
@@ -775,7 +775,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER, gap: 10,
   },
   eventCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  eventTitle: { color: '#fff', fontSize: 16, fontWeight: '700', flex: 1 },
+  eventTitle: { color: '#211832', fontSize: 16, fontWeight: '700', flex: 1 },
   eventBadge: { borderRadius: 4, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
   eventBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
   eventHost: { color: TEXT_SUB, fontSize: 12 },
@@ -783,9 +783,9 @@ const s = StyleSheet.create({
   eventMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   eventMetaText: { color: TEXT_SUB, fontSize: 13 },
   eventActions: { flexDirection: 'row', gap: 10, marginTop: 2 },
-  eventBtnPrimary: { flex: 1, backgroundColor: '#FF6B00', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  eventBtnPrimary: { flex: 1, backgroundColor: '#F25912', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   eventBtnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  eventBtnOutline: { flex: 1, borderWidth: 1, borderColor: 'rgba(232,153,81,0.5)', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  eventBtnOutline: { flex: 1, borderWidth: 1, borderColor: 'rgba(242,89,18,0.5)', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   eventBtnOutlineText: { color: ORANGE, fontSize: 13, fontWeight: '700' },
   eventBtnMuted: { flex: 1, backgroundColor: SURFACE_VAR, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   eventBtnMutedText: { color: TEXT, fontSize: 13, fontWeight: '700' },
@@ -800,21 +800,21 @@ const s = StyleSheet.create({
   lbAvatarWrap: { position: 'relative' },
   lbSelfAvatar: { width: 56, height: 56, borderRadius: 12, borderWidth: 2, borderColor: ORANGE },
   lbSelfAvatarFallback: { backgroundColor: SURFACE_VAR, alignItems: 'center', justifyContent: 'center' },
-  lbSelfAvatarLetter: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  lbSelfAvatarLetter: { color: '#211832', fontSize: 22, fontWeight: '800' },
   lbRankBubble: {
     position: 'absolute', bottom: -8, left: '50%',
     backgroundColor: ORANGE, borderRadius: 999,
     paddingHorizontal: 8, paddingVertical: 2,
     transform: [{ translateX: -24 }],
   },
-  lbRankBubbleText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  lbSelfName: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  lbRankBubbleText: { color: '#211832', fontSize: 10, fontWeight: '800' },
+  lbSelfName: { color: '#211832', fontSize: 17, fontWeight: '700' },
   lbSelfScore: { color: TEXT_SUB, fontSize: 13, marginTop: 2 },
 
   lbFilterScroll: { marginBottom: 16 },
   lbFilterContent: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
   lbFilterBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: SURFACE_VAR },
-  lbFilterBtnActive: { backgroundColor: '#E89951', borderColor: '#E89951' },
+  lbFilterBtnActive: { backgroundColor: '#F25912', borderColor: '#F25912' },
   lbFilterText: { color: TEXT_SUB, fontSize: 13, fontWeight: '700' },
   lbFilterTextActive: { color: '#fff' },
 
@@ -824,11 +824,11 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER,
   },
   lbRowTop: { borderLeftWidth: 3, borderLeftColor: ORANGE },
-  lbRowMe: { borderColor: 'rgba(232,153,81,0.4)' },
+  lbRowMe: { borderColor: 'rgba(242,89,18,0.4)' },
   lbRank: { width: 28, textAlign: 'center', fontSize: 16, fontWeight: '800' },
   lbAvatar: { width: 44, height: 44, borderRadius: 10, borderWidth: 1, borderColor: BORDER },
   lbAvatarFallback: { backgroundColor: SURFACE_VAR, alignItems: 'center', justifyContent: 'center' },
-  lbAvatarLetter: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  lbAvatarLetter: { color: '#211832', fontSize: 17, fontWeight: '800' },
   lbName: { color: TEXT, fontSize: 13, fontWeight: '700' },
   lbSubText: { color: TEXT_SUB, fontSize: 11, marginTop: 2 },
   lbScore: { fontSize: 16, fontWeight: '800' },
@@ -841,15 +841,15 @@ const s = StyleSheet.create({
   },
   profileAvatar: { width: 80, height: 80, borderRadius: 18, borderWidth: 2, borderColor: ORANGE },
   profileAvatarFallback: { backgroundColor: SURFACE_VAR, alignItems: 'center', justifyContent: 'center' },
-  profileAvatarLetter: { color: '#fff', fontSize: 32, fontWeight: '800' },
-  profileName: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  profileAvatarLetter: { color: '#211832', fontSize: 32, fontWeight: '800' },
+  profileName: { color: '#211832', fontSize: 20, fontWeight: '800' },
   profileStats: { flexDirection: 'row', alignItems: 'center', gap: 0, marginTop: 4 },
   profileStat: { alignItems: 'center', paddingHorizontal: 20 },
-  profileStatNum: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  profileStatNum: { color: '#211832', fontSize: 22, fontWeight: '800' },
   profileStatLabel: { color: TEXT_SUB, fontSize: 12, marginTop: 2 },
   profileStatDivider: { width: 1, height: 36, backgroundColor: BORDER },
   profileEditBtn: {
-    marginTop: 8, borderWidth: 1, borderColor: 'rgba(232,153,81,0.5)',
+    marginTop: 8, borderWidth: 1, borderColor: 'rgba(242,89,18,0.5)',
     borderRadius: 20, paddingHorizontal: 28, paddingVertical: 10,
   },
   profileEditBtnText: { color: ORANGE, fontSize: 14, fontWeight: '700' },
@@ -862,5 +862,5 @@ const s = StyleSheet.create({
   },
   tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   tabBarLabel: { color: TEXT_SUB, fontSize: 10, fontWeight: '700' },
-  tabBarLabelActive: { color: '#E89951' },
+  tabBarLabelActive: { color: '#F25912' },
 });

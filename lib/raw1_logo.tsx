@@ -32,12 +32,12 @@ const styles = StyleSheet.create({
     },
     raw: {
         fontWeight: '900',
-        color: '#465060', // Metal Gray
+        color: '#7A7C90', // Metal Gray
         letterSpacing: -1,
     },
     one: {
         fontWeight: '900',
-        color: '#e46600', // Orange
+        color: '#F25912', // Orange
         letterSpacing: -1,
     },
 });

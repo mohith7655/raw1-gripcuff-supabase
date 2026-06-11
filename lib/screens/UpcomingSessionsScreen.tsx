@@ -315,7 +315,7 @@ export const UpcomingSessionsScreen = () => {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#fff" size={24} />
+                    <ArrowLeft color="#211832" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Sessions</Text>
                 <View style={{ width: 40 }} />
@@ -399,10 +399,10 @@ export const UpcomingSessionsScreen = () => {
                                         disabled={actionLoading === session.id}
                                     >
                                         {actionLoading === session.id ? (
-                                            <ActivityIndicator size="small" color="white" />
+                                            <ActivityIndicator size="small" color="#211832" />
                                         ) : (
                                             <>
-                                                <Check color="white" size={18} />
+                                                <Check color="#211832" size={18} />
                                                 <Text style={styles.btnText}>Accept</Text>
                                             </>
                                         )}
@@ -415,13 +415,18 @@ export const UpcomingSessionsScreen = () => {
                             <View key={session.id} style={styles.card}>
                                 <Text style={styles.sessionTypeLabel}>Workout with Friend</Text>
                                 <View style={styles.cardHeader}>
-                                    {session.guestAvatarUrl ? (
-                                        <Image source={{ uri: session.guestAvatarUrl }} style={styles.avatar} />
-                                    ) : (
-                                        <View style={styles.avatarPlaceholder}>
-                                            <UserRound color={AppTheme.primaryColor} size={20} />
-                                        </View>
-                                    )}
+                                    <TierAvatar
+                                        uri={session.guestAvatarUrl}
+                                        size={44}
+                                        uid={session.guestUid}
+                                        name={session.guestName}
+                                        radius={10}
+                                        fallback={
+                                            <View style={styles.avatarPlaceholder}>
+                                                <UserRound color={AppTheme.primaryColor} size={20} />
+                                            </View>
+                                        }
+                                    />
                                     <View style={styles.headerText}>
                                         <Text style={styles.actionText}>You invited</Text>
                                         <Text style={styles.userName}>{session.guestName}</Text>
@@ -458,7 +463,7 @@ export const UpcomingSessionsScreen = () => {
                                         disabled={actionLoading === session.id}
                                     >
                                         {actionLoading === session.id ? (
-                                            <ActivityIndicator size="small" color="white" />
+                                            <ActivityIndicator size="small" color="#211832" />
                                         ) : (
                                             <Text style={styles.btnText}>Cancel</Text>
                                         )}
@@ -511,7 +516,7 @@ export const UpcomingSessionsScreen = () => {
                                             activeOpacity={0.75}
                                         >
                                             {actionLoading === entry.id ? (
-                                                <ActivityIndicator size="small" color="#9CA3AF" />
+                                                <ActivityIndicator size="small" color="#7A7C90" />
                                             ) : (
                                                 <Text style={styles.cancelScheduledText}>Remove</Text>
                                             )}
@@ -598,7 +603,7 @@ export const UpcomingSessionsScreen = () => {
                                                 friendName: isHost ? session.guestName : session.hostName,
                                             })}
                                         >
-                                            <Play color="#fff" size={14} style={{ marginRight: 6 }} />
+                                            <Play color="#211832" size={14} style={{ marginRight: 6 }} />
                                             <Text style={styles.joinNowText}>Join Session</Text>
                                         </TouchableOpacity>
 
@@ -685,7 +690,7 @@ export const UpcomingSessionsScreen = () => {
                                                 radius={10}
                                                 showBadge={false}
                                                 fallback={
-                                                    <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(255,107,0,0.12)' }]}>
+                                                    <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(242,89,18,0.12)' }]}>
                                                         <Zap color={AppTheme.primaryColor} size={20} />
                                                     </View>
                                                 }
@@ -756,7 +761,7 @@ export const UpcomingSessionsScreen = () => {
                                     <View key={session.id} style={styles.pastCard}>
                                         <Text style={styles.sessionTypeLabel}>Pre-Made Workout</Text>
                                         <View style={styles.cardHeader}>
-                                            <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(232,153,81,0.1)' }]}>
+                                            <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(242,89,18,0.1)' }]}>
                                                 <Play color={AppTheme.primaryColor} size={20} />
                                             </View>
                                             <View style={[styles.headerText, { marginLeft: 12 }]}>
@@ -826,7 +831,7 @@ export const UpcomingSessionsScreen = () => {
                                                 <Text style={[
                                                     styles.completedText,
                                                     session.status === 'declined' && { color: '#EF4444' },
-                                                    (session.status === 'cancelled' || session.status === 'expired') && { color: '#6B7280' },
+                                                    (session.status === 'cancelled' || session.status === 'expired') && { color: '#7A7C90' },
                                                 ]}>
                                                     {session.status === 'declined' ? 'Declined'
                                                     : session.status === 'cancelled' ? 'Cancelled'
@@ -900,11 +905,11 @@ export const UpcomingSessionsScreen = () => {
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: AppTheme.background },
     centered: { flex: 1, backgroundColor: AppTheme.background, alignItems: 'center', justifyContent: 'center' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(33,24,50,0.05)' },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: 'white' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#211832' },
     scrollContent: { padding: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: 'white', marginBottom: 16 },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#211832', marginBottom: 16 },
     emptyContainer: { padding: 20, alignItems: 'center', backgroundColor: AppTheme.cardColor, borderRadius: 16, opacity: 0.7 },
     emptyText: { color: AppTheme.textGrey, fontSize: 14 },
 
@@ -914,13 +919,13 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(33,24,50,0.05)',
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     avatar: { width: 44, height: 44, borderRadius: 10 },
-    avatarPlaceholder: { width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(232,153,81,0.1)', alignItems: 'center', justifyContent: 'center' },
+    avatarPlaceholder: { width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(242,89,18,0.1)', alignItems: 'center', justifyContent: 'center' },
     headerText: { marginLeft: 12, flex: 1 },
-    userName: { fontSize: 16, fontWeight: 'bold', color: 'white' },
+    userName: { fontSize: 16, fontWeight: 'bold', color: '#211832' },
     actionText: { fontSize: 13, color: AppTheme.textGrey, marginTop: 2 },
 
     detailsRow: { flexDirection: 'row', gap: 16 },
@@ -931,7 +936,7 @@ const styles = StyleSheet.create({
     actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 10, gap: 6 },
     declineBtn: { backgroundColor: 'rgba(255,255,255,0.1)' },
     acceptBtn: { backgroundColor: AppTheme.primaryColor },
-    btnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
+    btnText: { color: '#211832', fontWeight: 'bold', fontSize: 14 },
 
     waitingBadge: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, borderRadius: 10 },
     waitingText: { color: AppTheme.textGrey, fontSize: 13, fontWeight: '500' },
@@ -955,7 +960,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     joinNowText: {
-        color: '#FFFFFF',
+        color: '#211832',
         fontWeight: '700',
         fontSize: 14,
     },
@@ -965,7 +970,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -981,7 +986,7 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(33,24,50,0.05)',
         opacity: 0.6,
     },
     completedBadge: {
@@ -1005,11 +1010,11 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: 'rgba(255,255,255,0.08)',
+        borderTopColor: 'rgba(33,24,50,0.08)',
         gap: 7,
     },
     feedbackTitle: {
-        color: 'rgba(255,107,0,0.8)',
+        color: 'rgba(242,89,18,0.8)',
         fontSize: 10,
         fontWeight: '800',
         letterSpacing: 1,
@@ -1020,17 +1025,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    fbLabel: { color: '#8aa0b6', fontSize: 13, flex: 1, marginRight: 8 },
-    fbValue: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    fbLabel: { color: '#7A7C90', fontSize: 13, flex: 1, marginRight: 8 },
+    fbValue: { color: '#211832', fontSize: 14, fontWeight: '700' },
     notRatedText: {
         color: 'rgba(150,180,210,0.4)', fontSize: 11, fontStyle: 'italic',
         marginTop: 10, paddingTop: 10,
-        borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.06)',
+        borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(33,24,50,0.06)',
     },
     fbWinner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    fbWinnerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+    fbWinnerText: { color: '#211832', fontSize: 13, fontWeight: '700' },
     sessionTypeLabel: {
-        color: 'rgba(255,255,255,0.3)',
+        color: 'rgba(33,24,50,0.3)',
         fontSize: 11,
         fontWeight: '600',
         letterSpacing: 0.5,
@@ -1060,7 +1065,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: AppTheme.primaryColor,
-        backgroundColor: 'rgba(232,153,81,0.08)',
+        backgroundColor: 'rgba(242,89,18,0.08)',
     },
     resendBtnText: {
         color: AppTheme.primaryColor,
@@ -1109,10 +1114,10 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
     },
     cancelScheduledText: {
-        color: '#9CA3AF',
+        color: '#7A7C90',
         fontSize: 12,
         fontWeight: '600',
     },

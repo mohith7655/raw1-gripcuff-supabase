@@ -32,7 +32,7 @@ export const WorkoutsScreen = () => {
                 <Text style={styles.categoryTitle}>{title}</Text>
                 <Text style={styles.categorySubtitle}>{subtitle}</Text>
             </View>
-            <ChevronRight color="#e46600" size={18} />
+            <ChevronRight color="#F25912" size={18} />
         </TouchableOpacity>
     );
 
@@ -47,9 +47,9 @@ export const WorkoutsScreen = () => {
                 </View>
                 <View style={styles.headerActions}>
                     <TouchableOpacity style={styles.iconButton}>
-                        <Search color="#e46600" size={24} />
+                        <Search color="#F25912" size={24} />
                     </TouchableOpacity>
-                    <NotificationBell color="#e46600" size={24} containerStyle={styles.iconButton} />
+                    <NotificationBell color="#F25912" size={24} containerStyle={styles.iconButton} />
                 </View>
             </View>
 
@@ -90,7 +90,7 @@ export const WorkoutsScreen = () => {
                                         <Text style={styles.categoryTitle}>{coach.name}</Text>
                                         <Text style={styles.categorySubtitle}>{coach.detail}</Text>
                                     </View>
-                                    <ChevronRight color="#e46600" size={18} />
+                                    <ChevronRight color="#F25912" size={18} />
                                 </TouchableOpacity>
                             </View>
                         ))}
@@ -114,7 +114,7 @@ export const WorkoutsScreen = () => {
                             onPress={() => setActiveTab('ai')}
                             activeOpacity={0.8}
                         >
-                            <Sparkles size={13} color={activeTab === 'ai' ? AppTheme.primaryColor : '#607a94'} />
+                            <Sparkles size={13} color={activeTab === 'ai' ? AppTheme.primaryColor : '#7A7C90'} />
                             <Text style={[styles.pillTxt, activeTab === 'ai' && styles.pillTxtActive]}>
                                 AI Personal Trainer
                             </Text>
@@ -137,7 +137,7 @@ export const WorkoutsScreen = () => {
                                         end={{ x: 1, y: 1 }}
                                         style={styles.friendBtnGradient}
                                     >
-                                        <Users color="#fff" size={20} style={{ marginRight: 10 }} />
+                                        <Users color="#211832" size={20} style={{ marginRight: 10 }} />
                                         <Text style={styles.friendBtnText}>Workout with a Friend</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
@@ -196,12 +196,12 @@ export const WorkoutsScreen = () => {
                                     activeOpacity={0.85}
                                 >
                                     <LinearGradient
-                                        colors={[AppTheme.primaryColor, '#ff8534']}
+                                        colors={[AppTheme.primaryColor, '#F25912']}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                         style={styles.aiCtaGradient}
                                     >
-                                        <PlusCircle color="#fff" size={20} style={{ marginRight: 10 }} />
+                                        <PlusCircle color="#211832" size={20} style={{ marginRight: 10 }} />
                                         <Text style={styles.aiCtaText}>Start AI Workout</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
@@ -226,7 +226,7 @@ export const WorkoutsScreen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#1d2337',
+        backgroundColor: '#F8F8FC',
     },
     header: {
         flexDirection: 'row',
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
     },
     headerSubtitle: {
         fontSize: 12,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     /* ── Pill toggle (matches LibraryScreen) ── */
     pillToggle: {
         flexDirection: 'row',
-        backgroundColor: '#131f2e',
+        backgroundColor: '#F8F8FC',
         borderRadius: 12,
         padding: 4,
         marginHorizontal: SCREEN_PADDING,
@@ -283,12 +283,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#000000',
     },
     pillTxt: {
-        color: '#607a94',
+        color: '#7A7C90',
         fontSize: 11,
         fontWeight: '500',
     },
     pillTxtActive: {
-        color: '#ffffff',
+        color: '#fff',
         fontWeight: '700',
     },
 
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     friendBtnText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '700',
     },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.04)',
         borderRadius: CARD_BORDER_RADIUS,
         borderWidth: 1,
-        borderColor: 'rgba(228,102,0,0.15)',
+        borderColor: 'rgba(242,89,18,0.15)',
         overflow: 'hidden',
     },
     categoryRow: {
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     categoryTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#fff',
+        color: '#211832',
         marginBottom: 2,
     },
     categorySubtitle: {
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.04)',
         borderRadius: CARD_BORDER_RADIUS,
         borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.2)',
+        borderColor: 'rgba(242,89,18,0.2)',
         padding: 18,
         marginTop: 4,
     },
@@ -370,12 +370,12 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 14,
-        backgroundColor: 'rgba(232,153,81,0.15)',
+        backgroundColor: 'rgba(242,89,18,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     aiCardTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 3,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     aiCtaText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         fontWeight: '700',
     },
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     sectionLabel: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#211832',
         marginBottom: 12,
         paddingTop: 12,
     },
@@ -431,13 +431,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     ctaMainText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 4,
     },
     ctaSubText: {
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(33,24,50,0.8)',
         fontSize: 13,
     },
 });

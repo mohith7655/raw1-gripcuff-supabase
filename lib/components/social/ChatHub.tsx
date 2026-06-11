@@ -9,8 +9,8 @@ import { ChatService, getChatId } from '../../services/chat.service';
 import { ChatConversation } from '../../models/Chat';
 import { User } from '../../models/User';
 
-const ORANGE = '#E89951';
-const MUTED = '#94A3B8';
+const ORANGE = '#F25912';
+const MUTED = '#7A7C90';
 
 /** Conversation list for the Social → Chat tab. Friends ordered by recency. */
 export function ChatHub() {
@@ -115,20 +115,20 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        backgroundColor: '#0f1923',
+        backgroundColor: '#EEEEF2',
         borderRadius: 14,
         padding: 12,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(33,24,50,0.05)',
     },
     info: { flex: 1 },
     topLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    name: { color: '#fff', fontSize: 15, fontWeight: '700', flex: 1 },
+    name: { color: '#211832', fontSize: 15, fontWeight: '700', flex: 1 },
     time: { color: MUTED, fontSize: 11 },
     bottomLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 3 },
     preview: { color: MUTED, fontSize: 13, flex: 1 },
-    previewUnread: { color: '#fff', fontWeight: '600' },
+    previewUnread: { color: '#211832', fontWeight: '600' },
     badge: {
         backgroundColor: ORANGE,
         borderRadius: 11,
@@ -138,8 +138,8 @@ const s = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+    badgeText: { color: '#211832', fontSize: 11, fontWeight: '800' },
     empty: { alignItems: 'center', gap: 10, paddingTop: 70, paddingHorizontal: 40 },
-    emptyTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    emptyTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
     emptySub: { color: MUTED, fontSize: 13, textAlign: 'center' },
 });

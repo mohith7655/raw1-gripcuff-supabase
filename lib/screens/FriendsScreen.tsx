@@ -43,17 +43,17 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const C = {
-    bg:          '#070d1a',
-    bgCard:      '#0f1923',
+    bg:          '#EEEEF2',
+    bgCard:      '#EEEEF2',
     bgInput:     'rgba(255,255,255,0.05)',
-    accent:      '#ff7a00',
-    accentSoft:  'rgba(255,122,0,0.12)',
-    accentBorder:'rgba(255,122,0,0.22)',
+    accent:      '#F25912',
+    accentSoft:  'rgba(242,89,18,0.12)',
+    accentBorder:'rgba(242,89,18,0.22)',
     green:       '#22C55E',
     greenSoft:   'rgba(34,197,94,0.1)',
     text:        '#FFFFFF',
-    textMuted:   '#94A3B8',
-    textDim:     '#374151',
+    textMuted:   '#7A7C90',
+    textDim:     '#D8D8E4',
     border:      'rgba(255,255,255,0.07)',
     danger:      '#EF4444',
     dangerSoft:  'rgba(239,68,68,0.1)',
@@ -442,12 +442,12 @@ function RequestsTab() {
                                 </View>
                             ) : status === 'pending_received' ? (
                                 <TouchableOpacity style={s.btnAccept} onPress={() => handleSearchAction(item)} activeOpacity={0.75}>
-                                    <UserCheck size={13} color="#fff" />
+                                    <UserCheck size={13} color="#211832" />
                                     <Text style={s.btnAcceptText}>Accept</Text>
                                 </TouchableOpacity>
                             ) : (
                                 <TouchableOpacity style={s.btnAdd} onPress={() => handleSearchAction(item)} activeOpacity={0.75}>
-                                    <UserPlus size={13} color="#fff" />
+                                    <UserPlus size={13} color="#211832" />
                                     <Text style={s.btnAddText}>Add</Text>
                                 </TouchableOpacity>
                             )}
@@ -485,7 +485,7 @@ function RequestsTab() {
                                         onPress={() => handleAccept(req.id, req.fromUid, req.toUid)}
                                         activeOpacity={0.75}
                                     >
-                                        <UserCheck size={13} color="#fff" />
+                                        <UserCheck size={13} color="#211832" />
                                         <Text style={s.btnAcceptText}>Accept</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
@@ -627,7 +627,7 @@ function SuggestionsTab() {
                                     onPress={() => handleConnect(item.uid)}
                                     activeOpacity={0.8}
                                 >
-                                    <UserPlus size={14} color="#fff" />
+                                    <UserPlus size={14} color="#211832" />
                                     <Text style={s.btnConnectText}>Connect</Text>
                                 </TouchableOpacity>
                             )}
@@ -734,7 +734,7 @@ const s = StyleSheet.create({
         borderBottomColor: 'transparent',
     },
     tabActive: {
-        borderBottomColor: '#E89951',
+        borderBottomColor: '#F25912',
     },
     tabText: {
         fontSize: 14,
@@ -754,7 +754,7 @@ const s = StyleSheet.create({
         alignItems: 'center',
     },
     tabBadgeText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 10,
         fontWeight: '800',
     },
@@ -912,14 +912,14 @@ const s = StyleSheet.create({
         backgroundColor: C.accent, borderRadius: 8,
         paddingVertical: 6, paddingHorizontal: 12,
     },
-    btnAddText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    btnAddText: { color: '#211832', fontSize: 12, fontWeight: '700' },
 
     btnAccept: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
         backgroundColor: '#22c55e', borderRadius: 8,
         paddingVertical: 6, paddingHorizontal: 12,
     },
-    btnAcceptText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    btnAcceptText: { color: '#211832', fontSize: 12, fontWeight: '700' },
 
     btnDecline: {
         width: 32, height: 32, borderRadius: 8,
@@ -991,7 +991,7 @@ const s = StyleSheet.create({
         backgroundColor: C.accent,
         borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12,
     },
-    btnConnectText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    btnConnectText: { color: '#211832', fontSize: 12, fontWeight: '700' },
 
     // Empty states
     empty: {

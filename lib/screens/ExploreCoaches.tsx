@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     modalRowText: {
         fontSize: FontSizes.body,
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     modalDoneText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: FontSizes.body,
         fontWeight: FontWeights.bold as any,
     },
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
         marginBottom: 0,
     },
     bookNowText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
         fontWeight: FontWeights.bold as any,
     },
@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     dropdownText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 12,
         fontWeight: FontWeights.semibold as any,
         textAlign: 'center',

@@ -39,7 +39,7 @@ export function LocationPickerField({ value, onChange }: Props) {
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.7}
             >
-                <MapPin color={value ? '#E89951' : '#6B7280'} size={16} style={styles.pin} />
+                <MapPin color={value ? '#F25912' : '#7A7C90'} size={16} style={styles.pin} />
                 <Text style={[styles.fieldText, !value && styles.placeholder]} numberOfLines={1}>
                     {value ? value.address : 'Search your location'}
                 </Text>
@@ -60,7 +60,7 @@ export function LocationPickerField({ value, onChange }: Props) {
                         <View style={styles.sheetHeader}>
                             <Text style={styles.sheetTitle}>Search Location</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                                <X color="#fff" size={20} />
+                                <X color="#211832" size={20} />
                             </TouchableOpacity>
                         </View>
 
@@ -100,7 +100,7 @@ export function LocationPickerField({ value, onChange }: Props) {
     );
 }
 
-const SHEET_BG = '#1a2235';
+const SHEET_BG = '#F8F8FC';
 
 const styles = StyleSheet.create({
     fieldInput: {
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(33,24,50,0.1)',
         gap: 8,
     },
     pin: {
@@ -121,10 +121,10 @@ const styles = StyleSheet.create({
     fieldText: {
         flex: 1,
         fontSize: 15,
-        color: '#fff',
+        color: '#211832',
     },
     placeholder: {
-        color: '#6B7280',
+        color: '#7A7C90',
     },
     overlay: {
         flex: 1,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     sheetTitle: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 16,
         fontWeight: '700',
     },
@@ -167,21 +167,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
     },
     autocompleteInput: {
-        backgroundColor: '#253045',
+        backgroundColor: '#F8F8FC',
         borderRadius: 10,
-        color: '#fff',
+        color: '#211832',
         fontSize: 15,
         paddingHorizontal: 14,
         height: 46,
         borderWidth: 1,
-        borderColor: '#374151',
+        borderColor: '#D8D8E4',
     },
     listView: {
-        backgroundColor: '#253045',
+        backgroundColor: '#F8F8FC',
         borderRadius: 10,
         marginTop: 6,
         borderWidth: 1,
-        borderColor: '#374151',
+        borderColor: '#D8D8E4',
     },
     resultRow: {
         backgroundColor: 'transparent',
@@ -189,11 +189,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
     },
     resultText: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 14,
     },
     separator: {
         height: 1,
-        backgroundColor: '#374151',
+        backgroundColor: '#D8D8E4',
     },
 });
