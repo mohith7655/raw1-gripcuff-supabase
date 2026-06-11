@@ -22,17 +22,27 @@
 
     <!-- Expo reset styles -->
     <style id="expo-reset">
-      html,
-      body {
+      /* Force light mode — prevent OS dark-mode from bleeding through */
+      html {
         height: 100%;
+        background-color: #EEEEF2;
+        color-scheme: light;
       }
       body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
         overflow: hidden;
+        background-color: #EEEEF2;
+        /* Sharper font rendering to match native */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       #root {
         display: flex;
         height: 100%;
         flex: 1;
+        background-color: #EEEEF2;
       }
     </style>
   </head>
