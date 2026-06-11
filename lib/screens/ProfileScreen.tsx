@@ -277,7 +277,7 @@ export const ProfileScreen = () => {
     }
   };
 
-  const [editingField, setEditingField] = useState<'age' | 'gender' | 'dateOfBirth' | 'phone' | null>(null);
+  const [editingField, setEditingField] = useState<'age' | 'gender' | 'dateOfBirth' | 'phone' | 'username' | 'email' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -384,7 +384,7 @@ export const ProfileScreen = () => {
     }
   };
 
-  const handleEditClick = (field: 'age' | 'gender' | 'dateOfBirth' | 'phone', initialValue: string) => {
+  const handleEditClick = (field: 'age' | 'gender' | 'dateOfBirth' | 'phone' | 'username' | 'email', initialValue: string) => {
     setEditingField(field);
     setEditValue(initialValue);
   };
@@ -397,7 +397,13 @@ export const ProfileScreen = () => {
          finalValue = parseInt(finalValue, 10);
          if (isNaN(finalValue)) finalValue = profile?.age || null;
       }
-      await updateProfile(supabaseUserId, { [editingField]: finalValue });
+      if (editingField === 'email') {
+        const { error } = await supabase.auth.updateUser({ email: finalValue });
+        if (error) throw error;
+        await updateProfile(supabaseUserId, { email: finalValue });
+      } else {
+        await updateProfile(supabaseUserId, { [editingField]: finalValue });
+      }
     } catch (e) {
       console.warn('Failed to save', e);
     } finally {
@@ -1229,6 +1235,69 @@ export const ProfileScreen = () => {
                     <>
                       <Text style={s.basicInfoValue}>{profile?.phone || '—'}</Text>
                       <TouchableOpacity onPress={() => handleEditClick('phone', profile?.phone || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* Username */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Username</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'username' ? (
+                    <>
+                      <TextInput
+                        style={s.inlineInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        autoCapitalize="none"
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#211832" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue}>{profile?.username || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('username', profile?.username || '')}>
+                        <Pencil size={14} color={C.muted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              {/* Email */}
+              <View style={s.basicInfoItem}>
+                <Text style={s.basicInfoLabel}>Email</Text>
+                <View style={s.basicInfoValueRow}>
+                  {editingField === 'email' ? (
+                    <>
+                      <TextInput
+                        style={s.inlineInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={handleSaveField} style={s.inlineSaveBtn}>
+                        <Check size={16} color="#000" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
+                        <X size={16} color="#211832" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.basicInfoValue} numberOfLines={1}>{profile?.email || '—'}</Text>
+                      <TouchableOpacity onPress={() => handleEditClick('email', profile?.email || '')}>
                         <Pencil size={14} color={C.muted} strokeWidth={2} />
                       </TouchableOpacity>
                     </>
