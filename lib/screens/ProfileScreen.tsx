@@ -112,17 +112,17 @@ function FireGlowBadge({ color, children }: { color: string; children: React.Rea
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
-  orange:       '#ff7a00',
+  orange:       '#F25912',
   green:        '#22c55e',
   greenSoft:    'rgba(34,197,94,0.12)',
   greenBorder:  'rgba(34,197,94,0.28)',
-  bg:           '#0d1520',
-  cardBg:       'rgba(255,255,255,0.04)',
-  cardBorder:   'rgba(255,255,255,0.06)',
-  text:         '#ffffff',
-  muted:        '#9ca3af',
-  accentSoft:   'rgba(255,122,0,0.12)',
-  accentBorder: 'rgba(255,122,0,0.28)',
+  bg:           '#EEEEF2',
+  cardBg:       '#F8F8FC',
+  cardBorder:   'rgba(33,24,50,0.06)',
+  text:         '#211832',
+  muted:        '#7A7C90',
+  accentSoft:   'rgba(242,89,18,0.12)',
+  accentBorder: 'rgba(242,89,18,0.28)',
   blue:         '#3b82f6',
   blueSoft:     'rgba(59,130,246,0.12)',
   blueBorder:   'rgba(59,130,246,0.28)',
@@ -152,7 +152,7 @@ function Avatar({ uri, size }: { uri?: string | null; size: number }) {
   return (
     <View style={{
       width: size, height: size, borderRadius: Math.round(size * 0.22),
-      backgroundColor: '#0f2030',
+      backgroundColor: '#EEEEF2',
       alignItems: 'center', justifyContent: 'center',
     }}>
       <Text style={{ color: C.orange, fontSize: size * 0.12, fontWeight: '700', textAlign: 'center', lineHeight: size * 0.15 }}>
@@ -641,7 +641,7 @@ export const ProfileScreen = () => {
                 >
                   <View style={s.avatarRing}>
                     {avatarUploading ? (
-                      <View style={{ width: 100, height: 100, borderRadius: 22, backgroundColor: '#0f2030', alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ width: 100, height: 100, borderRadius: 22, backgroundColor: '#EEEEF2', alignItems: 'center', justifyContent: 'center' }}>
                         <ActivityIndicator color={C.orange} size="large" />
                       </View>
                     ) : (
@@ -655,15 +655,15 @@ export const ProfileScreen = () => {
                   {profile?.profileImageUrl ? (
                     <>
                       <TouchableOpacity style={s.avatarActionBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
-                        <RefreshCw size={15} color="#fff" strokeWidth={2.2} />
+                        <RefreshCw size={15} color="#211832" strokeWidth={2.2} />
                       </TouchableOpacity>
                       <TouchableOpacity style={[s.avatarActionBtn, s.avatarActionDelete]} onPress={handleDeleteAvatar} activeOpacity={0.75}>
-                        <Trash2 size={15} color="#fff" strokeWidth={2.2} />
+                        <Trash2 size={15} color="#211832" strokeWidth={2.2} />
                       </TouchableOpacity>
                     </>
                   ) : (
                     <TouchableOpacity style={s.avatarUploadBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
-                      <Camera size={15} color="#fff" strokeWidth={2.2} />
+                      <Camera size={15} color="#211832" strokeWidth={2.2} />
                       <Text style={s.avatarUploadBtnText}>Upload Photo</Text>
                     </TouchableOpacity>
                   )}
@@ -806,7 +806,7 @@ export const ProfileScreen = () => {
                     activeOpacity={0.8}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <X size={13} color="#fff" strokeWidth={2.6} />
+                    <X size={13} color="#211832" strokeWidth={2.6} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -867,6 +867,9 @@ export const ProfileScreen = () => {
           <ProfileCard isPrivate={isSectionPrivate('locationMap')} onToggleVisibility={() => toggleSection('locationMap')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Map</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'locations' })} activeOpacity={0.75}>
+                <Text style={s.viewAllBtn}>Edit</Text>
+              </TouchableOpacity>
             </View>
             {/* Shared interactive map highlighting every set location */}
             <LocationsMap
@@ -878,6 +881,34 @@ export const ProfileScreen = () => {
               onMapTouchStart={() => setScrollEnabled(false)}
               onMapTouchEnd={() => setScrollEnabled(true)}
             />
+            {/* Location edit rows */}
+            <View style={s.locEditList}>
+              {[
+                { icon: '🏠', label: 'Home', name: homeName, addr: homeAddress },
+                { icon: '🏋️', label: 'Gym',  name: gymName,  addr: gymAddress },
+                { icon: '🌳', label: 'Park', name: parkName, addr: parkAddress },
+              ].map(({ icon, label, name, addr }) => (
+                <TouchableOpacity
+                  key={label}
+                  style={s.locEditRow}
+                  activeOpacity={0.75}
+                  onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'locations' })}
+                >
+                  <View style={s.locEditIconWrap}>
+                    <Text style={s.locEditIcon}>{icon}</Text>
+                  </View>
+                  <View style={s.locEditInfo}>
+                    <Text style={s.locEditLabel}>{label}</Text>
+                    {name || addr ? (
+                      <Text style={s.locEditAddr} numberOfLines={1}>{name || addr}</Text>
+                    ) : (
+                      <Text style={s.locEditEmpty}>Tap to add</Text>
+                    )}
+                  </View>
+                  <MapPin size={14} color={C.orange} />
+                </TouchableOpacity>
+              ))}
+            </View>
           </ProfileCard>
 
           {/* ── AI SUMMARY — curated intro, right after locations ───────────── */}
@@ -897,10 +928,10 @@ export const ProfileScreen = () => {
               activeOpacity={0.85}
             >
               {genningSummary ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color="#211832" size="small" />
               ) : (
                 <>
-                  <Sparkles size={15} color="#fff" />
+                  <Sparkles size={15} color="#211832" />
                   <Text style={s.aiBtnText}>
                     {social?.aiSummary ? 'Regenerate with AI' : 'Generate with AI'}
                   </Text>
@@ -989,7 +1020,7 @@ export const ProfileScreen = () => {
                 .map(family => {
                 const state = badgeStates.find(bs => bs.familyKey === family.key);
                 const tier  = state?.currentTier ?? 0;
-                const color = tier > 0 ? TIER_COLORS[tier - 1] : '#9CA3AF';
+                const color = tier > 0 ? TIER_COLORS[tier - 1] : '#7A7C90';
                 const locked = tier === 0;
                 const isStreak = family.key === 'streak' && !locked;
                 const badgeInner = (
@@ -1017,8 +1048,8 @@ export const ProfileScreen = () => {
                     ) : (
                       <View style={[
                         s.badgeShape,
-                        { borderColor: locked ? 'rgba(255,255,255,0.1)' : color + '88',
-                          backgroundColor: locked ? 'rgba(255,255,255,0.04)' : color + '22' },
+                        { borderColor: locked ? 'rgba(33,24,50,0.12)' : color + '88',
+                          backgroundColor: locked ? 'rgba(33,24,50,0.04)' : color + '22' },
                       ]}>
                         {badgeInner}
                       </View>
@@ -1078,7 +1109,7 @@ export const ProfileScreen = () => {
                         <Check size={16} color="#000" strokeWidth={2.5} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
+                        <X size={16} color="#211832" strokeWidth={2.5} />
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -1108,7 +1139,7 @@ export const ProfileScreen = () => {
                         <Check size={16} color="#000" strokeWidth={2.5} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
+                        <X size={16} color="#211832" strokeWidth={2.5} />
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -1140,7 +1171,7 @@ export const ProfileScreen = () => {
                         <Check size={16} color="#000" strokeWidth={2.5} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
+                        <X size={16} color="#211832" strokeWidth={2.5} />
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -1171,7 +1202,7 @@ export const ProfileScreen = () => {
                         <Check size={16} color="#000" strokeWidth={2.5} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setEditingField(null)} style={s.inlineCancelBtn}>
-                        <X size={16} color="#fff" strokeWidth={2.5} />
+                        <X size={16} color="#211832" strokeWidth={2.5} />
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -1329,7 +1360,7 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,122,0,0.85)',
+    backgroundColor: 'rgba(242,89,18,0.85)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1346,7 +1377,7 @@ const s = StyleSheet.create({
     borderRadius: 20,
   },
   avatarUploadBtnText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -1413,7 +1444,7 @@ const s = StyleSheet.create({
   heroTimeDivider: {
     width: StyleSheet.hairlineWidth,
     height: 22,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(33,24,50,0.12)',
   },
   privacyRow: {
     flexDirection: 'row',
@@ -1430,8 +1461,8 @@ const s = StyleSheet.create({
     borderColor: C.cardBorder,
   },
   privacyPillActive: {
-    backgroundColor: '#E89951',
-    borderColor: '#E89951',
+    backgroundColor: '#4C4E78',
+    borderColor: '#4C4E78',
   },
   privacyPillText: {
     color: C.muted,
@@ -1439,7 +1470,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
   privacyPillTextActive: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '800',
   },
   heroLocations: {
@@ -1452,13 +1483,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   heroLocationLabel: {
-    color: '#E89951',
+    color: '#7A7C90',
     fontSize: 12,
     fontWeight: '700',
     width: 96,
   },
   heroLocationDash: {
-    color: '#6b7280',
+    color: '#7A7C90',
     fontSize: 12,
     marginHorizontal: 4,
   },
@@ -1562,7 +1593,7 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
   locItemLabel: {
-    color: '#E89951',
+    color: '#F25912',
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 2,
@@ -1649,7 +1680,7 @@ const s = StyleSheet.create({
     width: 13,
     height: 13,
     borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(33,24,50,0.10)',
   },
   rankDotActive: {
     backgroundColor: C.orange,
@@ -1660,7 +1691,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginTop: 12,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 12,
     paddingVertical: 11,
   },
@@ -1679,7 +1710,7 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   activityTimeValue: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -1695,7 +1726,7 @@ const s = StyleSheet.create({
   activityTimeDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(33,24,50,0.08)',
   },
   viewAllLink: {
     color: C.orange,
@@ -1732,48 +1763,48 @@ const s = StyleSheet.create({
   hobbyCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: 100,
     borderWidth: 1,
     borderColor: C.accentBorder,
     backgroundColor: C.accentSoft,
-    gap: 6,
+    gap: 4,
   },
   hobbyCapsuleText: {
     color: C.orange,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
   },
   meetCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: C.blueBorder,
-    backgroundColor: C.blueSoft,
+    borderColor: 'rgba(33,24,50,0.12)',
+    backgroundColor: 'rgba(33,24,50,0.05)',
   },
   meetCapsuleText: {
-    color: C.blue,
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#7A7C90',
+    fontSize: 11,
+    fontWeight: '500',
   },
   whatIDoCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: C.greenBorder,
-    backgroundColor: C.greenSoft,
+    borderColor: 'rgba(33,24,50,0.12)',
+    backgroundColor: 'rgba(33,24,50,0.05)',
   },
   whatIDoCapsuleText: {
-    color: C.green,
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#7A7C90',
+    fontSize: 11,
+    fontWeight: '500',
   },
 
   // Community
@@ -1821,7 +1852,7 @@ const s = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,122,0,0.1)',
+    backgroundColor: 'rgba(242,89,18,0.1)',
     borderWidth: 1.5,
     borderColor: C.orange,
     alignItems: 'center',
@@ -1854,7 +1885,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   badgeLevelChipText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 9,
     fontWeight: '800',
   },
@@ -1876,9 +1907,9 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(33,24,50,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(33,24,50,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1896,7 +1927,7 @@ const s = StyleSheet.create({
     gap: 14,
   },
   skeleton_bone: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(33,24,50,0.06)',
   },
   friendsListRow: {
     flexDirection: 'row',
@@ -1915,5 +1946,51 @@ const s = StyleSheet.create({
     color: C.orange,
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  // Location edit rows (below map)
+  locEditList: {
+    marginTop: 12,
+    gap: 4,
+  },
+  locEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(33,24,50,0.08)',
+  },
+  locEditIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(242,89,18,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locEditIcon: {
+    fontSize: 16,
+  },
+  locEditInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  locEditLabel: {
+    color: C.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  locEditAddr: {
+    color: C.muted,
+    fontSize: 11,
+    marginTop: 1,
+  },
+  locEditEmpty: {
+    color: C.orange,
+    fontSize: 11,
+    marginTop: 1,
+    fontStyle: 'italic',
   },
 });

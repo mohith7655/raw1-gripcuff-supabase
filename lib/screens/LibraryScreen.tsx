@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, Flame, Zap, HeartPulse, PersonStanding, PlusCircle, Users, ChevronRight } from 'lucide-react-native';
+import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, Flame, Zap, HeartPulse, PersonStanding, PlusCircle, Users, ChevronRight, Search } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
@@ -37,57 +37,149 @@ import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms
 import { useFloatingToggle, FloatingTabToggle } from '../components/FloatingTabToggle';
 import { Raw1Logo } from '../raw1_logo';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// ── Featured hero carousel (badge + title + meta + play + dots) ──
+type HeroSlide = {
+  badge: string;
+  badgeColor: string;       // solid badge bg ('MASTERCLASS' = frosted glass variant)
+  gradient: [string, string, string];
+  title: string;
+  meta: string;
+  onPress?: () => void;
+};
+
+const HeroCardFace = ({ slide }: { slide: HeroSlide }) => (
+  <LinearGradient
+    colors={slide.gradient}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={{ flex: 1 }}
+  >
+    {/* Badge + caption */}
+    {slide.badge === 'MASTERCLASS' ? (
+      <View style={{ position: 'absolute', bottom: 12, left: 12, right: 64, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}>
+        <Text style={{ fontSize: 8, fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: 1, marginBottom: 3 }}>MASTERCLASS</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff', lineHeight: 18 }}>{slide.title}</Text>
+        <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 3 }}>{slide.meta}</Text>
+      </View>
+    ) : (
+      <>
+        <View style={{ position: 'absolute', top: 12, left: 12, backgroundColor: slide.badgeColor, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3 }}>
+          <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{slide.badge}</Text>
+        </View>
+        <View style={{ position: 'absolute', bottom: 16, left: 16, right: 64 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff', lineHeight: 20 }}>{slide.title}</Text>
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>{slide.meta}</Text>
+        </View>
+      </>
+    )}
+    {/* Play button */}
+    <View style={{ position: 'absolute', bottom: 22, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
+      <Play color="#fff" size={16} fill="#fff" />
+    </View>
+  </LinearGradient>
+);
+
+const FeaturedHero = ({ slides }: { slides: HeroSlide[] }) => {
+  const [index, setIndex] = useState(0);
+  const pageW = SCREEN_WIDTH;
+  const cardW = SCREEN_WIDTH - 32;
+  return (
+    <View style={{ marginBottom: 18 }}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          const next = Math.round(e.nativeEvent.contentOffset.x / pageW);
+          if (next !== index) setIndex(next);
+        }}
+        onMomentumScrollEnd={(e) => {
+          setIndex(Math.round(e.nativeEvent.contentOffset.x / pageW));
+        }}
+      >
+        {slides.map((slide, i) => (
+          <View key={i} style={{ width: pageW, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                width: cardW,
+                height: 170,
+                borderRadius: 16,
+                overflow: 'hidden',
+              }}
+            >
+              <TouchableOpacity activeOpacity={0.9} onPress={slide.onPress} style={{ flex: 1 }}>
+                <HeroCardFace slide={slide} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+      {/* Dots */}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 }}>
+        {slides.map((_, i) => (
+          <View key={i} style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: i === index ? '#211832' : '#D8D8E4' }} />
+        ))}
+      </View>
+    </View>
+  );
+};
+
 const WorkoutsTabContent = () => {
   const navigation = useNavigation<any>();
-  const CategoryRow = ({ title, subtitle, IconName, color, onPress }: {
-    title: string; subtitle: string; IconName: any; color: string; onPress?: () => void;
+  const CategoryRow = ({ title, subtitle, IconName, color, last, onPress }: {
+    title: string; subtitle: string; IconName: any; color: string; last?: boolean; onPress?: () => void;
   }) => (
-    <TouchableOpacity
-      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16 }}
-      activeOpacity={0.7}
-      onPress={onPress}
-    >
-      <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${color}20`, alignItems: 'center', justifyContent: 'center' }}>
-        <IconName color={color} size={20} />
-      </View>
-      <View style={{ flex: 1, marginLeft: 14 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 }}>{title}</Text>
-        <Text style={{ fontSize: 12, color: '#888' }}>{subtitle}</Text>
-      </View>
-      <ChevronRight color="#e46600" size={18} />
-    </TouchableOpacity>
+    <>
+      <TouchableOpacity
+        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 }}
+        activeOpacity={0.7}
+        onPress={onPress}
+      >
+        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${color}1A`, alignItems: 'center', justifyContent: 'center' }}>
+          <IconName color={color} size={20} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 14 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#211832', marginBottom: 1 }}>{title}</Text>
+          <Text style={{ fontSize: 12, color: '#7A7C90' }}>{subtitle}</Text>
+        </View>
+        <ChevronRight color="#7A7C90" size={16} />
+      </TouchableOpacity>
+      {!last && <View style={{ height: 1, backgroundColor: '#D8D8E4', marginHorizontal: 16 }} />}
+    </>
   );
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingTop: 16, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}>
+
+        {/* Featured — Trending & New */}
+        <FeaturedHero
+          slides={[
+            { badge: '🔥 TRENDING', badgeColor: 'rgba(242,89,18,0.9)', gradient: ['#3B1F0B', '#5C3319', '#2A1508'], title: 'Full Body HIIT Circuit', meta: '32 min • Intermediate', onPress: () => navigation.navigate('MuscleGrowth', { allowInvite: true }) },
+            { badge: '✨ NEW', badgeColor: 'rgba(34,197,94,0.9)', gradient: ['#1a2a1a', '#2d4a2d', '#0f1a0f'], title: 'Grip Endurance Challenge', meta: '20 min • Advanced', onPress: () => navigation.navigate('GripCuffVideos') },
+            { badge: '🔥 TRENDING', badgeColor: 'rgba(139,92,246,0.9)', gradient: ['#1a1a3a', '#2d2d5a', '#0f0f2a'], title: 'Recovery Yoga Flow', meta: '28 min • Beginner', onPress: () => navigation.navigate('Stretching', { allowInvite: true }) },
+          ]}
+        />
 
         {/* Category rows */}
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: CARD_BORDER_RADIUS, borderWidth: 1, borderColor: 'rgba(228,102,0,0.15)', overflow: 'hidden', marginBottom: 16 }}>
-          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#f44336" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
-          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
+        <View style={{ marginHorizontal: SCREEN_PADDING, backgroundColor: '#F8F8FC', borderRadius: 14, borderWidth: 1, borderColor: '#D8D8E4', overflow: 'hidden', marginBottom: 16 }}>
+          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#EF4444" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
           <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" IconName={PersonStanding} color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
-          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
-          <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#FFD600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
-          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 }} />
-          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#66BB6A" onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+          <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#D4A600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
+          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#66BB6A" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
         </View>
 
         {/* Workout with a Friend */}
         <TouchableOpacity
-          style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}
+          style={{ marginHorizontal: SCREEN_PADDING, borderRadius: 14, backgroundColor: '#211832', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, marginBottom: 16 }}
           onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
           activeOpacity={0.85}
         >
-          <LinearGradient
-            colors={['#1a1a1a', '#000000']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 12 }}
-          >
-            <Users color="#fff" size={20} style={{ marginRight: 10 }} />
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Workout with a Friend</Text>
-          </LinearGradient>
+          <Users color="#fff" size={20} style={{ marginRight: 10 }} />
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Workout with a Friend</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -173,43 +265,58 @@ export const LibraryScreen = () => {
         onScroll={onFloatScroll}
         scrollEventThrottle={16}
       >
-      {/* Header — matches Home screen */}
+      {/* Header — Search · RAW1 (centered) · Settings */}
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
       }}>
-        <View style={{ marginRight: 8 }}>
-          <Raw1Logo fontSize={24} />
-        </View>
-        <View style={{ flex: 1 }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
+          <Search color="#211832" size={22} />
+        </TouchableOpacity>
+        <Raw1Logo fontSize={20} />
+        <TouchableOpacity onPress={() => setShowCustomizeModal(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
+          <Settings color="#211832" size={22} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Exercises / Workouts — compact pill toggle */}
+      <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 }}>
+        <View style={{ flexDirection: 'row', backgroundColor: '#EEEEF2', borderRadius: 100, padding: 2, borderWidth: 1, borderColor: '#D8D8E4' }}>
           <TouchableOpacity
-            onPress={() => setShowCustomizeModal(true)}
-            style={{
-              backgroundColor: '#131f2e',
-              borderRadius: 20,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 5,
-              borderWidth: 1,
-              borderColor: '#1c3a56',
-            }}
+            onPress={() => setSubTab('all')}
+            activeOpacity={0.8}
+            style={{ paddingHorizontal: 22, paddingVertical: 6, borderRadius: 100, backgroundColor: subTab === 'all' ? '#211832' : 'transparent' }}
           >
-            <Text style={{ fontSize: 12 }}>⚙️</Text>
-            <Text style={{ color: '#8aaccc', fontSize: 12, fontWeight: '500' }}>Customize</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'all' ? '#fff' : '#7A7C90' }}>Exercises</Text>
           </TouchableOpacity>
-          <NotificationBell size={24} />
+          <TouchableOpacity
+            onPress={() => setSubTab('workouts')}
+            activeOpacity={0.8}
+            style={{ paddingHorizontal: 22, paddingVertical: 6, borderRadius: 100, backgroundColor: subTab === 'workouts' ? '#211832' : 'transparent' }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'workouts' ? '#fff' : '#7A7C90' }}>Workouts</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
 
 
-      {/* RECOMMENDED SECTION */}
+      {/* Exercises featured hero */}
       {subTab === 'all' && (
+        <FeaturedHero
+          slides={[
+            { badge: 'MASTERCLASS', badgeColor: '', gradient: ['#2a2a3e', '#1a1a2e', '#2d2d44'], title: 'Daily Flow: Industrial Mobility', meta: '24 mins • Advanced', onPress: () => navigation.navigate('GripCuffVideos') },
+            { badge: '✨ NEW', badgeColor: 'rgba(34,197,94,0.9)', gradient: ['#4A3728', '#6B4E38', '#3A2718'], title: 'Forearm Crusher Series', meta: '18 min • Intermediate', onPress: () => navigation.navigate('GripCuffVideos') },
+            { badge: '🔥 POPULAR', badgeColor: 'rgba(79,195,247,0.9)', gradient: ['#0D2137', '#1A3A5C', '#0A1829'], title: 'Deep Stretch Recovery', meta: '35 min • Beginner', onPress: () => navigation.navigate('Stretching', { allowInvite: true }) },
+          ]}
+        />
+      )}
+
+      {/* RECOMMENDED SECTION (hidden — replaced by featured hero) */}
+      {false && (
         <View style={{ marginBottom: 16 }}>
           {showRecommended ? (
             <>
@@ -221,16 +328,16 @@ export const LibraryScreen = () => {
                 paddingHorizontal: 16,
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}>Recommended</Text>
+                <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>Recommended</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity
                     onPress={() => setShowRecommended(false)}
-                    style={{ backgroundColor: '#1c2e42', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 }}
+                    style={{ backgroundColor: '#F8F8FC', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 }}
                   >
-                    <Text style={{ color: '#8aaccc', fontSize: 12, fontWeight: '500' }}>Hide</Text>
+                    <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '500' }}>Hide</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => navigation.navigate('Recommendation')}>
-                    <Text style={{ color: '#D4622A', fontSize: 13, fontWeight: '600' }}>See All ›</Text>
+                    <Text style={{ color: '#F25912', fontSize: 13, fontWeight: '600' }}>See All ›</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -260,7 +367,7 @@ export const LibraryScreen = () => {
                         width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.3)',
                         justifyContent: 'center', alignItems: 'center',
                       }}>
-                        <Text style={{ color: '#fff', fontSize: 20, marginLeft: 3 }}>▶</Text>
+                        <Text style={{ color: '#211832', fontSize: 20, marginLeft: 3 }}>▶</Text>
                       </View>
                       <View style={{
                         position: 'absolute', bottom: 8, right: 8, backgroundColor: '#000',
@@ -273,7 +380,7 @@ export const LibraryScreen = () => {
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 8, paddingRight: 2 }}>
-                      <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', flex: 1, lineHeight: 18 }} numberOfLines={2}>
+                      <Text style={{ color: '#211832', fontSize: 13, fontWeight: '600', flex: 1, lineHeight: 18 }} numberOfLines={2}>
                         {video.title}
                       </Text>
                     </View>
@@ -283,12 +390,12 @@ export const LibraryScreen = () => {
             </>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 6 }}>
-              <Text style={{ color: '#607a94', fontSize: 14, fontWeight: '600' }}>Recommended</Text>
+              <Text style={{ color: '#7A7C90', fontSize: 14, fontWeight: '600' }}>Recommended</Text>
               <TouchableOpacity
                 onPress={() => setShowRecommended(true)}
-                style={{ backgroundColor: '#1c2e42', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 }}
+                style={{ backgroundColor: '#F8F8FC', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 }}
               >
-                <Text style={{ color: '#8aaccc', fontSize: 12, fontWeight: '500' }}>Unhide</Text>
+                <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '500' }}>Unhide</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -312,12 +419,6 @@ export const LibraryScreen = () => {
       />
       </ScrollView>
 
-      <FloatingTabToggle
-        activeTab={subTab}
-        onTabChange={setSubTab}
-        translateY={floatTranslateY}
-      />
-
       {/* Customize Modal */}
       {showCustomizeModal && (
         <View style={{
@@ -325,7 +426,7 @@ export const LibraryScreen = () => {
           backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end', zIndex: 999,
         }}>
           <View style={{
-            backgroundColor: '#131f2e',
+            backgroundColor: '#F8F8FC',
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             padding: 20,
@@ -338,17 +439,17 @@ export const LibraryScreen = () => {
               marginBottom: 6,
             }}>
               <Text style={{
-                color: '#fff', fontSize: 18, fontWeight: '700'
+                color: '#211832', fontSize: 18, fontWeight: '700'
               }}>Customize Library</Text>
               <TouchableOpacity onPress={() => setShowCustomizeModal(false)}>
-                <Text style={{ color: '#D4622A', fontSize: 15, fontWeight: '600' }}>
+                <Text style={{ color: '#F25912', fontSize: 15, fontWeight: '600' }}>
                   Done
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* View Style Picker */}
-            <Text style={{ color: '#8aaccc', fontSize: 11, fontWeight: '600', letterSpacing: 0.6, marginBottom: 10, marginTop: 4 }}>
+            <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600', letterSpacing: 0.6, marginBottom: 10, marginTop: 4 }}>
               VIEW STYLE
             </Text>
             <View style={{ flexDirection: 'row', gap: 7, marginBottom: 22 }}>
@@ -360,17 +461,17 @@ export const LibraryScreen = () => {
                     onPress={() => handleViewModeChange(key)}
                     style={{
                       flex: 1,
-                      backgroundColor: active ? 'rgba(212,98,42,0.14)' : '#0d1822',
+                      backgroundColor: active ? 'rgba(242,89,18,0.14)' : '#EEEEF2',
                       borderRadius: 10,
                       borderWidth: 1.5,
-                      borderColor: active ? '#D4622A' : '#1c3a56',
+                      borderColor: active ? '#F25912' : '#F8F8FC',
                       paddingVertical: 10,
                       alignItems: 'center',
                       gap: 4,
                     }}
                   >
-                    <Text style={{ fontSize: 15, color: active ? '#D4622A' : '#607a94' }}>{icon}</Text>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: active ? '#D4622A' : '#607a94' }}>{label}</Text>
+                    <Text style={{ fontSize: 15, color: active ? '#F25912' : '#7A7C90' }}>{icon}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '600', color: active ? '#F25912' : '#7A7C90' }}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -379,10 +480,10 @@ export const LibraryScreen = () => {
             <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginBottom: 16 }} />
 
             {/* Section Visibility */}
-            <Text style={{ color: '#8aaccc', fontSize: 11, fontWeight: '600', letterSpacing: 0.6, marginBottom: 4 }}>
+            <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600', letterSpacing: 0.6, marginBottom: 4 }}>
               SECTIONS
             </Text>
-            <Text style={{ color: '#607a94', fontSize: 12, marginBottom: 14 }}>
+            <Text style={{ color: '#7A7C90', fontSize: 12, marginBottom: 14 }}>
               Show or hide sections in your library
             </Text>
 
@@ -401,7 +502,7 @@ export const LibraryScreen = () => {
                     alignItems: 'center',
                     paddingVertical: 14,
                     borderBottomWidth: 1,
-                    borderBottomColor: '#1c3a56',
+                    borderBottomColor: '#F8F8FC',
                   }}
                 >
                   <Text style={{ fontSize: 20, marginRight: 14 }}>
@@ -409,7 +510,7 @@ export const LibraryScreen = () => {
                   </Text>
                   <Text style={{
                     flex: 1,
-                    color: isHidden ? '#3a5a7a' : '#ffffff',
+                    color: isHidden ? '#D8D8E4' : '#ffffff',
                     fontSize: 15,
                     fontWeight: '500',
                   }}>
@@ -420,7 +521,7 @@ export const LibraryScreen = () => {
                   <View style={{
                     width: 50, height: 28,
                     borderRadius: 14,
-                    backgroundColor: isHidden ? '#1c2e42' : '#D4622A',
+                    backgroundColor: isHidden ? '#F8F8FC' : '#F25912',
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                     alignItems: isHidden ? 'flex-start' : 'flex-end',
@@ -447,11 +548,11 @@ import { getWorkoutVideoUrl } from '../constants/videoUrls';
 const EXERCISE_LIBRARY_VIDEO_URL = getWorkoutVideoUrl('exercise');
 
 const RECOMMENDED_VIDEOS = [
-  { id: 1, title: "Upper Body Hypertrophy", duration: "0:10", color: "#E8732A" },
+  { id: 1, title: "Upper Body Hypertrophy", duration: "0:10", color: "#F25912" },
   { id: 2, title: "Morning Flexibility Flow", duration: "0:10", color: "#8B5CF6" },
   { id: 3, title: "Sprint Speed Drills", duration: "0:10", color: "#3B82F6" },
   { id: 4, title: "Core Strength Blast", duration: "0:10", color: "#10B981" },
-  { id: 5, title: "Hip Impingement Relief", duration: "0:10", color: "#E8732A" },
+  { id: 5, title: "Hip Impingement Relief", duration: "0:10", color: "#F25912" },
   { id: 6, title: "Leg Day Volume", duration: "0:10", color: "#8B5CF6" },
 ];
 
@@ -905,17 +1006,16 @@ const VideoTile = ({
     });
   };
 
+  // Muted earthy / slate thumbnail gradients (Ash & Midnight)
   const gradients = [
-    ['#FF6B35', '#E84100'],
-    ['#7C3AED', '#4F46E5'],
-    ['#059669', '#047857'],
-    ['#DB2777', '#9D174D'],
-    ['#2563EB', '#1D4ED8'],
-    ['#D97706', '#B45309'],
-    ['#0891B2', '#0E7490'],
-    ['#E11D48', '#BE185D'],
-    ['#16A34A', '#15803D'],
-    ['#8B5CF6', '#6D28D9'],
+    ['#8B7355', '#6B5B45'],   // tan / brown
+    ['#7A8A8A', '#5A6A6A'],   // slate green-grey
+    ['#4A5568', '#2D3748'],   // slate-blue
+    ['#6B4226', '#4A2E1A'],   // brown
+    ['#2A2A3E', '#1A1A2E'],   // dark navy
+    ['#0D2137', '#1A3A5C'],   // deep blue
+    ['#C4B8A8', '#A09488'],   // beige
+    ['#3B1F0B', '#5C3319'],   // dark amber
   ];
 
   let finalColors = gradients[index % gradients.length];
@@ -938,7 +1038,9 @@ const VideoTile = ({
         <View
           style={[
             styles.centerIcon,
-            { backgroundColor: video.isCompleted ? '#059669' : AppTheme.primaryColor },
+            video.isCompleted
+              ? { backgroundColor: '#059669' }
+              : { backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)' },
           ]}
         >
           {video.isCompleted ? (
@@ -977,7 +1079,7 @@ const VideoTile = ({
               ]}
             >
               {video.isCompleted && (
-                <Check color="#fff" size={12} />
+                <Check color="#211832" size={12} />
               )}
             </View>
           </TouchableOpacity>
@@ -986,7 +1088,7 @@ const VideoTile = ({
         {/* Lock Overlay */}
         {video.locked && (
           <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, justifyContent: 'center', alignItems: 'center' }]}>
-            <Lock color="#ffffff" size={28} />
+            <Lock color="#211832" size={28} />
           </View>
         )}
       </LinearGradient>
@@ -1032,7 +1134,7 @@ const styles = StyleSheet.create({
   },
   /* ── Sub Tabs ── */
   tabContainer: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 12,
@@ -1059,15 +1161,15 @@ const styles = StyleSheet.create({
   },
   tabIcon: {
     fontSize: 13,
-    color: '#607a94',
+    color: '#7A7C90',
   },
   tabText: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 13,
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: '700',
   },
 
@@ -1090,10 +1192,10 @@ const styles = StyleSheet.create({
   },
   gripCuffCardMeta: {
     fontSize: 10,
-    color: '#888888',
+    color: '#7A7C90',
   },
   gripCuffCardButtonSmall: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     borderRadius: 14,
     paddingVertical: 5,
     paddingHorizontal: 12,
@@ -1129,9 +1231,9 @@ const styles = StyleSheet.create({
 
   /* ── AI Personalized Workout CTA ── */
   aiCtaCard: {
-    backgroundColor: 'rgba(232,153,81, 0.12)',
+    backgroundColor: 'rgba(242,89,18, 0.12)',
     borderWidth: 1.5,
-    borderColor: 'rgba(232,153,81, 0.35)',
+    borderColor: 'rgba(242,89,18, 0.35)',
     borderRadius: 14,
     marginHorizontal: SCREEN_PADDING,
     marginBottom: 16,
@@ -1153,13 +1255,13 @@ const styles = StyleSheet.create({
   },
   aiCtaSubtitle: {
     fontSize: 12,
-    color: '#aaaaaa',
+    color: '#7A7C90',
   },
   aiCtaArrowButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F25912',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -1212,7 +1314,7 @@ const styles = StyleSheet.create({
   hiddenSectionsGroup: {
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#1c3a56',
+    borderTopColor: '#F8F8FC',
     paddingTop: 8,
   },
   hiddenSectionRow: {
@@ -1223,18 +1325,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   hiddenSectionLabel: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 14,
     fontWeight: '600' as any,
   },
   unhidePill: {
-    backgroundColor: '#1c2e42',
+    backgroundColor: '#F8F8FC',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
   unhidePillText: {
-    color: '#8aaccc',
+    color: '#7A7C90',
     fontSize: 12,
     fontWeight: '500' as any,
   },
@@ -1259,11 +1361,11 @@ const styles = StyleSheet.create({
   favSectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#211832',
   },
   favViewAll: {
     fontSize: 13,
-    color: '#E89951',
+    color: '#F25912',
     fontWeight: '600',
   },
   emptyVisibilityState: {
@@ -1304,7 +1406,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(33,24,50,0.05)',
   },
   modalRowText: {
     fontSize: FontSizes.body,
@@ -1319,7 +1421,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   modalDoneText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: FontSizes.body,
     fontWeight: FontWeights.bold as any,
   },
@@ -1338,7 +1440,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.cardColor,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: `rgba(228, 102, 0, 0.2)`,
+    borderColor: `rgba(242,89,18, 0.2)`,
     padding: 20,
     marginBottom: 24,
     marginHorizontal: SCREEN_PADDING,
@@ -1355,7 +1457,7 @@ const styles = StyleSheet.create({
     color: AppTheme.textWhite,
   },
   progressBadge: {
-    backgroundColor: `rgba(228, 102, 0, 0.15)`,
+    backgroundColor: `rgba(242,89,18, 0.15)`,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1404,17 +1506,17 @@ const styles = StyleSheet.create({
     alignContent: 'flex-start',
   },
   videoCard: {
-    width: 160,
-    backgroundColor: AppTheme.cardColor,
-    borderRadius: 10,
-    overflow: 'hidden',
-    boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
-    elevation: 5,
-    marginRight: 16,
+    width: 170,
+    backgroundColor: 'transparent',
+    borderRadius: 14,
+    overflow: 'visible',
+    marginRight: 12,
   },
   videoThumbnail: {
-    width: 160,
-    height: 110,
+    width: 170,
+    height: 140,
+    borderRadius: 14,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -1452,7 +1554,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.54)',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.54)',
+    borderColor: 'rgba(33,24,50, 0.54)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1461,7 +1563,8 @@ const styles = StyleSheet.create({
     borderColor: AppTheme.primaryColor,
   },
   videoInfo: {
-    padding: 12,
+    paddingTop: 8,
+    paddingHorizontal: 2,
   },
   videoTitle: {
     fontSize: FontSizes.small,
@@ -1509,7 +1612,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   lockedProgressContainer: {
-    backgroundColor: `rgba(228, 102, 0, 0.12)`,
+    backgroundColor: `rgba(242,89,18, 0.12)`,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
@@ -1545,7 +1648,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.cardColor,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: `rgba(232,153,81, 0.2)`,
+    borderColor: `rgba(242,89,18, 0.2)`,
     padding: 24,
     marginBottom: 24,
     marginHorizontal: SCREEN_PADDING,
@@ -1572,7 +1675,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   quizGetStartedButtonText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: FontSizes.body,
     fontWeight: FontWeights.bold as any,
   },
@@ -1586,7 +1689,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppTheme.cardColor,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: `rgba(232,153,81, 0.2)`,
+    borderColor: `rgba(242,89,18, 0.2)`,
     padding: 24,
     marginBottom: 24,
     marginHorizontal: SCREEN_PADDING,
@@ -1626,11 +1729,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(33,24,50, 0.1)',
     gap: 12,
   },
   quizChoiceButtonSelected: {
-    backgroundColor: `rgba(232,153,81, 0.15)`,
+    backgroundColor: `rgba(242,89,18, 0.15)`,
     borderColor: AppTheme.primaryColor,
   },
   quizChoiceEmoji: {
@@ -1653,7 +1756,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   quizNextButtonText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: FontSizes.body,
     fontWeight: FontWeights.bold as any,
   },
@@ -1739,7 +1842,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(33,24,50, 0.05)',
   },
   comingSoonEmoji: {
     fontSize: 48,
@@ -1771,7 +1874,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   gripCuffSectionTitle: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 18,
     fontWeight: '700',
   },
@@ -1781,25 +1884,25 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   gripCuffHideBtn: {
-    backgroundColor: '#1c2e42',
+    backgroundColor: '#F8F8FC',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
   gripCuffHideBtnText: {
-    color: '#8aaccc',
+    color: '#7A7C90',
     fontSize: 12,
     fontWeight: '500',
   },
   gripCuffSeeAllText: {
-    color: '#D4622A',
+    color: '#F25912',
     fontSize: 13,
     fontWeight: '600',
   },
   goalCardStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 12,
     padding: 14,
     marginHorizontal: 16,
@@ -1809,23 +1912,23 @@ const styles = StyleSheet.create({
   goalCardIconContainer: {
     width: 44, height: 44,
     borderRadius: 12,
-    backgroundColor: '#1c2e42',
+    backgroundColor: '#F8F8FC',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   goalCardTitle: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 15,
     fontWeight: '700',
   },
   goalCardSubtitle: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 12,
     marginTop: 2,
   },
   goalCardArrow: {
-    color: '#D4622A',
+    color: '#F25912',
     fontSize: 18,
   },
 });

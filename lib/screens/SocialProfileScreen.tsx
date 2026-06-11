@@ -1,1389 +1,1693 @@
 /**
- * SocialProfileScreen
+ * SocialProfileScreen — read-only profile, mirrors the owner ProfileScreen
+ * layout/components exactly (hero + time stats, Profession, Fitness Goals,
+ * Gallery, About, Top Hobbies, Map, Summary, Stats, Badges, Looking to meet,
+ * Community). No edit affordances. Two modes:
+ *   • Other user  → Message + Connect CTA at the bottom
+ *   • Preview     → "this is how others see you" banner + Exit Preview
  *
- * Flat dark social profile. Handles two modes automatically:
- *   • Own profile  → edit pencils on each section, QR + Settings icons
- *   • Other user   → no edit affordances, Message + Connect CTA at bottom
+ * Sections the owner marked private (sectionVisibility) are hidden from viewers.
+ * Empty sections are hidden too (viewers never see "add …" placeholders).
  *
- * Route params: { uid: string }
+ * Route params: { uid: string; previewAsOther?: boolean }
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Image,
-    Platform,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated as RNAnimated,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { LocationsMap } from '../components/profile/LocationsMap';
-import { coarseLocality } from '../utils/locality';
-import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import {
-    ArrowLeft, Briefcase, ChevronRight, Dumbbell, Edit2, Eye, Flame, Heart, Home,
-    MapPin, MessageCircle, QrCode, Settings, Trees, Trophy,
-    UserCheck, UserPlus, Sparkles,
+  ArrowLeft,
+  Briefcase,
+  Dumbbell,
+  Edit2,
+  Eye,
+  Flame,
+  MapPin,
+  MessageCircle,
+  Trophy,
+  UserCheck,
+  UserPlus,
 } from 'lucide-react-native';
 import { useAuth } from '../providers/AuthContext';
 import { useFriend } from '../providers/FriendContext';
 import { UserService } from '../services/user.service';
 import { SocialProfileService } from '../services/socialProfile.service';
-import { generateProfileSummary } from '../services/profileSummary.service';
-import { FriendService } from '../services/friend.service';
 import { StreakService, StreakData } from '../services/streak.service';
-import { ALL_BADGES } from '../services/rewards.service';
+import { GalleryService, ProfilePhoto } from '../services/gallery.service';
+import { FriendService } from '../services/friend.service';
+import { BADGE_FAMILIES, TIER_COLORS } from '../services/badge.types';
+import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 import { User } from '../models/User';
-import {
-    AGE_GROUP_META, CONNECTION_GOAL_META, HOBBY_META, SocialProfile,
-} from '../models/SocialProfile';
+import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META } from '../models/SocialProfile';
 import { RelationshipStatus } from '../models/Friend';
+import { ProfileCard } from '../components/profile/ProfileCard';
+import { LocationsMap } from '../components/profile/LocationsMap';
+import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
+// ── Design tokens (light theme, dark text — matches ProfileScreen) ─────────────
 const C = {
-    bgTop:        '#06111F',
-    bgBottom:     '#081521',
-    bgCard:       'rgba(12,20,35,0.92)',
-    bgInner:      'rgba(255,255,255,0.04)',
-    accent:       '#FF7A00',
-    accentSoft:   'rgba(255,122,0,0.14)',
-    accentBorder: 'rgba(255,122,0,0.45)',
-    green:        '#22C55E',
-    greenSoft:    'rgba(34,197,94,0.14)',
-    greenBorder:  'rgba(34,197,94,0.45)',
-    purple:       '#A78BFA',
-    purpleSoft:   'rgba(167,139,250,0.14)',
-    purpleBorder: 'rgba(167,139,250,0.45)',
-    text:         '#FFFFFF',
-    textMuted:    '#9CA3AF',
-    textDim:      '#64748B',
-    border:       'rgba(255,255,255,0.06)',
-    glow:         'rgba(56,103,214,0.18)',
+  orange:       '#F25912',
+  green:        '#22c55e',
+  greenSoft:    'rgba(34,197,94,0.12)',
+  greenBorder:  'rgba(34,197,94,0.28)',
+  bg:           '#EEEEF2',
+  cardBg:       '#F8F8FC',
+  cardBorder:   'rgba(33,24,50,0.06)',
+  text:         '#211832',
+  muted:        '#7A7C90',
+  accentSoft:   'rgba(242,89,18,0.12)',
+  accentBorder: 'rgba(242,89,18,0.28)',
+  blue:         '#3b82f6',
+  blueSoft:     'rgba(59,130,246,0.12)',
+  blueBorder:   'rgba(59,130,246,0.28)',
 };
 
-// ─── Helper components ────────────────────────────────────────────────────────
+// ── Fire glow badge wrapper (streak only) — mirrors ProfileScreen ──────────────
+function FireGlowBadge({ color, children }: { color: string; children: React.ReactNode }) {
+  const glow = useRef(new RNAnimated.Value(0)).current;
+  useEffect(() => {
+    const loop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(glow, { toValue: 1, duration: 900, useNativeDriver: false }),
+        RNAnimated.timing(glow, { toValue: 0, duration: 900, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
-function Avatar({ uri, size = 80 }: { uri?: string | null; size?: number }) {
-    const [err, setErr] = useState(false);
-    if (uri && !err) {
-        return (
-            <Image
-                source={{ uri }}
-                style={{ width: size, height: size, borderRadius: Math.round(size * 0.22) }}
-                onError={() => setErr(true)}
-            />
-        );
-    }
+  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: [color + '55', color + 'ff'] });
+  const bgColor = glow.interpolate({ inputRange: [0, 1], outputRange: [color + '15', color + '35'] });
+  const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.0] });
+  const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [4, 18] });
+
+  return (
+    <RNAnimated.View style={{
+      width: 44, height: 44, borderRadius: 12,
+      borderWidth: 2,
+      borderColor,
+      backgroundColor: bgColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'visible',
+      shadowColor: color,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: shadowOpacity as any,
+      shadowRadius: shadowRadius as any,
+      elevation: 8,
+    }}>
+      {children}
+    </RNAnimated.View>
+  );
+}
+
+// ── Avatar (rounded-square, matches ProfileScreen) ─────────────────────────────
+function Avatar({ uri, size }: { uri?: string | null; size: number }) {
+  const [err, setErr] = useState(false);
+  if (uri && !err) {
     return (
-        <View style={{
-            width: size, height: size, borderRadius: Math.round(size * 0.22),
-            backgroundColor: C.bgCard,
-            alignItems: 'center', justifyContent: 'center',
-        }}>
-            <Text style={{ fontSize: size * 0.38 }}>👤</Text>
-        </View>
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: Math.round(size * 0.22) }}
+        onError={() => setErr(true)}
+      />
     );
+  }
+  return (
+    <View style={{
+      width: size, height: size, borderRadius: Math.round(size * 0.22),
+      backgroundColor: '#EEEEF2',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      <Text style={{ color: C.orange, fontSize: size * 0.12, fontWeight: '700', textAlign: 'center', lineHeight: size * 0.15 }}>
+        Profile{'\n'}Picture
+      </Text>
+    </View>
+  );
 }
 
-function SectionCard({
-    title, children, style, onEdit, right,
-}: {
-    title?: string;
-    children: React.ReactNode;
-    style?: any;
-    onEdit?: () => void;
-    right?: React.ReactNode;
-}) {
-    return (
-        <View style={[card.wrapper, style]}>
-            {(title || onEdit || right) ? (
-                <View style={card.header}>
-                    {title ? <Text style={card.title}>{title}</Text> : <View />}
-                    <View style={card.headerRight}>
-                        {right}
-                        {onEdit ? (
-                            <TouchableOpacity onPress={onEdit} style={card.editBtn} hitSlop={10}>
-                                <Edit2 size={13} color={C.textMuted} />
-                            </TouchableOpacity>
-                        ) : null}
-                    </View>
-                </View>
-            ) : null}
-            {children}
-        </View>
-    );
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function splitAddress(address?: string | null, fallbackSub = '') {
+  if (!address) return { sub: fallbackSub };
+  const parts = address.split(',').map(p => p.trim()).filter(Boolean);
+  return { sub: parts.slice(1, 3).join(', ') || address };
 }
 
-// A single location entry (icon + label + place/address). No map — all
-// locations share ONE map rendered once below the list.
-function LocationLine({
-    title, icon, name, address, placeholder, isOwn, onEdit,
-}: {
-    title: string;
-    icon: React.ReactNode;
-    name?: string | null;
-    address?: string | null;
-    placeholder: string;
-    isOwn: boolean;
-    onEdit: () => void;
-}) {
-    const trimName = (name ?? '').trim();
-    const trimAddr = (address ?? '').trim();
-
-    // Owner sees the exact place name + full address. Everyone else sees only
-    // the coarse locality/area — no exact name, building or street number.
-    let primary: string;
-    let secondary: string | null;
-    if (isOwn) {
-        primary   = trimName || trimAddr;
-        secondary = (trimName && trimAddr && trimName.toLowerCase() !== trimAddr.toLowerCase())
-            ? trimAddr
-            : null;
-    } else {
-        primary   = coarseLocality(trimAddr || trimName, trimName);
-        secondary = null;
-    }
-    const hasContent = !!primary;
-
-    if (!isOwn && !hasContent) return null;
-
-    const body = (
-        <View style={s.locRow}>
-            <View style={{ flex: 1 }}>
-                <Text style={s.locLineTitle}>{title}</Text>
-                {hasContent ? (
-                    <>
-                        <Text style={s.locName}>{primary}</Text>
-                        {secondary ? <Text style={s.locAddress}>{secondary}</Text> : null}
-                    </>
-                ) : (
-                    <Text style={s.placeholder}>{placeholder}</Text>
-                )}
-            </View>
-        </View>
-    );
-    return isOwn
-        ? <TouchableOpacity activeOpacity={0.7} onPress={onEdit}>{body}</TouchableOpacity>
-        : body;
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const toRad = (d: number) => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function CommunityListRow({
-    label, description, isOwn, onPress,
-}: {
-    label: string;
-    description: string;
-    isOwn: boolean;
-    onPress: () => void;
-}) {
-    const content = (
-        <View style={s.communityRow}>
-            <View style={s.communityIcon}>
-                <Heart size={15} color={C.purple} fill={C.purple} />
-            </View>
-            <View style={{ flex: 1 }}>
-                <Text style={s.communityRowLabel}>{label}</Text>
-                <Text style={s.communityRowDesc}>{description}</Text>
-            </View>
-            {isOwn ? <ChevronRight size={16} color={C.textMuted} /> : null}
-        </View>
-    );
-    if (!isOwn) return content;
-    return (
-        <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
-            {content}
-        </TouchableOpacity>
-    );
+function fmtDistance(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)} m away`;
+  return `${km.toFixed(1)} km away`;
 }
 
-function Skeleton({ width, height = 14, radius = 7, style }: any) {
-    const anim = useRef(new Animated.Value(0.4)).current;
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(anim, { toValue: 0.4, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
-            ])
-        ).start();
-    }, []);
-    return (
-        <Animated.View style={[{
-            width, height, borderRadius: radius,
-            backgroundColor: C.bgInner, opacity: anim,
-        }, style]} />
-    );
-}
+const fmtMins = (mins: number) => {
+  const m = Math.round(mins);
+  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+};
 
-function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
-    return (
-        <View style={stat.card}>
-            <View style={stat.iconWrap}>{icon}</View>
-            <Text style={stat.value}>{value}</Text>
-            <Text style={stat.label}>{label}</Text>
-        </View>
-    );
-}
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
+// ── Screen ─────────────────────────────────────────────────────────────────────
 export function SocialProfileScreen() {
-    const navigation = useNavigation<any>();
-    const route      = useRoute<any>();
-    const { supabaseUserId } = useAuth();
-    const { sendRequest } = useFriend();
+  const navigation = useNavigation<any>();
+  const route      = useRoute<any>();
+  const { supabaseUserId } = useAuth();
+  const { sendRequest } = useFriend();
 
-    const uid       = (route.params?.uid as string) ?? supabaseUserId ?? '';
-    // Preview mode: viewing your own profile as other people see it
-    const isPreview = route.params?.previewAsOther === true && uid === supabaseUserId;
-    const isOwn     = uid === supabaseUserId && !isPreview;
+  const uid       = (route.params?.uid as string) ?? supabaseUserId ?? '';
+  const isPreview = route.params?.previewAsOther === true && uid === supabaseUserId;
+  const isOwn     = uid === supabaseUserId && !isPreview;
 
-    // A section is shown to a viewer (anyone who isn't the owner, incl. preview
-    // mode) unless its owner marked it private via the profile visibility toggle.
-    const showSection = (key: string) => isOwn || !social?.sectionVisibility?.[key];
+  // Local copy of section visibility so preview toggles update instantly.
+  const [localSectionVis, setLocalSectionVis] = useState<Record<string, boolean>>({});
+  const [selectedLocTab, setSelectedLocTab] = useState<'home' | 'gym' | 'park'>('home');
 
-    const [user,        setUser]        = useState<User | null>(null);
-    const [social,      setSocial]      = useState<SocialProfile | null>(null);
-    const [streakData,  setStreakData]  = useState<StreakData | null>(null);
-    const [relStatus,   setRelStatus]   = useState<RelationshipStatus>('none');
-    const [loading,     setLoading]     = useState(true);
-    const [refreshing,  setRefreshing]  = useState(false);
-    const [connectBusy, setConnectBusy] = useState(false);
-    // Pause page scroll while a finger is panning a location map
-    const [scrollEnabled, setScrollEnabled] = useState(true);
-    // AI intro blurb (owner generates it; everyone reads the cached value)
-    const [genningSummary, setGenningSummary] = useState(false);
+  // A section is shown to a viewer unless its owner marked it private.
+  // Preview / owner always sees every section (so they can toggle visibility).
+  const showSection = (key: string) => isOwn || isPreview || !localSectionVis[key];
 
-    // Hide bottom CTA bar while scrolling, reveal when idle
-    const ctaAnim = useRef(new Animated.Value(1)).current;
-    const scrollIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const handleScroll = () => {
-        Animated.timing(ctaAnim, { toValue: 0, duration: 120, useNativeDriver: true }).start();
-        if (scrollIdleTimer.current) clearTimeout(scrollIdleTimer.current);
-        scrollIdleTimer.current = setTimeout(() => {
-            Animated.timing(ctaAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-        }, 500);
-    };
+  const [user,       setUser]       = useState<User | null>(null);
+  const [social,     setSocial]     = useState<SocialProfile | null>(null);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
+  const [photos,     setPhotos]     = useState<ProfilePhoto[]>([]);
+  const [relStatus,  setRelStatus]  = useState<RelationshipStatus>('none');
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [connectBusy, setConnectBusy] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [viewerHome, setViewerHome] = useState<{ lat: number; lng: number } | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [fullscreenIdx, setFullscreenIdx] = useState<number | null>(null);
 
-    const load = useCallback(async (silent = false) => {
-        if (!uid) return;
-        if (!silent) setLoading(true);
-        try {
-            const [u, sp, streak] = await Promise.all([
-                UserService.getProfile(uid),
-                SocialProfileService.get(uid),
-                StreakService.getStreakData(uid),
-            ]);
-            setUser(u);
-            setSocial(sp);
-            setStreakData(streak);
-            console.log('[SocialProfileScreen] locations from supabase:', {
-                gymName: sp?.gymName, gymArea: sp?.gymArea, gymAddress: sp?.gymAddress,
-                houseName: sp?.houseName, houseAddress: sp?.houseAddress,
-                parkName: sp?.parkName, parkAddress: sp?.parkAddress,
-                hobbies: sp?.hobbies,
-            });
+  // Hide bottom CTA bar while scrolling, reveal when idle
+  const ctaAnim = useRef(new RNAnimated.Value(1)).current;
+  const scrollIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleScroll = () => {
+    RNAnimated.timing(ctaAnim, { toValue: 0, duration: 120, useNativeDriver: true }).start();
+    if (scrollIdleTimer.current) clearTimeout(scrollIdleTimer.current);
+    scrollIdleTimer.current = setTimeout(() => {
+      RNAnimated.timing(ctaAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    }, 500);
+  };
 
-            if (!isOwn && supabaseUserId && uid !== supabaseUserId) {
-                const status = await FriendService.getRequestStatus(supabaseUserId, uid);
-                setRelStatus(status);
-            }
-        } catch (e) {
-            console.warn('[SocialProfileScreen] load error:', e);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [uid, isOwn, supabaseUserId]);
-
-    useFocusEffect(useCallback(() => { load(true); }, [load]));
-
-    const onRefresh = () => { setRefreshing(true); load(true); };
-
-    const goToEdit = () => navigation.navigate('EditSocialProfileScreen');
-
-    const handleConnect = async () => {
-        if (!supabaseUserId || relStatus !== 'none') return;
-        setConnectBusy(true);
-        try {
-            await sendRequest(uid);
-            setRelStatus('pending_sent');
-        } catch {}
-        finally { setConnectBusy(false); }
-    };
-
-    const earnedBadgeIds = new Set(streakData?.badges ?? []);
-    const earnedBadges   = ALL_BADGES.filter(b => earnedBadgeIds.has(b.id));
-    const badgesShown    = earnedBadges.slice(0, 4);
-    const badgesOverflow = earnedBadges.length - badgesShown.length;
-
-    const connectLabel = () => {
-        if (connectBusy) return '...';
-        switch (relStatus) {
-            case 'friends':          return 'Connected ✓';
-            case 'pending_sent':     return 'Requested';
-            case 'pending_received': return 'Accept';
-            default:                 return 'Connect';
-        }
-    };
-
-    // ── Loading skeleton ──────────────────────────────────────────────────────
-    if (loading) {
-        return (
-            <SafeAreaView style={s.safe} edges={['top']}>
-                <LinearGradient
-                    colors={[C.bgTop, C.bgBottom]}
-                    style={s.gradientBg}
-                    pointerEvents="none"
-                />
-                <View style={s.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
-                        <ArrowLeft size={22} color={C.text} />
-                    </TouchableOpacity>
-                </View>
-                <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
-                    <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-                        <Skeleton width={80} height={80} radius={40} />
-                        <View style={{ gap: 8 }}>
-                            <Skeleton width={140} height={18} />
-                            <Skeleton width={90} height={13} />
-                        </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <Skeleton width="31%" height={70} radius={14} />
-                        <Skeleton width="31%" height={70} radius={14} />
-                        <Skeleton width="31%" height={70} radius={14} />
-                    </View>
-                    {[1, 2, 3].map(i => <Skeleton key={i} width="100%" height={80} radius={14} />)}
-                </ScrollView>
-            </SafeAreaView>
-        );
+  const load = useCallback(async (silent = false) => {
+    if (!uid) {
+      setLoading(false);
+      return;
     }
+    if (!silent) setLoading(true);
 
-    const displayName = user?.fullName || 'Athlete';
-    const username    = user?.username  || '';
+    // Safety: never stay stuck in loading longer than 12 s
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setRefreshing(false);
+    }, 12000);
 
-    const meetActive           = social?.lookingToMeet ?? null;
-    const showSocialPill       = meetActive === 'social' || meetActive === 'both';
-    const showProfessionalPill = meetActive === 'professional' || meetActive === 'both';
-    const hasMeetData =
-        !!meetActive || !!(social?.connectionGoals && social.connectionGoals.length > 0);
+    try {
+      const [u, sp, streak, gallery] = await Promise.all([
+        UserService.getProfile(uid),
+        SocialProfileService.get(uid),
+        StreakService.getStreakData(uid),
+        GalleryService.list(uid),
+      ]);
+      setUser(u);
+      setSocial(sp);
+      setStreakData(streak);
+      setPhotos(gallery);
 
-    const hasCommunity = !!(
-        social?.communityNote ||
-        social?.helpingBeginners ||
-        social?.openToMentor ||
-        (social?.openToTrainAgeGroups && social.openToTrainAgeGroups.length > 0)
+      if (!isOwn && supabaseUserId && uid !== supabaseUserId) {
+        const status = await FriendService.getRequestStatus(supabaseUserId, uid);
+        setRelStatus(status);
+      }
+    } catch (e) {
+      console.warn('[SocialProfileScreen] load error:', e);
+    } finally {
+      clearTimeout(safetyTimer);
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [uid, isOwn, supabaseUserId]);
+
+  useFocusEffect(useCallback(() => { load(true); }, [load]));
+
+  // Load viewer's own home coords (used to compute distance to profile user)
+  useEffect(() => {
+    if (isOwn || isPreview || !supabaseUserId) return;
+    SocialProfileService.get(supabaseUserId).then(sp => {
+      if (sp?.houseLat && sp?.houseLng) {
+        setViewerHome({ lat: sp.houseLat, lng: sp.houseLng });
+      }
+    }).catch(() => {});
+  }, [isOwn, isPreview, supabaseUserId]);
+
+  // Sync localSectionVis from loaded social profile
+  useEffect(() => {
+    setLocalSectionVis(social?.sectionVisibility ?? {});
+  }, [social?.sectionVisibility]);
+
+  // Toggle a section's visibility (preview mode only)
+  const toggleSection = async (key: string) => {
+    const next = { ...localSectionVis, [key]: !localSectionVis[key] };
+    setLocalSectionVis(next);
+    try {
+      await SocialProfileService.update(uid, { sectionVisibility: next } as any);
+    } catch {}
+  };
+
+  const onRefresh = () => { setRefreshing(true); load(true); };
+
+  const handleConnect = async () => {
+    if (!supabaseUserId || relStatus !== 'none') return;
+    setConnectBusy(true);
+    try {
+      await sendRequest(uid);
+      setRelStatus('pending_sent');
+    } catch {}
+    finally { setConnectBusy(false); }
+  };
+
+  const connectLabel = () => {
+    if (connectBusy) return '...';
+    switch (relStatus) {
+      case 'friends':          return 'Connected ✓';
+      case 'pending_sent':     return 'Requested';
+      case 'pending_received': return 'Accept';
+      default:                 return 'Connect';
+    }
+  };
+
+  // ── Loading skeleton (mirrors ProfileScreen) ────────────────────────────────
+  const pulse = useRef(new RNAnimated.Value(0.45)).current;
+  useEffect(() => {
+    if (!loading) return;
+    const loop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(pulse, { toValue: 1,    duration: 850, useNativeDriver: Platform.OS !== 'web' }),
+        RNAnimated.timing(pulse, { toValue: 0.45, duration: 850, useNativeDriver: Platform.OS !== 'web' }),
+      ])
     );
+    loop.start();
+    return () => loop.stop();
+  }, [loading, pulse]);
 
-    // Owner-only: ask the AI to curate an intro blurb from the profile data,
-    // then persist it so every viewer reads the same cached text.
-    const handleGenerateSummary = async () => {
-        if (genningSummary) return;
-        setGenningSummary(true);
-        try {
-            const hobbyLabels = (social?.hobbies ?? []).map(h => HOBBY_META[h]?.label ?? h);
-            const goalLabels  = (social?.connectionGoals ?? []).map(g => CONNECTION_GOAL_META[g]?.label ?? g);
-            const cityHint    = social?.city
-                || coarseLocality(social?.houseAddress, social?.houseName)
-                || social?.gymArea
-                || null;
-            const workouts    = streakData?.totalWorkouts ?? 0;
-
-            const summary = await generateProfileSummary({
-                name: displayName,
-                whatIDo: social?.whatIDo ?? null,
-                city: cityHint,
-                hobbies: hobbyLabels,
-                lookingToMeet: social?.lookingToMeet ?? null,
-                connectionGoals: goalLabels,
-                bio: social?.bio ?? null,
-                streak: streakData?.currentStreak ?? 0,
-                workouts,
-                joinedRecently: workouts > 0 && workouts <= 15,
-            });
-
-            if (!summary) {
-                Alert.alert('Add a few details first', 'Tell people what you do, your hobbies, or a short bio — then generate.');
-                return;
-            }
-            await SocialProfileService.update(uid, { aiSummary: summary });
-            setSocial(prev => (prev ? { ...prev, aiSummary: summary } : prev));
-        } catch (e: any) {
-            Alert.alert('Could not generate summary', String(e?.message ?? e));
-        } finally {
-            setGenningSummary(false);
-        }
-    };
-
-    // ── Render ────────────────────────────────────────────────────────────────
+  if (loading) {
     return (
+      <View style={s.root}>
         <SafeAreaView style={s.safe} edges={['top']}>
-            <LinearGradient
-                colors={[C.bgTop, C.bgBottom]}
-                style={s.gradientBg}
-                pointerEvents="none"
-            />
+          <View style={s.skeletonShell}>
+            {[140, 22, 16, 40, 88, 92, 80, 80, 80].map((h, i) => (
+              <RNAnimated.View
+                key={i}
+                style={[s.skeletonBone, {
+                  opacity: pulse,
+                  height: h,
+                  width: i === 0 ? 140 : i < 3 ? 200 - i * 30 : '100%',
+                  borderRadius: i === 0 ? 22 : 14,
+                }]}
+              />
+            ))}
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
-            {/* ── Flat header ── */}
-            <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
-                    <ArrowLeft size={22} color={C.text} />
-                </TouchableOpacity>
-                <View style={{ flex: 1 }} />
-                <View style={s.headerRight}>
-                    {isOwn && (
-                        <>
-                            <TouchableOpacity
-                                style={s.iconBtn}
-                                onPress={() => navigation.navigate('ProfileScreen')}
-                            >
-                                <Settings size={20} color={C.text} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={s.iconBtn}
-                                onPress={() => navigation.navigate('QRProfileScreen', {
-                                    uid, username, displayName,
-                                    email: user?.email,
-                                    age: user?.age,
-                                    gender: user?.gender,
-                                    dateOfBirth: user?.dateOfBirth,
-                                    phone: user?.phone,
-                                    hasAccess: user?.hasAccess,
-                                    accessType: user?.accessType,
-                                    earnedBadges: Array.from(new Set(streakData?.badges ?? [])),
-                                    avatarUrl: user?.profileImageUrl,
-                                    streak: streakData?.currentStreak ?? 0,
-                                    workouts: streakData?.totalWorkouts ?? 0,
-                                    prs: streakData?.bestStreak ?? 0,
-                                    bio: social?.bio,
-                                    whatIDo: social?.whatIDo,
-                                    lookingToMeet: social?.lookingToMeet,
-                                    connectionGoals: social?.connectionGoals,
-                                    hobbies: social?.hobbies,
-                                    gymName: social?.gymName,
-                                    gymAddress: social?.gymArea || social?.gymAddress,
-                                    houseName: social?.houseName,
-                                    houseAddress: social?.houseAddress,
-                                    parkName: social?.parkName,
-                                    parkAddress: social?.parkAddress,
-                                    openToMentor: social?.openToMentor,
-                                    helpingBeginners: social?.helpingBeginners,
-                                    communityNote: social?.communityNote,
-                                })}
-                            >
-                                <QrCode size={20} color={C.text} />
-                            </TouchableOpacity>
-                        </>
-                    )}
+  // ── Derived data ────────────────────────────────────────────────────────────
+  const displayName = user?.fullName || 'Athlete';
+  const username    = user?.username || '';
+  const bio         = social?.bio?.trim() || '';
+
+  const whatIDoItems = (social?.whatIDo?.trim() || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const lookingItems = (social?.lookingToMeet?.trim() || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+
+  const streak   = streakData?.currentStreak ?? user?.currentStreak    ?? 0;
+  const workouts = streakData?.totalWorkouts ?? user?.completedWorkouts ?? 0;
+  const prs      = streakData?.bestStreak    ?? user?.bestStreak        ?? 0;
+
+  // Weekly · Avg · Lifetime time stats
+  const weeklyMins = streakData
+    ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
+    : 0;
+  const lifetimeMins = Math.round(
+    user?.watchedMinutes ?? (user?.workoutSeconds ? user.workoutSeconds / 60 : 0)
+  );
+  const avgMins = workouts > 0 ? Math.round(lifetimeMins / workouts) : 0;
+
+  // Location data
+  const gymName  = social?.gymName?.trim()   || '';
+  const homeName = social?.houseName?.trim() || '';
+  const parkName = social?.parkName?.trim()  || '';
+  // Home → city name only (never street-level)
+  const displayCity = (() => {
+    const addr = social?.houseAddress;
+    if (addr) {
+      const parts = addr.split(',').map(p => p.trim()).filter(Boolean);
+      // skip parts[0] (street), take city (parts[1]) or state (parts[2]) as fallback
+      return parts[1] || parts[2] || parts[0];
+    }
+    return homeName;
+  })();
+
+  // Gym → area/neighbourhood only (never street-level)
+  const gymArea = (() => {
+    const addr = social?.gymAddress;
+    if (addr) {
+      const parts = addr.split(',').map(p => p.trim()).filter(Boolean);
+      return parts[1] || parts[2] || parts[0];
+    }
+    return gymName;
+  })();
+
+  // Distance from viewer's home → profile user's home (for location line)
+  const homeDistanceText = (() => {
+    if (!viewerHome || !social?.houseLat || !social?.houseLng) return '';
+    return fmtDistance(haversineKm(viewerHome.lat, viewerHome.lng, social.houseLat, social.houseLng));
+  })();
+
+  // Distance from viewer's home → profile user's gym (for profession line)
+  const gymDistanceText = (() => {
+    if (!viewerHome || !social?.gymLat || !social?.gymLng) return '';
+    return fmtDistance(haversineKm(viewerHome.lat, viewerHome.lng, social.gymLat, social.gymLng));
+  })();
+  const hasLocation = !!(
+    social?.gymLat || social?.gymLng ||
+    social?.houseLat || social?.houseLng ||
+    social?.parkLat || social?.parkLng ||
+    gymName || homeName || parkName
+  );
+
+  // Hobbies — top 5 by saved rank
+  const hobbyItems = (social?.hobbies ?? []).filter(h => !!HOBBY_META[h]);
+  const hobbyRanks = social?.hobbyRanks ?? {};
+  const rankedHobbies = [...hobbyItems]
+    .sort((a, b) => (hobbyRanks[b] ?? 0) - (hobbyRanks[a] ?? 0))
+    .slice(0, 4);
+
+  // Badges — same tier system as ProfileScreen
+  const badgeStats: UserBadgeStats = {
+    bestStreak:        user?.bestStreak ?? streakData?.bestStreak ?? 0,
+    totalWorkouts:     user?.completedWorkouts ?? streakData?.totalWorkouts ?? 0,
+    totalLiveSessions: (user as any)?.totalLiveSessions ?? streakData?.totalLiveSessions ?? 0,
+    totalViewers:      0,
+    coachSessions:     0,
+    totalWatchMinutes: Math.floor((user?.watchedSeconds ?? 0) / 60),
+    founderTier:       0,
+  };
+  const badgeStates    = deriveBadgeStates(badgeStats);
+  const hasEarnedBadge = badgeStates.some(b => b.currentTier > 0);
+
+  const hasCommunity = !!(social?.openToMentor || social?.helpingBeginners);
+
+  // ── Inline VisPill: Public/Private toggle used inside card headers ─────────
+  const VisPill = ({ sectionKey }: { sectionKey: string }) => {
+    if (!isPreview) return null;
+    const priv = localSectionVis[sectionKey] ?? false;
+    return (
+      <View style={s.visPillRow}>
+        <TouchableOpacity
+          style={[s.visPill, !priv && s.visPillActive]}
+          onPress={() => { if (priv) toggleSection(sectionKey); }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.visPillText, !priv ? s.visPillTextActive : s.visPillTextInactive]}>Public</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.visPill, priv && s.visPillPrivate]}
+          onPress={() => { if (!priv) toggleSection(sectionKey); }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.visPillText, priv ? s.visPillTextActive : s.visPillTextInactive]}>Private</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Determine initial location tab based on what data exists
+  const locTabs = [
+    ...(homeName ? [{ key: 'home' as const, label: 'Home', name: homeName, address: social?.houseAddress, lat: social?.houseLat, lng: social?.houseLng }] : []),
+    ...(gymName  ? [{ key: 'gym'  as const, label: 'Gym',  name: gymName,  address: social?.gymAddress,   lat: social?.gymLat,   lng: social?.gymLng   }] : []),
+    ...(parkName ? [{ key: 'park' as const, label: 'Park', name: parkName, address: social?.parkArea,     lat: social?.parkLat,  lng: social?.parkLng  }] : []),
+  ];
+  const activeTab = locTabs.find(t => t.key === selectedLocTab) ?? locTabs[0];
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  return (
+    <View style={s.root}>
+      <SafeAreaView style={s.safe} edges={['top']}>
+
+        {/* ── HEADER ─────────────────────────────────────────────────────── */}
+        <View style={s.topBar}>
+          <TouchableOpacity
+            style={s.navBtn}
+            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTabs')}
+            activeOpacity={0.76}
+          >
+            <ArrowLeft size={24} color={C.text} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+
+        {isPreview && (
+          <View style={s.previewBanner}>
+            <Eye size={14} color={C.orange} />
+            <Text style={s.previewBannerText}>Preview — this is how others see your profile</Text>
+          </View>
+        )}
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={scrollEnabled}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.orange}
+              colors={[C.orange]}
+            />
+          }
+          contentContainerStyle={[s.scroll, { paddingBottom: isOwn ? 32 : 120 }]}
+        >
+
+          {/* ── HERO ───────────────────────────────────────────────────────── */}
+          <View style={s.hero}>
+            {/* Avatar + Name/Location/Profession row */}
+            <View style={s.heroRow}>
+              <View style={s.heroAvatarCol}>
+                <TierAvatarRing
+                  accessType={user?.accessType}
+                  avatarSize={90}
+                  avatarRadius={20}
+                >
+                  <Avatar uri={user?.profileImageUrl} size={90} />
+                </TierAvatarRing>
+              </View>
+
+              <View style={s.heroInfoCol}>
+                <View style={s.nameLine}>
+                  <Text style={s.name} numberOfLines={1}>{displayName}</Text>
+                  {username ? <Text style={s.handle} numberOfLines={1}> @{username}</Text> : null}
                 </View>
+                {(displayCity || homeDistanceText) ? (
+                  <View style={s.heroMetaRow}>
+                    <MapPin size={13} color={C.muted} />
+                    <Text style={s.heroMetaText} numberOfLines={1}>
+                      {[displayCity, homeDistanceText].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                ) : null}
+                {(whatIDoItems.length > 0 || gymArea) ? (
+                  <View style={s.heroMetaRow}>
+                    <Briefcase size={13} color={C.muted} />
+                    <Text style={s.heroMetaText} numberOfLines={2}>
+                      {[...whatIDoItems, gymArea, gymDistanceText].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
 
-            {isPreview && (
-                <View style={s.previewBanner}>
-                    <Eye size={14} color={C.accent} />
-                    <Text style={s.previewBannerText}>Preview — this is how others see your profile</Text>
+          </View>
+
+          {/* ── STANDALONE TIME STATS ────────────────────────────────────────── */}
+          <View style={s.timeStatsRow}>
+            <View style={s.timeStatItem}>
+              <Text style={s.timeStatValue}>{fmtMins(weeklyMins)}</Text>
+              <Text style={s.timeStatLabel}>WEEKLY</Text>
+            </View>
+            <View style={s.timeStatDivider} />
+            <View style={s.timeStatItem}>
+              <Text style={s.timeStatValue}>{fmtMins(avgMins)}</Text>
+              <Text style={s.timeStatLabel}>AVG</Text>
+            </View>
+            <View style={s.timeStatDivider} />
+            <View style={s.timeStatItem}>
+              <Text style={s.timeStatValue}>{fmtMins(lifetimeMins)}</Text>
+              <Text style={s.timeStatLabel}>LIFETIME</Text>
+            </View>
+          </View>
+
+          {/* ── PHOTOS ───────────────────────────────────────────────────────── */}
+          {(isPreview || (showSection('gallery') && photos.length > 0)) && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Photos</Text>
+
+              </View>
+              <View style={s.photosContent}>
+                {/* 3 thumbnails — grey placeholder when no photo */}
+                <View style={s.photosThumbRow}>
+                  {[0, 1, 2].map(i => (
+                    <TouchableOpacity
+                      key={i}
+                      style={s.photoThumb}
+                      activeOpacity={0.85}
+                      onPress={() => { setFullscreenIdx(i); setGalleryOpen(true); }}
+                      disabled={!photos[i]}
+                    >
+                      {photos[i] ? (
+                        <Image source={{ uri: photos[i].url }} style={s.photoThumbImg} />
+                      ) : null}
+                    </TouchableOpacity>
+                  ))}
                 </View>
-            )}
+                {/* Count + View all */}
+                <TouchableOpacity style={s.photosCountBlock} onPress={() => setGalleryOpen(true)} activeOpacity={0.75}>
+                  <View style={s.photosCountRow}>
+                    <Text style={s.photosCount}>{photos.length}</Text>
+                    <Text style={s.photosViewAll}>View{'\n'}all</Text>
+                  </View>
+                  <Text style={s.photosLabel}>Photos</Text>
+                  <Text style={s.photosTapHint}>Tap to view all</Text>
+                </TouchableOpacity>
+              </View>
+            </ProfileCard>
+          )}
 
-            <ScrollView
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={C.accent}
-                        colors={[C.accent]}
-                    />
-                }
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={scrollEnabled}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                contentContainerStyle={{ paddingBottom: isOwn ? 40 : 120 }}
-            >
+          {/* ── ABOUT ME ─────────────────────────────────────────────────────── */}
+          {showSection('about') && bio.length > 0 && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <View style={s.aboutTitleGroup}>
+                  <Text style={s.cardTitle}>About Me</Text>
+                  {isPreview && (
+                    <TouchableOpacity style={s.editBtn} activeOpacity={0.7}>
+                      <Edit2 size={11} color={C.muted} />
+                      <Text style={s.editBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
 
-                {/* ── Identity ── */}
-                <View style={s.identity}>
-                    <View style={s.identityRow}>
-                        <TierAvatarRing
-                            accessType={user?.accessType}
-                            avatarSize={96}
-                            avatarRadius={Math.round(96 * 0.22)}
-                        >
-                            <Avatar uri={user?.profileImageUrl} size={96} />
-                            {isOwn && (
-                                <TouchableOpacity
-                                    style={s.editFloat}
-                                    onPress={goToEdit}
-                                    activeOpacity={0.8}
-                                >
-                                    <Edit2 size={12} color="#fff" />
-                                </TouchableOpacity>
-                            )}
-                        </TierAvatarRing>
+              </View>
+              <Text style={[s.bodyText, s.bodyTextOrange]}>{bio}</Text>
+            </ProfileCard>
+          )}
 
-                        <View style={s.identityInfo}>
-                            <Text style={s.identityName} numberOfLines={1}>{displayName}</Text>
-                            {username ? <Text style={s.identityUsername} numberOfLines={1}>@{username}</Text> : null}
-                            {social?.openToConnect && (
-                                <View style={s.openBadge}>
-                                    <View style={s.openDot} />
-                                    <Text style={s.openText}>Open to connect</Text>
-                                </View>
-                            )}
-                        </View>
+          {/* ── TOP HOBBIES ──────────────────────────────────────────────────── */}
+          {showSection('hobbies') && rankedHobbies.length > 0 && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Top Hobbies</Text>
+
+              </View>
+              <View style={s.hobbyCircleRow}>
+                {rankedHobbies.map((hobby, idx) => {
+                  const meta = HOBBY_META[hobby];
+                  const activeDots = Math.max(0, 5 - idx);
+                  return (
+                    <View key={hobby} style={s.hobbyCircleWrapper}>
+                      <View style={s.hobbyCircle}>
+                        <Text style={s.hobbyCircleEmoji}>{meta.emoji}</Text>
+                      </View>
+                      <View style={s.hobbyRankDots}>
+                        {[0, 1, 2, 3, 4].map(d => (
+                          <View key={d} style={[s.hobbyRankDot, d < activeDots && s.hobbyRankDotActive]} />
+                        ))}
+                      </View>
+                      <Text style={s.hobbyCircleLabel} numberOfLines={1}>{meta.label}</Text>
                     </View>
+                  );
+                })}
+              </View>
+            </ProfileCard>
+          )}
+
+          {/* ── LOCATION ─────────────────────────────────────────────────────── */}
+          {showSection('locationMap') && hasLocation && locTabs.length > 0 && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Location</Text>
+
+              </View>
+              {/* Tab selector */}
+              {locTabs.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.locTabRow}
+                >
+                  {locTabs.map(tab => (
+                    <TouchableOpacity
+                      key={tab.key}
+                      style={[s.locTab, (activeTab?.key ?? locTabs[0].key) === tab.key && s.locTabActive]}
+                      onPress={() => setSelectedLocTab(tab.key)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[s.locTabText, (activeTab?.key ?? locTabs[0].key) === tab.key && s.locTabTextActive]}>
+                        {tab.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+              {/* Map */}
+              {activeTab && (activeTab.lat || activeTab.lng) ? (
+                <LocationsMap
+                  points={[{ lat: activeTab.lat ?? 0, lng: activeTab.lng ?? 0, label: activeTab.label }]}
+                  onMapTouchStart={() => setScrollEnabled(false)}
+                  onMapTouchEnd={() => setScrollEnabled(true)}
+                />
+              ) : null}
+              {/* Detail row */}
+              {activeTab && (
+                <View style={s.locDetail}>
+                  <Text style={s.locDetailName}>{activeTab.name}</Text>
+                  {activeTab.address ? (
+                    <Text style={s.locDetailAddr}>{activeTab.address}</Text>
+                  ) : null}
                 </View>
+              )}
+            </ProfileCard>
+          )}
 
-                {/* ── Stats ── */}
-                <View style={s.statsRow}>
-                    <StatItem icon={<Flame size={20} color={C.accent} />} value={streakData?.currentStreak ?? 0} label="Day Streak" />
-                    <View style={s.statDivider} />
-                    <StatItem icon={<Dumbbell size={20} color={C.accent} />} value={streakData?.totalWorkouts ?? 0} label="Workouts" />
-                    <View style={s.statDivider} />
-                    <StatItem icon={<Trophy size={20} color={C.accent} />} value={streakData?.bestStreak ?? 0} label="PRs" />
-                </View>
+          {/* ── SUMMARY ──────────────────────────────────────────────────────── */}
+          {showSection('summary') && !!social?.aiSummary && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Summary</Text>
 
-                <View style={s.body}>
+              </View>
+              <Text style={s.bodyText}>{social.aiSummary}</Text>
+            </ProfileCard>
+          )}
 
-                    {/* ── Activity (Watch / Workout time) — hideable via the profile toggle ── */}
-                    {showSection('activity') && (() => {
-                        const fmtDur = (sec: number) => {
-                            if (!sec || sec < 60) return sec > 0 ? `${sec}s` : '0m';
-                            const h = Math.floor(sec / 3600);
-                            const m = Math.floor((sec % 3600) / 60);
-                            return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                        };
-                        return (
-                            <SectionCard title="Activity">
-                                <View style={s.actRow}>
-                                    <View style={s.actItem}>
-                                        <Text style={s.actVal}>{fmtDur(user?.watchedSeconds ?? 0)}</Text>
-                                        <Text style={s.actLabel}>Watch Time</Text>
-                                    </View>
-                                    <View style={s.actDivider} />
-                                    <View style={s.actItem}>
-                                        <Text style={s.actVal}>{fmtDur((user as any)?.workoutSeconds ?? 0)}</Text>
-                                        <Text style={s.actLabel}>Workout Time</Text>
-                                    </View>
-                                </View>
-                            </SectionCard>
-                        );
-                    })()}
+          {/* ── STATS ────────────────────────────────────────────────────────── */}
+          <ProfileCard>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Stats</Text>
 
-                    {/* ── Locations — one section: list of places, then ONE shared map ── */}
-                    {showSection('locations') && (isOwn
-                        || social?.gymName || social?.gymAddress
-                        || social?.houseName || social?.houseAddress
-                        || social?.parkName || social?.parkAddress) ? (
-                        <SectionCard title="Locations" onEdit={isOwn ? goToEdit : undefined}>
-                            <View style={s.locList}>
-                                <LocationLine
-                                    title="Gym I go to"
-                                    icon={<MapPin size={16} color={C.accent} />}
-                                    name={social?.gymName}
-                                    address={social?.gymArea || social?.gymAddress}
-                                    placeholder="Add your gym location"
-                                    isOwn={isOwn}
-                                    onEdit={goToEdit}
-                                />
-                                <LocationLine
-                                    title="Home area"
-                                    icon={<Home size={16} color={C.accent} />}
-                                    name={social?.houseName}
-                                    address={social?.houseAddress}
-                                    placeholder="Add your home area"
-                                    isOwn={isOwn}
-                                    onEdit={goToEdit}
-                                />
-                                <LocationLine
-                                    title="Local park"
-                                    icon={<Trees size={16} color={C.accent} />}
-                                    name={social?.parkName}
-                                    address={social?.parkAddress}
-                                    placeholder="Add your local park"
-                                    isOwn={isOwn}
-                                    onEdit={goToEdit}
-                                />
-                            </View>
-                            {/* Single interactive map highlighting every set location */}
-                            <LocationsMap
-                                points={[
-                                    { lat: social?.gymLat ?? 0, lng: social?.gymLng ?? 0, label: 'Gym' },
-                                    { lat: social?.houseLat ?? 0, lng: social?.houseLng ?? 0, label: 'Home' },
-                                    { lat: social?.parkLat ?? 0, lng: social?.parkLng ?? 0, label: 'Park' },
-                                ]}
-                                onMapTouchStart={() => setScrollEnabled(false)}
-                                onMapTouchEnd={() => setScrollEnabled(true)}
-                            />
-                        </SectionCard>
-                    ) : null}
+            </View>
+            <View style={s.statsRow}>
+              <View style={s.statsItem}>
+                <View style={s.statsIcon}><Flame size={15} color={C.orange} /></View>
+                <Text style={s.statsValue}>{streak}</Text>
+                <Text style={s.statsLabel}>Streak</Text>
+              </View>
+              <View style={s.statsItemDivider} />
+              <View style={s.statsItem}>
+                <View style={s.statsIcon}><Dumbbell size={15} color={C.orange} /></View>
+                <Text style={s.statsValue}>{workouts}</Text>
+                <Text style={s.statsLabel}>Workouts</Text>
+              </View>
+              <View style={s.statsItemDivider} />
+              <View style={s.statsItem}>
+                <View style={s.statsIcon}><Trophy size={15} color={C.orange} /></View>
+                <Text style={s.statsValue}>{prs}</Text>
+                <Text style={s.statsLabel}>Best Streak</Text>
+              </View>
+            </View>
+          </ProfileCard>
 
-                    {/* ── AI Summary — curated intro, shown right after Locations ── */}
-                    {showSection('summary') && (isOwn || social?.aiSummary) && (
-                        <SectionCard title="Summary">
-                            {social?.aiSummary ? (
-                                <Text style={s.aboutText}>{social.aiSummary}</Text>
-                            ) : (
-                                <Text style={s.placeholder}>
-                                    Let AI craft a friendly intro from your details so people want to connect.
-                                </Text>
-                            )}
-                            {isOwn && (
-                                <TouchableOpacity
-                                    style={s.aiBtn}
-                                    onPress={handleGenerateSummary}
-                                    disabled={genningSummary}
-                                    activeOpacity={0.85}
-                                >
-                                    {genningSummary ? (
-                                        <ActivityIndicator color="#fff" size="small" />
-                                    ) : (
-                                        <>
-                                            <Sparkles size={15} color="#fff" />
-                                            <Text style={s.aiBtnText}>
-                                                {social?.aiSummary ? 'Regenerate with AI' : 'Generate with AI'}
-                                            </Text>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-                            )}
-                        </SectionCard>
-                    )}
+          {/* ── BADGES ───────────────────────────────────────────────────────── */}
+          {showSection('badges') && hasEarnedBadge && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Badges</Text>
 
-                    {/* ── About me ── */}
-                    {showSection('about') && (isOwn || social?.bio) && (
-                        <SectionCard title="About me" onEdit={isOwn ? goToEdit : undefined}>
-                            {social?.bio ? (
-                                <Text style={s.aboutText}>{social.bio}</Text>
-                            ) : (
-                                <Text style={s.placeholder}>Add a bio to tell people about yourself</Text>
-                            )}
-                        </SectionCard>
-                    )}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.badgesScroll}
+              >
+                {[...BADGE_FAMILIES]
+                  .sort((a, b) => {
+                    const tA = badgeStates.find(bs => bs.familyKey === a.key)?.currentTier ?? 0;
+                    const tB = badgeStates.find(bs => bs.familyKey === b.key)?.currentTier ?? 0;
+                    return tB - tA;
+                  })
+                  .filter(family => (badgeStates.find(bs => bs.familyKey === family.key)?.currentTier ?? 0) > 0)
+                  .map(family => {
+                    const state = badgeStates.find(bs => bs.familyKey === family.key);
+                    const tier  = state?.currentTier ?? 0;
+                    const color = TIER_COLORS[tier - 1];
+                    const isStreak = family.key === 'streak';
+                    const badgeInner = (
+                      <>
+                        <Text style={s.badgeEmoji}>{family.emoji}</Text>
+                        <View style={[s.badgeLevelChip, { backgroundColor: color }]}>
+                          <Text style={s.badgeLevelChipText}>Lv.{tier}</Text>
+                        </View>
+                      </>
+                    );
+                    return (
+                      <View key={family.key} style={s.badgeItemContainer}>
+                        {isStreak ? (
+                          <FireGlowBadge color={color}>{badgeInner}</FireGlowBadge>
+                        ) : (
+                          <View style={[s.badgeShape, { borderColor: color + '88', backgroundColor: color + '22' }]}>
+                            {badgeInner}
+                          </View>
+                        )}
+                        <Text style={s.badgeLabel} numberOfLines={1}>{family.label}</Text>
+                      </View>
+                    );
+                  })}
+              </ScrollView>
+            </ProfileCard>
+          )}
 
-                    {/* ── What I do ── */}
-                    {showSection('whatIDo') && (isOwn || social?.whatIDo) && (
-                        <SectionCard title="What I do" onEdit={isOwn ? goToEdit : undefined}>
-                            <View style={s.inlineRow}>
-                                <View style={s.inlineIcon}>
-                                    <Briefcase size={18} color={C.purple} />
-                                </View>
-                                {social?.whatIDo ? (
-                                    <Text style={s.whatIDoText}>{social.whatIDo}</Text>
-                                ) : (
-                                    <Text style={[s.placeholder, { flex: 1 }]}>Add what you do</Text>
-                                )}
-                            </View>
-                        </SectionCard>
-                    )}
+          {/* ── LOOKING TO MEET ──────────────────────────────────────────────── */}
+          {showSection('meet') && lookingItems.length > 0 && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Looking to meet</Text>
+              </View>
+              <View style={s.capsuleRow}>
+                {lookingItems.map((item, idx) => (
+                  <View key={`${item}-${idx}`} style={s.meetCapsule}>
+                    <Text style={s.meetCapsuleText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </ProfileCard>
+          )}
 
-                    {/* ── Looking to meet ── */}
-                    {showSection('meet') && (isOwn || hasMeetData) && (
-                        <SectionCard title="Looking to meet" onEdit={isOwn ? goToEdit : undefined}>
-                            {hasMeetData ? (
-                                <>
-                                    {meetActive ? (
-                                        <View style={s.meetPillRow}>
-                                            {showSocialPill && (
-                                                <View style={[s.meetPillFilled, s.meetPillOrange]}>
-                                                    <Text style={s.meetPillFilledText}>Social</Text>
-                                                </View>
-                                            )}
-                                            {showProfessionalPill && (
-                                                <View style={[s.meetPillFilled, s.meetPillGreen]}>
-                                                    <Text style={s.meetPillFilledText}>Professional</Text>
-                                                </View>
-                                            )}
-                                        </View>
-                                    ) : null}
-                                    {social?.connectionGoals && social.connectionGoals.length > 0 ? (
-                                        <View style={s.chipRow}>
-                                            {social.connectionGoals.map(goal => {
-                                                const meta = CONNECTION_GOAL_META[goal];
-                                                return (
-                                                    <View key={goal} style={s.goalChip}>
-                                                        <Text style={s.goalChipText}>
-                                                            {meta.emoji ? `${meta.emoji} ` : ''}{meta.label}
-                                                        </Text>
-                                                    </View>
-                                                );
-                                            })}
-                                        </View>
-                                    ) : null}
-                                </>
-                            ) : (
-                                <Text style={s.placeholder}>Tell people what connections you're open to</Text>
-                            )}
-                        </SectionCard>
-                    )}
+          {/* ── COMMUNITY ────────────────────────────────────────────────────── */}
+          {showSection('community') && (hasCommunity || !!social?.communityNote) && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <Text style={s.cardTitle}>Community</Text>
+              </View>
+              <View style={{ gap: 10, marginTop: 4 }}>
+                {social?.communityNote ? (
+                  <Text style={s.bodyText}>{social.communityNote}</Text>
+                ) : null}
+                {social?.openToMentor && (
+                  <View style={s.capsuleRow}>
+                    <View style={s.whatIDoCapsule}>
+                      <Text style={s.whatIDoCapsuleText}>Open to Mentor</Text>
+                    </View>
+                  </View>
+                )}
+                {social?.helpingBeginners && (
+                  <View style={s.capsuleRow}>
+                    <View style={s.meetCapsule}>
+                      <Text style={s.meetCapsuleText}>Helping Beginners</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </ProfileCard>
+          )}
 
-                    {/* ── Hobbies ── */}
-                    {showSection('hobbies') && (isOwn || (social?.hobbies && social.hobbies.length > 0)) && (
-                        <SectionCard title="Hobbies" onEdit={isOwn ? goToEdit : undefined}>
-                            {social?.hobbies && social.hobbies.length > 0 ? (
-                                <View style={s.hobbyWrap}>
-                                    {social.hobbies.map(h => {
-                                        const meta = HOBBY_META[h];
-                                        if (!meta) return null;
-                                        return (
-                                            <View key={h} style={s.hobbyItem}>
-                                                <View style={s.hobbyCircle}>
-                                                    <Text style={s.hobbyEmoji}>{meta.emoji}</Text>
-                                                </View>
-                                                <Text style={s.hobbyLabel} numberOfLines={1}>{meta.label}</Text>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            ) : (
-                                <Text style={s.placeholder}>Add your hobbies & interests</Text>
-                            )}
-                        </SectionCard>
-                    )}
+          <View style={{ height: 16 }} />
+        </ScrollView>
 
-                    {/* ── Community ── */}
-                    {showSection('community') && (isOwn || hasCommunity) && (
-                        <SectionCard title="Community" onEdit={isOwn ? goToEdit : undefined}>
-                            {hasCommunity ? (
-                                <View style={{ gap: 10 }}>
-                                    {social?.communityNote ? (
-                                        <Text style={s.communityNote}>{social.communityNote}</Text>
-                                    ) : null}
-                                    {social?.helpingBeginners && (
-                                        <CommunityListRow
-                                            label="Helping Beginners"
-                                            description="Happy to guide newcomers to fitness"
-                                            isOwn={isOwn}
-                                            onPress={goToEdit}
-                                        />
-                                    )}
-                                    {social?.openToMentor && (
-                                        <CommunityListRow
-                                            label="Open to Mentor"
-                                            description="Willing to mentor others on their journey"
-                                            isOwn={isOwn}
-                                            onPress={goToEdit}
-                                        />
-                                    )}
-                                    {social?.openToTrainAgeGroups && social.openToTrainAgeGroups.length > 0 && (
-                                        <View style={{ marginTop: 4 }}>
-                                            <Text style={s.communitySubLabel}>Trains age groups</Text>
-                                            <View style={s.chipRow}>
-                                                {social.openToTrainAgeGroups.map(ag => (
-                                                    <View key={ag} style={s.ageChip}>
-                                                        <Text style={s.ageChipText}>
-                                                            {AGE_GROUP_META[ag as keyof typeof AGE_GROUP_META] ?? ag}
-                                                        </Text>
-                                                    </View>
-                                                ))}
-                                            </View>
-                                        </View>
-                                    )}
-                                </View>
-                            ) : (
-                                <Text style={s.placeholder}>Share how you contribute to the community</Text>
-                            )}
-                        </SectionCard>
-                    )}
+        {/* ── BOTTOM CTA ─────────────────────────────────────────────────── */}
+        {isPreview && (
+          <RNAnimated.View style={[s.bottomCta, { opacity: ctaAnim }]}>
+            <TouchableOpacity
+              style={[s.ctaConnect, { flex: 1 }]}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.85}
+            >
+              <Eye size={18} color="#211832" />
+              <Text style={s.ctaConnectText}>Exit Preview</Text>
+            </TouchableOpacity>
+          </RNAnimated.View>
+        )}
 
-                    {/* ── Badges ── */}
-                    {showSection('badges') && earnedBadges.length > 0 && (
-                        <SectionCard
-                            title="Badges"
-                            right={
-                                <TouchableOpacity
-                                    onPress={() => navigation.navigate('ProfileScreen')}
-                                    hitSlop={10}
-                                >
-                                    <Text style={s.viewAllText}>View all</Text>
-                                </TouchableOpacity>
-                            }
-                        >
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={{ gap: 10, paddingRight: 4 }}
-                            >
-                                {badgesShown.map(badge => (
-                                    <View key={badge.id} style={s.badgeCard}>
-                                        <Text style={s.badgeEmoji}>{badge.emoji}</Text>
-                                        <Text style={s.badgeLabel}>{badge.label}</Text>
-                                    </View>
-                                ))}
-                                {badgesOverflow > 0 && (
-                                    <View style={s.badgeOverflow}>
-                                        <Text style={s.badgeOverflowText}>+{badgesOverflow}</Text>
-                                    </View>
-                                )}
-                            </ScrollView>
-                        </SectionCard>
-                    )}
+        {!isOwn && !isPreview && (
+          <RNAnimated.View style={[s.bottomCta, { opacity: ctaAnim }]}>
+            <TouchableOpacity
+              style={s.ctaMessage}
+              onPress={() => navigation.navigate('ChatRoom', {
+                friendUid: uid,
+                friendName: displayName,
+                friendAvatar: user?.profileImageUrl,
+              })}
+              activeOpacity={0.85}
+            >
+              <MessageCircle size={18} color={C.text} />
+              <Text style={s.ctaMessageText}>Message</Text>
+            </TouchableOpacity>
 
-                </View>
+            <TouchableOpacity
+              style={[
+                s.ctaConnect,
+                relStatus === 'friends'      && s.ctaConnectDone,
+                relStatus === 'pending_sent' && s.ctaConnectPending,
+              ]}
+              onPress={handleConnect}
+              disabled={connectBusy || relStatus === 'friends' || relStatus === 'pending_sent'}
+              activeOpacity={0.85}
+            >
+              {connectBusy
+                ? <ActivityIndicator size="small" color="#211832" />
+                : relStatus === 'friends'
+                  ? <UserCheck size={18} color={C.green} />
+                  : <UserPlus size={18} color={relStatus === 'pending_sent' ? C.muted : '#211832'} />
+              }
+              <Text style={[
+                s.ctaConnectText,
+                relStatus === 'friends'      && { color: C.green },
+                relStatus === 'pending_sent' && { color: C.muted },
+              ]}>
+                {connectLabel()}
+              </Text>
+            </TouchableOpacity>
+          </RNAnimated.View>
+        )}
+      </SafeAreaView>
+
+      {/* ── Photo Gallery Modal ─────────────────────────────────────────── */}
+      <Modal
+        visible={galleryOpen}
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={() => {
+          if (fullscreenIdx !== null) setFullscreenIdx(null);
+          else setGalleryOpen(false);
+        }}
+      >
+        <View style={s.galleryModal}>
+          <StatusBar barStyle="light-content" backgroundColor="#000" />
+
+          {/* Header */}
+          <View style={s.galleryHeader}>
+            <TouchableOpacity
+              style={s.galleryHeaderBtn}
+              onPress={() => {
+                if (fullscreenIdx !== null) setFullscreenIdx(null);
+                else setGalleryOpen(false);
+              }}
+              activeOpacity={0.75}
+            >
+              <Text style={s.galleryHeaderBtnText}>
+                {fullscreenIdx !== null ? '‹ Back' : '✕'}
+              </Text>
+            </TouchableOpacity>
+            <Text style={s.galleryHeaderTitle}>
+              {fullscreenIdx !== null
+                ? `${fullscreenIdx + 1} / ${photos.length}`
+                : `Photos (${photos.length})`}
+            </Text>
+            <View style={s.galleryHeaderBtn} />
+          </View>
+
+          {fullscreenIdx !== null ? (
+            /* ── Full-screen viewer ── */
+            <View style={s.fullscreenBg}>
+              <Image
+                source={{ uri: photos[fullscreenIdx]?.url }}
+                style={s.fullscreenImg}
+                resizeMode="contain"
+              />
+              {/* Prev / Next */}
+              <View style={s.fullscreenNavRow}>
+                <TouchableOpacity
+                  style={[s.fullscreenNavBtn, fullscreenIdx === 0 && s.fullscreenNavBtnDisabled]}
+                  onPress={() => fullscreenIdx > 0 && setFullscreenIdx(fullscreenIdx - 1)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={s.fullscreenNavText}>‹</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.fullscreenNavBtn, fullscreenIdx === photos.length - 1 && s.fullscreenNavBtnDisabled]}
+                  onPress={() => fullscreenIdx < photos.length - 1 && setFullscreenIdx(fullscreenIdx + 1)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={s.fullscreenNavText}>›</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            /* ── Grid view ── */
+            <ScrollView
+              contentContainerStyle={s.galleryGrid}
+              showsVerticalScrollIndicator={false}
+            >
+              {photos.map((photo, idx) => (
+                <TouchableOpacity
+                  key={photo.id ?? idx}
+                  style={s.galleryThumb}
+                  activeOpacity={0.85}
+                  onPress={() => setFullscreenIdx(idx)}
+                >
+                  <Image source={{ uri: photo.url }} style={s.galleryThumbImg} />
+                </TouchableOpacity>
+              ))}
             </ScrollView>
-
-            {/* ── Bottom CTA (other users) ── */}
-            {isPreview && (
-                <Animated.View style={[s.bottomCta, { opacity: ctaAnim }]}>
-                    <TouchableOpacity
-                        style={[s.ctaConnect, { flex: 1 }]}
-                        onPress={() => navigation.goBack()}
-                        activeOpacity={0.85}
-                    >
-                        <Eye size={18} color="#fff" />
-                        <Text style={s.ctaConnectText}>Exit Preview</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
-
-            {!isOwn && !isPreview && (
-                <Animated.View style={[s.bottomCta, { opacity: ctaAnim }]}>
-                    <TouchableOpacity
-                        style={s.ctaMessage}
-                        onPress={() => navigation.navigate('ChatRoom', {
-                            friendUid: uid,
-                            friendName: displayName,
-                            friendAvatar: user?.profileImageUrl,
-                        })}
-                        activeOpacity={0.85}
-                    >
-                        <MessageCircle size={18} color="#fff" />
-                        <Text style={s.ctaMessageText}>Message</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[
-                            s.ctaConnect,
-                            relStatus === 'friends'      && s.ctaConnectDone,
-                            relStatus === 'pending_sent' && s.ctaConnectPending,
-                        ]}
-                        onPress={handleConnect}
-                        disabled={connectBusy || relStatus === 'friends' || relStatus === 'pending_sent'}
-                        activeOpacity={0.85}
-                    >
-                        {connectBusy
-                            ? <ActivityIndicator size="small" color="#fff" />
-                            : relStatus === 'friends'
-                                ? <UserCheck size={18} color={C.green} />
-                                : <UserPlus size={18} color={relStatus === 'pending_sent' ? C.textMuted : '#fff'} />
-                        }
-                        <Text style={[
-                            s.ctaConnectText,
-                            relStatus === 'friends'      && { color: C.green },
-                            relStatus === 'pending_sent' && { color: C.textMuted },
-                        ]}>
-                            {connectLabel()}
-                        </Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
-        </SafeAreaView>
-    );
+          )}
+        </View>
+      </Modal>
+    </View>
+  );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
+// ── Styles ─────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-    safe: {
-        flex: 1,
-        backgroundColor: C.bgBottom,
-    },
-    gradientBg: {
-        ...StyleSheet.absoluteFillObject,
-    },
+  root: { flex: 1, backgroundColor: C.bg },
+  safe: { flex: 1 },
 
-    // Header
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-    },
-    headerRight: {
-        flexDirection: 'row',
-        gap: 6,
-    },
-    iconBtn: {
-        width: 38, height: 38,
-        borderRadius: 19,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center', justifyContent: 'center',
-    },
-    previewBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        marginHorizontal: 16,
-        marginBottom: 4,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 12,
-        backgroundColor: 'rgba(232,153,81,0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(232,153,81,0.3)',
-    },
-    previewBannerText: {
-        color: C.accent,
-        fontSize: 12,
-        fontWeight: '700',
-    },
+  // Header
+  topBar: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  navBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  previewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(242,89,18,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(242,89,18,0.3)',
+  },
+  previewBannerText: {
+    color: C.orange,
+    fontSize: 12,
+    fontWeight: '700',
+  },
 
-    // Identity (avatar + name + username + open badge), centered
-    identity: {
-        paddingHorizontal: 20,
-        paddingTop: 12,
-        paddingBottom: 18,
-        alignItems: 'center',
-    },
-    identityRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-        alignSelf: 'stretch',
-    },
-    identityInfo: {
-        flex: 1,
-        minWidth: 0,
-        alignItems: 'flex-start',
-        gap: 2,
-    },
-    editFloat: {
-        position: 'absolute',
-        bottom: 0, right: 0,
-        width: 26, height: 26, borderRadius: 13,
-        backgroundColor: C.accent,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: C.bgBottom,
-    },
-    identityName: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: C.text,
-        textAlign: 'left',
-    },
-    identityUsername: {
-        fontSize: 14,
-        color: C.textMuted,
-        marginTop: 2,
-    },
-    openBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        alignSelf: 'flex-start',
-        gap: 5,
-        backgroundColor: C.accentSoft,
-        borderWidth: 1, borderColor: C.accentBorder,
-        borderRadius: 13,
-        paddingHorizontal: 9, paddingVertical: 3,
-        marginTop: 8,
-    },
-    openDot: {
-        width: 6, height: 6, borderRadius: 3,
-        backgroundColor: C.accent,
-    },
-    openText: {
-        color: C.accent,
-        fontSize: 11,
-        fontWeight: '700',
-    },
+  // Scroll
+  scroll: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    gap: 12,
+  },
 
-    // Activity (watch / workout time)
-    actRow: { flexDirection: 'row', alignItems: 'center' },
-    actItem: { flex: 1, alignItems: 'center', gap: 2 },
-    actVal: { color: '#fff', fontSize: 22, fontWeight: '800' },
-    actLabel: { color: C.textMuted, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-    actDivider: { width: 1, height: 34, backgroundColor: C.border },
+  // Hero
+  hero: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    alignSelf: 'stretch',
+  },
+  heroAvatarCol: {
+    alignItems: 'center',
+  },
+  heroInfoCol: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'flex-start',
+  },
+  nameLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  name: {
+    color: C.text,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  handle: {
+    color: C.muted,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  openBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    backgroundColor: C.accentSoft,
+    borderWidth: 1, borderColor: C.accentBorder,
+    borderRadius: 13,
+    paddingHorizontal: 9, paddingVertical: 3,
+    marginTop: 8,
+  },
+  openDot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: C.orange,
+  },
+  openText: {
+    color: C.orange,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  // Card header
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  cardTitle: {
+    color: C.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  bodyText: {
+    color: C.muted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
 
-    // Stats
-    statsRow: {
-        flexDirection: 'row',
-        marginHorizontal: 16,
-        backgroundColor: C.bgCard,
-        borderRadius: 22,
-        borderWidth: 1, borderColor: C.border,
-        overflow: 'hidden',
-        ...Platform.select({
-            web: { boxShadow: '0 10px 28px rgba(56,103,214,0.18)' },
-            default: {
-                shadowColor: '#3867D6',
-                shadowOpacity: 0.18,
-                shadowRadius: 18,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 6,
-            },
-        }),
-    },
-    statDivider: {
-        width: 1,
-        backgroundColor: C.border,
-        marginVertical: 12,
-    },
+  // Capsules (Profession / Goals / Hobbies / Looking to meet)
+  capsuleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  hobbyCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: C.accentBorder,
+    backgroundColor: C.accentSoft,
+    gap: 6,
+  },
+  hobbyRankEmoji: {
+    fontSize: 15,
+  },
+  hobbyCapsuleText: {
+    color: C.orange,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  meetCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.12)',
+    backgroundColor: 'rgba(33,24,50,0.05)',
+  },
+  meetCapsuleText: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  whatIDoCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.12)',
+    backgroundColor: 'rgba(33,24,50,0.05)',
+  },
+  whatIDoCapsuleText: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
 
-    // Body
-    body: {
-        paddingHorizontal: 16,
-        paddingTop: 14,
-        gap: 10,
-    },
+  // Gallery
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 4,
+  },
+  galleryItem: {
+    width: 92,
+    height: 92,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  galleryImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
 
-    // About me
-    aboutText: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.85)',
-        lineHeight: 20,
-    },
-    aiBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        marginTop: 12,
-        backgroundColor: '#FF6B00',
-        borderRadius: 12,
-        paddingVertical: 11,
-    },
-    aiBtnText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '700',
-    },
-    placeholder: {
-        fontSize: 13,
-        color: C.textMuted,
-        fontStyle: 'italic',
-        lineHeight: 19,
-    },
+  // Badges
+  badgesScroll: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 6,
+    alignItems: 'flex-start',
+    paddingBottom: 4,
+  },
+  badgeItemContainer: {
+    alignItems: 'center',
+    width: 52,
+    gap: 10,
+  },
+  badgeShape: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  badgeEmoji: {
+    fontSize: 20,
+  },
+  badgeLevelChip: {
+    position: 'absolute',
+    bottom: -5,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 6,
+    minWidth: 22,
+    alignItems: 'center',
+  },
+  badgeLevelChipText: {
+    color: '#211832',
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  badgeLabel: {
+    color: C.text,
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 
-    // What I do (inline icon + text)
-    inlineRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    inlineIcon: {
-        width: 36, height: 36, borderRadius: 10,
-        backgroundColor: C.purpleSoft,
-        borderWidth: 1, borderColor: C.purpleBorder,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    whatIDoText: {
-        flex: 1,
-        fontSize: 15,
-        color: C.text,
-        fontWeight: '600',
-    },
+  // Bottom CTA
+  bottomCta: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 14,
+    backgroundColor: C.bg,
+    borderTopWidth: 1,
+    borderTopColor: C.cardBorder,
+  },
+  ctaMessage: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'transparent',
+    borderRadius: 22,
+    paddingVertical: 15,
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.18)',
+    minHeight: 52,
+  },
+  ctaMessageText: {
+    color: C.text,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  ctaConnect: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.orange,
+    borderRadius: 22,
+    paddingVertical: 15,
+    minHeight: 52,
+  },
+  ctaConnectDone: {
+    backgroundColor: C.greenSoft,
+    borderWidth: 1, borderColor: C.greenBorder,
+  },
+  ctaConnectPending: {
+    backgroundColor: C.cardBg,
+    borderWidth: 1, borderColor: C.cardBorder,
+  },
+  ctaConnectText: {
+    color: '#211832',
+    fontWeight: '700',
+    fontSize: 15,
+  },
 
-    // Looking to meet
-    meetPillRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 10,
-    },
-    meetPillFilled: {
-        borderRadius: 20,
-        paddingHorizontal: 16, paddingVertical: 8,
-    },
-    meetPillOrange: {
-        backgroundColor: C.accent,
-    },
-    meetPillGreen: {
-        backgroundColor: C.green,
-    },
-    meetPillFilledText: {
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: '700',
-    },
-    chipRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    goalChip: {
-        backgroundColor: C.bgInner,
-        borderWidth: 1, borderColor: C.border,
-        borderRadius: 20,
-        paddingHorizontal: 12, paddingVertical: 6,
-    },
-    goalChipText: {
-        fontSize: 12,
-        color: C.text,
-        fontWeight: '500',
-    },
+  // Hero inline meta (location + profession)
+  heroMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    marginTop: 5,
+  },
+  heroMetaText: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 17,
+  },
 
-    // Location rows
-    locList: {
-        gap: 14,
-        marginBottom: 4,
-    },
-    locLineTitle: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: C.textMuted,
-        marginBottom: 2,
-    },
-    locRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-    },
-    locIcon: {
-        width: 40, height: 40, borderRadius: 10,
-        backgroundColor: C.accentSoft,
-        borderWidth: 1, borderColor: C.accentBorder,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    locName: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: C.text,
-    },
-    locAddress: {
-        fontSize: 12,
-        color: C.textMuted,
-        marginTop: 2,
-    },
+  // Interest pills (inside hero, below avatar row)
+  interestPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+    alignSelf: 'stretch',
+  },
+  interestPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.12)',
+    backgroundColor: 'rgba(33,24,50,0.05)',
+  },
+  interestPillText: {
+    color: '#7A7C90',
+    fontSize: 10,
+    fontWeight: '500',
+  },
 
-    // Hobbies — circular orange-bordered, wrapped grid
-    hobbyWrap: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 14,
-    },
-    hobbyItem: {
-        alignItems: 'center',
-        width: 64,
-    },
-    hobbyCircle: {
-        width: 56, height: 56, borderRadius: 28,
-        backgroundColor: C.accentSoft,
-        borderWidth: 2, borderColor: C.accentBorder,
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: 6,
-    },
-    hobbyEmoji: {
-        fontSize: 26,
-    },
-    hobbyLabel: {
-        fontSize: 11,
-        color: C.textMuted,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
+  // Hero Public/Private toggle
+  heroVisRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+    alignSelf: 'stretch',
+  },
+  heroVisPill: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.14)',
+    backgroundColor: 'transparent',
+  },
+  heroVisPillActive: {
+    backgroundColor: C.text,
+    borderColor: C.text,
+  },
+  heroVisPillPrivate: {
+    borderColor: 'rgba(33,24,50,0.14)',
+    backgroundColor: 'transparent',
+  },
+  heroVisPillText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  heroVisPillTextActive: {
+    color: '#fff',
+  },
+  heroVisPillTextInactive: {
+    color: C.muted,
+  },
 
-    // Community
-    communityNote: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.75)',
-        lineHeight: 20,
-    },
-    communityRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        paddingVertical: 6,
-    },
-    communityIcon: {
-        width: 36, height: 36, borderRadius: 10,
-        backgroundColor: C.purpleSoft,
-        borderWidth: 1, borderColor: C.purpleBorder,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    communityRowLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: C.text,
-    },
-    communityRowDesc: {
-        fontSize: 12,
-        color: C.textMuted,
-        marginTop: 2,
-    },
-    communitySubLabel: {
-        fontSize: 11,
-        color: C.textDim,
-        marginBottom: 6,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    ageChip: {
-        backgroundColor: C.bgInner,
-        borderWidth: 1, borderColor: C.border,
-        borderRadius: 20,
-        paddingHorizontal: 10, paddingVertical: 5,
-    },
-    ageChipText: {
-        fontSize: 11,
-        color: C.textMuted,
-        fontWeight: '500',
-    },
+  // Standalone time stats row (below hero, above cards)
+  timeStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  timeStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  timeStatValue: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  timeStatLabel: {
+    color: C.muted,
+    fontSize: 8,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  timeStatDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 32,
+    backgroundColor: 'rgba(33,24,50,0.14)',
+  },
 
-    // Badges
-    viewAllText: {
-        color: C.accent,
-        fontSize: 12,
-        fontWeight: '700',
-    },
-    badgeCard: {
-        alignItems: 'center',
-        backgroundColor: C.accentSoft,
-        borderWidth: 1, borderColor: C.accentBorder,
-        borderRadius: 14,
-        paddingVertical: 12, paddingHorizontal: 14,
-        minWidth: 76,
-    },
-    badgeOverflow: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: C.bgInner,
-        borderWidth: 1, borderColor: C.border,
-        borderRadius: 14,
-        paddingVertical: 12, paddingHorizontal: 14,
-        minWidth: 60,
-    },
-    badgeOverflowText: {
-        color: C.textMuted,
-        fontWeight: '800',
-        fontSize: 16,
-    },
-    badgeEmoji: {
-        fontSize: 26,
-        marginBottom: 6,
-    },
-    badgeLabel: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: C.text,
-        textAlign: 'center',
-    },
+  // VisPill (inline Public/Private in card headers)
+  visPillRow: {
+    flexDirection: 'row',
+    gap: 4,
+    alignItems: 'center',
+  },
+  visPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.14)',
+    backgroundColor: 'transparent',
+  },
+  visPillActive: {
+    backgroundColor: C.text,
+    borderColor: C.text,
+  },
+  visPillPrivate: {
+    borderColor: 'rgba(33,24,50,0.14)',
+    backgroundColor: 'transparent',
+  },
+  visPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  visPillTextActive: {
+    color: '#fff',
+  },
+  visPillTextInactive: {
+    color: C.muted,
+  },
 
-    // Bottom CTA
-    bottomCta: {
-        position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        flexDirection: 'row',
-        gap: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        paddingBottom: Platform.OS === 'ios' ? 28 : 14,
-        backgroundColor: C.bgBottom,
-        borderTopWidth: 1, borderTopColor: C.border,
-    },
-    ctaMessage: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: 'transparent',
-        borderRadius: 22,
-        paddingVertical: 15,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
-        minHeight: 52,
-    },
-    ctaMessageText: {
-        color: C.text,
-        fontWeight: '700',
-        fontSize: 15,
-    },
-    ctaConnect: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: C.accent,
-        borderRadius: 22,
-        paddingVertical: 15,
-        minHeight: 52,
-    },
-    ctaConnectDone: {
-        backgroundColor: C.greenSoft,
-        borderWidth: 1, borderColor: C.greenBorder,
-    },
-    ctaConnectPending: {
-        backgroundColor: C.bgCard,
-        borderWidth: 1, borderColor: C.border,
-    },
-    ctaConnectText: {
-        color: '#fff',
-        fontWeight: '700',
-        fontSize: 15,
-    },
-});
+  // Photos card content layout
+  photosContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  photosThumbRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flex: 1,
+  },
+  photoThumb: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(33,24,50,0.06)',
+  },
+  photoThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  photosCountBlock: {
+    alignItems: 'flex-start',
+    width: 72,
+  },
+  photosCountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  photosCount: {
+    color: C.text,
+    fontSize: 32,
+    fontWeight: '800',
+    lineHeight: 36,
+  },
+  photosViewAll: {
+    color: C.orange,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  photosLabel: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  photosTapHint: {
+    color: C.muted,
+    fontSize: 10,
+    fontWeight: '400',
+    marginTop: 4,
+  },
 
-const stat = StyleSheet.create({
-    card: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 16,
-        gap: 4,
-    },
-    iconWrap: {
-        marginBottom: 2,
-    },
-    value: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: C.text,
-    },
-    label: {
-        fontSize: 10,
-        color: C.textMuted,
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: 0.4,
-    },
-});
+  // About Me card header group + edit link
+  aboutTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  editBtnText: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  bodyTextOrange: {
+    color: C.orange,
+  },
 
-const card = StyleSheet.create({
-    wrapper: {
-        backgroundColor: C.bgCard,
-        borderRadius: 22,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: C.border,
-        ...Platform.select({
-            web: { boxShadow: '0 10px 28px rgba(56,103,214,0.18)' },
-            default: {
-                shadowColor: '#3867D6',
-                shadowOpacity: 0.18,
-                shadowRadius: 18,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 6,
-            },
-        }),
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    },
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    title: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: C.text,
-    },
-    editBtn: {
-        width: 28, height: 28, borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.06)',
-        alignItems: 'center', justifyContent: 'center',
-    },
+  // Card subtitle count
+  cardSubCount: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  // Stats card
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginTop: 4,
+  },
+  statsItem: {
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  statsItemDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 36,
+    backgroundColor: 'rgba(33,24,50,0.08)',
+  },
+  statsIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsValue: {
+    color: C.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  statsLabel: {
+    color: C.muted,
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+
+  // Hobby circles
+  hobbyCircleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 8,
+  },
+  hobbyCircleWrapper: {
+    alignItems: 'center',
+    gap: 6,
+    width: 64,
+  },
+  hobbyCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: C.accentSoft,
+    borderWidth: 1.5,
+    borderColor: C.accentBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hobbyCircleEmoji: {
+    fontSize: 26,
+  },
+  hobbyRankDots: {
+    flexDirection: 'row',
+    gap: 3,
+  },
+  hobbyRankDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(33,24,50,0.12)',
+  },
+  hobbyRankDotActive: {
+    backgroundColor: C.orange,
+  },
+  hobbyCircleLabel: {
+    color: C.text,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // Location tabs
+  locTabRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  locTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.10)',
+    backgroundColor: 'transparent',
+  },
+  locTabActive: {
+    backgroundColor: C.orange,
+    borderColor: C.orange,
+  },
+  locTabText: {
+    color: C.muted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  locTabTextActive: {
+    color: '#fff',
+  },
+  locDetail: {
+    marginTop: 10,
+  },
+  locDetailName: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  locDetailAddr: {
+    color: C.muted,
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  // Skeleton
+  skeletonShell: {
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    alignItems: 'center',
+    gap: 14,
+  },
+  skeletonBone: {
+    backgroundColor: 'rgba(33,24,50,0.06)',
+  },
+
+  // Gallery modal
+  galleryModal: {
+    flex: 1,
+    backgroundColor: '#111',
+  },
+  galleryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 56 : 48,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#000',
+  },
+  galleryHeaderBtn: {
+    width: 48,
+    alignItems: 'center',
+  },
+  galleryHeaderBtnText: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '600',
+  },
+  galleryHeaderTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 12,
+    gap: 6,
+  },
+  galleryThumb: {
+    width: (Dimensions.get('window').width - 36) / 3,
+    height: (Dimensions.get('window').width - 36) / 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  galleryThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+
+  // Full-screen viewer
+  fullscreenBg: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImg: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height * 0.75,
+  },
+  fullscreenNavRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    position: 'absolute',
+    bottom: 40,
+    left: 24,
+    right: 24,
+  },
+  fullscreenNavBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullscreenNavBtnDisabled: {
+    opacity: 0.3,
+  },
+  fullscreenNavText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '600',
+    lineHeight: 32,
+  },
 });

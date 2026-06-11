@@ -27,7 +27,7 @@ export function LocationsMap({ points, onMapTouchStart, onMapTouchEnd }: Props) 
             <iframe
                 srcDoc={html}
                 width="100%"
-                height="200"
+                height="140"
                 style={({ border: 0, borderRadius: 12, display: 'block' } as any)}
                 loading="lazy"
             />
@@ -37,7 +37,7 @@ export function LocationsMap({ points, onMapTouchStart, onMapTouchEnd }: Props) 
 
 const styles = StyleSheet.create({
     wrap: {
-        height: 200,
+        height: 140,
         borderRadius: 12,
         overflow: 'hidden',
         marginTop: 4,

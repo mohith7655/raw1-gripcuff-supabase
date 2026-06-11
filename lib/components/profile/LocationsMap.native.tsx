@@ -44,7 +44,7 @@ export function LocationsMap({ points, onMapTouchStart, onMapTouchEnd }: Props) 
 
 const styles = StyleSheet.create({
     wrap: {
-        height: 200,
+        height: 140,
         borderRadius: 12,
         overflow: 'hidden',
         marginTop: 4,
@@ -52,6 +52,6 @@ const styles = StyleSheet.create({
     },
     map: {
         flex: 1,
-        backgroundColor: '#0d1825',
+        backgroundColor: '#EEEEF2',
     },
 });

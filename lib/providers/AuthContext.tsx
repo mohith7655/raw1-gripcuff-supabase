@@ -115,12 +115,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     log('boot: starting Supabase auth boot');
 
+    // Hard fallback: never stay in loading state longer than 15 s
+    const bootTimeout = setTimeout(() => {
+      logWarn('boot: timeout — forcing loading=false');
+      setLoading(false);
+    }, 15000);
+
     supabase.auth.getSession().then(async ({ data }) => {
       const initSession = data.session ?? null;
       log('boot: initial session resolved', { userId: initSession?.user?.id ?? null });
       await applySession(initSession);
-      setLoading(false);
       log('boot: complete');
+    }).catch((err) => {
+      logError('boot: getSession failed', err);
+    }).finally(() => {
+      clearTimeout(bootTimeout);
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
@@ -133,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await applySession(nextSession, _event);
     });
 
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); clearTimeout(bootTimeout); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

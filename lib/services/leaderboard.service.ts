@@ -53,7 +53,7 @@ async function fetchLeaderboardEntries(
         return {
             uid:              row.id,
             displayName:      row.username || row.full_name || 'User',
-            photoURL:         row.avatar_url || '',
+            photoURL:         row.avatar_url || null,
             score:            Number(row.watched_seconds ?? 0),
             currentStreak:    Number(row.current_streak ?? 0),
             bestStreak:       Number(row.best_streak ?? 0),

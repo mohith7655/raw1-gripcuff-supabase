@@ -16,8 +16,8 @@ import { RelationshipStatus } from '../../models/Friend';
 import { User } from '../../models/User';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#E89951';
-const MUTED = '#94A3B8';
+const ORANGE = '#F25912';
+const MUTED = '#7A7C90';
 const GREEN = '#22C55E';
 const DANGER = '#EF4444';
 
@@ -145,7 +145,7 @@ export function FriendsHub() {
                     value={query}
                     onChangeText={onQuery}
                     placeholder="Search people or friends…"
-                    placeholderTextColor="#5b6678"
+                    placeholderTextColor="#D8D8E4"
                     autoCapitalize="none"
                     returnKeyType="search"
                 />
@@ -176,7 +176,7 @@ export function FriendsHub() {
                                 {busy ? <ActivityIndicator color={ORANGE} size="small" />
                                     : status === 'friends' ? <View style={s.pill}><UserCheck size={13} color={GREEN} /><Text style={[s.pillText, { color: GREEN }]}>Friends</Text></View>
                                     : status === 'pending_sent' ? <View style={s.pill}><Clock size={12} color={ORANGE} /><Text style={[s.pillText, { color: ORANGE }]}>Sent</Text></View>
-                                    : <TouchableOpacity style={s.addBtn} onPress={() => handleAdd(item.uid)} activeOpacity={0.8}><UserPlus size={13} color="#fff" /><Text style={s.addBtnText}>Add</Text></TouchableOpacity>}
+                                    : <TouchableOpacity style={s.addBtn} onPress={() => handleAdd(item.uid)} activeOpacity={0.8}><UserPlus size={13} color="#211832" /><Text style={s.addBtnText}>Add</Text></TouchableOpacity>}
                             </View>
                         );
                     })}
@@ -202,7 +202,7 @@ export function FriendsHub() {
                                 {busy ? <ActivityIndicator color={ORANGE} size="small" /> : (
                                     <View style={s.rowActions}>
                                         <TouchableOpacity style={s.addBtn} onPress={() => handleAccept(req.id, req.fromUid, req.toUid)} activeOpacity={0.8}>
-                                            <UserCheck size={13} color="#fff" /><Text style={s.addBtnText}>Accept</Text>
+                                            <UserCheck size={13} color="#211832" /><Text style={s.addBtnText}>Accept</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={s.declineBtn} onPress={() => handleDecline(req.id)} activeOpacity={0.8}>
                                             <UserX size={15} color={DANGER} />
@@ -221,24 +221,24 @@ export function FriendsHub() {
                     <Text style={s.sectionTitle}>People You May Know</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 2 }}>
                         {suggestions.map(sug => {
-                            const sent = sentUids.has(sug.id);
-                            const busy = busyUid === sug.id;
+                            const sent = sentUids.has(sug.uid);
+                            const busy = busyUid === sug.uid;
                             return (
-                                <View key={sug.id} style={s.suggCard}>
-                                    <TouchableOpacity activeOpacity={0.85} onPress={() => goProfile(sug.id)} style={{ alignItems: 'center' }}>
-                                        <TierAvatar uri={sug.avatarUrl} size={60} uid={sug.id} name={sug.fullName} radius={16} disableProfileLink />
+                                <View key={sug.uid} style={s.suggCard}>
+                                    <TouchableOpacity activeOpacity={0.85} onPress={() => goProfile(sug.uid)} style={{ alignItems: 'center' }}>
+                                        <TierAvatar uri={sug.avatarUrl} size={60} uid={sug.uid} name={sug.fullName} radius={16} disableProfileLink />
                                         <Text style={s.suggName} numberOfLines={1}>{sug.fullName}</Text>
                                         <Text style={s.suggSub} numberOfLines={1}>@{sug.username}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={[s.suggBtn, sent && s.suggBtnSent]}
-                                        onPress={() => !sent && handleAdd(sug.id)}
+                                        onPress={() => !sent && handleAdd(sug.uid)}
                                         disabled={sent || busy}
                                         activeOpacity={0.85}
                                     >
-                                        {busy ? <ActivityIndicator color="#fff" size="small" />
+                                        {busy ? <ActivityIndicator color="#211832" size="small" />
                                             : sent ? <><Clock size={12} color={ORANGE} /><Text style={[s.suggBtnText, { color: ORANGE }]}>Sent</Text></>
-                                            : <><UserPlus size={13} color="#fff" /><Text style={s.suggBtnText}>Add</Text></>}
+                                            : <><UserPlus size={13} color="#211832" /><Text style={s.suggBtnText}>Add</Text></>}
                                     </TouchableOpacity>
                                 </View>
                             );
@@ -289,20 +289,20 @@ const s = StyleSheet.create({
     searchBar: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
         backgroundColor: 'rgba(255,255,255,0.06)',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.08)',
         borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10,
     },
-    searchInput: { flex: 1, color: '#fff', fontSize: 14, padding: 0 },
+    searchInput: { flex: 1, color: '#211832', fontSize: 14, padding: 0 },
     section: { gap: 10 },
-    sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    sectionTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
     row: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: '#0f1923', borderRadius: 14, padding: 12,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: '#EEEEF2', borderRadius: 14, padding: 12,
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)',
     },
     rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
     rowInfo: { flex: 1 },
-    rowName: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    rowName: { color: '#211832', fontSize: 14, fontWeight: '700' },
     rowSub: { color: MUTED, fontSize: 12, marginTop: 2 },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
     streak: { flexDirection: 'row', alignItems: 'center', gap: 2 },
@@ -310,7 +310,7 @@ const s = StyleSheet.create({
     rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     addBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
-        backgroundColor: '#FF6B00', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8,
+        backgroundColor: '#F25912', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8,
     },
     addBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     declineBtn: {
@@ -319,26 +319,26 @@ const s = StyleSheet.create({
     },
     msgBtn: {
         width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'rgba(232,153,81,0.1)', borderWidth: 1, borderColor: 'rgba(232,153,81,0.25)',
+        backgroundColor: 'rgba(242,89,18,0.1)', borderWidth: 1, borderColor: 'rgba(242,89,18,0.25)',
     },
     pill: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
         borderRadius: 18, paddingHorizontal: 12, paddingVertical: 7,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
     },
     pillText: { fontSize: 12, fontWeight: '700' },
     suggCard: {
         width: 130, alignItems: 'center', gap: 4,
-        backgroundColor: '#0f1923', borderRadius: 16, padding: 14,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: '#EEEEF2', borderRadius: 16, padding: 14,
+        borderWidth: 1, borderColor: 'rgba(33,24,50,0.05)',
     },
-    suggName: { color: '#fff', fontSize: 13, fontWeight: '700', marginTop: 8, maxWidth: 110, textAlign: 'center' },
+    suggName: { color: '#211832', fontSize: 13, fontWeight: '700', marginTop: 8, maxWidth: 110, textAlign: 'center' },
     suggSub: { color: MUTED, fontSize: 11, maxWidth: 110, textAlign: 'center' },
     suggBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
-        backgroundColor: '#FF6B00', borderRadius: 18, paddingVertical: 7, paddingHorizontal: 16, marginTop: 8, alignSelf: 'stretch',
+        backgroundColor: '#F25912', borderRadius: 18, paddingVertical: 7, paddingHorizontal: 16, marginTop: 8, alignSelf: 'stretch',
     },
-    suggBtnSent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(232,153,81,0.4)' },
+    suggBtnSent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(242,89,18,0.4)' },
     suggBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     empty: { alignItems: 'center', gap: 8, paddingVertical: 24 },
     emptyText: { color: MUTED, fontSize: 13 },

@@ -27,7 +27,7 @@ export function WebSafeAvatar({
     size,
     fallback,
     style,
-    timeoutMs = 10000,
+    timeoutMs = 5000,
     borderRadius,
 }: WebSafeAvatarProps) {
     const [loaded, setLoaded] = useState(false);
@@ -54,21 +54,20 @@ export function WebSafeAvatar({
     if (Platform.OS === 'web') {
         return (
             <View style={containerStyle}>
-                {!loaded && (
-                    <View style={[StyleSheet.absoluteFillObject, styles.loadingOverlay, { borderRadius: radius }]}>
-                        <ActivityIndicator color="#E89951" size="small" />
-                    </View>
-                )}
                 {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
                 {/* @ts-ignore — native <img> on web via React Native Web */}
                 <img
                     src={uri}
+                    crossOrigin="anonymous"
                     style={{
                         width: size,
                         height: size,
                         borderRadius: radius,
                         objectFit: 'cover',
-                        display: loaded ? 'block' : 'none',
+                        /* opacity/visibility instead of display:none so browsers
+                           always attempt the fetch and reliably fire onLoad/onError */
+                        opacity: loaded ? 1 : 0,
+                        visibility: loaded ? 'visible' : 'hidden',
                         position: 'absolute',
                         top: 0,
                         left: 0,
@@ -76,6 +75,11 @@ export function WebSafeAvatar({
                     onLoad={() => setLoaded(true)}
                     onError={() => setError(true)}
                 />
+                {!loaded && (
+                    <View style={[StyleSheet.absoluteFillObject, styles.loadingOverlay, { borderRadius: radius }]}>
+                        <ActivityIndicator color="#F25912" size="small" />
+                    </View>
+                )}
             </View>
         );
     }
@@ -84,7 +88,7 @@ export function WebSafeAvatar({
         <View style={containerStyle}>
             {!loaded && (
                 <View style={[StyleSheet.absoluteFillObject, styles.loadingOverlay, { borderRadius: radius }]}>
-                    <ActivityIndicator color="#E89951" size="small" />
+                    <ActivityIndicator color="#F25912" size="small" />
                 </View>
             )}
             <Image

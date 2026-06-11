@@ -51,6 +51,7 @@ import { ChatConversation } from '../models/Chat';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
 import { TierBars } from '../components/profile/TierBars';
 import { TierAvatar } from '../components/profile/TierAvatar';
+import { tierLevel } from '../components/profile/TierBars';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { RecommendedProgram } from '../services/recommendation.service';
 import { LiveSessionService, LiveSession } from '../services/liveSession.service';
@@ -104,7 +105,7 @@ function FireGlowPill({ children, style }: { children: React.ReactNode; style?: 
     loop.start();
     return () => loop.stop();
   }, []);
-  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(232,153,81,0.7)', 'rgba(255,160,0,1)'] });
+  const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(242,89,18,0.7)', 'rgba(255,160,0,1)'] });
   const shadowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.0] });
   const shadowRadius = glow.interpolate({ inputRange: [0, 1], outputRange: [6, 20] });
   return (
@@ -133,8 +134,8 @@ function RecommendationSection({
   navigation: any;
 }) {
   return (
-    <View style={{ marginTop: 8, marginBottom: 8, backgroundColor: '#131f2e', borderRadius: 12, paddingVertical: 14 }}>
-      <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', paddingHorizontal: 16, marginBottom: 12 }}>
+    <View style={{ marginTop: 8, marginBottom: 8, backgroundColor: '#F8F8FC', borderRadius: 12, paddingVertical: 14 }}>
+      <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700', paddingHorizontal: 16, marginBottom: 12 }}>
         {title}
       </Text>
       <ScrollView
@@ -160,7 +161,7 @@ function RecommendationSection({
               overflow: 'hidden',
               backgroundColor: AppTheme.cardColor,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.07)',
+              borderColor: '#D8D8E4',
             }}
             activeOpacity={0.85}
           >
@@ -209,13 +210,13 @@ function RecommendationSection({
               </View>
             </View>
             <View style={{ padding: 9 }}>
-              <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 }}>
+              <Text numberOfLines={1} style={{ color: 'rgba(33,24,50,0.45)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 }}>
                 {item.categoryLabel}
               </Text>
-              <Text numberOfLines={2} style={{ color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 16 }}>
+              <Text numberOfLines={2} style={{ color: '#211832', fontSize: 12, fontWeight: '700', lineHeight: 16 }}>
                 {item.title}
               </Text>
-              <Text numberOfLines={1} style={{ color: '#C26A2D', fontSize: 10, marginTop: 4 }}>
+              <Text numberOfLines={1} style={{ color: '#211832', fontSize: 10, marginTop: 4 }}>
                 {item.reason}
               </Text>
             </View>
@@ -612,7 +613,12 @@ const HomeScreenInner = () => {
       .catch(() => {})
       .finally(() => { isRefreshingRef.current = false; });
     StreakService.checkAndBreakStreak(uid).catch(() => {});
-    DailyActivityService.recalculateUserStreak(uid).catch(() => {});
+    // ensureTodayActivity CREATES today's row (app-open = active day) and then
+    // recalculates the streak. Using it here — not just recalculateUserStreak —
+    // means the day is logged on every focus/resume/midnight rollover, not only on
+    // cold boot. Fixes days missed when the app is left open across midnight (e.g.
+    // a weekend Sat→Sun) where no fresh boot fires.
+    DailyActivityService.ensureTodayActivity(uid).catch(() => {});
   }, [fetchProfile]); // fetchProfile is stable (useCallback with no deps)
 
   // ── ONE useFocusEffect — fires when tab is focused ───────────────────────
@@ -697,6 +703,9 @@ const HomeScreenInner = () => {
     : completedCount <= 3 ? 2
     : completedCount <= 6 ? 3
     : 4;
+  // Level shown in the avatar dots: the membership tier (the number that used to
+  // sit in the avatar's corner badge), falling back to the workout level.
+  const levelDots = tierLevel(accessType) ?? gripCuffLevel;
 
   useEffect(() => {
     if (!supabaseUserId || !profile) return;
@@ -758,7 +767,7 @@ const HomeScreenInner = () => {
             activeOpacity={0.8}
           >
             <View>
-              <Bell color="#C26A2D" size={26} />
+              <Bell color="#4C4E78" size={26} />
               {totalNotificationsBadge > 0 && (
                 <View style={styles.bellBadge}>
                   <Text style={styles.bellBadgeText}>
@@ -788,7 +797,7 @@ const HomeScreenInner = () => {
                 width: halfToggle,
                 transform: [{ translateX: indicatorLeft }],
                 backgroundColor: '#000000',
-                borderBottomColor: isCoaching ? CoachingTheme.primaryColor : '#E89951',
+                borderBottomColor: isCoaching ? CoachingTheme.primaryColor : '#F25912',
               },
             ]}
           />
@@ -811,7 +820,7 @@ const HomeScreenInner = () => {
             style={[styles.toggleButton, { backgroundColor: 'transparent' }]}
             activeOpacity={1}
           >
-            <Text style={[styles.toggleText, { color: '#888888' }]}>
+            <Text style={[styles.toggleText, { color: '#7A7C90' }]}>
               Personal Coaching
             </Text>
             <Text style={{ fontSize: 12, marginLeft: 5 }}>🔒</Text>
@@ -820,7 +829,7 @@ const HomeScreenInner = () => {
 
         {/* Coming Soon banner — shown directly below tab bar */}
         {appMode !== 'ai' ? null : null}
-        <View style={{ backgroundColor: 'rgba(232,153,81,0.07)', borderRadius: 10, marginHorizontal: 16, marginTop: 10, marginBottom: 2, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ backgroundColor: 'rgba(242,89,18,0.07)', borderRadius: 10, marginHorizontal: 16, marginTop: 10, marginBottom: 2, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ fontSize: 14 }}>🔒</Text>
           <Text style={{ color: '#888', fontSize: 13, fontWeight: '500' }}>Personal Coaching — Coming Soon</Text>
         </View>
@@ -843,21 +852,23 @@ const HomeScreenInner = () => {
                   onPress={() => navigation.navigate('ProfileScreen')}
                   activeOpacity={0.85}
                 >
-                  <View style={{ alignItems: 'center', gap: 6 }}>
+                  <View style={{ alignItems: 'center', gap: 8 }}>
+                    {/* Same tier treatment as the profile screen: 4 dots + numbered corner badge */}
                     <TierAvatar
                       uri={profile?.profileImageUrl}
                       size={72}
                       accessType={accessType}
                       name={profile?.fullName}
                       radius={16}
-                      fallback={<Text style={{ color: '#C26A2D', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
+                      badgeBorderColor="#F8F8FC"
+                      fallback={<Text style={{ color: '#F25912', fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13 }}>{'Profile\nPicture'}</Text>}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
                     <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{firstName}</Text>
                     {!!profile?.username && (
-                      <Text style={{ color: '#7b84a0', fontSize: 13, fontWeight: '500' }}>@{profile.username}</Text>
+                      <Text style={{ color: '#7A7C90', fontSize: 13, fontWeight: '500' }}>@{profile.username}</Text>
                     )}
                   </View>
                   {/* Badge pills only */}
@@ -879,19 +890,13 @@ const HomeScreenInner = () => {
                         )
                       )
                     )}
-                    <TouchableOpacity
-                      style={styles.profileStatPill}
-                      onPress={() => setShowTiersModal(true)}
-                      activeOpacity={0.75}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Text style={styles.profileStatPillText}>🏋️ Gripcuff Lv.{gripCuffLevel}</Text>
-                    </TouchableOpacity>
                   </View>
                   {/* Workout time — Weekly · Avg · Lifetime */}
                   {(() => {
-                    const fmt = (mins: number) =>
-                      mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+                    const fmt = (mins: number) => {
+                      const m = Math.round(mins);
+                      return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+                    };
                     const weeklyMins = streakData
                       ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
                       : 0;
@@ -902,12 +907,12 @@ const HomeScreenInner = () => {
                     const totalWorkouts = streakData?.totalWorkouts ?? profile?.completedWorkouts ?? 0;
                     const avgMins = totalWorkouts > 0 ? Math.round(lifetimeMins / totalWorkouts) : 0;
                     const Divider = () => (
-                      <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                      <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: '#D8D8E4' }} />
                     );
                     const Stat = ({ value, label }: { value: string; label: string }) => (
                       <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>{value}</Text>
-                        <Text style={{ color: '#7b84a0', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 }}>{label}</Text>
+                        <Text style={{ color: '#211832', fontSize: 14, fontWeight: '700' }}>{value}</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 }}>{label}</Text>
                       </View>
                     );
                     return (
@@ -932,7 +937,7 @@ const HomeScreenInner = () => {
                   activeOpacity={0.7}
                 >
                   {/* Left: permanent credits */}
-                  <View style={{ flex: 1, alignItems: 'center', borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: 'rgba(255,255,255,0.12)', paddingRight: 12 }}>
+                  <View style={{ flex: 1, alignItems: 'center', borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: 'rgba(33,24,50,0.12)', paddingRight: 12 }}>
                     <Text style={styles.compactStatValue}>{profile?.credits?.toString() ?? "0"} Credits</Text>
                     <TouchableOpacity
                       onPress={() => setBuyCreditsVisible(true)}
@@ -965,7 +970,7 @@ const HomeScreenInner = () => {
               {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
                 const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
                 const allProgs = getAllPrograms();
-                const COLORS = ['#FF6B35', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
+                const COLORS = ['#F25912', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
                 const favItems = [
                   ...allVids.filter(v => favExerciseIds.has(v.id)).map(v => ({ id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnail: (v as any).thumbnail })),
                   ...allProgs
@@ -973,13 +978,13 @@ const HomeScreenInner = () => {
                     .map(p => ({ id: p.videos.find(v => favWorkoutIds.has(v.id))?.id ?? p.id, title: p.title, videoUrl: p.videos?.[0]?.videoUrl, thumbnail: (p as any).thumbnail })),
                 ];
                 return (
-                  <View style={{ marginBottom: 16, backgroundColor: '#131f2e', borderRadius: 12, paddingVertical: 14 }}>
+                  <View style={{ marginBottom: 16, backgroundColor: '#F8F8FC', borderRadius: 12, paddingVertical: 14 }}>
                     {recentlyWatched.length > 0 && (
                       <>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
-                          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Recently Watched</Text>
+                          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700' }}>Recently Watched</Text>
                           <TouchableOpacity onPress={() => navigation.navigate('AllRecentlyWatched')} activeOpacity={0.75}>
-                            <Text style={{ color: '#C26A2D', fontSize: 12, fontWeight: '600' }}>View all →</Text>
+                            <Text style={{ color: '#F25912', fontSize: 12, fontWeight: '600' }}>View all →</Text>
                           </TouchableOpacity>
                         </View>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
@@ -1011,8 +1016,8 @@ const HomeScreenInner = () => {
                                   </View>
                                 </View>
                                 <View style={{ padding: 8 }}>
-                                  <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
-                                  <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>Continue →</Text>
+                                  <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
+                                  <Text style={{ color: '#F25912', fontSize: 10, marginTop: 3 }}>Continue →</Text>
                                 </View>
                               </TouchableOpacity>
                             );
@@ -1024,9 +1029,9 @@ const HomeScreenInner = () => {
                     {favItems.length > 0 && (
                       <>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: recentlyWatched.length > 0 ? 16 : 0, marginBottom: 12 }}>
-                          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Favorites</Text>
+                          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700' }}>Favorites</Text>
                           <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'all' })} activeOpacity={0.75}>
-                            <Text style={{ color: '#C26A2D', fontSize: 12, fontWeight: '600' }}>View all →</Text>
+                            <Text style={{ color: '#F25912', fontSize: 12, fontWeight: '600' }}>View all →</Text>
                           </TouchableOpacity>
                         </View>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
@@ -1054,8 +1059,8 @@ const HomeScreenInner = () => {
                                 </View>
                               )}
                               <View style={{ padding: 8 }}>
-                                <Text numberOfLines={2} style={{ color: '#fff', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
-                                <Text style={{ color: '#C26A2D', fontSize: 10, marginTop: 3 }}>♥ Favorite</Text>
+                                <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
+                                <Text style={{ color: '#F25912', fontSize: 10, marginTop: 3 }}>♥ Favorite</Text>
                               </View>
                             </TouchableOpacity>
                           ))}
@@ -1073,32 +1078,35 @@ const HomeScreenInner = () => {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <Text style={styles.gripCuffTitle}>Gripcuff Training</Text>
-                      <View style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 }}>
-                        <Text style={{ color: '#4FC3F7', fontSize: 10, fontWeight: '700' }}>STARTER</Text>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 }}>
+                        <Text style={{ color: '#4C4E78', fontSize: 10, fontWeight: '700' }}>
+                          {accessType ? accessType.replace(/_access$/, '').toUpperCase() : 'STARTER'}
+                        </Text>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <TouchableOpacity
-                        style={styles.gripCuffBtn}
+                        onPress={() => setShowTiersModal(true)}
+                        style={{ backgroundColor: '#F25912', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Upgrade</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
                         onPress={() => navigation.navigate('GripCuffVideos')}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.gripCuffBtnText}>Get Started</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => setShowTiersModal(true)}
-                        style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 }}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' }}>Upgrade</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600' }}>Get Started</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  {/* Right: compact bar chart */}
+                  {/* Right: compact bar chart — fills up to current gripCuffLevel */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5 }}>
                     {[1, 2, 3, 4].map((lvl) => {
-                      const active = lvl === 1;
+                      const isCurrent = lvl === gripCuffLevel;
+                      const isFilled  = lvl <= gripCuffLevel;
                       const barHeight = lvl * 8 + 8;
                       return (
                         <View key={lvl} style={{ alignItems: 'center', gap: 3 }}>
@@ -1107,15 +1115,11 @@ const HomeScreenInner = () => {
                               width: 20,
                               height: barHeight,
                               borderRadius: 4,
-                              backgroundColor: active ? '#C26A2D' : 'rgba(255,255,255,0.1)',
-                              shadowColor: active ? '#C26A2D' : 'transparent',
-                              shadowOffset: { width: 0, height: 0 },
-                              shadowOpacity: active ? 0.6 : 0,
-                              shadowRadius: 4,
-                              elevation: active ? 3 : 0,
+                              backgroundColor: isFilled ? '#F25912' : 'rgba(33,24,50,0.1)',
+                              opacity: isCurrent ? 1 : isFilled ? 0.55 : 1,
                             }}
                           />
-                          <Text style={{ color: active ? '#C26A2D' : 'rgba(255,255,255,0.25)', fontSize: 9, fontWeight: active ? '700' : '500' }}>
+                          <Text style={{ color: isCurrent ? '#F25912' : isFilled ? 'rgba(242,89,18,0.5)' : '#D8D8E4', fontSize: 9, fontWeight: isCurrent ? '700' : '500' }}>
                             {lvl}
                           </Text>
                         </View>
@@ -1177,7 +1181,7 @@ const HomeScreenInner = () => {
                   <View style={{ marginTop: 20, marginBottom: 20 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, marginBottom: 12, gap: 8 }}>
                       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00ff88' }} />
-                      <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Live Now</Text>
+                      <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>Live Now</Text>
                     </View>
                     {visibleSessions.slice(0, 5).map((session) => {
                       const isPendingThis = pendingJoin?.sessionId === session.id;
@@ -1201,7 +1205,7 @@ const HomeScreenInner = () => {
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
+                              <Text style={{ color: '#211832', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
                                 {session.hostName} &amp; {session.guestName}
                               </Text>
                               <Text style={{ color: AppTheme.textGrey, fontSize: 12, marginTop: 4 }} numberOfLines={1}>
@@ -1260,9 +1264,9 @@ const HomeScreenInner = () => {
                 return (
                   <View style={{ marginTop: 20, marginBottom: 20 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 12 }}>
-                      <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Upcoming</Text>
+                      <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>Upcoming</Text>
                       <TouchableOpacity onPress={() => navigation.navigate('UpcomingSessionsScreen')}>
-                        <Text style={{ color: '#C26A2D', fontSize: 13, fontWeight: '600' }}>View All →</Text>
+                        <Text style={{ color: '#F25912', fontSize: 13, fontWeight: '600' }}>View All →</Text>
                       </TouchableOpacity>
                     </View>
                     {upcomingItems.slice(0, 3).map((session) => {
@@ -1293,17 +1297,17 @@ const HomeScreenInner = () => {
                             padding: 14,
                             marginBottom: 10,
                             borderWidth: 1,
-                            borderColor: isAccepted ? 'rgba(16,185,129,0.3)' : 'rgba(232,153,81,0.2)',
+                            borderColor: isAccepted ? 'rgba(16,185,129,0.3)' : 'rgba(242,89,18,0.2)',
                           }}
                           activeOpacity={0.8}
                           onPress={() => navigation.navigate('UpcomingSessionsScreen')}
                         >
-                          <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 }}>
+                          <Text style={{ color: 'rgba(33,24,50,0.35)', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 }}>
                             {label}
                           </Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
+                              <Text style={{ color: '#211832', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
                                 {isInvite ? `${session.hostName} invited you` : isOutgoing ? `Invited ${session.guestName}` : `You & ${partnerName}`}
                               </Text>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 }}>
@@ -1319,7 +1323,7 @@ const HomeScreenInner = () => {
                             </View>
                             {isAccepted ? (
                               <View style={{ backgroundColor: AppTheme.primaryColor, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 }}>
-                                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Join</Text>
+                                <Text style={{ color: '#211832', fontSize: 12, fontWeight: '700' }}>Join</Text>
                               </View>
                             ) : (
                               <ChevronRight color={AppTheme.textGrey} size={16} />
@@ -1549,10 +1553,10 @@ const HomeScreenInner = () => {
               {/* ── Workout Invites ── */}
               <View style={styles.notifSection}>
                 <View style={styles.notifSectionHeader}>
-                  <View style={[styles.notifSectionDot, { backgroundColor: '#C26A2D' }]} />
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#F25912' }]} />
                   <Text style={styles.notifSectionTitle}>Workout Invites</Text>
                   {pendingInvites.length > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#C26A2D', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#F25912', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{pendingInvites.length}</Text>
                     </View>
                   )}
@@ -1573,8 +1577,8 @@ const HomeScreenInner = () => {
                         uid={invite.hostUid}
                         name={invite.hostName}
                         fallback={
-                          <View style={{ flex: 1, backgroundColor: 'rgba(194,106,45,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                            <VideoIcon color="#C26A2D" size={18} />
+                          <View style={{ flex: 1, backgroundColor: 'rgba(242,89,18,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                            <VideoIcon color="#F25912" size={18} />
                           </View>
                         }
                       />
@@ -1582,7 +1586,7 @@ const HomeScreenInner = () => {
                         <Text style={styles.notifRowName} numberOfLines={1}>{invite.hostName || 'Friend'}</Text>
                         <Text style={styles.notifRowSub} numberOfLines={1}>{invite.videoTitle || 'Workout invite'}</Text>
                       </View>
-                      <View style={[styles.countBadge, { backgroundColor: '#C26A2D' }]}>
+                      <View style={[styles.countBadge, { backgroundColor: '#F25912' }]}>
                         <Text style={styles.countBadgeText}>View</Text>
                       </View>
                     </TouchableOpacity>
@@ -1593,7 +1597,7 @@ const HomeScreenInner = () => {
                   onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.notifViewAllText, { color: '#C26A2D' }]}>View all invites &gt;</Text>
+                  <Text style={[styles.notifViewAllText, { color: '#F25912' }]}>View all invites &gt;</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1697,10 +1701,10 @@ const HomeScreenInner = () => {
               {/* ── Challenges ── */}
               <View style={styles.notifSection}>
                 <View style={styles.notifSectionHeader}>
-                  <View style={[styles.notifSectionDot, { backgroundColor: '#FF6B00' }]} />
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#F25912' }]} />
                   <Text style={styles.notifSectionTitle}>Challenges</Text>
                   {challengeHistory.length > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#FF6B00', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#F25912', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{challengeHistory.length}</Text>
                     </View>
                   )}
@@ -1721,8 +1725,8 @@ const HomeScreenInner = () => {
                         uid={c.opponentUid}
                         name={c.opponentName}
                         fallback={
-                          <View style={{ flex: 1, backgroundColor: 'rgba(255,107,0,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                            <Swords color="#FF6B00" size={18} />
+                          <View style={{ flex: 1, backgroundColor: 'rgba(242,89,18,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                            <Swords color="#F25912" size={18} />
                           </View>
                         }
                       />
@@ -1734,7 +1738,7 @@ const HomeScreenInner = () => {
                           {c.exerciseName} · {Math.max(1, Math.round(c.durationSeconds / 60))} min · {formatChallengeDate(c.createdAt)}
                         </Text>
                       </View>
-                      <View style={[styles.countBadge, { backgroundColor: c.status === 'completed' ? '#FF6B00' : '#E89951' }]}>
+                      <View style={[styles.countBadge, { backgroundColor: c.status === 'completed' ? '#F25912' : '#F25912' }]}>
                         <Text style={styles.countBadgeText}>{c.status === 'completed' ? 'Done' : 'Played'}</Text>
                       </View>
                     </TouchableOpacity>
@@ -1745,7 +1749,7 @@ const HomeScreenInner = () => {
                   onPress={() => { reopenNotificationModalRef.current = true; setNotificationModalVisible(false); navigation.navigate('UpcomingSessionsScreen'); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.notifViewAllText, { color: '#FF6B00' }]}>View all challenges &gt;</Text>
+                  <Text style={[styles.notifViewAllText, { color: '#F25912' }]}>View all challenges &gt;</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1754,10 +1758,10 @@ const HomeScreenInner = () => {
               {/* ── Move Reminders ── */}
               <View style={styles.notifSection}>
                 <View style={styles.notifSectionHeader}>
-                  <View style={[styles.notifSectionDot, { backgroundColor: '#E89951' }]} />
+                  <View style={[styles.notifSectionDot, { backgroundColor: '#F25912' }]} />
                   <Text style={styles.notifSectionTitle}>Move Reminders</Text>
                   {moveReminder?.enabled && (moveReminder.generatedTimes?.length ?? 0) > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: '#E89951', marginLeft: 8 }]}>
+                    <View style={[styles.countBadge, { backgroundColor: '#F25912', marginLeft: 8 }]}>
                       <Text style={styles.countBadgeText}>{moveReminder.generatedTimes.length}</Text>
                     </View>
                   )}
@@ -1830,12 +1834,12 @@ const HomeScreenInner = () => {
         onRequestClose={() => setShowTiersModal(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#0d1118', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 20, paddingBottom: 36, maxHeight: '88%' }}>
+          <View style={{ backgroundColor: '#EEEEF2', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 20, paddingBottom: 36, maxHeight: '88%' }}>
             {/* Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, paddingHorizontal: 20 }}>
               <View>
-                <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>Gripcuff Memberships</Text>
-                <Text style={{ color: 'rgba(150,180,210,0.55)', fontSize: 12, marginTop: 2 }}>Scroll to compare tiers →</Text>
+                <Text style={{ color: '#211832', fontSize: 20, fontWeight: '800' }}>Gripcuff Memberships</Text>
+                <Text style={{ color: '#7A7C90', fontSize: 12, marginTop: 2 }}>Scroll to compare tiers →</Text>
               </View>
               <TouchableOpacity onPress={() => setShowTiersModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="close-circle" size={28} color="#444" />
@@ -1866,14 +1870,14 @@ const HomeScreenInner = () => {
                   locked: ['Upload videos', 'Client tools', 'Revenue sharing'],
                 },
                 {
-                  name: 'TRAINER', color: '#fb923c', price: 'Paid',
+                  name: 'TRAINER', color: '#F25912', price: 'Paid',
                   desc: 'Build your brand and upload content.',
                   inherited: ['Full video library', 'Live sessions', 'Analytics'],
                   newFeatures: ['Upload custom videos', 'Client management', 'Trainer profile badge', 'Revenue sharing'],
                   locked: ['Featured placement', 'Affiliate commission', 'Brand partnerships'],
                 },
                 {
-                  name: 'INFLUENCER', color: '#c2410c', price: 'Paid',
+                  name: 'INFLUENCER', color: '#F25912', price: 'Paid',
                   desc: 'The ultimate tier for creators.',
                   inherited: ['Upload videos', 'Client tools', 'Revenue sharing'],
                   newFeatures: ['Featured homepage placement', 'Affiliate commission', 'Priority support', 'Brand partnerships', 'Custom profile banner'],
@@ -1882,7 +1886,7 @@ const HomeScreenInner = () => {
               ].map((tier, idx) => (
                 <View key={tier.name} style={{
                   width: 260,
-                  backgroundColor: '#111827',
+                  backgroundColor: '#F8F8FC',
                   borderRadius: 18,
                   borderWidth: 1,
                   borderColor: tier.color + '44',
@@ -1898,7 +1902,7 @@ const HomeScreenInner = () => {
                         <Text style={{ color: tier.color, fontSize: 12, fontWeight: '700' }}>{tier.price}</Text>
                       </View>
                     </View>
-                    <Text style={{ color: 'rgba(200,220,240,0.7)', fontSize: 12, lineHeight: 17 }}>{tier.desc}</Text>
+                    <Text style={{ color: '#7A7C90', fontSize: 12, lineHeight: 17 }}>{tier.desc}</Text>
                   </View>
 
                   {/* Features */}
@@ -1906,11 +1910,11 @@ const HomeScreenInner = () => {
                     {/* Inherited from previous */}
                     {tier.inherited.length > 0 && (
                       <>
-                        <Text style={{ color: 'rgba(150,180,210,0.35)', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' }}>Included from before</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' }}>Included from before</Text>
                         {tier.inherited.map(f => (
                           <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                            <Text style={{ color: 'rgba(150,180,210,0.3)', fontSize: 13 }}>✓</Text>
-                            <Text style={{ color: 'rgba(150,180,210,0.3)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
+                            <Text style={{ color: 'rgba(33,24,50,0.35)', fontSize: 13 }}>✓</Text>
+                            <Text style={{ color: 'rgba(33,24,50,0.45)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
                           </View>
                         ))}
                         <View style={{ height: 1, backgroundColor: tier.color + '22', marginVertical: 8 }} />
@@ -1926,18 +1930,18 @@ const HomeScreenInner = () => {
                         <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: tier.color + '33', alignItems: 'center', justifyContent: 'center' }}>
                           <Text style={{ color: tier.color, fontSize: 10, fontWeight: '800' }}>✓</Text>
                         </View>
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600', flex: 1 }}>{f}</Text>
+                        <Text style={{ color: '#211832', fontSize: 12, fontWeight: '600', flex: 1 }}>{f}</Text>
                       </View>
                     ))}
 
                     {/* Locked in this tier */}
                     {tier.locked.length > 0 && (
                       <>
-                        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 8 }} />
+                        <View style={{ height: 1, backgroundColor: '#D8D8E4', marginVertical: 8 }} />
                         {tier.locked.map(f => (
                           <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                            <Text style={{ color: 'rgba(255,80,80,0.4)', fontSize: 13 }}>✗</Text>
-                            <Text style={{ color: 'rgba(150,180,210,0.25)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
+                            <Text style={{ color: 'rgba(200,60,60,0.5)', fontSize: 13 }}>✗</Text>
+                            <Text style={{ color: 'rgba(33,24,50,0.35)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
                           </View>
                         ))}
                       </>
@@ -1949,14 +1953,14 @@ const HomeScreenInner = () => {
 
             {/* Dot indicators */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, marginBottom: 14 }}>
-              {['#7dd3fc','#1d4ed8','#fb923c','#c2410c'].map((c, i) => (
+              {['#7dd3fc','#1d4ed8','#F25912','#F25912'].map((c, i) => (
                 <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c + '88' }} />
               ))}
             </View>
 
             <TouchableOpacity
               onPress={() => setShowTiersModal(false)}
-              style={{ backgroundColor: '#FF6B00', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginHorizontal: 20 }}
+              style={{ backgroundColor: '#F25912', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginHorizontal: 20 }}
             >
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Got It</Text>
             </TouchableOpacity>
@@ -2007,7 +2011,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#C26A2D',
+    backgroundColor: '#F25912',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 2,
@@ -2063,7 +2067,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderRadius: 12,
     borderBottomWidth: 2,
-    borderBottomColor: '#E89951',
+    borderBottomColor: '#F25912',
   },
   toggleButton: {
     flex: 1,
@@ -2075,7 +2079,7 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: FontSizes.small,
     fontWeight: FontWeights.semibold as any,
-    color: '#888888',
+    color: '#7A7C90',
   },
   toggleTextActive: {
     color: AppTheme.textWhite,
@@ -2119,7 +2123,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2134,7 +2138,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2151,25 +2155,25 @@ const styles = StyleSheet.create({
   },
   compactStatsCard: {
     flexDirection: 'column',
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: '#D8D8E4',
     marginBottom: 24,
     overflow: 'hidden',
   },
 
   // ── Sectioned profile summary card ──
   profileCard: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: '#D8D8E4',
     padding: 18,
     marginBottom: 24,
   },
   sectionLabel: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 15,
     fontWeight: '800' as any,
     marginBottom: 8,
@@ -2187,7 +2191,7 @@ const styles = StyleSheet.create({
   },
   profileDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: '#D8D8E4',
     marginVertical: 16,
   },
   sectionColumns: {
@@ -2200,7 +2204,7 @@ const styles = StyleSheet.create({
   sectionColDivider: {
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: '#D8D8E4',
     marginHorizontal: 14,
   },
   statRow: {
@@ -2215,7 +2219,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statRowText: {
-    color: '#D4E4FA',
+    color: '#211832',
     fontSize: 14,
     fontWeight: '500' as any,
     flex: 1,
@@ -2242,9 +2246,9 @@ const styles = StyleSheet.create({
     fontWeight: '500' as any,
   },
   profileStatPill: {
-    backgroundColor: 'rgba(194,106,45,0.15)',
+    backgroundColor: 'rgba(242,89,18,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(194,106,45,0.3)',
+    borderColor: 'rgba(242,89,18,0.3)',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -2256,12 +2260,12 @@ const styles = StyleSheet.create({
   },
   compactDivider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: '#D8D8E4',
     marginVertical: 10,
   },
   compactHorizontalDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: '#D8D8E4',
     marginHorizontal: 16,
   },
   compactStatValue: {
@@ -2275,7 +2279,7 @@ const styles = StyleSheet.create({
     color: AppTheme.textGrey,
   },
   compactEarnText: {
-    color: '#C26A2D',
+    color: '#F25912',
     fontSize: 9,
     fontWeight: '700' as any,
     marginTop: 2,
@@ -2284,7 +2288,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E89951',
+    backgroundColor: '#F25912',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2317,7 +2321,7 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
   },
   gripCuffCard: {
-    backgroundColor: '#131f2e',
+    backgroundColor: '#F8F8FC',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -2328,13 +2332,13 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   gripCuffTitle: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   gripCuffSubtitle: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 12,
   },
   gripCuffRight: {
@@ -2349,30 +2353,30 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   gripCuffBtn: {
-    backgroundColor: '#D4622A',
+    backgroundColor: '#F25912',
     borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 16,
     marginRight: 8,
   },
   gripCuffBtnText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 13,
     fontWeight: 'bold',
   },
   gripCuffProgressText: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 12,
   },
   gripCuffProgressBarBg: {
     height: 6,
-    backgroundColor: '#1c2e42',
+    backgroundColor: '#F8F8FC',
     borderRadius: 3,
     width: '85%',
   },
   gripCuffProgressBarFill: {
     height: '100%',
-    backgroundColor: '#D4622A',
+    backgroundColor: '#F25912',
     borderRadius: 3,
   },
   exerciseCard: {
@@ -2383,10 +2387,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: '#D8D8E4',
   },
   exerciseIconContainer: {
-    backgroundColor: 'rgba(228, 102, 0, 0.2)',
+    backgroundColor: 'rgba(242,89,18, 0.2)',
     width: 44,
     height: 44,
     justifyContent: 'center',
@@ -2418,7 +2422,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(228, 102, 0, 0.3)',
+    borderColor: 'rgba(242,89,18, 0.3)',
   },
   infoRow: {
     flexDirection: 'row',
@@ -2427,7 +2431,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(228, 102, 0, 0.2)',
+    borderBottomColor: 'rgba(242,89,18, 0.2)',
   },
   infoLabel: {
     fontSize: FontSizes.body,
@@ -2447,10 +2451,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#C26A2D',
+    borderColor: '#F25912',
   },
   joinNowText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -2468,7 +2472,7 @@ const styles = StyleSheet.create({
     paddingTop: SCREEN_PADDING,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: 'rgba(33,24,50,0.1)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -2496,7 +2500,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(33,24,50,0.05)',
   },
   actionableNotificationRow: {
     flexDirection: 'row',
@@ -2506,7 +2510,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.3)',
+    borderColor: 'rgba(242,89,18,0.3)',
   },
   notificationIconBg: {
     width: 40,
@@ -2569,13 +2573,13 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
   },
   notificationRowActive: {
-    borderColor: 'rgba(232,153,81,0.3)',
+    borderColor: 'rgba(242,89,18,0.3)',
   },
   notificationRowFriend: {
     borderColor: 'rgba(46,204,113,0.3)',
   },
   countBadge: {
-    backgroundColor: '#C26A2D',
+    backgroundColor: '#F25912',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -2620,17 +2624,17 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   notifRowName: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 14,
     fontWeight: '600',
   },
   notifRowSub: {
-    color: '#94A3B8',
+    color: '#7A7C90',
     fontSize: 12,
     marginTop: 2,
   },
   notifEmptyText: {
-    color: '#607a94',
+    color: '#7A7C90',
     fontSize: 13,
     paddingVertical: 8,
   },
@@ -2644,7 +2648,7 @@ const styles = StyleSheet.create({
   },
   notifDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#D8D8E4',
     marginHorizontal: 0,
   },
   notifActionBtn: {
@@ -2655,17 +2659,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   notifActionBtnText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 12,
     fontWeight: '700',
   },
   tierCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#F8F8FC',
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(33,24,50,0.08)',
   },
   tierBadge: {
     paddingHorizontal: 10,
@@ -2674,7 +2678,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   tierBadgeText: {
-    color: '#fff',
+    color: '#211832',
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
@@ -2685,13 +2689,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tierDesc: {
-    color: '#94A3B8',
+    color: '#7A7C90',
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 10,
   },
   tierFeatures: {
-    color: '#CBD5E1',
+    color: '#7A7C90',
     fontSize: 12,
     lineHeight: 20,
   },

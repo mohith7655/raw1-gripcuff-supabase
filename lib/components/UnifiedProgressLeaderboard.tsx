@@ -25,10 +25,10 @@ import { StreakData } from '../services/streak.service';
 import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.service';
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
 
-const ACCENT = '#E89951';
-const CARD_BG = '#111d2e';
-const STRIP_BG = '#0a1628';
-const BORDER = 'rgba(232,153,81,0.18)';
+const ACCENT = '#F25912';
+const CARD_BG = '#F8F8FC';
+const STRIP_BG = '#EEEEF2';
+const BORDER = '#D8D8E4';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -97,12 +97,13 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
   dateKey: string;
 }) {
   const rawMinutes = Number(minutes) || 0;
-  // Today is always orange — ensureTodayActivity creates the row on app open,
-  // so the user being here is enough. Past days require actual watch time.
-  const isActive = !isFuture && (isToday || rawMinutes > 0);
-  // Show '0m' for today when no video has been watched yet so the label is
-  // never blank inside an active (orange) circle.
-  const minLabel = isToday && rawMinutes === 0 ? '0m' : formatMinutes(rawMinutes);
+  // A day counts as active if the user opened the app that day (a user_daily_activity
+  // row exists → `active` prop), watched anything, or it's today. App-open days with
+  // no watch time stay filled and show "0m" — they never go blank.
+  const isActive = !isFuture && (isToday || active || rawMinutes > 0);
+  // A past day the app was never opened (no activity row) = a missed day → black dot.
+  const isMissed = !isFuture && !isActive;
+  const minLabel = isActive && rawMinutes <= 0 ? '0m' : formatMinutes(rawMinutes);
 
   const [, mm, dd] = dateKey.split('-');
   const dateLabel = `${parseInt(mm)}/${parseInt(dd)}`;
@@ -125,6 +126,7 @@ function DayDot({ active, isToday, isFuture, label, minutes, dateKey }: {
         style={[
           s.dayDot,
           isFuture && s.dayDotFuture,
+          isMissed && s.dayDotMissed,
           isActive && s.dayDotActive,
         ]}
       >
@@ -268,7 +270,10 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
         }
         const map: Record<string, number> = {};
         for (const r of rows ?? []) {
-          map[r.activity_date as string] = Number(r.watched_minutes || 0);
+          // Normalize to a YYYY-MM-DD key in case activity_date ever carries a time part,
+          // so day lookups (incl. the last column, Sunday) always match.
+          const key = String(r.activity_date).slice(0, 10);
+          map[key] = Number(r.watched_minutes || 0);
         }
         setDbMinutes(map);
       });
@@ -336,7 +341,7 @@ function StreakTab({ data, uid, timezone }: { data: StreakData | null; uid?: str
                 key={dateKey}
                 dateKey={dateKey}
                 label={DAY_LABELS[i]}
-                active={!isFuture && !!weekActivity[dateKey]}
+                active={!isFuture && (dateKey in dbMinutes || !!weekActivity[dateKey])}
                 isToday={dateKey === todayKey}
                 isFuture={isFuture}
                 minutes={minutes}
@@ -454,12 +459,12 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
-        <View style={{ backgroundColor: '#0d1520', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 48 }}>
+        <View style={{ backgroundColor: '#EEEEF2', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 48 }}>
           {/* Header */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>🔥 Challenge {targetName}</Text>
+            <Text style={{ color: '#211832', fontSize: 20, fontWeight: '800' }}>🔥 Challenge {targetName}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={{ color: '#607a94', fontSize: 20, fontWeight: '700' }}>✕</Text>
+              <Text style={{ color: '#7A7C90', fontSize: 20, fontWeight: '700' }}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -467,18 +472,18 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
           <TouchableOpacity
             onPress={handleStartNow}
             disabled={loading}
-            style={{ backgroundColor: loading ? '#7a3a00' : '#FF6B00', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 20 }}
+            style={{ backgroundColor: loading ? '#F25912' : '#F25912', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 20 }}
             activeOpacity={0.85}
           >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
+            <Text style={{ color: '#211832', fontSize: 16, fontWeight: '800' }}>
               {loading ? 'Sending…' : '⚡ Start Now'}
             </Text>
           </TouchableOpacity>
 
-          <Text style={{ color: '#607a94', textAlign: 'center', marginBottom: 20, fontSize: 13 }}>— or schedule —</Text>
+          <Text style={{ color: '#7A7C90', textAlign: 'center', marginBottom: 20, fontSize: 13 }}>— or schedule —</Text>
 
           {/* Date */}
-          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Date</Text>
+          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Date</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
             {dates.map((d, i) => {
               const isSelected = selectedDate.toDateString() === d.toDateString();
@@ -486,16 +491,16 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
                 <TouchableOpacity
                   key={i}
                   onPress={() => setSelectedDate(d)}
-                  style={{ paddingHorizontal: 18, paddingVertical: 10, backgroundColor: isSelected ? '#E89951' : '#131f2e', borderRadius: 22, marginRight: 10, borderWidth: 1, borderColor: isSelected ? '#E89951' : 'rgba(255,255,255,0.06)' }}
+                  style={{ paddingHorizontal: 18, paddingVertical: 10, backgroundColor: isSelected ? '#F25912' : '#F8F8FC', borderRadius: 22, marginRight: 10, borderWidth: 1, borderColor: isSelected ? '#F25912' : 'rgba(255,255,255,0.06)' }}
                 >
-                  <Text style={{ color: isSelected ? '#fff' : '#8899aa', fontWeight: isSelected ? '700' : '500', fontSize: 13 }}>{dateLabel(d, i)}</Text>
+                  <Text style={{ color: isSelected ? '#fff' : '#7A7C90', fontWeight: isSelected ? '700' : '500', fontSize: 13 }}>{dateLabel(d, i)}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
           {/* Time */}
-          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Time</Text>
+          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Time</Text>
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <TimeArrowPicker
               hour={displayHour}
@@ -509,9 +514,9 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
           </View>
 
           {/* Summary */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#131f2e', borderRadius: 10, padding: 12, marginBottom: 20 }}>
-            <Clock color="#E89951" size={14} />
-            <Text style={{ color: '#E89951', fontSize: 14, fontWeight: '600' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F8F8FC', borderRadius: 10, padding: 12, marginBottom: 20 }}>
+            <Clock color="#F25912" size={14} />
+            <Text style={{ color: '#F25912', fontSize: 14, fontWeight: '600' }}>
               {dateLabel(selectedDate, dates.findIndex(d => d.toDateString() === selectedDate.toDateString()))} at {fmtPickerTime}
             </Text>
           </View>
@@ -520,10 +525,10 @@ function ChallengeInviteModal({ visible, targetName, targetUid, currentUserId, o
           <TouchableOpacity
             onPress={handleSendChallenge}
             disabled={loading}
-            style={{ backgroundColor: '#131f2e', borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: loading ? '#7a3a00' : '#FF6B00' }}
+            style={{ backgroundColor: '#F8F8FC', borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: loading ? '#F25912' : '#F25912' }}
             activeOpacity={0.85}
           >
-            <Text style={{ color: loading ? '#7a3a00' : '#FF6B00', fontSize: 15, fontWeight: '700' }}>
+            <Text style={{ color: loading ? '#F25912' : '#F25912', fontSize: 15, fontWeight: '700' }}>
               {loading ? 'Sending…' : '🔥 Send Challenge'}
             </Text>
           </TouchableOpacity>
@@ -595,11 +600,11 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
             {!isMe && period === 'alltime' ? (
               <TouchableOpacity
                 onPress={() => setChallengeTarget(entry)}
-                style={{ backgroundColor: 'rgba(255,107,0,0.12)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)', flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                style={{ backgroundColor: 'rgba(242,89,18,0.12)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(242,89,18,0.3)', flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 12 }}>🔥</Text>
-                <Text style={{ color: '#FF6B00', fontSize: 11, fontWeight: '700' }}>Challenge</Text>
+                <Text style={{ color: '#F25912', fontSize: 11, fontWeight: '700' }}>Challenge</Text>
               </TouchableOpacity>
             ) : (
               <Text style={[s.lbScore, (!entry.score || entry.score === 0) && s.lbScoreZero]}>
@@ -719,15 +724,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   tabBtnActive: {
-    backgroundColor: '#1c2e42',
+    backgroundColor: '#211832',
   },
   tabText: {
-    color: '#4a6480',
+    color: '#7A7C90',
     fontSize: 11,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: '700',
   },
 
@@ -751,21 +756,21 @@ const s = StyleSheet.create({
     lineHeight: 30,
   },
   streakNumber: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 28,
     fontWeight: '800',
     lineHeight: 32,
   },
   streakDayLabel: {
-    color: ACCENT,
+    color: '#211832',
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
   motivationText: {
-    color: '#4a6480',
+    color: ACCENT,
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
     marginTop: 1,
   },
   dotsRow: {
@@ -782,41 +787,45 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#D8D8E4',
+    borderWidth: 0,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayDotActive: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
-    borderWidth: 2,
+    backgroundColor: '#7A7C90',
+    borderColor: '#7A7C90',
+    borderWidth: 0,
+  },
+  dayDotMissed: {
+    backgroundColor: '#211832',
+    borderWidth: 0,
   },
   dayDotFuture: {
-    opacity: 0.25,
-    borderColor: 'rgba(255,255,255,0.05)',
+    opacity: 0.5,
+    borderColor: 'transparent',
   },
   dayDotMin: {
     fontSize: 9,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.75)',
+    color: '#7A7C90',
   },
   dayDotMinActive: {
     color: '#fff',
   },
   dayDate: {
-    color: 'rgba(255,255,255,0.35)',
+    color: '#7A7C90',
     fontSize: 9,
     fontWeight: '500',
   },
   dayLabel: {
-    color: '#3a5470',
+    color: '#7A7C90',
     fontSize: 9,
     fontWeight: '600',
   },
   dayLabelActive: {
-    color: ACCENT,
+    color: '#211832',
   },
   weekNavRow: {
     flexDirection: 'row',
@@ -827,7 +836,7 @@ const s = StyleSheet.create({
   },
   weekLabel: {
     flex: 1,
-    color: '#8aaccc',
+    color: '#7A7C90',
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
@@ -841,22 +850,22 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
   weekNavArrowDisabled: {
-    color: '#2a3d54',
+    color: '#F8F8FC',
   },
   streakRight: {
     alignItems: 'center',
     paddingLeft: 8,
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.08)',
+    borderLeftColor: 'rgba(33,24,50,0.08)',
   },
   bestLabel: {
-    color: '#3a5470',
+    color: '#7A7C90',
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
   bestValue: {
-    color: '#8aaccc',
+    color: '#211832',
     fontSize: 16,
     fontWeight: '800',
   },
@@ -867,7 +876,7 @@ const s = StyleSheet.create({
   },
   challengesDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#D8D8E4',
     marginBottom: 9,
   },
   challengesRow: {
@@ -882,7 +891,7 @@ const s = StyleSheet.create({
     gap: 5,
   },
   challengesLabel: {
-    color: '#8aaccc',
+    color: '#7A7C90',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -892,14 +901,14 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   challengesCountSuffix: {
-    color: '#4a6480',
+    color: '#7A7C90',
     fontSize: 10,
     fontWeight: '500',
   },
   challengesBarTrack: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: '#D8D8E4',
     overflow: 'hidden',
   },
   challengesBarFill: {
@@ -919,14 +928,9 @@ const s = StyleSheet.create({
     gap: 10,
   },
   lbRowMe: {
-    backgroundColor: 'rgba(255,122,0,0.10)',
-    borderWidth: 1.5,
-    borderColor: '#FF7A00',
-    shadowColor: '#FF7A00',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: 'rgba(242,89,18,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(242,89,18,0.15)',
   },
   lbAvatarWrap: {
     width: 32,
@@ -940,11 +944,11 @@ const s = StyleSheet.create({
     height: 32,
     borderRadius: 7,
     borderWidth: 1,
-    borderColor: 'rgba(232,153,81,0.4)',
+    borderColor: 'rgba(242,89,18,0.4)',
   },
   lbAvatarMe: {
     borderWidth: 2,
-    borderColor: '#FF7A00',
+    borderColor: '#F25912',
   },
   lbMedal: {
     position: 'absolute',
@@ -964,16 +968,16 @@ const s = StyleSheet.create({
     gap: 6,
   },
   lbName: {
-    color: '#ffffff',
+    color: '#211832',
     fontSize: 14,
     fontWeight: '600',
     flexShrink: 1,
   },
   lbNameMe: {
-    color: '#FF7A00',
+    color: '#F25912',
   },
   lbYouBadge: {
-    backgroundColor: '#FF7A00',
+    backgroundColor: '#F25912',
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -985,15 +989,15 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
   },
   lbScore: {
-    color: ACCENT,
+    color: '#211832',
     fontSize: 13,
     fontWeight: '700',
   },
   lbScoreZero: {
-    color: '#445566',
+    color: '#D8D8E4',
   },
   emptyText: {
-    color: '#4a6480',
+    color: '#7A7C90',
     fontSize: 13,
     textAlign: 'center',
     paddingVertical: 16,
