@@ -114,7 +114,7 @@ export function buildLocationsMapHtml(points: MapPoint[], apiKey: string): strin
       RINGS.forEach(function (ring) {
         new google.maps.Circle({
           map: map, center: center, radius: ring.r,
-          fillColor: '#F25912', fillOpacity: ring.o,
+          fillColor: '#7A7C90', fillOpacity: ring.o,
           strokeOpacity: 0, clickable: false,
           zIndex: Math.round(ring.o * 100)
         });

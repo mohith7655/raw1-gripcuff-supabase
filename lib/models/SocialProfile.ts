@@ -92,6 +92,12 @@ export interface SocialProfile {
     /** AI-curated intro blurb shown under Locations. Maps to profiles.ai_summary */
     aiSummary?: string | null;
 
+    /** Projects the user is currently working on. Maps to profiles.projects_working_on */
+    projectsWorkingOn?: string | null;
+
+    /** Things the user needs help with. Maps to profiles.need_help_with */
+    needHelpWith?: string | null;
+
     /**
      * Per-section visibility. `true` = the owner marked that section private
      * (hidden from other viewers). Missing/false = public. Maps to

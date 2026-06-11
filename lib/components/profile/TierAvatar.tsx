@@ -53,11 +53,11 @@ export function TierAvatar({
     const defaultFallback = (
         <View style={{
             width: size, height: size, borderRadius: r,
-            backgroundColor: 'rgba(242,89,18,0.16)',
+            backgroundColor: 'rgba(76,78,120,0.14)',
             alignItems: 'center', justifyContent: 'center',
         }}>
             {initialsOf(name) ? (
-                <Text style={{ color: '#F25912', fontWeight: '800', fontSize: Math.round(size * 0.4) }}>
+                <Text style={{ color: '#4C4E78', fontWeight: '800', fontSize: Math.round(size * 0.4) }}>
                     {initialsOf(name)}
                 </Text>
             ) : (

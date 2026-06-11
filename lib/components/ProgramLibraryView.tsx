@@ -379,16 +379,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     durationBadge: {
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        position: 'absolute',
+        bottom: 6,
+        right: 6,
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
         paddingHorizontal: 6,
         paddingVertical: 3,
         borderRadius: 4,
-        alignSelf: 'flex-end',
     },
     durationText: {
         fontSize: 11,
-        color: AppTheme.textWhite,
-        fontWeight: FontWeights.semibold as any,
+        color: '#fff',
+        fontWeight: '700' as any,
     },
     videoInfo: {
         marginTop: 6,

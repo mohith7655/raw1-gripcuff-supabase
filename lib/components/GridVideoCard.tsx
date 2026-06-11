@@ -58,7 +58,7 @@ export const GridVideoCard = ({
                     <Raw1Logo fontSize={8} />
                 </View>
                 <View style={styles.playIconContainer}>
-                    <Play color="#211832" size={16} fill="#211832" />
+                    <Play color="#fff" size={16} fill="#fff" />
                 </View>
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{video.duration}</Text>
@@ -91,7 +91,9 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.7)',
         justifyContent: 'center',
         alignItems: 'center',
     },

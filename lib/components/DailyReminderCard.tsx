@@ -8,7 +8,8 @@ import { reminderWatcherService } from '../services/reminderWatcher.service';
 
 const ACCENT = '#F25912';
 const CARD_BG = '#F8F8FC';
-const BORDER = 'rgba(242,89,18,0.18)';
+const BORDER_ON  = 'rgba(34,197,94,0.18)';
+const BORDER_OFF = 'rgba(239,68,68,0.18)';
 
 interface Props {
     userId?: string;
@@ -57,10 +58,10 @@ export function DailyReminderCard({ userId }: Props) {
             : `Paused · ${firstTime}–${lastTime}`;
 
     return (
-        <View style={s.card}>
+        <View style={[s.card, { borderColor: enabled ? BORDER_ON : BORDER_OFF }]}>
                 <View style={s.left}>
                     <View style={[s.iconWrap, enabled && s.iconWrapOn]}>
-                        <Bell color={enabled ? ACCENT : '#7A7C90'} size={18} />
+                        <Bell color={enabled ? '#22c55e' : '#7A7C90'} size={18} />
                     </View>
                     <View style={s.textBlock}>
                         <Text style={s.cardTitle}>Stay Active All Day</Text>
@@ -78,7 +79,7 @@ export function DailyReminderCard({ userId }: Props) {
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         activeOpacity={0.75}
                     >
-                        <Zap color="#f59e0b" size={13} />
+                        <Zap color="#4C4E78" size={13} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={s.editBtn}
@@ -86,7 +87,7 @@ export function DailyReminderCard({ userId }: Props) {
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         activeOpacity={0.75}
                     >
-                        <Edit2 color={ACCENT} size={15} />
+                        <Edit2 color="#4C4E78" size={15} />
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -110,7 +111,6 @@ const s = StyleSheet.create({
         backgroundColor: CARD_BG,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: BORDER,
         marginHorizontal: 4,
         marginBottom: 12,
         paddingHorizontal: 14,
@@ -137,8 +137,8 @@ const s = StyleSheet.create({
         flexShrink: 0,
     },
     iconWrapOn: {
-        backgroundColor: 'rgba(242,89,18,0.12)',
-        borderColor: 'rgba(242,89,18,0.35)',
+        backgroundColor: 'rgba(34,197,94,0.12)',
+        borderColor: 'rgba(34,197,94,0.35)',
     },
     textBlock: { flex: 1 },
     cardTitle: {
@@ -162,9 +162,9 @@ const s = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 7,
-        backgroundColor: 'rgba(245,158,11,0.1)',
+        backgroundColor: 'rgba(76,78,120,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(245,158,11,0.25)',
+        borderColor: 'rgba(76,78,120,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -172,9 +172,9 @@ const s = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: 'rgba(242,89,18,0.1)',
+        backgroundColor: 'rgba(76,78,120,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(242,89,18,0.25)',
+        borderColor: 'rgba(76,78,120,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -189,8 +189,8 @@ const s = StyleSheet.create({
         paddingHorizontal: 3,
     },
     togglePillOn: {
-        backgroundColor: '#F25912',
-        borderColor: '#F25912',
+        backgroundColor: '#22c55e',
+        borderColor: '#22c55e',
     },
     toggleThumb: {
         width: 20,

@@ -35,6 +35,7 @@ import {
   Target,
   Star,
   Swords,
+  Play,
 } from 'lucide-react-native';
 import { Raw1Logo } from '../raw1_logo';
 import { AccessBadge } from '../components/AccessBadge';
@@ -871,6 +872,12 @@ const HomeScreenInner = () => {
                       <Text style={{ color: '#7A7C90', fontSize: 13, fontWeight: '500' }}>@{profile.username}</Text>
                     )}
                   </View>
+                  <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                    <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                    </View>
+                  </TouchableOpacity>
                   {/* Badge pills only */}
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     {earnedBadges.length === 0 ? (
@@ -970,7 +977,16 @@ const HomeScreenInner = () => {
               {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
                 const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
                 const allProgs = getAllPrograms();
-                const COLORS = ['#F25912', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
+                const COLORS = [
+                  ['#8B7355', '#6B5B45'],
+                  ['#4A5568', '#2D3748'],
+                  ['#2A2A3E', '#1A1A2E'],
+                  ['#0D2137', '#1A3A5C'],
+                  ['#6B4226', '#4A2E1A'],
+                  ['#7A8A8A', '#5A6A6A'],
+                  ['#3B1F0B', '#5C3319'],
+                  ['#C4B8A8', '#A09488'],
+                ];
                 const favItems = [
                   ...allVids.filter(v => favExerciseIds.has(v.id)).map(v => ({ id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnail: (v as any).thumbnail })),
                   ...allProgs
@@ -994,7 +1010,7 @@ const HomeScreenInner = () => {
                             const localVideo = allVids.find(v => v.id === item.videoId);
                             const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
                             const title = localVideo?.title ?? program?.title ?? item.videoId;
-                            const color = COLORS[idx % COLORS.length];
+                            const gradPair = COLORS[idx % COLORS.length];
                             return (
                               <TouchableOpacity
                                 key={`rw-${item.videoId}`}
@@ -1007,17 +1023,21 @@ const HomeScreenInner = () => {
                                   videoType: item.videoType,
                                 })}
                               >
-                                <View style={{ width: '100%', height: 80, backgroundColor: color, justifyContent: 'center', alignItems: 'center' }}>
+                                <LinearGradient
+                                  colors={[gradPair[0], gradPair[1]]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
+                                >
                                   <View style={{ position: 'absolute', top: 6, left: 6 }}>
                                     <Raw1Logo fontSize={8} />
                                   </View>
-                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
+                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Play color="#fff" size={12} fill="#fff" />
                                   </View>
-                                </View>
+                                </LinearGradient>
                                 <View style={{ padding: 8 }}>
                                   <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
-                                  <Text style={{ color: '#F25912', fontSize: 10, marginTop: 3 }}>Continue →</Text>
                                 </View>
                               </TouchableOpacity>
                             );
@@ -1049,18 +1069,22 @@ const HomeScreenInner = () => {
                               {item.thumbnail ? (
                                 <Image source={{ uri: item.thumbnail }} style={{ width: '100%', height: 80 }} resizeMode="cover" />
                               ) : (
-                                <View style={{ width: '100%', height: 80, backgroundColor: COLORS[idx % COLORS.length], justifyContent: 'center', alignItems: 'center' }}>
+                                <LinearGradient
+                                  colors={[COLORS[idx % COLORS.length][0], COLORS[idx % COLORS.length][1]]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
+                                >
                                   <View style={{ position: 'absolute', top: 6, left: 6 }}>
                                     <Raw1Logo fontSize={8} />
                                   </View>
-                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text style={{ color: '#fff', fontSize: 12, marginLeft: 2 }}>▶</Text>
+                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Play color="#fff" size={12} fill="#fff" />
                                   </View>
-                                </View>
+                                </LinearGradient>
                               )}
                               <View style={{ padding: 8 }}>
                                 <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
-                                <Text style={{ color: '#F25912', fontSize: 10, marginTop: 3 }}>♥ Favorite</Text>
                               </View>
                             </TouchableOpacity>
                           ))}
@@ -1266,7 +1290,7 @@ const HomeScreenInner = () => {
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 12 }}>
                       <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>Upcoming</Text>
                       <TouchableOpacity onPress={() => navigation.navigate('UpcomingSessionsScreen')}>
-                        <Text style={{ color: '#F25912', fontSize: 13, fontWeight: '600' }}>View All →</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 13, fontWeight: '600' }}>View All →</Text>
                       </TouchableOpacity>
                     </View>
                     {upcomingItems.slice(0, 3).map((session) => {
@@ -1366,7 +1390,7 @@ const HomeScreenInner = () => {
                       activeOpacity={0.7}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
-                      <Text style={[styles.compactEarnText, { color: CoachingTheme.primaryColor }]}>+ Earn credits</Text>
+                      <Text style={styles.compactEarnText}>+ Earn credits</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -2279,9 +2303,9 @@ const styles = StyleSheet.create({
     color: AppTheme.textGrey,
   },
   compactEarnText: {
-    color: '#F25912',
+    color: '#7A7C90',
     fontSize: 9,
-    fontWeight: '700' as any,
+    fontWeight: '600' as any,
     marginTop: 2,
   },
   rBadge: {

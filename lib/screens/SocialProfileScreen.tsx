@@ -588,7 +588,7 @@ export function SocialProfileScreen() {
           )}
 
           {/* ── ABOUT ME ─────────────────────────────────────────────────────── */}
-          {showSection('about') && bio.length > 0 && (
+          {showSection('about') && (bio.length > 0 || social?.projectsWorkingOn || social?.needHelpWith) && (
             <ProfileCard>
               <View style={s.cardHeaderRow}>
                 <View style={s.aboutTitleGroup}>
@@ -600,9 +600,24 @@ export function SocialProfileScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-
               </View>
-              <Text style={[s.bodyText, s.bodyTextOrange]}>{bio}</Text>
+              {bio.length > 0 && <Text style={[s.bodyText, s.bodyTextOrange]}>{bio}</Text>}
+              {(social?.projectsWorkingOn || social?.needHelpWith) && (
+                <View style={{ marginTop: bio.length > 0 ? 12 : 0, gap: 10 }}>
+                  {social?.projectsWorkingOn ? (
+                    <View style={{ gap: 2 }}>
+                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>🚀 Working on</Text>
+                      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{social.projectsWorkingOn}</Text>
+                    </View>
+                  ) : null}
+                  {social?.needHelpWith ? (
+                    <View style={{ gap: 2 }}>
+                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>🤝 Need help with</Text>
+                      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{social.needHelpWith}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
             </ProfileCard>
           )}
 

@@ -53,7 +53,7 @@ export function TierAvatarRing({
                     const isActive  = level <= userLevel;
 
                     const size = isCurrent ? currentSize : dotSize;
-                    const bg   = isCurrent ? DARK_ORANGE : isPast ? LIGHT_ORANGE : INACTIVE;
+                    const bg   = isCurrent ? 'transparent' : isPast ? LIGHT_ORANGE : INACTIVE;
 
                     return (
                         <View
@@ -65,14 +65,15 @@ export function TierAvatarRing({
                                 backgroundColor: isActive ? bg : INACTIVE,
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                ...(isCurrent ? { borderWidth: 1.5, borderColor: DARK_ORANGE } : {}),
                             }}
                         >
                             {isCurrent && userLevel > 0 && (
                                 <Text style={{
-                                    color: '#fff',
-                                    fontSize: currentFont,
+                                    color: DARK_ORANGE,
+                                    fontSize: currentFont + 2,
                                     fontWeight: '800',
-                                    lineHeight: currentFont + 2,
+                                    lineHeight: currentFont + 4,
                                 }}>
                                     {userLevel}
                                 </Text>

@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 10,
   },
-  segOptPublic: { backgroundColor: '#F25912' },
+  segOptPublic: { backgroundColor: '#4C4E78' },
   segOptPrivate: { backgroundColor: '#D8D8E4' },
   segText: { fontSize: 11, fontWeight: '700' },
 });

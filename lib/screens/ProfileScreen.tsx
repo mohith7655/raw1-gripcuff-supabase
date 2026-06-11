@@ -675,9 +675,13 @@ export const ProfileScreen = () => {
                   <Text style={s.name} numberOfLines={1}>{firstName}</Text>
                   <Text style={s.handle} numberOfLines={1}>@{username}</Text>
                 </View>
-                <Text style={s.email} numberOfLines={1}>{email}</Text>
-
-                {/* Weekly · Avg · Lifetime — compact, under the email */}
+                <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                  <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                  </View>
+                </TouchableOpacity>
+                {/* Weekly · Avg · Lifetime — compact, under the name */}
                 <View style={s.heroTimeRow}>
                   <View style={s.heroTimeItem}>
                     <Text style={s.heroTimeValue}>{fmtMins(weeklyMins)}</Text>
@@ -817,15 +821,15 @@ export const ProfileScreen = () => {
                 activeOpacity={0.8}
               >
                 {galleryUploading ? (
-                  <ActivityIndicator color={C.orange} />
+                  <ActivityIndicator color={C.muted} />
                 ) : (
-                  <Camera size={22} color={C.orange} strokeWidth={2} />
+                  <Camera size={22} color={C.muted} strokeWidth={2} />
                 )}
               </TouchableOpacity>
             </View>
           </ProfileCard>
 
-          {/* ── 6. ABOUT ME — short bio (max 100 chars) ──────────────────────── */}
+          {/* ── 6. ABOUT ME — short bio + projects + need help ───────────────── */}
           <ProfileCard isPrivate={isSectionPrivate('about')} onToggleVisibility={() => toggleSection('about')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>About me</Text>
@@ -836,6 +840,22 @@ export const ProfileScreen = () => {
             <Text style={s.bodyText}>
               {bio.length > 100 ? `${bio.slice(0, 100).trimEnd()}…` : bio}
             </Text>
+            {(social?.projectsWorkingOn || social?.needHelpWith) && (
+              <View style={{ marginTop: 12, gap: 10 }}>
+                {social?.projectsWorkingOn ? (
+                  <View style={s.aboutQRow}>
+                    <Text style={s.aboutQLabel}>🚀 Working on</Text>
+                    <Text style={s.aboutQValue}>{social.projectsWorkingOn}</Text>
+                  </View>
+                ) : null}
+                {social?.needHelpWith ? (
+                  <View style={s.aboutQRow}>
+                    <Text style={s.aboutQLabel}>🤝 Need help with</Text>
+                    <Text style={s.aboutQValue}>{social.needHelpWith}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
           </ProfileCard>
 
           {/* ── 7. TOP HOBBIES — ranked 1–5 dots ─────────────────────────────── */}
@@ -931,7 +951,7 @@ export const ProfileScreen = () => {
                 <ActivityIndicator color="#211832" size="small" />
               ) : (
                 <>
-                  <Sparkles size={15} color="#211832" />
+                  <Sparkles size={15} color="#fff" />
                   <Text style={s.aiBtnText}>
                     {social?.aiSummary ? 'Regenerate with AI' : 'Generate with AI'}
                   </Text>
@@ -1280,6 +1300,11 @@ export const ProfileScreen = () => {
 
 
 
+          {/* Account email */}
+          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+            <Text style={{ color: C.muted, fontSize: 12, fontWeight: '500' }}>{email}</Text>
+          </View>
+
           {/* Bottom spacer */}
           <View style={{ height: 24 }} />
         </ScrollView>
@@ -1592,6 +1617,20 @@ const s = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  aboutQRow: {
+    gap: 2,
+  },
+  aboutQLabel: {
+    color: C.text,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  aboutQValue: {
+    color: C.muted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   locItemLabel: {
     color: '#F25912',
     fontSize: 12,
@@ -1644,9 +1683,9 @@ const s = StyleSheet.create({
   galleryAdd: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.accentSoft,
+    backgroundColor: 'rgba(33,24,50,0.04)',
     borderWidth: 1,
-    borderColor: C.accentBorder,
+    borderColor: 'rgba(33,24,50,0.15)',
     borderStyle: 'dashed',
   },
 
@@ -1691,7 +1730,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginTop: 12,
-    backgroundColor: '#F25912',
+    backgroundColor: '#211832',
     borderRadius: 12,
     paddingVertical: 11,
   },
@@ -1767,12 +1806,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: C.accentBorder,
-    backgroundColor: C.accentSoft,
+    borderColor: 'rgba(76,78,120,0.25)',
+    backgroundColor: 'rgba(76,78,120,0.08)',
     gap: 4,
   },
   hobbyCapsuleText: {
-    color: C.orange,
+    color: '#4C4E78',
     fontSize: 11,
     fontWeight: '600',
   },

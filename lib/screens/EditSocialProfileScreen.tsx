@@ -307,6 +307,8 @@ export function EditSocialProfileScreen() {
     const [uploadPct, setUploadPct] = useState(0);
 
     const [bio, setBio] = useState('');
+    const [projectsWorkingOn, setProjectsWorkingOn] = useState('');
+    const [needHelpWith, setNeedHelpWith] = useState('');
     const [selectedWhatIDoPresets, setSelectedWhatIDoPresets] = useState<Set<string>>(new Set());
     const [customWhatIDoText, setCustomWhatIDoText] = useState('');
     const [privacyLevel, setPrivacyLevel] = useState<'public' | 'private' | 'friends_only'>('public');
@@ -330,6 +332,8 @@ export function EditSocialProfileScreen() {
                 console.log('[EditProfile] loaded sp:', JSON.stringify(sp));
                 if (!sp) return;
                 setBio(sp.bio ?? '');
+                setProjectsWorkingOn(sp.projectsWorkingOn ?? '');
+                setNeedHelpWith(sp.needHelpWith ?? '');
                 
                 const whatIDoStr = sp.whatIDo || '';
                 const whatIDoParts = whatIDoStr.split(',').map(p => p.trim()).filter(Boolean);
@@ -445,6 +449,8 @@ export function EditSocialProfileScreen() {
                 helpingBeginners,
                 openToMentor,
                 openToTrainAgeGroups: [...ageGroups],
+                projectsWorkingOn: projectsWorkingOn.trim() || null,
+                needHelpWith: needHelpWith.trim() || null,
             });
             await fetchProfile(supabaseUserId);
             navigation.navigate('ProfileScreen');
@@ -689,6 +695,30 @@ export function EditSocialProfileScreen() {
                                 maxLength={160}
                             />
                             <Text style={s.charCount}>{bio.length}/160</Text>
+                        </Card>
+                        <Card>
+                            <FieldLabel text="🚀 Projects working on" />
+                            <TextInput
+                                style={[s.input, s.inputMulti]}
+                                value={projectsWorkingOn}
+                                onChangeText={setProjectsWorkingOn}
+                                placeholder="What are you building or working on?"
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={200}
+                            />
+                            <FieldLabel text="🤝 Need help with" />
+                            <TextInput
+                                style={[s.input, s.inputMulti]}
+                                value={needHelpWith}
+                                onChangeText={setNeedHelpWith}
+                                placeholder="What would you like help with?"
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={200}
+                            />
                         </Card>
                     </>
                 )}

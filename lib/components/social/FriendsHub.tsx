@@ -16,7 +16,7 @@ import { RelationshipStatus } from '../../models/Friend';
 import { User } from '../../models/User';
 import { supabase } from '../../core/config/supabase';
 
-const ORANGE = '#F25912';
+const ORANGE = '#4C4E78';
 const MUTED = '#7A7C90';
 const GREEN = '#22C55E';
 const DANGER = '#EF4444';
@@ -176,7 +176,7 @@ export function FriendsHub() {
                                 {busy ? <ActivityIndicator color={ORANGE} size="small" />
                                     : status === 'friends' ? <View style={s.pill}><UserCheck size={13} color={GREEN} /><Text style={[s.pillText, { color: GREEN }]}>Friends</Text></View>
                                     : status === 'pending_sent' ? <View style={s.pill}><Clock size={12} color={ORANGE} /><Text style={[s.pillText, { color: ORANGE }]}>Sent</Text></View>
-                                    : <TouchableOpacity style={s.addBtn} onPress={() => handleAdd(item.uid)} activeOpacity={0.8}><UserPlus size={13} color="#211832" /><Text style={s.addBtnText}>Add</Text></TouchableOpacity>}
+                                    : <TouchableOpacity style={s.addBtn} onPress={() => handleAdd(item.uid)} activeOpacity={0.8}><UserPlus size={13} color="#fff" /><Text style={s.addBtnText}>Add</Text></TouchableOpacity>}
                             </View>
                         );
                     })}
@@ -202,7 +202,7 @@ export function FriendsHub() {
                                 {busy ? <ActivityIndicator color={ORANGE} size="small" /> : (
                                     <View style={s.rowActions}>
                                         <TouchableOpacity style={s.addBtn} onPress={() => handleAccept(req.id, req.fromUid, req.toUid)} activeOpacity={0.8}>
-                                            <UserCheck size={13} color="#211832" /><Text style={s.addBtnText}>Accept</Text>
+                                            <UserCheck size={13} color="#fff" /><Text style={s.addBtnText}>Accept</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={s.declineBtn} onPress={() => handleDecline(req.id)} activeOpacity={0.8}>
                                             <UserX size={15} color={DANGER} />
@@ -238,7 +238,7 @@ export function FriendsHub() {
                                     >
                                         {busy ? <ActivityIndicator color="#211832" size="small" />
                                             : sent ? <><Clock size={12} color={ORANGE} /><Text style={[s.suggBtnText, { color: ORANGE }]}>Sent</Text></>
-                                            : <><UserPlus size={13} color="#211832" /><Text style={s.suggBtnText}>Add</Text></>}
+                                            : <><UserPlus size={13} color="#fff" /><Text style={s.suggBtnText}>Add</Text></>}
                                     </TouchableOpacity>
                                 </View>
                             );
@@ -310,7 +310,7 @@ const s = StyleSheet.create({
     rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     addBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
-        backgroundColor: '#F25912', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8,
+        backgroundColor: '#211832', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8,
     },
     addBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     declineBtn: {
@@ -319,7 +319,7 @@ const s = StyleSheet.create({
     },
     msgBtn: {
         width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'rgba(242,89,18,0.1)', borderWidth: 1, borderColor: 'rgba(242,89,18,0.25)',
+        backgroundColor: 'rgba(76,78,120,0.1)', borderWidth: 1, borderColor: 'rgba(76,78,120,0.2)',
     },
     pill: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -336,9 +336,9 @@ const s = StyleSheet.create({
     suggSub: { color: MUTED, fontSize: 11, maxWidth: 110, textAlign: 'center' },
     suggBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
-        backgroundColor: '#F25912', borderRadius: 18, paddingVertical: 7, paddingHorizontal: 16, marginTop: 8, alignSelf: 'stretch',
+        backgroundColor: '#211832', borderRadius: 18, paddingVertical: 7, paddingHorizontal: 16, marginTop: 8, alignSelf: 'stretch',
     },
-    suggBtnSent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(242,89,18,0.4)' },
+    suggBtnSent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)' },
     suggBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     empty: { alignItems: 'center', gap: 8, paddingVertical: 24 },
     emptyText: { color: MUTED, fontSize: 13 },

@@ -31,7 +31,7 @@ import { VideoModal } from '../components/feed/VideoModal';
 import { Post } from '../services/feed.service';
 import type { Club } from './ClubsScreen';
 
-const ORANGE = '#F25912';
+const ORANGE = '#4C4E78';
 const TEXT_SECONDARY = '#7A7C90';
 
 type SocialTab = 'feed' | 'friends' | 'chat';
@@ -147,13 +147,13 @@ export function FeedScreen() {
         activeOpacity={0.85}
       >
         <View style={styles.challengeIcon}>
-          <Zap color="#F25912" size={18} />
+          <Zap color={ORANGE} size={18} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.challengeTitle}>Enter Challenge Lobby</Text>
           <Text style={styles.challengeSub}>Compete live with anyone in the lobby</Text>
         </View>
-        <ChevronRight color="#F25912" size={18} />
+        <ChevronRight color={ORANGE} size={18} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -295,7 +295,7 @@ export function FeedScreen() {
               onPress={() => setActiveTab(key)}
               activeOpacity={0.85}
             >
-              <Icon size={15} color={active ? ORANGE : TEXT_SECONDARY} />
+              <Icon size={15} color={active ? '#fff' : TEXT_SECONDARY} />
               <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text>
               {badge > 0 && (
                 <View style={styles.segBadge}>
@@ -398,17 +398,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(33,24,50,0.06)',
   },
   segmentActive: {
-    backgroundColor: 'rgba(242,89,18,0.12)',
-    borderColor: 'rgba(242,89,18,0.45)',
+    backgroundColor: '#211832',
+    borderColor: '#211832',
   },
   segmentText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '700' },
-  segmentTextActive: { color: ORANGE },
+  segmentTextActive: { color: '#fff' },
   segBadge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 5,
-    backgroundColor: '#F25912',
+    backgroundColor: ORANGE,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
   seeAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, padding: 4 },
-  seeAll: { color: ORANGE, fontSize: 13, fontWeight: '700' },
+  seeAll: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
 
   dailyHead: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10 },
 
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8FC',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(242,89,18,0.3)',
+    borderColor: 'rgba(33,24,50,0.1)',
     marginHorizontal: 16,
     marginTop: 12,
     paddingHorizontal: 14,
@@ -447,9 +447,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(242,89,18,0.1)',
+    backgroundColor: 'rgba(76,78,120,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(242,89,18,0.25)',
+    borderColor: 'rgba(76,78,120,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8FC',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(242,89,18,0.3)',
+    borderColor: 'rgba(33,24,50,0.1)',
     marginHorizontal: 16,
     marginTop: 10,
     paddingHorizontal: 14,
@@ -475,9 +475,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(242,89,18,0.1)',
+    backgroundColor: 'rgba(76,78,120,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(242,89,18,0.25)',
+    borderColor: 'rgba(76,78,120,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
 
   errorText: { color: '#ef4444', fontSize: 14, textAlign: 'center', marginBottom: 12 },
   retryBtn: {
-    backgroundColor: '#F25912',
+    backgroundColor: ORANGE,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 8,

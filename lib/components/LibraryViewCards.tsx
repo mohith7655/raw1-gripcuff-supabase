@@ -103,8 +103,8 @@ export function MultiColVideoCard({
                 end={{ x: 1, y: 1 }}
                 style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 9, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
             >
-                <View style={{ width: playSize, height: playSize, borderRadius: playSize / 2, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="#211832" size={iconSize} fill="#211832" />
+                <View style={{ width: playSize, height: playSize, borderRadius: playSize / 2, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+                    <Play color="#fff" size={iconSize} fill="#fff" />
                 </View>
                 <View style={{ position: 'absolute', top: 4, left: 4 }}>
                     <Raw1Logo fontSize={7} />
@@ -160,8 +160,8 @@ export function ListVideoCard({
                 end={{ x: 1, y: 1 }}
                 style={{ width: 78, height: 54, borderRadius: 8, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 }}
             >
-                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="#211832" size={10} fill="#211832" />
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+                    <Play color="#fff" size={10} fill="#fff" />
                 </View>
                 <View style={{ position: 'absolute', top: 3, left: 3 }}>
                     <Raw1Logo fontSize={6} />
