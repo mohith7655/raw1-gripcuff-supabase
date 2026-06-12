@@ -28,7 +28,7 @@ interface Props {
     /** Render just the picture — no tier ring dots and no corner number badge. */
     bare?: boolean;
     /** Show a black gradient + first name overlaid at the bottom of the picture.
-     *  Defaults to true for size >= 50. Pass false to explicitly disable. */
+     *  Defaults to true for size >= 40. Pass false to explicitly disable. */
     showNameOverlay?: boolean;
 }
 
@@ -71,7 +71,7 @@ export function TierAvatar({
     );
 
     const firstName = (name ?? '').trim().split(/\s+/)[0];
-    const showOverlay = showNameOverlay !== false && size >= 50 && !!firstName;
+    const showOverlay = showNameOverlay !== false && size >= 40 && !!firstName;
 
     const avatar = showOverlay ? (
         <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden' }}>
