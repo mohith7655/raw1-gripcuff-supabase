@@ -133,14 +133,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       log(`supabase: onAuthStateChange`, { event: _event, userId: nextSession?.user?.id ?? null });
       // TOKEN_REFRESHED fires every ~1 hour — only sync the session token, no profile reload.
       if (_event === 'TOKEN_REFRESHED') {
         setSession(nextSession);
         return;
       }
-      await applySession(nextSession, _event);
+      // Defer out of the callback: supabase-js holds the web auth lock while this
+      // callback runs, and applySession's profile query needs that same lock to
+      // attach the access token. Awaiting it here deadlocks every Supabase call
+      // after a browser reload (infinite loading spinner).
+      setTimeout(() => { applySession(nextSession, _event); }, 0);
     });
 
     return () => { subscription.unsubscribe(); clearTimeout(bootTimeout); };
