@@ -28,7 +28,7 @@ interface Props {
     /** Render just the picture — no tier ring dots and no corner number badge. */
     bare?: boolean;
     /** Show a black gradient + first name overlaid at the bottom of the picture.
-     *  Defaults to true for size >= 40. Pass false to explicitly disable. */
+     *  Defaults to true for size >= 40. Pass true/false to force on/off. */
     showNameOverlay?: boolean;
 }
 
@@ -71,7 +71,7 @@ export function TierAvatar({
     );
 
     const firstName = (name ?? '').trim().split(/\s+/)[0];
-    const showOverlay = showNameOverlay !== false && size >= 40 && !!firstName;
+    const showOverlay = (showNameOverlay === true || (showNameOverlay !== false && size >= 40)) && !!firstName;
 
     const avatar = showOverlay ? (
         <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden' }}>
@@ -87,7 +87,7 @@ export function TierAvatar({
                     paddingBottom: Math.round(size * 0.06),
                 }}
             >
-                <Text style={{ color: '#fff', fontSize: Math.round(size * 0.13), fontWeight: '800', letterSpacing: 0.4 }}>
+                <Text numberOfLines={1} style={{ color: '#fff', fontSize: Math.max(8, Math.round(size * 0.13)), fontWeight: '800', letterSpacing: 0.4 }}>
                     {firstName}
                 </Text>
             </LinearGradient>

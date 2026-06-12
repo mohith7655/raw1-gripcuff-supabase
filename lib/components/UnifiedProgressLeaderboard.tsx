@@ -580,7 +580,7 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
         return (
           <View key={entry.uid} style={[s.lbRow, isMe && s.lbRowMe]}>
             <View style={s.lbAvatarWrap}>
-              <TierAvatar uri={entry.photoURL} size={32} uid={entry.uid} name={entry.displayName} radius={7} />
+              <TierAvatar uri={entry.photoURL} size={32} uid={entry.uid} name={entry.fullName || entry.displayName} radius={7} showNameOverlay />
               <Text style={s.lbMedal}>{MEDALS[index] ?? ''}</Text>
             </View>
             <View style={s.lbNameRow}>
