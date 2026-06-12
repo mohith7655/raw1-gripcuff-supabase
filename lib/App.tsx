@@ -298,7 +298,8 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
     >
       <Animated.View style={{
         flexDirection: 'row',
-        alignSelf: 'stretch',
+        alignSelf: 'center',
+        width: '72%',
         backgroundColor: barBg,
         borderRadius: 30,
         paddingHorizontal: 8,
