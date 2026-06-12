@@ -709,31 +709,34 @@ const s = StyleSheet.create({
   },
 
   // Tab strip
+  // Matches the Library Exercises/Workouts capsule toggle
   tabStrip: {
     flexDirection: 'row',
-    backgroundColor: STRIP_BG,
-    borderRadius: 10,
-    padding: 3,
+    alignSelf: 'center',
+    backgroundColor: '#EEEEF2',
+    borderRadius: 100,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#D8D8E4',
     marginBottom: 14,
-    gap: 3,
   },
   tabBtn: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    borderRadius: 100,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tabBtnActive: {
     backgroundColor: '#211832',
   },
   tabText: {
     color: '#7A7C90',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   tabTextActive: {
     color: '#fff',
-    fontWeight: '700',
   },
 
   // Streak tab

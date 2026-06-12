@@ -59,6 +59,13 @@ export function WebSafeAvatar({
                 <img
                     src={uri}
                     crossOrigin="anonymous"
+                    ref={(img: HTMLImageElement | null) => {
+                        /* Cached images can finish before React attaches onLoad
+                           (e.g. remount on tab switch) — sync state from the DOM. */
+                        if (!img || !img.complete) return;
+                        if (img.naturalWidth > 0) setLoaded(true);
+                        else setError(true);
+                    }}
                     style={{
                         width: size,
                         height: size,
