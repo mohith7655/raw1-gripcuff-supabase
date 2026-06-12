@@ -329,15 +329,6 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
               activeOpacity={0.7}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}
             >
-              {/* RAW1 brand mark above the icon — reserved slot keeps every tab's icon aligned */}
-              <View style={{ height: 14, justifyContent: 'flex-end' }}>
-                {isFocused && (
-                  <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '900', letterSpacing: -0.5 }}>
-                    <Text style={{ color: '#7A7C90' }}>RAW</Text>
-                    <Text style={{ color: '#F25912' }}>1</Text>
-                  </Text>
-                )}
-              </View>
               {options.tabBarIcon?.({ color, size: 22, focused: isFocused })}
               <Text style={{
                 color,
