@@ -4,6 +4,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 export type LeaderboardEntry = {
     uid: string;
     displayName: string;
+    fullName?: string | null;
     photoURL: string;
     score: number;
     currentStreak: number;
@@ -53,6 +54,7 @@ async function fetchLeaderboardEntries(
         return {
             uid:              row.id,
             displayName:      row.username || row.full_name || 'User',
+            fullName:         row.full_name || null,
             photoURL:         row.avatar_url || null,
             score:            Number(row.watched_seconds ?? 0),
             currentStreak:    Number(row.current_streak ?? 0),

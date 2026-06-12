@@ -102,7 +102,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
                 uri={item.photoURL || null}
                 size={44}
                 uid={item.uid}
-                name={item.displayName}
+                name={item.fullName || item.displayName}
                 radius={10}
             />
 
