@@ -70,6 +70,7 @@ import { LocationRow } from '../components/profile/LocationRow';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Fire glow badge wrapper (streak only) ─────────────────────────────────────
 function FireGlowBadge({ color, children }: { color: string; children: React.ReactNode }) {
@@ -651,7 +652,24 @@ export const ProfileScreen = () => {
                         <ActivityIndicator color={C.orange} size="large" />
                       </View>
                     ) : (
-                      <Avatar uri={profile?.profileImageUrl} size={100} />
+                      <View style={{ width: 100, height: 100, borderRadius: 22, overflow: 'hidden' }}>
+                        <Avatar uri={profile?.profileImageUrl} size={100} />
+                        <LinearGradient
+                          colors={['transparent', 'rgba(0,0,0,0.72)']}
+                          style={{
+                            position: 'absolute',
+                            bottom: 0, left: 0, right: 0,
+                            height: 40,
+                            justifyContent: 'flex-end',
+                            alignItems: 'center',
+                            paddingBottom: 5,
+                          }}
+                        >
+                          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.4 }}>
+                            {firstName}
+                          </Text>
+                        </LinearGradient>
+                      </View>
                     )}
                   </View>
                 </TierAvatarRing>
