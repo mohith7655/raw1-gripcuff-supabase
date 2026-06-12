@@ -255,31 +255,76 @@ function AuthStack({ initialPublicProfile }: { initialPublicProfile?: PublicProf
   );
 }
 
+// Bottom tab bar — filled pill style matching the streak/weekly/challenge toggle
+function PillTabBar({ state, descriptors, navigation, appMode }: any) {
+  const activeFill = appMode === 'coaching' ? CoachingTheme.tabActive : '#211832';
+  const inactiveColor = appMode === 'coaching' ? CoachingTheme.textMuted : AppTheme.textGrey;
+  const bg = appMode === 'coaching' ? CoachingTheme.background : AppTheme.background;
+  const borderColor = appMode === 'coaching' ? CoachingTheme.border : AppTheme.cardColor;
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      backgroundColor: bg,
+      borderTopWidth: 1,
+      borderTopColor: borderColor,
+      paddingHorizontal: 8,
+      paddingTop: 4,
+      paddingBottom: 8,
+      height: 60,
+    }}>
+      {state.routes.map((route: any, index: number) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+        const label = options.tabBarLabel as string;
+        const iconColor = isFocused ? '#fff' : inactiveColor;
+
+        const onPress = () => {
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+        };
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            onPress={onPress}
+            activeOpacity={0.75}
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 10,
+              backgroundColor: isFocused ? activeFill : 'transparent',
+              paddingVertical: 6,
+              marginHorizontal: 3,
+            }}
+          >
+            {options.tabBarIcon?.({ color: iconColor, size: 20, focused: isFocused })}
+            <Text style={{
+              color: iconColor,
+              fontSize: 11,
+              fontWeight: isFocused ? '700' : '600',
+              marginTop: 2,
+            }}>
+              {label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 // Home Tab Navigator
 function HomeTabs() {
   const { appMode } = useUser();
   const { unreadInvitesCount } = useWorkoutSession();
-  const theme = appMode === 'coaching' ? CoachingTheme : AppTheme;
 
   return (
     <Tab.Navigator
       backBehavior="history"
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: theme.background,
-          borderTopColor: appMode === 'coaching' ? CoachingTheme.border : AppTheme.cardColor,
-          paddingBottom: 8,
-          height: 60,
-        },
-        tabBarActiveTintColor: theme.primaryColor,
-        tabBarInactiveTintColor: appMode === 'coaching' ? CoachingTheme.textMuted : AppTheme.textGrey,
-        headerShown: false,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
-      }}
+      tabBar={(props) => <PillTabBar {...props} appMode={appMode} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tab.Screen
         name="HomeTab"
