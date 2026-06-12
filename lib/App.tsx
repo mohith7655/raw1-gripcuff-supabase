@@ -345,7 +345,7 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
                 fontWeight: isFocused ? '700' : '500',
                 letterSpacing: 0.1,
               }}>
-                {label}
+                {isFocused ? 'RAW1' : label}
               </Text>
             </TouchableOpacity>
           );
