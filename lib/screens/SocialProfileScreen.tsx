@@ -58,6 +58,7 @@ import { RelationshipStatus } from '../models/Friend';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Design tokens (light theme, dark text — matches ProfileScreen) ─────────────
 const C = {
@@ -485,7 +486,24 @@ export function SocialProfileScreen() {
                   avatarSize={90}
                   avatarRadius={20}
                 >
-                  <Avatar uri={user?.profileImageUrl} size={90} />
+                  <View style={{ width: 90, height: 90, borderRadius: 20, overflow: 'hidden' }}>
+                    <Avatar uri={user?.profileImageUrl} size={90} />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.72)']}
+                      style={{
+                        position: 'absolute',
+                        bottom: 0, left: 0, right: 0,
+                        height: 38,
+                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                        paddingBottom: 5,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.4 }}>
+                        {displayName.split(' ')[0]}
+                      </Text>
+                    </LinearGradient>
+                  </View>
                 </TierAvatarRing>
               </View>
 
