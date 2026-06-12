@@ -65,7 +65,7 @@ export function TierAvatarRing({
                                 backgroundColor: isActive ? bg : INACTIVE,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                ...(isCurrent ? { borderWidth: 1.5, borderColor: DARK_ORANGE } : {}),
+                                ...(isCurrent ? {} : {}),
                             }}
                         >
                             {isCurrent && userLevel > 0 && (
