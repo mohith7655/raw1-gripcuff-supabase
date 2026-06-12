@@ -705,8 +705,8 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                                                     <Check color="#211832" size={12} />
                                                                 </View>
                                                             )}
-                                                            <View style={{ backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-end' }}>
-                                                                <Text style={{ fontSize: 11, color: '#fff', fontWeight: '600' }}>{fmtDur(video.duration)}</Text>
+                                                            <View style={{ paddingHorizontal: 6, paddingVertical: 3, alignSelf: 'flex-end' }}>
+                                                                <Text style={{ fontSize: 11, color: '#D8D8E4', fontWeight: '600' }}>{fmtDur(video.duration)}</Text>
                                                             </View>
                                                         </LinearGradient>
                                                         <Text style={{ fontSize: 12, color: '#211832', fontWeight: '500', marginTop: 6 }} numberOfLines={2}>{video.title}</Text>

@@ -36,7 +36,6 @@ import { GridVideoCard } from '../components/GridVideoCard';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
 
-import { useFloatingToggle, FloatingTabToggle } from '../components/FloatingTabToggle';
 import { Raw1Logo } from '../raw1_logo';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -197,7 +196,20 @@ export const LibraryScreen = () => {
   const [showRecommended, setShowRecommended] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('large');
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { translateY: floatTranslateY, onScroll: onFloatScroll } = useFloatingToggle();
+  // Floating Exercises/Workouts toggle — appears bottom-right once the top
+  // toggle is scrolled away AND scrolling has paused; hidden while scrolling.
+  const [floatToggleVisible, setFloatToggleVisible] = useState(false);
+  const floatScrollY = useRef(0);
+  const floatPauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onFloatScroll = (e: any) => {
+    floatScrollY.current = e?.nativeEvent?.contentOffset?.y ?? 0;
+    setFloatToggleVisible(false);
+    if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current);
+    floatPauseTimer.current = setTimeout(() => {
+      if (floatScrollY.current > 120) setFloatToggleVisible(true);
+    }, 350);
+  };
+  useEffect(() => () => { if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current); }, []);
   const tabBar = useTabBarVisibility();
   // Reveal the bottom bar whenever this tab regains focus.
   useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
@@ -267,7 +279,7 @@ export const LibraryScreen = () => {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
         contentContainerStyle={{ paddingBottom: 100 }}
-        onScroll={(e) => { onFloatScroll(); tabBar?.onScroll(e); }}
+        onScroll={(e) => { onFloatScroll(e); tabBar?.onScroll(e); }}
         scrollEventThrottle={16}
       >
       {/* Header — Search · RAW1 (centered) · Settings */}
@@ -375,10 +387,10 @@ export const LibraryScreen = () => {
                         <Text style={{ color: '#211832', fontSize: 20, marginLeft: 3 }}>▶</Text>
                       </View>
                       <View style={{
-                        position: 'absolute', bottom: 8, right: 8, backgroundColor: '#000',
-                        borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4,
+                        position: 'absolute', bottom: 8, right: 8,
+                        paddingHorizontal: 8, paddingVertical: 4,
                       }}>
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{video.duration}</Text>
+                        <Text style={{ color: '#D8D8E4', fontSize: 12, fontWeight: '700' }}>{video.duration}</Text>
                       </View>
                       <View style={{ position: 'absolute', top: 6, left: 6 }}>
                         <Raw1Logo fontSize={12} transparent />
@@ -423,6 +435,47 @@ export const LibraryScreen = () => {
         viewMode={viewMode}
       />
       </ScrollView>
+
+      {/* Floating Exercises/Workouts toggle — centered above the nav bar */}
+      {floatToggleVisible && (
+        <View style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 112,
+          alignItems: 'center',
+          zIndex: 90,
+        }} pointerEvents="box-none">
+        <View style={{
+          flexDirection: 'row',
+          backgroundColor: '#EEEEF2',
+          borderRadius: 100,
+          padding: 2,
+          borderWidth: 1,
+          borderColor: '#D8D8E4',
+          shadowColor: '#211832',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.14,
+          shadowRadius: 10,
+          elevation: 6,
+        }}>
+          <TouchableOpacity
+            onPress={() => setSubTab('all')}
+            activeOpacity={0.8}
+            style={{ paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, backgroundColor: subTab === 'all' ? '#211832' : 'transparent' }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'all' ? '#fff' : '#7A7C90' }}>Exercises</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSubTab('workouts')}
+            activeOpacity={0.8}
+            style={{ paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, backgroundColor: subTab === 'workouts' ? '#211832' : 'transparent' }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'workouts' ? '#fff' : '#7A7C90' }}>Workouts</Text>
+          </TouchableOpacity>
+        </View>
+        </View>
+      )}
 
       {/* Customize Modal */}
       {showCustomizeModal && (
@@ -1539,13 +1592,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.55)',
     paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 5,
   },
   durationText: {
-    color: '#fff',
+    color: '#D8D8E4',
     fontSize: 11,
     fontWeight: '700' as any,
     letterSpacing: 0.3,

@@ -110,8 +110,8 @@ export function MultiColVideoCard({
                 <View style={{ position: 'absolute', top: 4, left: 4 }}>
                     <Raw1Logo fontSize={10} transparent />
                 </View>
-                <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
-                    <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
+                <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
+                    <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
             </LinearGradient>
 
@@ -170,8 +170,8 @@ export function ListVideoCard({
                 <View style={{ position: 'absolute', top: 3, left: 3 }}>
                     <Raw1Logo fontSize={9} transparent />
                 </View>
-                <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
-                    <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
+                <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
+                    <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
             </LinearGradient>
 

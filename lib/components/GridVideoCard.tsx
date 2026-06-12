@@ -99,14 +99,13 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 6,
         right: 6,
-        backgroundColor: 'rgba(0,0,0,0.7)',
         paddingHorizontal: 5,
         paddingVertical: 2,
-        borderRadius: 4,
     },
     durationText: {
-        color: '#fff',
+        color: '#D8D8E4',
         fontSize: 10,
+        fontWeight: '700',
     },
     infoContainer: {
         paddingHorizontal: 4,

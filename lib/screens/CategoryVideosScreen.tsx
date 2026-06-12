@@ -12,6 +12,9 @@ import { ArrowLeft, BookOpen, Lock } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { SCREEN_PADDING } from '../constants/theme';
+import { useFloatingToggle, FloatingTabToggle } from '../components/FloatingTabToggle';
+import { useLibrary } from '../providers/LibraryContext';
+import { SubTab } from '../models/Video';
 
 type DummyVideo = {
     id: string;
@@ -124,6 +127,15 @@ export const CategoryVideosScreen = () => {
         ? [{ id: `${categoryKey}_intro`, title: 'Introduction', duration: '5:00' }, ...baseVideos]
         : baseVideos;
 
+    // Floating Exercises/Workouts toggle (bottom right) — program-detail views
+    // come from the Workouts subtab, plain category grids from Exercises.
+    const { setSubTab } = useLibrary();
+    const { translateY: floatTranslateY, onScroll: onFloatScroll } = useFloatingToggle();
+    const handleFloatTabChange = (tab: SubTab) => {
+        setSubTab(tab);
+        navigation.navigate('HomeTabs', { screen: 'LibraryTab' });
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
@@ -149,6 +161,8 @@ export const CategoryVideosScreen = () => {
                 keyExtractor={(item, index) => item.id ?? index.toString()}
                 columnWrapperStyle={{ paddingHorizontal: 20, gap: 12, marginBottom: 12 }}
                 contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
+                onScroll={onFloatScroll}
+                scrollEventThrottle={16}
                 renderItem={({ item, index }) => {
                     const isIntro = item.id.endsWith('_intro');
                     if (isIntro) {
@@ -250,6 +264,12 @@ export const CategoryVideosScreen = () => {
                     );
                 }}
             />
+
+            <FloatingTabToggle
+                activeTab={coachName ? 'workouts' : 'all'}
+                onTabChange={handleFloatTabChange}
+                translateY={floatTranslateY}
+            />
         </SafeAreaView>
     );
 };
@@ -313,14 +333,13 @@ const introStyles = StyleSheet.create({
         position: 'absolute',
         bottom: 6,
         right: 6,
-        backgroundColor: 'rgba(0,0,0,0.7)',
         paddingHorizontal: 5,
         paddingVertical: 2,
-        borderRadius: 4,
     },
     durationText: {
-        color: '#fff',
+        color: '#D8D8E4',
         fontSize: 10,
+        fontWeight: '700',
     },
     label: {
         color: '#F25912',

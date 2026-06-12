@@ -243,7 +243,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
 
     const handleFloatTabChange = (tab: SubTab) => {
         setSubTab(tab);
-        navigation.goBack();
+        navigation.navigate('HomeTabs', { screen: 'LibraryTab' });
     };
 
     return (
@@ -382,14 +382,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 6,
         right: 6,
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
         paddingHorizontal: 6,
         paddingVertical: 3,
-        borderRadius: 4,
     },
     durationText: {
         fontSize: 11,
-        color: '#fff',
+        color: '#D8D8E4',
         fontWeight: '700' as any,
     },
     videoInfo: {
