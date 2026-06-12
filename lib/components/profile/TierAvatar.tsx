@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { WebSafeAvatar } from '../WebSafeAvatar';
 import { TierAvatarRing } from './TierAvatarRing';
 import { useTier } from '../../providers/TierContext';
@@ -26,6 +27,9 @@ interface Props {
     disableProfileLink?: boolean;
     /** Render just the picture — no tier ring dots and no corner number badge. */
     bare?: boolean;
+    /** Show a black gradient + first name overlaid at the bottom of the picture.
+     *  Defaults to true for size >= 50. Pass false to explicitly disable. */
+    showNameOverlay?: boolean;
 }
 
 function initialsOf(name?: string | null): string {
@@ -41,7 +45,7 @@ function initialsOf(name?: string | null): string {
  * on the segments the user has activated (via accessType).
  */
 export function TierAvatar({
-    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink, bare,
+    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink, bare, showNameOverlay,
 }: Props) {
     const navigation = useNavigation<any>();
     const r = radius ?? Math.round(size * 0.22);
@@ -66,7 +70,29 @@ export function TierAvatar({
         </View>
     );
 
-    const avatar = (
+    const firstName = (name ?? '').trim().split(/\s+/)[0];
+    const showOverlay = showNameOverlay !== false && size >= 50 && !!firstName;
+
+    const avatar = showOverlay ? (
+        <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden' }}>
+            <WebSafeAvatar uri={uri} size={size} borderRadius={r} fallback={fallback ?? defaultFallback} />
+            <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.72)']}
+                style={{
+                    position: 'absolute',
+                    bottom: 0, left: 0, right: 0,
+                    height: Math.round(size * 0.42),
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    paddingBottom: Math.round(size * 0.06),
+                }}
+            >
+                <Text style={{ color: '#fff', fontSize: Math.round(size * 0.13), fontWeight: '800', letterSpacing: 0.4 }}>
+                    {firstName}
+                </Text>
+            </LinearGradient>
+        </View>
+    ) : (
         <WebSafeAvatar
             uri={uri}
             size={size}
