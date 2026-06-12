@@ -41,6 +41,8 @@ import { Raw1Logo } from '../raw1_logo';
 import { AccessBadge } from '../components/AccessBadge';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
+import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
+import { formatDifficulty } from '../core/difficulty';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { AppTheme, CoachingTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -179,21 +181,7 @@ function RecommendationSection({
               <Text style={{ fontSize: 34 }}>{item.categoryEmoji}</Text>
               {/* RAW1 logo watermark */}
               <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                <Raw1Logo fontSize={8} />
-              </View>
-              {/* difficulty badge */}
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  right: 6,
-                  backgroundColor: 'rgba(0,0,0,0.55)',
-                  borderRadius: 6,
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>{item.level.toUpperCase()}</Text>
+                <Raw1Logo fontSize={12} transparent />
               </View>
               {/* video count badge */}
               <View
@@ -217,6 +205,11 @@ function RecommendationSection({
               <Text numberOfLines={2} style={{ color: '#211832', fontSize: 12, fontWeight: '700', lineHeight: 16 }}>
                 {item.title}
               </Text>
+              {!!formatDifficulty(item.level) && (
+                <Text numberOfLines={1} style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 3 }}>
+                  {formatDifficulty(item.level)}
+                </Text>
+              )}
               <Text numberOfLines={1} style={{ color: '#211832', fontSize: 10, marginTop: 4 }}>
                 {item.reason}
               </Text>
@@ -243,6 +236,7 @@ function formatChallengeDate(iso: string): string {
 
 const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
+  const tabBar = useTabBarVisibility();
   const { supabaseUserId, email, logout, user: authUser } = useAuth();
   const { profile, loading: userLoading, appMode, setAppMode } = useUser();
   const { accessType } = useAccess();
@@ -624,6 +618,7 @@ const HomeScreenInner = () => {
 
   // ── ONE useFocusEffect — fires when tab is focused ───────────────────────
   useFocusEffect(useCallback(() => {
+    tabBar?.show(); // reveal the bottom bar whenever this tab regains focus
     if (!supabaseUserId) return;
     doRefresh(supabaseUserId);
     getUserRank(supabaseUserId).then(setGlobalRank).catch(() => {});
@@ -753,6 +748,8 @@ const HomeScreenInner = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={tabBar?.onScroll}
+        scrollEventThrottle={16}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -1010,6 +1007,7 @@ const HomeScreenInner = () => {
                             const localVideo = allVids.find(v => v.id === item.videoId);
                             const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
                             const title = localVideo?.title ?? program?.title ?? item.videoId;
+                            const difficulty = (localVideo as any)?.difficulty ?? (program as any)?.level;
                             const gradPair = COLORS[idx % COLORS.length];
                             return (
                               <TouchableOpacity
@@ -1030,14 +1028,17 @@ const HomeScreenInner = () => {
                                   style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
                                 >
                                   <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                                    <Raw1Logo fontSize={8} />
+                                    <Raw1Logo fontSize={12} transparent />
                                   </View>
-                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Play color="#fff" size={12} fill="#fff" />
+                                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
                                   </View>
                                 </LinearGradient>
                                 <View style={{ padding: 8 }}>
                                   <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
+                                  {!!formatDifficulty(difficulty) && (
+                                    <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 3 }}>{formatDifficulty(difficulty)}</Text>
+                                  )}
                                 </View>
                               </TouchableOpacity>
                             );
@@ -1076,15 +1077,18 @@ const HomeScreenInner = () => {
                                   style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
                                 >
                                   <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                                    <Raw1Logo fontSize={8} />
+                                    <Raw1Logo fontSize={12} transparent />
                                   </View>
-                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Play color="#fff" size={12} fill="#fff" />
+                                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
                                   </View>
                                 </LinearGradient>
                               )}
                               <View style={{ padding: 8 }}>
                                 <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
+                                {!!formatDifficulty(item.difficulty) && (
+                                  <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 3 }}>{formatDifficulty(item.difficulty)}</Text>
+                                )}
                               </View>
                             </TouchableOpacity>
                           ))}

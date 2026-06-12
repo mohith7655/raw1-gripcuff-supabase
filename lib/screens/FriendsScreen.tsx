@@ -13,7 +13,6 @@ import {
     Animated,
     FlatList,
     Image,
-    Linking,
     Platform,
     RefreshControl,
     ScrollView,
@@ -28,7 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     ArrowLeft,
     Search, UserPlus, UserCheck, UserX, Clock,
-    MessageCircle, Dumbbell, Contact, ChevronRight,
+    MessageCircle, Dumbbell, ChevronRight,
     Flame, Users,
 } from 'lucide-react-native';
 import { useFriend } from '../providers/FriendContext';
@@ -44,17 +43,17 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 
 const C = {
     bg:          '#EEEEF2',
-    bgCard:      '#EEEEF2',
-    bgInput:     'rgba(255,255,255,0.05)',
-    accent:      '#F25912',
-    accentSoft:  'rgba(242,89,18,0.12)',
-    accentBorder:'rgba(242,89,18,0.22)',
+    bgCard:      '#FFFFFF',
+    bgInput:     '#FFFFFF',
+    accent:      '#4C4E78',
+    accentSoft:  'rgba(76,78,120,0.08)',
+    accentBorder:'rgba(76,78,120,0.18)',
     green:       '#22C55E',
     greenSoft:   'rgba(34,197,94,0.1)',
-    text:        '#FFFFFF',
+    text:        '#211832',
     textMuted:   '#7A7C90',
-    textDim:     '#D8D8E4',
-    border:      'rgba(255,255,255,0.07)',
+    textDim:     '#B8B9CC',
+    border:      'rgba(33,24,50,0.08)',
     danger:      '#EF4444',
     dangerSoft:  'rgba(239,68,68,0.1)',
 };
@@ -168,14 +167,6 @@ function FriendsTab() {
         }
     };
 
-    const handleInvite = async () => {
-        const msg = "Hey, I'm on Raw1 — great fitness app! Join me: https://apps.apple.com";
-        try {
-            const url = `sms:?body=${encodeURIComponent(msg)}`;
-            Platform.OS === 'web' ? window.open(url, '_blank') : await Linking.openURL(url);
-        } catch { Alert.alert('Error', 'Could not open SMS app.'); }
-    };
-
     if (loading) return <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />;
 
     return (
@@ -200,12 +191,6 @@ function FriendsTab() {
                             autoCapitalize="none"
                         />
                     </View>
-
-                    {/* Invite contacts */}
-                    <TouchableOpacity style={s.inviteBtn} onPress={handleInvite} activeOpacity={0.8}>
-                        <Contact size={18} color={C.accent} />
-                        <Text style={s.inviteBtnText}>Invite Friends from Contacts</Text>
-                    </TouchableOpacity>
 
                     {friends.length > 0 && (
                         <Text style={s.listCount}>
@@ -270,7 +255,7 @@ function FriendRow({ user, onProfile, onMessage, onRemove }: {
             </View>
             <View style={s.rowActions}>
                 <TouchableOpacity style={s.actionMsg} onPress={onMessage} activeOpacity={0.75}>
-                    <MessageCircle size={16} color={C.text} />
+                    <MessageCircle size={16} color={C.accent} />
                 </TouchableOpacity>
                 <TouchableOpacity style={s.actionDanger} onPress={onRemove} activeOpacity={0.75}>
                     <UserX size={16} color={C.danger} />
@@ -734,7 +719,7 @@ const s = StyleSheet.create({
         borderBottomColor: 'transparent',
     },
     tabActive: {
-        borderBottomColor: '#F25912',
+        borderBottomColor: '#4C4E78',
     },
     tabText: {
         fontSize: 14,
@@ -754,7 +739,7 @@ const s = StyleSheet.create({
         alignItems: 'center',
     },
     tabBadgeText: {
-        color: '#211832',
+        color: '#FFFFFF',
         fontSize: 10,
         fontWeight: '800',
     },
@@ -790,7 +775,7 @@ const s = StyleSheet.create({
         marginTop: 4,
     },
     metaChip: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(33,24,50,0.06)',
         borderRadius: 8,
         paddingHorizontal: 6,
         paddingVertical: 2,
@@ -912,7 +897,7 @@ const s = StyleSheet.create({
         backgroundColor: C.accent, borderRadius: 8,
         paddingVertical: 6, paddingHorizontal: 12,
     },
-    btnAddText: { color: '#211832', fontSize: 12, fontWeight: '700' },
+    btnAddText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
 
     btnAccept: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -963,7 +948,7 @@ const s = StyleSheet.create({
     },
     suggestionWhat: {
         fontSize: 11,
-        color: C.accent,
+        color: C.textMuted,
         fontWeight: '600',
         marginTop: 2,
     },
@@ -991,7 +976,7 @@ const s = StyleSheet.create({
         backgroundColor: C.accent,
         borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12,
     },
-    btnConnectText: { color: '#211832', fontSize: 12, fontWeight: '700' },
+    btnConnectText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
 
     // Empty states
     empty: {

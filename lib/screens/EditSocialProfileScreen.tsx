@@ -341,7 +341,8 @@ export function EditSocialProfileScreen() {
                 const whatIDoCustoms: string[] = [];
                 for (const p of whatIDoParts) {
                     if (WHAT_I_DO_PRESETS.includes(p)) {
-                        whatIDoPresetsSet.add(p);
+                        // Single-select: keep only the first matching preset.
+                        if (whatIDoPresetsSet.size === 0) whatIDoPresetsSet.add(p);
                     } else {
                         whatIDoCustoms.push(p);
                     }
@@ -380,11 +381,8 @@ export function EditSocialProfileScreen() {
     }, [supabaseUserId, loaded]);
 
     const toggleWhatIDoPreset = useCallback((preset: string) => {
-        setSelectedWhatIDoPresets(prev => {
-            const next = new Set(prev);
-            next.has(preset) ? next.delete(preset) : next.add(preset);
-            return next;
-        });
+        // Single-select: only one profession/activity may be chosen at a time.
+        setSelectedWhatIDoPresets(prev => (prev.has(preset) ? new Set() : new Set([preset])));
     }, []);
 
     const toggleMeetPreset = useCallback((preset: string) => {

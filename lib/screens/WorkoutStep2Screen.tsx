@@ -4,6 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useWorkout } from '../providers/WorkoutContext';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 
 const EQUIPMENT = [
   { name: 'Bodyweight only', id: 'bodyweight' },
@@ -123,7 +124,7 @@ export const WorkoutStep2Screen = () => {
                 onPress={() => setLocalDifficulty(difficulty)}
               >
                 <Text style={[styles.optionText, selectedDifficulty === difficulty && styles.optionTextSelected]}>
-                  {difficulty}
+                  {formatDifficulty(difficulty)}
                 </Text>
               </TouchableOpacity>
             ))}

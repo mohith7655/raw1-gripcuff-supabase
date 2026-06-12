@@ -4,12 +4,14 @@ import { View, Text, StyleSheet } from 'react-native';
 interface Props {
     fontSize?: number;
     centerAlign?: boolean;
+    /** Drop the white background box (used for thumbnail watermarks). */
+    transparent?: boolean;
 }
 
-export const Raw1Logo = ({ fontSize = 28, centerAlign = false }: Props) => {
+export const Raw1Logo = ({ fontSize = 28, centerAlign = false, transparent = false }: Props) => {
     return (
-        <View style={[styles.container, centerAlign ? styles.center : styles.start]}>
-            <Text style={[styles.raw, { fontSize }]}>RAW</Text>
+        <View style={[styles.container, centerAlign ? styles.center : styles.start, transparent && styles.transparent]}>
+            <Text style={[styles.raw, { fontSize }, transparent && { color: '#FFFFFF' }]}>RAW</Text>
             <Text style={[styles.one, { fontSize }]}>1</Text>
         </View>
     );
@@ -29,6 +31,11 @@ const styles = StyleSheet.create({
     },
     start: {
         justifyContent: 'flex-start',
+    },
+    transparent: {
+        backgroundColor: 'transparent',
+        paddingHorizontal: 0,
+        paddingVertical: 0,
     },
     raw: {
         fontWeight: '900',

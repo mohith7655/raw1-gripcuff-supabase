@@ -17,6 +17,7 @@ import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { useLibrary } from '../providers/LibraryContext';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { AppTheme } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 import { SCREEN_PADDING } from '../constants/theme';
 import { getAllPrograms, PreRecordedProgram } from '../data/preRecordedPrograms';
 
@@ -54,7 +55,7 @@ function WorkoutCard({
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={onPress}>
             <View style={[styles.thumbnail, { backgroundColor: bgColor }]}>
                 <View style={styles.playIconContainer}>
-                    <Play color="#211832" size={16} fill="#211832" />
+                    <Play color="rgba(255,255,255,0.12)" size={30} fill="rgba(255,255,255,0.12)" />
                 </View>
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{program.videos.length} videos</Text>
@@ -75,8 +76,8 @@ function WorkoutCard({
                         </Animated.View>
                     </TouchableOpacity>
                 </View>
-                <Text style={{ color: '#7A7C90', fontSize: 10, marginTop: 2 }}>
-                    {program.level}
+                <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600', marginTop: 2 }}>
+                    {formatDifficulty(program.level)}
                 </Text>
             </View>
         </TouchableOpacity>
@@ -412,10 +413,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     playIconContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
     },

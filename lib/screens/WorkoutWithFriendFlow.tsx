@@ -21,6 +21,7 @@ import { ArrowLeft, UserPlus, Calendar, Clock, PlayCircle, Check, CircleUserRoun
 import { TimeArrowPicker } from '../components/TimeArrowPicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 import { useFriend } from '../providers/FriendContext';
 import { useLibrary } from '../providers/LibraryContext';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
@@ -253,7 +254,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
     const summaryProgram = selectedProgram?.title ?? (selectedVideo?.title?.split(' - ')?.[0] || 'No program selected yet');
     const summaryWorkout = selectedVideo?.title || 'No workout selected yet';
     const summaryDuration = selectedVideo ? `${Math.max(1, Math.round((selectedVideo.duration ?? 600) / 60))} min` : '-';
-    const summaryDifficulty = selectedVideo?.difficulty || selectedProgram?.level || '-';
+    const summaryDifficulty = formatDifficulty(selectedVideo?.difficulty || selectedProgram?.level) || '-';
 
     const buildShareMessage = () => {
         const dayStr = sessionDate
@@ -709,7 +710,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                                             </View>
                                                         </LinearGradient>
                                                         <Text style={{ fontSize: 12, color: '#211832', fontWeight: '500', marginTop: 6 }} numberOfLines={2}>{video.title}</Text>
-                                                        <Text style={{ fontSize: 11, color: AppTheme.textGrey, marginTop: 2 }}>{video.difficulty}</Text>
+                                                        <Text style={{ fontSize: 11, color: AppTheme.textGrey, fontWeight: '600', marginTop: 2 }}>{formatDifficulty(video.difficulty)}</Text>
                                                     </View>
                                                 </TouchableOpacity>
                                             );
@@ -735,7 +736,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                     <Text style={{ color: AppTheme.textGrey, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', marginBottom: 4 }}>Today's Workout</Text>
                                     <Text style={styles.videoTitle} numberOfLines={2}>{selectedVideo.title}</Text>
                                     {selectedVideo.difficulty && (
-                                        <Text style={{ color: AppTheme.primaryColor, fontSize: 12, marginTop: 4 }}>{selectedVideo.difficulty}</Text>
+                                        <Text style={{ color: AppTheme.primaryColor, fontSize: 12, marginTop: 4 }}>{formatDifficulty(selectedVideo.difficulty)}</Text>
                                     )}
                                 </View>
                                 <View style={[styles.videoCheck, { position: 'relative', top: undefined, right: undefined, backgroundColor: AppTheme.primaryColor }]}>

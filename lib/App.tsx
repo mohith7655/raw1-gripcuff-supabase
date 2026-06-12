@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
-import { NavigationContainer, DefaultTheme, getStateFromPath as navGetStateFromPath } from '@react-navigation/native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, LogBox, BackHandler, Alert, Platform, Animated } from 'react-native';
+import { NavigationContainer, DefaultTheme, getStateFromPath as navGetStateFromPath, getPathFromState as navGetPathFromState } from '@react-navigation/native';
 import * as ExpoLinking from 'expo-linking';
 import { navigationRef } from './core/navigation';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -41,6 +41,7 @@ import { PaywallScreen } from './screens/PaywallScreen';
 import { GripcuffSurveyModal } from './screens/GripcuffSurveyModal';
 import { AccessProvider, useAccess } from './providers/AccessContext';
 import { TierProvider } from './providers/TierContext';
+import { TabBarVisibilityProvider, useTabBarVisibility } from './providers/TabBarVisibilityContext';
 import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { WorkoutsScreen } from './screens/WorkoutsScreen';
@@ -227,9 +228,23 @@ const linking = {
       },
     },
   },
+  // Only the public-profile deep link (/u/:slug, /profile/:slug) is restored from
+  // the URL. Every other path resolves to the app's default route — so a hard
+  // refresh never tries to rebuild an internal auto-generated path like
+  // /HomeTabs/HomeTab (which left the app stuck on the loading screen).
   getStateFromPath: (path: string, options: any) => {
-    const normalized = path.replace(/^profile\//i, 'u/');
-    return navGetStateFromPath(normalized, options);
+    const normalized = path.replace(/^\/?profile\//i, 'u/');
+    if (/^\/?u\//i.test(normalized)) {
+      return navGetStateFromPath(normalized, options);
+    }
+    return undefined;
+  },
+  // Keep the address bar clean: reflect only the public-profile route, and
+  // collapse all internal navigation to '/'. Without this, React Navigation
+  // writes the raw screen names to the URL (e.g. /HomeTabs/HomeTab).
+  getPathFromState: (state: any, options: any) => {
+    const path = navGetPathFromState(state, options);
+    return /^\/?u\//i.test(path) ? path : '/';
   },
 };
 
@@ -255,58 +270,87 @@ function AuthStack({ initialPublicProfile }: { initialPublicProfile?: PublicProf
   );
 }
 
-// Bottom tab bar — iOS-style icon + label, color-based active state
+// Bottom tab bar — floating pill bar (Samsung dialer style)
 function PillTabBar({ state, descriptors, navigation, appMode }: any) {
-  const activeColor = appMode === 'coaching' ? CoachingTheme.tabActive : '#4C4E78';
-  const inactiveColor = appMode === 'coaching' ? CoachingTheme.textMuted : '#A0A3B8';
-  const bg = appMode === 'coaching' ? CoachingTheme.background : '#FFFFFF';
+  const isCoaching    = appMode === 'coaching';
+  const activeColor   = isCoaching ? CoachingTheme.tabActive : '#4C4E78';
+  const inactiveColor = isCoaching ? CoachingTheme.textMuted : '#9A9CB0';
+  const barBg         = isCoaching ? CoachingTheme.background : '#FFFFFF';
+
+  // Auto-hide on scroll-down / reveal on scroll-up (shared with the screens).
+  const tabBar = useTabBarVisibility();
+  const translateY = tabBar?.translateY;
+  // Always reveal the bar when switching tabs.
+  React.useEffect(() => { tabBar?.show(); }, [state.index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <View style={{
-      flexDirection: 'row',
-      backgroundColor: bg,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: 'rgba(33,24,50,0.1)',
-      paddingHorizontal: 4,
-      paddingTop: 8,
-      paddingBottom: 10,
-      height: 60,
-    }}>
-      {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
-        const label = options.tabBarLabel as string;
-        const color = isFocused ? activeColor : inactiveColor;
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingHorizontal: 16,
+        paddingBottom: 24,
+        backgroundColor: 'transparent',
+      }}
+    >
+      <Animated.View style={{
+        flexDirection: 'row',
+        alignSelf: 'stretch',
+        backgroundColor: barBg,
+        borderRadius: 30,
+        paddingHorizontal: 8,
+        paddingVertical: 12,
+        gap: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 8,
+        transform: translateY ? [{ translateY }] : undefined,
+      }}>
+        {state.routes.map((route: any, index: number) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
+          const label = options.tabBarLabel as string;
+          const color = isFocused ? activeColor : inactiveColor;
 
-        const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
-        };
+          const onPress = () => {
+            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+            if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+          };
 
-        return (
-          <TouchableOpacity
-            key={route.key}
-            onPress={onPress}
-            activeOpacity={0.7}
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 3,
-            }}
-          >
-            {options.tabBarIcon?.({ color, size: 22, focused: isFocused })}
-            <Text style={{
-              color,
-              fontSize: 11,
-              fontWeight: isFocused ? '700' : '500',
-              letterSpacing: 0.1,
-            }}>
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+          return (
+            <TouchableOpacity
+              key={route.key}
+              onPress={onPress}
+              activeOpacity={0.7}
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}
+            >
+              {/* RAW1 brand mark above the icon — reserved slot keeps every tab's icon aligned */}
+              <View style={{ height: 14, justifyContent: 'flex-end' }}>
+                {isFocused && (
+                  <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '900', letterSpacing: -0.5 }}>
+                    <Text style={{ color: '#7A7C90' }}>RAW</Text>
+                    <Text style={{ color: '#F25912' }}>1</Text>
+                  </Text>
+                )}
+              </View>
+              {options.tabBarIcon?.({ color, size: 22, focused: isFocused })}
+              <Text style={{
+                color,
+                fontSize: 11,
+                fontWeight: isFocused ? '700' : '500',
+                letterSpacing: 0.1,
+              }}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </Animated.View>
     </View>
   );
 }
@@ -317,41 +361,43 @@ function HomeTabs() {
   const { unreadInvitesCount } = useWorkoutSession();
 
   return (
-    <Tab.Navigator
-      backBehavior="history"
-      tabBar={(props) => <PillTabBar {...props} appMode={appMode} />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size, focused }) => <Home color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />,
-        }}
-      />
-      <Tab.Screen
-        name="SocialTab"
-        component={FeedScreen}
-        options={{
-          tabBarLabel: 'Social',
-          tabBarIcon: ({ color, size, focused }) => <Users color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />,
-        }}
-      />
-      <Tab.Screen
-        name="LibraryTab"
-        component={LibraryScreen}
-        options={{
-          tabBarLabel: appMode === 'coaching' ? 'Explore Coaches' : 'Workouts',
-          tabBarIcon: ({ color, size, focused }) =>
-            appMode === 'coaching' ? (
-              <Users color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />
-            ) : (
-              <Dumbbell color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />
-            ),
-        }}
-      />
-    </Tab.Navigator>
+    <TabBarVisibilityProvider>
+      <Tab.Navigator
+        backBehavior="history"
+        tabBar={(props) => <PillTabBar {...props} appMode={appMode} />}
+        screenOptions={{ headerShown: false }}
+      >
+        <Tab.Screen
+          name="HomeTab"
+          component={HomeScreen}
+          options={{
+            tabBarLabel: 'Home',
+            tabBarIcon: ({ color, size, focused }) => <Home color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />,
+          }}
+        />
+        <Tab.Screen
+          name="SocialTab"
+          component={FeedScreen}
+          options={{
+            tabBarLabel: 'Social',
+            tabBarIcon: ({ color, size, focused }) => <Users color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />,
+          }}
+        />
+        <Tab.Screen
+          name="LibraryTab"
+          component={LibraryScreen}
+          options={{
+            tabBarLabel: appMode === 'coaching' ? 'Explore Coaches' : 'Workouts',
+            tabBarIcon: ({ color, size, focused }) =>
+              appMode === 'coaching' ? (
+                <Users color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />
+              ) : (
+                <Dumbbell color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />
+              ),
+          }}
+        />
+      </Tab.Navigator>
+    </TabBarVisibilityProvider>
   );
 }
 

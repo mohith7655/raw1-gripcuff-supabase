@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Rss, Users, ChevronRight, Zap, CalendarPlus, MessageCircle } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
@@ -19,6 +19,7 @@ import { ChatHub } from '../components/social/ChatHub';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useFriend } from '../providers/FriendContext';
+import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { ChatService } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
 import { useFeed } from '../hooks/useFeed';
@@ -38,9 +39,15 @@ type SocialTab = 'feed' | 'friends' | 'chat';
 
 export function FeedScreen() {
   const navigation = useNavigation<any>();
+  const tabBar = useTabBarVisibility();
   const { supabaseUserId, user } = useAuth();
   const { incomingRequests } = useFriend();
   const [activeTab, setActiveTab] = useState<SocialTab>('feed');
+
+  // Reveal the bottom bar when switching social sub-tabs (friends/chat don't drive
+  // scroll) and whenever the tab regains focus (e.g. returning from a pushed screen).
+  useEffect(() => { tabBar?.show(); }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [createVisible, setCreateVisible] = useState(false);
   const [tweetVisible, setTweetVisible] = useState(false);
@@ -319,6 +326,8 @@ export function FeedScreen() {
           ListFooterComponent={ListFooter}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onScroll={tabBar?.onScroll}
+          scrollEventThrottle={16}
         />
       ) : activeTab === 'friends' ? (
         <FriendsHub />

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NotificationBell } from '../components/NotificationBell';
 import { AccessBadge } from '../components/AccessBadge';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -23,6 +23,8 @@ import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
+import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
+import { formatDifficulty } from '../core/difficulty';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -75,8 +77,8 @@ const HeroCardFace = ({ slide }: { slide: HeroSlide }) => (
       </>
     )}
     {/* Play button */}
-    <View style={{ position: 'absolute', bottom: 22, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
-      <Play color="#fff" size={16} fill="#fff" />
+    <View style={{ position: 'absolute', bottom: 20, right: 16, alignItems: 'center', justifyContent: 'center' }}>
+      <Play color="rgba(255,255,255,0.12)" size={44} fill="rgba(255,255,255,0.12)" />
     </View>
   </LinearGradient>
 );
@@ -196,6 +198,9 @@ export const LibraryScreen = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('large');
   const { isFavorite, toggleFavorite } = useFavorites();
   const { translateY: floatTranslateY, onScroll: onFloatScroll } = useFloatingToggle();
+  const tabBar = useTabBarVisibility();
+  // Reveal the bottom bar whenever this tab regains focus.
+  useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -262,7 +267,7 @@ export const LibraryScreen = () => {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
         contentContainerStyle={{ paddingBottom: 100 }}
-        onScroll={onFloatScroll}
+        onScroll={(e) => { onFloatScroll(); tabBar?.onScroll(e); }}
         scrollEventThrottle={16}
       >
       {/* Header — Search · RAW1 (centered) · Settings */}
@@ -308,9 +313,9 @@ export const LibraryScreen = () => {
       {subTab === 'all' && (
         <FeaturedHero
           slides={[
-            { badge: 'MASTERCLASS', badgeColor: '', gradient: ['#2a2a3e', '#1a1a2e', '#2d2d44'], title: 'Daily Flow: Industrial Mobility', meta: '24 mins • Advanced', onPress: () => navigation.navigate('GripCuffVideos') },
-            { badge: '✨ NEW', badgeColor: 'rgba(34,197,94,0.9)', gradient: ['#4A3728', '#6B4E38', '#3A2718'], title: 'Forearm Crusher Series', meta: '18 min • Intermediate', onPress: () => navigation.navigate('GripCuffVideos') },
-            { badge: '🔥 POPULAR', badgeColor: 'rgba(79,195,247,0.9)', gradient: ['#0D2137', '#1A3A5C', '#0A1829'], title: 'Deep Stretch Recovery', meta: '35 min • Beginner', onPress: () => navigation.navigate('Stretching', { allowInvite: true }) },
+            { badge: 'MASTERCLASS', badgeColor: '', gradient: ['#2a2a3e', '#1a1a2e', '#2d2d44'], title: 'Daily Flow: Industrial Mobility', meta: '24 mins • 🔴 Complex', onPress: () => navigation.navigate('GripCuffVideos') },
+            { badge: '✨ NEW', badgeColor: 'rgba(34,197,94,0.9)', gradient: ['#4A3728', '#6B4E38', '#3A2718'], title: 'Forearm Crusher Series', meta: '18 min • 🟡 Medium', onPress: () => navigation.navigate('GripCuffVideos') },
+            { badge: '🔥 POPULAR', badgeColor: 'rgba(79,195,247,0.9)', gradient: ['#0D2137', '#1A3A5C', '#0A1829'], title: 'Deep Stretch Recovery', meta: '35 min • 🟢 Easy', onPress: () => navigation.navigate('Stretching', { allowInvite: true }) },
           ]}
         />
       )}
@@ -376,7 +381,7 @@ export const LibraryScreen = () => {
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{video.duration}</Text>
                       </View>
                       <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                        <Raw1Logo fontSize={8} />
+                        <Raw1Logo fontSize={12} transparent />
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 8, paddingRight: 2 }}>
@@ -1040,13 +1045,13 @@ const VideoTile = ({
             styles.centerIcon,
             video.isCompleted
               ? { backgroundColor: '#059669' }
-              : { backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)' },
+              : { backgroundColor: 'transparent' },
           ]}
         >
           {video.isCompleted ? (
             <Check color="#fff" size={14} />
           ) : (
-            <Play color="#fff" size={14} fill="#fff" />
+            <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
           )}
         </View>
 
@@ -1059,7 +1064,7 @@ const VideoTile = ({
 
         {/* RAW1 logo watermark */}
         <View style={{ position: 'absolute', top: 6, left: 6 }}>
-          <Raw1Logo fontSize={8} />
+          <Raw1Logo fontSize={12} transparent />
         </View>
 
         {/* Completion Checkbox - Tappable independently */}
@@ -1106,7 +1111,7 @@ const VideoTile = ({
             >
               {displayTitle}
             </Text>
-            <Text style={styles.videoCategory}>{video.category} • {video.difficulty}</Text>
+            <Text style={styles.videoCategory}>{video.category} • {formatDifficulty(video.difficulty)}</Text>
           </View>
         </View>
       </View>

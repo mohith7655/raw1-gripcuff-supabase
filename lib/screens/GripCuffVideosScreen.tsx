@@ -131,7 +131,7 @@ export const GripCuffVideosScreen = () => {
                 </Text>
             </View>
             <Text style={styles.headerSubtitleText}>
-                Beginner
+                🟢 Easy
             </Text>
             {/* MEMBERSHIP TIERS TRIGGER */}
             <TouchableOpacity
@@ -191,7 +191,7 @@ export const GripCuffVideosScreen = () => {
                     >
                         {isUnlocked ? (
                             <View style={styles.playIconCircle}>
-                                <Play color="#211832" size={16} fill="#211832" />
+                                <Play color="rgba(255,255,255,0.12)" size={30} fill="rgba(255,255,255,0.12)" />
                             </View>
                         ) : (
                             <>
@@ -486,10 +486,6 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     playIconCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
     },

@@ -1,15 +1,26 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Play } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 import { useLibrary } from '../providers/LibraryContext';
 import { getAllPrograms } from '../data/preRecordedPrograms';
-import { AppTheme } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 import { Raw1Logo } from '../raw1_logo';
 
-const COLORS = ['#F25912', '#7C3AED', '#059669', '#DB2777', '#2563EB', '#D97706'];
+// Muted earthy / slate thumbnail gradients — matches the library cards (Ash & Midnight).
+const GRADIENTS: [string, string][] = [
+    ['#8B7355', '#6B5B45'],
+    ['#7A8A8A', '#5A6A6A'],
+    ['#4A5568', '#2D3748'],
+    ['#6B4226', '#4A2E1A'],
+    ['#2A2A3E', '#1A1A2E'],
+    ['#0D2137', '#1A3A5C'],
+    ['#C4B8A8', '#A09488'],
+    ['#3B1F0B', '#5C3319'],
+];
 
 export function AllRecentlyWatchedScreen() {
     const navigation = useNavigation<any>();
@@ -33,7 +44,8 @@ export function AllRecentlyWatchedScreen() {
                     const localVideo = allVids.find(v => v.id === item.videoId);
                     const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
                     const title = localVideo?.title ?? program?.title ?? item.videoId;
-                    const color = COLORS[idx % COLORS.length];
+                    const difficulty = (localVideo as any)?.difficulty ?? (program as any)?.level;
+                    const colors = GRADIENTS[idx % GRADIENTS.length];
                     return (
                         <TouchableOpacity
                             key={item.videoId}
@@ -46,17 +58,22 @@ export function AllRecentlyWatchedScreen() {
                                 videoType: item.videoType,
                             })}
                         >
-                            <View style={[s.thumb, { backgroundColor: color }]}>
+                            <LinearGradient
+                                colors={colors}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={s.thumb}
+                            >
                                 <View style={s.logoWrap}>
-                                    <Raw1Logo fontSize={8} />
+                                    <Raw1Logo fontSize={12} transparent />
                                 </View>
-                                <View style={s.playBtn}>
-                                    <Text style={s.playIcon}>▶</Text>
-                                </View>
-                            </View>
+                                <Play color="rgba(255,255,255,0.12)" size={30} fill="rgba(255,255,255,0.12)" />
+                            </LinearGradient>
                             <View style={s.info}>
                                 <Text numberOfLines={2} style={s.cardTitle}>{title}</Text>
-                                <Text style={s.cardSub}>Continue →</Text>
+                                {!!formatDifficulty(difficulty) && (
+                                    <Text style={s.cardDifficulty}>{formatDifficulty(difficulty)}</Text>
+                                )}
                             </View>
                         </TouchableOpacity>
                     );
@@ -88,7 +105,9 @@ const s = StyleSheet.create({
         width: '47%',
         borderRadius: 12,
         overflow: 'hidden',
-        backgroundColor: AppTheme.cardColor,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: 'rgba(33,24,50,0.05)',
     },
     thumb: {
         width: '100%',
@@ -97,16 +116,7 @@ const s = StyleSheet.create({
         alignItems: 'center',
     },
     logoWrap: { position: 'absolute', top: 6, left: 6 },
-    playBtn: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    playIcon: { color: '#fff', fontSize: 13, marginLeft: 2 },
     info: { padding: 10 },
     cardTitle: { color: '#211832', fontSize: 12, fontWeight: '600', lineHeight: 16 },
-    cardSub: { color: '#F25912', fontSize: 10, marginTop: 4 },
+    cardDifficulty: { color: '#7A7C90', fontSize: 11, fontWeight: '600', marginTop: 4 },
 });

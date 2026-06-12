@@ -4,6 +4,7 @@ import { Play } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
 
@@ -55,10 +56,10 @@ export const GridVideoCard = ({
                     />
                 )}
                 <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                    <Raw1Logo fontSize={8} />
+                    <Raw1Logo fontSize={12} transparent />
                 </View>
                 <View style={styles.playIconContainer}>
-                    <Play color="#fff" size={16} fill="#fff" />
+                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
                 </View>
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{video.duration}</Text>
@@ -69,6 +70,9 @@ export const GridVideoCard = ({
                 <Text style={styles.videoTitle} numberOfLines={2}>
                     {video.title}
                 </Text>
+                {!!formatDifficulty((video as any).difficulty) && (
+                    <Text style={styles.videoDifficulty}>{formatDifficulty((video as any).difficulty)}</Text>
+                )}
             </View>
         </TouchableOpacity>
     );
@@ -88,12 +92,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     playIconContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.18)',
-        borderWidth: 1.5,
-        borderColor: 'rgba(255,255,255,0.7)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -124,5 +122,11 @@ const styles = StyleSheet.create({
         color: '#211832',
         fontSize: 12,
         marginTop: 8,
+    },
+    videoDifficulty: {
+        color: '#7A7C90',
+        fontSize: 11,
+        fontWeight: '600',
+        marginTop: 3,
     },
 });

@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { PRE_RECORDED_PROGRAMS, PreRecordedProgram } from '../data/preRecordedPrograms';
 import { getDateKey, getTimeSlot } from '../utils/streakDate';
 import { getResolvedTimezone } from '../utils/timezone';
+import { formatDifficulty } from '../core/difficulty';
 
 const ALL_PROGRAMS: PreRecordedProgram[] = Object.values(PRE_RECORDED_PROGRAMS).flat();
 
@@ -124,7 +125,7 @@ export function TodaysChallengeCard({ timezone }: Props) {
                         {dayVideo ? ` — ${(() => { const m = dayVideo.id.match(/_d(\d+)$/); return m ? `Day ${m[1]}` : dayVideo.title; })()}` : ''}
                     </Text>
                     <View style={styles.challengeMeta}>
-                        <Text style={styles.challengeMetaText}>💪 {challenge.level}</Text>
+                        <Text style={styles.challengeMetaText}>{formatDifficulty(challenge.level)}</Text>
                         <Text style={styles.challengeMetaText}>📂 {dayVideo?.category || 'Workout'}</Text>
                     </View>
                     <View style={styles.challengeFooter}>

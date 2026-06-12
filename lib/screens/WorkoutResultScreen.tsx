@@ -15,6 +15,7 @@ import { useWorkout } from '../providers/WorkoutContext';
 import { useAuth } from '../providers/AuthContext';
 import { TTSService } from '../services/tts.service';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 import { recordUniversalWorkoutCompletion } from '../services/workoutCompletion.service';
 
 export const WorkoutResultScreen = () => {
@@ -171,7 +172,7 @@ export const WorkoutResultScreen = () => {
         <Text style={styles.infoTitle}>
           {workoutExercises.length} Exercises • {currentWorkout?.duration || 30} min
         </Text>
-        <Text style={styles.infoDifficulty}>Level: {currentWorkout?.difficulty || 'Intermediate'}</Text>
+        <Text style={styles.infoDifficulty}>Level: {formatDifficulty(currentWorkout?.difficulty || 'Intermediate')}</Text>
       </View>
 
       {/* Exercises List */}

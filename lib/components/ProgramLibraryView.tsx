@@ -161,7 +161,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                         <BookOpen color="#F25912" size={28} />
                     </View>
                     <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                        <Raw1Logo fontSize={8} />
+                        <Raw1Logo fontSize={12} transparent />
                     </View>
                 </LinearGradient>
                 <View style={styles.videoInfo}>
@@ -191,7 +191,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                         <Text style={styles.durationText}>{formatDuration(video.duration)}</Text>
                     </View>
                     <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                        <Raw1Logo fontSize={8} />
+                        <Raw1Logo fontSize={12} transparent />
                     </View>
                 </LinearGradient>
 

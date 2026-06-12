@@ -159,8 +159,9 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 function fmtDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)} m away`;
-  return `${km.toFixed(1)} km away`;
+  const miles = km * 0.621371;
+  if (miles < 0.1) return `< 0.1 mi away`;
+  return `${miles.toFixed(1)} mi away`;
 }
 
 const fmtMins = (mins: number) => {
@@ -357,7 +358,6 @@ export function SocialProfileScreen() {
   const avgMins = workouts > 0 ? Math.round(lifetimeMins / workouts) : 0;
 
   // Location data
-  const gymName  = social?.gymName?.trim()   || '';
   const homeName = social?.houseName?.trim() || '';
   const parkName = social?.parkName?.trim()  || '';
   // Home → city name only (never street-level)
@@ -371,32 +371,16 @@ export function SocialProfileScreen() {
     return homeName;
   })();
 
-  // Gym → area/neighbourhood only (never street-level)
-  const gymArea = (() => {
-    const addr = social?.gymAddress;
-    if (addr) {
-      const parts = addr.split(',').map(p => p.trim()).filter(Boolean);
-      return parts[1] || parts[2] || parts[0];
-    }
-    return gymName;
-  })();
-
   // Distance from viewer's home → profile user's home (for location line)
   const homeDistanceText = (() => {
     if (!viewerHome || !social?.houseLat || !social?.houseLng) return '';
     return fmtDistance(haversineKm(viewerHome.lat, viewerHome.lng, social.houseLat, social.houseLng));
   })();
 
-  // Distance from viewer's home → profile user's gym (for profession line)
-  const gymDistanceText = (() => {
-    if (!viewerHome || !social?.gymLat || !social?.gymLng) return '';
-    return fmtDistance(haversineKm(viewerHome.lat, viewerHome.lng, social.gymLat, social.gymLng));
-  })();
   const hasLocation = !!(
-    social?.gymLat || social?.gymLng ||
     social?.houseLat || social?.houseLng ||
     social?.parkLat || social?.parkLng ||
-    gymName || homeName || parkName
+    homeName || parkName
   );
 
   // Hobbies — top 5 by saved rank
@@ -448,7 +432,6 @@ export function SocialProfileScreen() {
   // Determine initial location tab based on what data exists
   const locTabs = [
     ...(homeName ? [{ key: 'home' as const, label: 'Home', name: homeName, address: social?.houseAddress, lat: social?.houseLat, lng: social?.houseLng }] : []),
-    ...(gymName  ? [{ key: 'gym'  as const, label: 'Gym',  name: gymName,  address: social?.gymAddress,   lat: social?.gymLat,   lng: social?.gymLng   }] : []),
     ...(parkName ? [{ key: 'park' as const, label: 'Park', name: parkName, address: social?.parkArea,     lat: social?.parkLat,  lng: social?.parkLng  }] : []),
   ];
   const activeTab = locTabs.find(t => t.key === selectedLocTab) ?? locTabs[0];
@@ -519,11 +502,11 @@ export function SocialProfileScreen() {
                     </Text>
                   </View>
                 ) : null}
-                {(whatIDoItems.length > 0 || gymArea) ? (
+                {whatIDoItems.length > 0 ? (
                   <View style={s.heroMetaRow}>
                     <Briefcase size={13} color={C.muted} />
                     <Text style={s.heroMetaText} numberOfLines={2}>
-                      {[...whatIDoItems, gymArea, gymDistanceText].filter(Boolean).join(' · ')}
+                      {whatIDoItems.join(' · ')}
                     </Text>
                   </View>
                 ) : null}

@@ -64,6 +64,7 @@ import { LiveViewersModal } from '../components/LiveViewersModal';
 import { TierAvatar } from '../components/profile/TierAvatar';
 import Svg, { Circle } from 'react-native-svg';
 import { supabase } from '../core/config/supabase';
+import { formatDifficulty } from '../core/difficulty';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -1627,7 +1628,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                     {(['Beginner', 'Intermediate', 'Advanced'] as const).map((lvl) => {
                         const active = reqData.experienceLevel === lvl;
-                        const label = lvl === 'Beginner' ? 'Simple' : lvl === 'Intermediate' ? 'Complex' : 'Hard';
+                        const label = formatDifficulty(lvl);
                         return (
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
@@ -1732,21 +1733,6 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                     }}
                                 >
                                     <Text style={{ fontSize: 28 }}>{item.categoryEmoji}</Text>
-                                    <View
-                                        style={{
-                                            position: 'absolute',
-                                            top: 4,
-                                            right: 4,
-                                            backgroundColor: 'rgba(0,0,0,0.6)',
-                                            borderRadius: 5,
-                                            paddingHorizontal: 5,
-                                            paddingVertical: 2,
-                                        }}
-                                    >
-                                        <Text style={{ color: '#211832', fontSize: 8, fontWeight: '700' }}>
-                                            {item.level.toUpperCase()}
-                                        </Text>
-                                    </View>
                                 </View>
                                 <View style={{ padding: 7 }}>
                                     <Text
@@ -1755,6 +1741,11 @@ function VideoPlayerScreen({ route, navigation }: any) {
                                     >
                                         {item.title}
                                     </Text>
+                                    {!!formatDifficulty(item.level) && (
+                                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', marginTop: 3 }}>
+                                            {formatDifficulty(item.level)}
+                                        </Text>
+                                    )}
                                     <Text style={{ color: ACCENT, fontSize: 9, marginTop: 3 }}>
                                         {item.totalVideos} videos
                                     </Text>
@@ -2622,7 +2613,7 @@ const panelStyles = StyleSheet.create({
         borderRadius: 10,
     },
     tabActive: {
-        backgroundColor: '#F25912',
+        backgroundColor: '#4C4E78',
     },
     tabText: {
         color: '#7A7C90',
@@ -2636,7 +2627,7 @@ const panelStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: 'rgba(242,89,18,0.2)',
+        backgroundColor: 'rgba(76,78,120,0.2)',
         paddingHorizontal: 5,
         paddingVertical: 2,
         borderRadius: 6,
@@ -2648,14 +2639,14 @@ const panelStyles = StyleSheet.create({
         backgroundColor: '#22c55e',
     },
     socialLiveChipText: {
-        color: '#F25912',
+        color: '#4C4E78',
         fontSize: 10,
         fontWeight: '700',
     },
     sectionHeading: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#F25912',
+        color: '#4C4E78',
         textTransform: 'uppercase',
         letterSpacing: 1,
         paddingHorizontal: 16,

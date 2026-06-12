@@ -131,7 +131,7 @@ export const GripCuffTrainingScreen = () => {
                                 {/* Thumbnail Left */}
                                 <View style={styles.thumbnailContainer}>
                                     <View style={styles.thumbnailPlaceholder}>
-                                        <Play color="#F25912" size={24} fill="#F25912" />
+                                        <Play color="#211832" size={24} fill="#211832" />
                                     </View>
                                     <View style={styles.durationBadge}>
                                         <Text style={styles.durationText}>{video.duration}</Text>

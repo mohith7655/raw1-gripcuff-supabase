@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme } from '../core/theme/app_theme';
+import { formatDifficulty } from '../core/difficulty';
 import { useFavorites } from '../hooks/useFavorites';
 import { Video } from '../models/Video';
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
@@ -103,11 +104,11 @@ export function MultiColVideoCard({
                 end={{ x: 1, y: 1 }}
                 style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 9, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
             >
-                <View style={{ width: playSize, height: playSize, borderRadius: playSize / 2, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="#fff" size={iconSize} fill="#fff" />
+                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    <Play color="rgba(255,255,255,0.12)" size={playSize} fill="rgba(255,255,255,0.12)" />
                 </View>
                 <View style={{ position: 'absolute', top: 4, left: 4 }}>
-                    <Raw1Logo fontSize={7} />
+                    <Raw1Logo fontSize={10} transparent />
                 </View>
                 <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
                     <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
@@ -118,6 +119,9 @@ export function MultiColVideoCard({
                 <Text style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
                     {displayTitle}
                 </Text>
+                {!!formatDifficulty(video.difficulty) && (
+                    <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 2 }}>{formatDifficulty(video.difficulty)}</Text>
+                )}
             </View>
         </TouchableOpacity>
     );
@@ -160,11 +164,11 @@ export function ListVideoCard({
                 end={{ x: 1, y: 1 }}
                 style={{ width: 78, height: 54, borderRadius: 8, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 }}
             >
-                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="#fff" size={10} fill="#fff" />
+                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    <Play color="rgba(255,255,255,0.12)" size={22} fill="rgba(255,255,255,0.12)" />
                 </View>
                 <View style={{ position: 'absolute', top: 3, left: 3 }}>
-                    <Raw1Logo fontSize={6} />
+                    <Raw1Logo fontSize={9} transparent />
                 </View>
                 <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
                     <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
@@ -176,7 +180,7 @@ export function ListVideoCard({
                     {displayTitle}
                 </Text>
                 <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>
-                    {video.category} · {durationLabel}
+                    {[formatDifficulty(video.difficulty), video.category, durationLabel].filter(Boolean).join(' · ')}
                 </Text>
             </View>
 
