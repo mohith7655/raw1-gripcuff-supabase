@@ -21,8 +21,8 @@ import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 import { TierBars } from './profile/TierBars';
 import { TierAvatar } from './profile/TierAvatar';
 
-const ACCENT = '#F25912';
-const CTA    = '#F25912';
+const ACCENT = '#4C4E78';
+const CTA    = '#4C4E78';
 const BG     = '#EEEEF2';
 const CARD   = '#F8F8FC';
 
@@ -275,7 +275,7 @@ export function ChallengeLobbyModal({
                                     <Text style={s.declineBtnText}>Decline</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={s.acceptBtn} onPress={acceptIncoming} activeOpacity={0.85}>
-                                    <Zap color="#211832" size={14} />
+                                    <Zap color="#FFFFFF" size={14} />
                                     <Text style={s.acceptBtnText}>Accept</Text>
                                 </TouchableOpacity>
                             </View>
@@ -331,7 +331,7 @@ export function ChallengeLobbyModal({
                                             <ActivityIndicator color="#211832" size="small" />
                                         ) : (
                                             <>
-                                                <Zap color="#211832" size={13} />
+                                                <Zap color="#FFFFFF" size={13} />
                                                 <Text style={s.challengeBtnText}>Challenge</Text>
                                             </>
                                         )}
@@ -393,9 +393,9 @@ const s = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderRadius: 14,
-        backgroundColor: 'rgba(242,89,18,0.1)',
+        backgroundColor: 'rgba(76,78,120,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(242,89,18,0.3)',
+        borderColor: 'rgba(76,78,120,0.25)',
     },
     waitDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: CTA },
     waitText: { color: CTA, fontSize: 13, fontWeight: '700' },
@@ -404,9 +404,9 @@ const s = StyleSheet.create({
         marginTop: 14,
         padding: 14,
         borderRadius: 14,
-        backgroundColor: 'rgba(242,89,18,0.14)',
+        backgroundColor: 'rgba(76,78,120,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(242,89,18,0.45)',
+        borderColor: 'rgba(76,78,120,0.3)',
         gap: 12,
     },
     incomingText: { color: '#211832', fontSize: 14, fontWeight: '600' },
@@ -421,7 +421,7 @@ const s = StyleSheet.create({
         borderRadius: 10,
         paddingVertical: 11,
     },
-    acceptBtnText: { color: '#211832', fontSize: 14, fontWeight: '700' },
+    acceptBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
     declineBtn: {
         flex: 1,
         alignItems: 'center',
@@ -443,7 +443,7 @@ const s = StyleSheet.create({
         borderBottomColor: 'rgba(33,24,50,0.05)',
     },
     selfRow: {
-        backgroundColor: 'rgba(242,89,18,0.06)',
+        backgroundColor: 'rgba(76,78,120,0.07)',
         borderRadius: 12,
         paddingHorizontal: 10,
         borderBottomWidth: 0,
@@ -470,11 +470,11 @@ const s = StyleSheet.create({
         minWidth: 90,
         justifyContent: 'center',
     },
-    challengeBtnText: { color: '#211832', fontSize: 12, fontWeight: '700' },
+    challengeBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
     youBadge: {
-        backgroundColor: 'rgba(242,89,18,0.15)',
+        backgroundColor: 'rgba(76,78,120,0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(242,89,18,0.4)',
+        borderColor: 'rgba(76,78,120,0.35)',
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 5,

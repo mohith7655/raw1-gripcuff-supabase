@@ -255,29 +255,28 @@ function AuthStack({ initialPublicProfile }: { initialPublicProfile?: PublicProf
   );
 }
 
-// Bottom tab bar — filled pill style matching the streak/weekly/challenge toggle
+// Bottom tab bar — iOS-style icon + label, color-based active state
 function PillTabBar({ state, descriptors, navigation, appMode }: any) {
-  const activeFill = appMode === 'coaching' ? CoachingTheme.tabActive : '#211832';
-  const inactiveColor = appMode === 'coaching' ? CoachingTheme.textMuted : AppTheme.textGrey;
-  const bg = appMode === 'coaching' ? CoachingTheme.background : AppTheme.background;
-  const borderColor = appMode === 'coaching' ? CoachingTheme.border : AppTheme.cardColor;
+  const activeColor = appMode === 'coaching' ? CoachingTheme.tabActive : '#4C4E78';
+  const inactiveColor = appMode === 'coaching' ? CoachingTheme.textMuted : '#A0A3B8';
+  const bg = appMode === 'coaching' ? CoachingTheme.background : '#FFFFFF';
 
   return (
     <View style={{
       flexDirection: 'row',
       backgroundColor: bg,
-      borderTopWidth: 1,
-      borderTopColor: borderColor,
-      paddingHorizontal: 8,
-      paddingTop: 4,
-      paddingBottom: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: 'rgba(33,24,50,0.1)',
+      paddingHorizontal: 4,
+      paddingTop: 8,
+      paddingBottom: 10,
       height: 60,
     }}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
         const label = options.tabBarLabel as string;
-        const iconColor = isFocused ? '#fff' : inactiveColor;
+        const color = isFocused ? activeColor : inactiveColor;
 
         const onPress = () => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -288,23 +287,20 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
           <TouchableOpacity
             key={route.key}
             onPress={onPress}
-            activeOpacity={0.75}
+            activeOpacity={0.7}
             style={{
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 10,
-              backgroundColor: isFocused ? activeFill : 'transparent',
-              paddingVertical: 6,
-              marginHorizontal: 3,
+              gap: 3,
             }}
           >
-            {options.tabBarIcon?.({ color: iconColor, size: 20, focused: isFocused })}
+            {options.tabBarIcon?.({ color, size: 22, focused: isFocused })}
             <Text style={{
-              color: iconColor,
+              color,
               fontSize: 11,
-              fontWeight: isFocused ? '700' : '600',
-              marginTop: 2,
+              fontWeight: isFocused ? '700' : '500',
+              letterSpacing: 0.1,
             }}>
               {label}
             </Text>
@@ -331,7 +327,7 @@ function HomeTabs() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => <Home color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />,
         }}
       />
       <Tab.Screen
@@ -339,7 +335,7 @@ function HomeTabs() {
         component={FeedScreen}
         options={{
           tabBarLabel: 'Social',
-          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => <Users color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />,
         }}
       />
       <Tab.Screen
@@ -347,11 +343,11 @@ function HomeTabs() {
         component={LibraryScreen}
         options={{
           tabBarLabel: appMode === 'coaching' ? 'Explore Coaches' : 'Workouts',
-          tabBarIcon: ({ color, size }) =>
+          tabBarIcon: ({ color, size, focused }) =>
             appMode === 'coaching' ? (
-              <Users color={color} size={size} />
+              <Users color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />
             ) : (
-              <Dumbbell color={color} size={size} />
+              <Dumbbell color={color} size={size} fill={focused ? color : 'none'} strokeWidth={focused ? 0 : 1.5} />
             ),
         }}
       />
