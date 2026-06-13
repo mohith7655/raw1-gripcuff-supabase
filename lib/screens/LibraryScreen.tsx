@@ -442,7 +442,7 @@ export const LibraryScreen = () => {
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: 112,
+          bottom: 140,
           alignItems: 'center',
           zIndex: 90,
         }} pointerEvents="box-none">

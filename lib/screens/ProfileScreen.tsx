@@ -796,6 +796,22 @@ export const ProfileScreen = () => {
                 <Text style={s.bodyText}>Add your profession or job title</Text>
               )}
             </View>
+            {(social?.projectsWorkingOn || social?.needHelpWith) && (
+              <View style={{ marginTop: 12, gap: 10 }}>
+                {social?.projectsWorkingOn ? (
+                  <View style={s.aboutQRow}>
+                    <Text style={s.aboutQLabel}>🚀 Working on</Text>
+                    <Text style={s.aboutQValue}>{social.projectsWorkingOn}</Text>
+                  </View>
+                ) : null}
+                {social?.needHelpWith ? (
+                  <View style={s.aboutQRow}>
+                    <Text style={s.aboutQLabel}>🤝 Need help with</Text>
+                    <Text style={s.aboutQValue}>{social.needHelpWith}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
           </ProfileCard>
 
           {/* ── 4. FITNESS GOALS — reuses connection goals ───────────────────── */}
@@ -864,22 +880,6 @@ export const ProfileScreen = () => {
             <Text style={s.bodyText}>
               {bio.length > 100 ? `${bio.slice(0, 100).trimEnd()}…` : bio}
             </Text>
-            {(social?.projectsWorkingOn || social?.needHelpWith) && (
-              <View style={{ marginTop: 12, gap: 10 }}>
-                {social?.projectsWorkingOn ? (
-                  <View style={s.aboutQRow}>
-                    <Text style={s.aboutQLabel}>🚀 Working on</Text>
-                    <Text style={s.aboutQValue}>{social.projectsWorkingOn}</Text>
-                  </View>
-                ) : null}
-                {social?.needHelpWith ? (
-                  <View style={s.aboutQRow}>
-                    <Text style={s.aboutQLabel}>🤝 Need help with</Text>
-                    <Text style={s.aboutQValue}>{social.needHelpWith}</Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
           </ProfileCard>
 
           {/* ── 7. TOP HOBBIES — ranked 1–5 dots ─────────────────────────────── */}

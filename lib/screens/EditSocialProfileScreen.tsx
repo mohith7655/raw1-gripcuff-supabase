@@ -41,16 +41,16 @@ import {
 
 const C = {
     bg: '#EEEEF2',
-    bgCard: '#EEEEF2',
-    bgInput: 'rgba(255,255,255,0.05)',
+    bgCard: '#F8F8FC',
+    bgInput: '#FFFFFF',
     accent: '#F25912',
     accentSoft: 'rgba(242,89,18,0.12)',
     accentBorder: 'rgba(242,89,18,0.28)',
     green: '#22C55E',
-    text: '#FFFFFF',
+    text: '#211832',
     textMuted: '#7A7C90',
-    textDim: '#7A7C90',
-    border: 'rgba(255,255,255,0.08)',
+    textDim: '#9A9CB0',
+    border: 'rgba(33,24,50,0.10)',
 };
 
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
@@ -694,30 +694,6 @@ export function EditSocialProfileScreen() {
                             />
                             <Text style={s.charCount}>{bio.length}/160</Text>
                         </Card>
-                        <Card>
-                            <FieldLabel text="🚀 Projects working on" />
-                            <TextInput
-                                style={[s.input, s.inputMulti]}
-                                value={projectsWorkingOn}
-                                onChangeText={setProjectsWorkingOn}
-                                placeholder="What are you building or working on?"
-                                placeholderTextColor={C.textDim}
-                                multiline
-                                numberOfLines={3}
-                                maxLength={200}
-                            />
-                            <FieldLabel text="🤝 Need help with" />
-                            <TextInput
-                                style={[s.input, s.inputMulti]}
-                                value={needHelpWith}
-                                onChangeText={setNeedHelpWith}
-                                placeholder="What would you like help with?"
-                                placeholderTextColor={C.textDim}
-                                multiline
-                                numberOfLines={3}
-                                maxLength={200}
-                            />
-                        </Card>
                     </>
                 )}
 
@@ -746,6 +722,30 @@ export function EditSocialProfileScreen() {
                                 placeholderTextColor={C.textDim}
                                 multiline
                                 numberOfLines={2}
+                            />
+                        </Card>
+                        <Card>
+                            <FieldLabel text="🚀 Projects working on" />
+                            <TextInput
+                                style={[s.input, s.inputMulti]}
+                                value={projectsWorkingOn}
+                                onChangeText={setProjectsWorkingOn}
+                                placeholder="What are you building or working on?"
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={200}
+                            />
+                            <FieldLabel text="🤝 Need help with" />
+                            <TextInput
+                                style={[s.input, s.inputMulti]}
+                                value={needHelpWith}
+                                onChangeText={setNeedHelpWith}
+                                placeholder="What would you like help with?"
+                                placeholderTextColor={C.textDim}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={200}
                             />
                         </Card>
                     </>
@@ -1081,13 +1081,13 @@ const s = StyleSheet.create({
         top: 50,
         left: 0,
         right: 0,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#FFFFFF',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: C.border,
         zIndex: 9999,
         elevation: 9999,
-        boxShadow: '0 16px 30px rgba(0,0,0,0.5)',
+        boxShadow: '0 16px 30px rgba(33,24,50,0.18)',
     } as any,
     placesRow: {
         backgroundColor: 'transparent',
