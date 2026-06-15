@@ -733,7 +733,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                         activeOpacity={0.85}
                     >
                         <CalendarClock color="#fff" size={14} />
-                        <Text style={styles.footerBtnWorkoutTogetherText}>Workout Together</Text>
+                        <Text style={styles.footerBtnWorkoutTogetherText}>Workout with Friends</Text>
                     </TouchableOpacity>
 
                     {/* ── LIVE viewer pill (replaces "Start Now") ── */}

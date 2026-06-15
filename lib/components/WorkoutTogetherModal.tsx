@@ -304,7 +304,7 @@ export function WorkoutTogetherModal({
     // ── Header title ──────────────────────────────────────────────────────────
     const headerTitle = (() => {
         switch (currentStep) {
-            case 'datetime':     return 'Workout Together';
+            case 'datetime':     return 'Workout with Friends';
             case 'sessionType':  return 'Choose Session Type';
             case 'friendSelect': return 'Select a Friend';
             case 'saving':       return 'Scheduling…';
@@ -517,9 +517,9 @@ export function WorkoutTogetherModal({
                                         <TierAvatar uri={item.profileImageUrl} size={40} uid={item.uid} name={item.fullName || item.username} radius={9} />
                                         <View style={s.friendInfo}>
                                             <Text style={s.friendName} numberOfLines={1}>
-                                                {item.fullName || item.username}
+                                                @{item.username}
                                             </Text>
-                                            <Text style={s.friendHandle}>@{item.username}</Text>
+                                            <Text style={s.friendHandle}>{item.fullName || item.username}</Text>
                                         </View>
                                         {selectedFriend?.uid === item.uid && (
                                             <View style={s.checkBadge}>

@@ -319,6 +319,7 @@ export function EditSocialProfileScreen() {
     const [housePlace, setHousePlace] = useState<ProfilePlace>({});
     const [parkPlace, setParkPlace] = useState<ProfilePlace>({});
     const [hobbies, setHobbies] = useState<Set<Hobby>>(new Set());
+    const [hobbyRanks, setHobbyRanks] = useState<Record<string, number>>({});
     const [communityNote, setCommunityNote] = useState('');
     const [helpingBeginners, setHelpBeginners] = useState(false);
     const [openToMentor, setOpenToMentor] = useState(false);
@@ -370,6 +371,7 @@ export function EditSocialProfileScreen() {
                 setHousePlace(placeFromSocial(sp, 'house'));
                 setParkPlace(placeFromSocial(sp, 'park'));
                 setHobbies(new Set(sp.hobbies ?? []));
+                setHobbyRanks(sp.hobbyRanks ?? {});
                 setCommunityNote(sp.communityNote ?? '');
                 setHelpBeginners(sp.helpingBeginners ?? false);
                 setOpenToMentor(sp.openToMentor ?? false);
@@ -401,12 +403,30 @@ export function EditSocialProfileScreen() {
         });
     }, []);
 
+    const MAX_HOBBIES = 5;
     const toggleHobby = useCallback((h: Hobby) => {
         setHobbies(prev => {
             const next = new Set(prev);
-            next.has(h) ? next.delete(h) : next.add(h);
+            if (next.has(h)) {
+                next.delete(h);
+                // drop its rating when removed
+                setHobbyRanks(r => { const { [h]: _omit, ...rest } = r; return rest; });
+            } else {
+                if (next.size >= MAX_HOBBIES) {
+                    Alert.alert('Up to 5 hobbies', 'Remove one to add another.');
+                    return prev;
+                }
+                next.add(h);
+                // start newly added hobbies at a mid rating so they show some dots
+                setHobbyRanks(r => (r[h] ? r : { ...r, [h]: 3 }));
+            }
             return next;
         });
+    }, []);
+
+    // Tap a dot to rate a hobby 1–5 (most liked); tap the current rating to clear.
+    const setHobbyRank = useCallback((h: Hobby, rank: number) => {
+        setHobbyRanks(prev => ({ ...prev, [h]: prev[h] === rank ? 0 : rank }));
     }, []);
 
     const toggleAgeGroup = useCallback((ag: AgeGroup) => {
@@ -443,6 +463,7 @@ export function EditSocialProfileScreen() {
                 ...placePatch('house', housePlace),
                 ...placePatch('park', parkPlace),
                 hobbies: [...hobbies] as Hobby[],
+                hobbyRanks,
                 communityNote: communityNote.trim() || null,
                 helpingBeginners,
                 openToMentor,
@@ -832,7 +853,7 @@ export function EditSocialProfileScreen() {
 
                 {(section === 'all' || section === 'hobbies') && (
                     <>
-                        <SectionTitle text="Hobbies & Interests" />
+                        <SectionTitle text="Hobbies & Interests (pick up to 5)" />
                         <Card>
                             <View style={s.chipWrap}>
                                 {ALL_HOBBIES.map(h => {
@@ -849,6 +870,42 @@ export function EditSocialProfileScreen() {
                                 })}
                             </View>
                         </Card>
+
+                        {hobbies.size > 0 && (
+                            <>
+                                <SectionTitle text="Rate your hobbies" />
+                                <Card>
+                                    <Text style={s.rateHint}>Tap the dots to rate how much you love each. Higher-rated hobbies show first on your profile.</Text>
+                                    <View style={s.hobbyRateWrap}>
+                                        {[...hobbies]
+                                            .map(h => {
+                                                const meta = HOBBY_META[h];
+                                                const rating = hobbyRanks[h] ?? 0;
+                                                return (
+                                                    <View key={h} style={s.hobbyRateItem}>
+                                                        <View style={s.hobbyRateCircle}>
+                                                            <Text style={s.hobbyRateEmoji}>{meta.emoji}</Text>
+                                                        </View>
+                                                        <View style={s.hobbyRateDots}>
+                                                            {[1, 2, 3, 4, 5].map(n => (
+                                                                <TouchableOpacity
+                                                                    key={n}
+                                                                    onPress={() => setHobbyRank(h, n)}
+                                                                    style={s.hobbyRateDotHit}
+                                                                    activeOpacity={0.6}
+                                                                >
+                                                                    <View style={[s.hobbyRateDot, n <= rating && s.hobbyRateDotActive]} />
+                                                                </TouchableOpacity>
+                                                            ))}
+                                                        </View>
+                                                        <Text style={s.hobbyRateLabel} numberOfLines={1}>{meta.label}</Text>
+                                                    </View>
+                                                );
+                                            })}
+                                    </View>
+                                </Card>
+                            </>
+                        )}
                     </>
                 )}
 
@@ -1236,6 +1293,56 @@ const s = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 8,
         marginTop: 4,
+    },
+    rateHint: {
+        color: '#7A7C90',
+        fontSize: 12,
+        marginBottom: 14,
+    },
+    hobbyRateWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        rowGap: 18,
+        columnGap: 14,
+        justifyContent: 'flex-start',
+    },
+    hobbyRateItem: {
+        width: 86,
+        alignItems: 'center',
+        gap: 6,
+    },
+    hobbyRateCircle: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: 'rgba(76,78,120,0.12)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(76,78,120,0.22)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    hobbyRateEmoji: { fontSize: 24 },
+    hobbyRateDots: {
+        flexDirection: 'row',
+    },
+    hobbyRateDotHit: {
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+    },
+    hobbyRateDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 3.5,
+        backgroundColor: 'rgba(33,24,50,0.15)',
+    },
+    hobbyRateDotActive: {
+        backgroundColor: '#4C4E78',
+    },
+    hobbyRateLabel: {
+        color: '#211832',
+        fontSize: 11,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     chip: {
         flexDirection: 'row',

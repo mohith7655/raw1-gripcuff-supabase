@@ -169,8 +169,8 @@ export function FriendsHub() {
                                 <TouchableOpacity style={s.rowLeft} activeOpacity={0.8} onPress={() => goProfile(item.uid)}>
                                     <TierAvatar uri={item.profileImageUrl} size={42} uid={item.uid} name={item.fullName} radius={11} disableProfileLink />
                                     <View style={s.rowInfo}>
-                                        <Text style={s.rowName} numberOfLines={1}>{item.fullName}</Text>
-                                        <Text style={s.rowSub} numberOfLines={1}>@{item.username}</Text>
+                                        <Text style={s.rowName} numberOfLines={1}>@{item.username}</Text>
+                                        <Text style={s.rowSub} numberOfLines={1}>{item.fullName}</Text>
                                     </View>
                                 </TouchableOpacity>
                                 {busy ? <ActivityIndicator color={ORANGE} size="small" />
@@ -195,8 +195,8 @@ export function FriendsHub() {
                                 <TouchableOpacity style={s.rowLeft} activeOpacity={0.8} onPress={() => goProfile(req.fromUid)}>
                                     <TierAvatar uri={sender?.profileImageUrl} size={44} uid={req.fromUid} name={sender?.fullName} radius={11} disableProfileLink />
                                     <View style={s.rowInfo}>
-                                        <Text style={s.rowName} numberOfLines={1}>{sender?.fullName ?? 'New request'}</Text>
-                                        <Text style={s.rowSub} numberOfLines={1}>@{sender?.username ?? req.fromUid.slice(0, 8)}</Text>
+                                        <Text style={s.rowName} numberOfLines={1}>@{sender?.username ?? req.fromUid.slice(0, 8)}</Text>
+                                        <Text style={s.rowSub} numberOfLines={1}>{sender?.fullName ?? 'New request'}</Text>
                                     </View>
                                 </TouchableOpacity>
                                 {busy ? <ActivityIndicator color={ORANGE} size="small" /> : (
@@ -227,8 +227,8 @@ export function FriendsHub() {
                                 <View key={sug.uid} style={s.suggCard}>
                                     <TouchableOpacity activeOpacity={0.85} onPress={() => goProfile(sug.uid)} style={{ alignItems: 'center' }}>
                                         <TierAvatar uri={sug.avatarUrl} size={60} uid={sug.uid} name={sug.fullName} radius={16} disableProfileLink />
-                                        <Text style={s.suggName} numberOfLines={1}>{sug.fullName}</Text>
-                                        <Text style={s.suggSub} numberOfLines={1}>@{sug.username}</Text>
+                                        <Text style={s.suggName} numberOfLines={1}>@{sug.username}</Text>
+                                        <Text style={s.suggSub} numberOfLines={1}>{sug.fullName}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={[s.suggBtn, sent && s.suggBtnSent]}
@@ -262,9 +262,9 @@ export function FriendsHub() {
                         <TouchableOpacity style={s.rowLeft} activeOpacity={0.8} onPress={() => goProfile(f.uid)}>
                             <TierAvatar uri={f.profileImageUrl} size={44} uid={f.uid} name={f.fullName} radius={11} disableProfileLink />
                             <View style={s.rowInfo}>
-                                <Text style={s.rowName} numberOfLines={1}>{f.fullName || f.username}</Text>
+                                <Text style={s.rowName} numberOfLines={1}>@{f.username}</Text>
                                 <View style={s.metaRow}>
-                                    <Text style={s.rowSub} numberOfLines={1}>@{f.username}</Text>
+                                    <Text style={s.rowSub} numberOfLines={1}>{f.fullName || f.username}</Text>
                                     {(f.currentStreak ?? 0) > 0 && (
                                         <View style={s.streak}>
                                             <Flame size={11} color={ORANGE} />

@@ -42,6 +42,7 @@ import {
   Trophy,
   UserCheck,
   UserPlus,
+  X,
 } from 'lucide-react-native';
 import { useAuth } from '../providers/AuthContext';
 import { useFriend } from '../providers/FriendContext';
@@ -201,6 +202,8 @@ export function SocialProfileScreen() {
   const [viewerHome, setViewerHome] = useState<{ lat: number; lng: number } | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [fullscreenIdx, setFullscreenIdx] = useState<number | null>(null);
+  const [connections, setConnections] = useState<User[]>([]);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
 
   // Hide bottom CTA bar while scrolling, reveal when idle
   const ctaAnim = useRef(new RNAnimated.Value(1)).current;
@@ -252,6 +255,12 @@ export function SocialProfileScreen() {
   }, [uid, isOwn, supabaseUserId]);
 
   useFocusEffect(useCallback(() => { load(true); }, [load]));
+
+  // Load this profile's connections (friends) for the count + list.
+  useEffect(() => {
+    if (!uid) { setConnections([]); return; }
+    FriendService.getFriends(uid).then(setConnections).catch(() => {});
+  }, [uid]);
 
   // Load viewer's own home coords (used to compute distance to profile user)
   useEffect(() => {
@@ -511,6 +520,15 @@ export function SocialProfileScreen() {
                   {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                   <Text style={s.name} numberOfLines={1}>{displayName}</Text>
                 </View>
+                <TouchableOpacity
+                  style={s.connectsPill}
+                  onPress={() => setConnectionsOpen(true)}
+                  activeOpacity={0.75}
+                  disabled={connections.length === 0}
+                >
+                  <Text style={s.connectsCount}>{connections.length}</Text>
+                  <Text style={s.connectsLabel}>CONNECTS</Text>
+                </TouchableOpacity>
                 {showSection('locationMap') && (displayCity || homeDistanceText) ? (
                   <View style={s.heroMetaRow}>
                     <MapPin size={13} color={C.muted} />
@@ -647,7 +665,9 @@ export function SocialProfileScreen() {
               <View style={s.hobbyCircleRow}>
                 {rankedHobbies.map((hobby, idx) => {
                   const meta = HOBBY_META[hobby];
-                  const activeDots = Math.max(0, 5 - idx);
+                  // Use the explicit 1–5 rating when set; otherwise fall back to position.
+                  const rating = hobbyRanks[hobby] ?? 0;
+                  const activeDots = rating > 0 ? Math.min(5, rating) : Math.max(1, 5 - idx);
                   return (
                     <View key={hobby} style={s.hobbyCircleWrapper}>
                       <View style={s.hobbyCircle}>
@@ -988,6 +1008,44 @@ export function SocialProfileScreen() {
           )}
         </View>
       </Modal>
+
+      {/* ── Connections list ─────────────────────────────────────────────── */}
+      <Modal
+        visible={connectionsOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setConnectionsOpen(false)}
+      >
+        <View style={s.connOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setConnectionsOpen(false)} />
+          <View style={s.connSheet}>
+            <View style={s.connHeader}>
+              <Text style={s.connTitle}>Connections · {connections.length}</Text>
+              <TouchableOpacity onPress={() => setConnectionsOpen(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <X size={20} color={C.muted} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+              {connections.length === 0 ? (
+                <Text style={s.connEmpty}>No connections yet.</Text>
+              ) : connections.map(c => (
+                <TouchableOpacity
+                  key={c.uid}
+                  style={s.connRow}
+                  activeOpacity={0.8}
+                  onPress={() => { setConnectionsOpen(false); (navigation as any).push('SocialProfileScreen', { uid: c.uid }); }}
+                >
+                  <Avatar uri={c.profileImageUrl} size={44} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.connName} numberOfLines={1}>@{c.username}</Text>
+                    <Text style={s.connSub} numberOfLines={1}>{c.fullName}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1069,6 +1127,48 @@ const s = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
   },
+  connectsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
+    backgroundColor: '#211832',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  connectsCount: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  connectsLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
+  connOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+  connSheet: {
+    maxHeight: '75%',
+    backgroundColor: C.bg,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  connHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  connTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
+  connEmpty: { color: C.muted, fontSize: 14, textAlign: 'center', paddingVertical: 24 },
+  connRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: C.cardBg,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
+  connName: { color: C.text, fontSize: 14, fontWeight: '700' },
+  connSub: { color: C.muted, fontSize: 12, marginTop: 2 },
   openBadge: {
     flexDirection: 'row',
     alignItems: 'center',

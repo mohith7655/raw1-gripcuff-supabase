@@ -232,6 +232,13 @@ export const ProfileScreen = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Reload when returning to the screen (e.g. after editing hobbies/ratings),
+  // otherwise the profile keeps showing stale data.
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => load());
+    return unsub;
+  }, [navigation, load]);
+
   // Skeleton pulse animation
   useEffect(() => {
     if (!loading) return;
@@ -886,16 +893,25 @@ export const ProfileScreen = () => {
                 <Pencil size={16} color={C.muted} strokeWidth={2} />
               </TouchableOpacity>
             </View>
-            <View style={s.hobbiesRow}>
+            <View style={s.hobbyCircleRow}>
               {rankedHobbies.length === 0 ? (
                 <Text style={s.bodyText}>Add your hobbies</Text>
               ) : (
-                rankedHobbies.map(hobby => {
+                rankedHobbies.map((hobby, idx) => {
                   const meta = HOBBY_META[hobby];
+                  const rating = hobbyRanks[hobby] ?? 0;
+                  const activeDots = rating > 0 ? Math.min(5, rating) : Math.max(1, 5 - idx);
                   return (
-                    <View key={hobby} style={s.hobbyCapsule}>
-                      <Text style={s.hobbyRankEmoji}>{meta.emoji}</Text>
-                      <Text style={s.hobbyCapsuleText}>{meta.label}</Text>
+                    <View key={hobby} style={s.hobbyCircleWrapper}>
+                      <View style={s.hobbyCircle}>
+                        <Text style={s.hobbyCircleEmoji}>{meta.emoji}</Text>
+                      </View>
+                      <View style={s.hobbyRankDots}>
+                        {[0, 1, 2, 3, 4].map(d => (
+                          <View key={d} style={[s.hobbyRankDot, d < activeDots && s.hobbyRankDotActive]} />
+                        ))}
+                      </View>
+                      <Text style={s.hobbyCircleLabel} numberOfLines={1}>{meta.label}</Text>
                     </View>
                   );
                 })
@@ -1843,6 +1859,48 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 14,
+  },
+  hobbyCircleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 16,
+    columnGap: 14,
+    marginTop: 14,
+  },
+  hobbyCircleWrapper: {
+    width: 64,
+    alignItems: 'center',
+    gap: 6,
+  },
+  hobbyCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(76,78,120,0.12)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(76,78,120,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hobbyCircleEmoji: { fontSize: 24 },
+  hobbyRankDots: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  hobbyRankDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(33,24,50,0.15)',
+  },
+  hobbyRankDotActive: {
+    backgroundColor: '#4C4E78',
+  },
+  hobbyCircleLabel: {
+    color: C.text,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   hobbyCapsule: {
     flexDirection: 'row',

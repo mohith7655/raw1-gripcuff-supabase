@@ -5,17 +5,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   Image,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Rss, Users, ChevronRight, Zap, CalendarPlus, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, Rss, Users, ChevronRight, Zap, CalendarPlus, MessageCircle, Flame, UserPlus, Clock } from 'lucide-react-native';
+import { TierAvatar } from '../components/profile/TierAvatar';
+import { SocialProfileService } from '../services/socialProfile.service';
 import { AppTheme } from '../core/theme/app_theme';
 import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
-import { FriendsHub } from '../components/social/FriendsHub';
+import { SocialIntroModal } from '../components/SocialIntroModal';
+import { FeatureInfoModal } from '../components/FeatureInfoModal';
 import { ChatHub } from '../components/social/ChatHub';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useFriend } from '../providers/FriendContext';
@@ -35,13 +41,17 @@ import type { Club } from './ClubsScreen';
 const ORANGE = '#4C4E78';
 const TEXT_SECONDARY = '#7A7C90';
 
-type SocialTab = 'feed' | 'friends' | 'chat';
+// Social intro explainer persistence keys
+const SOCIAL_INTRO_SKIP = 'social_intro_skip_forever';
+const SOCIAL_INTRO_REMIND = 'social_intro_remind_at';
+
+type SocialTab = 'feed' | 'chat';
 
 export function FeedScreen() {
   const navigation = useNavigation<any>();
   const tabBar = useTabBarVisibility();
   const { supabaseUserId, user } = useAuth();
-  const { incomingRequests } = useFriend();
+  const { friends, incomingRequests, outgoingRequests, sendRequest } = useFriend();
   const [activeTab, setActiveTab] = useState<SocialTab>('feed');
 
   // Reveal the bottom bar when switching social sub-tabs (friends/chat don't drive
@@ -55,6 +65,71 @@ export function FeedScreen() {
   const [commentPost, setCommentPost] = useState<Post | null>(null);
   const [myClubs, setMyClubs] = useState<Club[]>([]);
   const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
+  // Which feature explainer popup is open (shown when its card is tapped).
+  const [featureInfo, setFeatureInfo] = useState<'challenge' | 'workout' | null>(null);
+
+  // ── Social intro explainer (Challenge Lobby + Workout with a Friend) ──
+  // Shown every time the screen is focused, unless the user chose "Never show
+  // again" (permanent) or is still inside a "remind in 7 days" window.
+  const [introVisible, setIntroVisible] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    (async () => {
+      try {
+        if (await AsyncStorage.getItem(SOCIAL_INTRO_SKIP) === '1') return;
+        const remindAt = await AsyncStorage.getItem(SOCIAL_INTRO_REMIND);
+        if (remindAt && Date.now() < Number(remindAt)) return;
+        setIntroVisible(true);
+      } catch { /* ignore storage errors */ }
+    })();
+  }, []));
+
+  // "Skip for now" — just close; it shows again on the next visit.
+  const handleIntroSkipOnce = useCallback(() => {
+    setIntroVisible(false);
+  }, []);
+
+  // "Never show again" — permanent.
+  const handleIntroSkipForever = useCallback(async () => {
+    setIntroVisible(false);
+    try { await AsyncStorage.setItem(SOCIAL_INTRO_SKIP, '1'); } catch {}
+  }, []);
+
+  // "Remind me in 7 days" — suppress for a week.
+  const handleIntroRemindLater = useCallback(async () => {
+    setIntroVisible(false);
+    const remindAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    try { await AsyncStorage.setItem(SOCIAL_INTRO_REMIND, String(remindAt)); } catch {}
+  }, []);
+
+  // ── People You May Know (friend suggestions) ──
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [sentUids, setSentUids] = useState<Set<string>>(new Set());
+  const [addBusyUid, setAddBusyUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    const exclude = [
+      ...friends.map(f => f.uid),
+      ...incomingRequests.map(r => r.fromUid),
+      ...outgoingRequests.map(r => r.toUid),
+    ];
+    SocialProfileService.getSuggestions(supabaseUserId, exclude, 12)
+      .then(rows => setSuggestions(rows))
+      .catch(() => {});
+  }, [supabaseUserId, friends, incomingRequests, outgoingRequests]);
+
+  const handleAddSuggestion = useCallback(async (uid: string) => {
+    setAddBusyUid(uid);
+    try {
+      await sendRequest(uid);
+      setSentUids(p => new Set(p).add(uid));
+    } catch (e: any) {
+      Alert.alert('Error', e?.message ?? 'Could not send request.');
+    } finally {
+      setAddBusyUid(null);
+    }
+  }, [sendRequest]);
 
   // Unread chat total — powers the Chat segment badge.
   useEffect(() => {
@@ -150,7 +225,7 @@ export function FeedScreen() {
     <View>
       <TouchableOpacity
         style={styles.challengeCard}
-        onPress={() => setChallengeLobbyVisible(true)}
+        onPress={() => setFeatureInfo('challenge')}
         activeOpacity={0.85}
       >
         <View style={styles.challengeIcon}>
@@ -165,18 +240,102 @@ export function FeedScreen() {
 
       <TouchableOpacity
         style={styles.inviteCard}
-        onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
+        onPress={() => setFeatureInfo('workout')}
         activeOpacity={0.85}
       >
         <View style={styles.inviteIcon}>
           <CalendarPlus color={ORANGE} size={18} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.challengeTitle}>Invite a Friend to Workout</Text>
+          <Text style={styles.challengeTitle}>Workout with Friend</Text>
           <Text style={styles.challengeSub}>Pick a workout & schedule it together</Text>
         </View>
         <ChevronRight color={ORANGE} size={18} />
       </TouchableOpacity>
+
+      {/* Your Friends — full list, shown right after the action cards */}
+      <View style={styles.friendsSection}>
+        <Text style={styles.friendsSectionTitle}>
+          Your Friends
+          {friends.length > 0 ? <Text style={styles.friendsCount}>  ·  {friends.length}</Text> : null}
+        </Text>
+        {friends.length === 0 ? (
+          <View style={styles.friendsEmpty}>
+            <Text style={styles.friendsEmptyText}>No friends yet — add some to work out together.</Text>
+          </View>
+        ) : (
+          friends.map(f => (
+            <View key={f.uid} style={styles.friendRow}>
+              <TouchableOpacity
+                style={styles.friendRowLeft}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SocialProfileScreen', { uid: f.uid })}
+              >
+                <TierAvatar uri={f.profileImageUrl} size={44} uid={f.uid} name={f.fullName} radius={11} disableProfileLink />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.friendName} numberOfLines={1}>@{f.username}</Text>
+                  <View style={styles.friendMetaRow}>
+                    <Text style={styles.friendSub} numberOfLines={1}>{f.fullName || f.username}</Text>
+                    {(f.currentStreak ?? 0) > 0 && (
+                      <View style={styles.friendStreak}>
+                        <Flame size={11} color={ORANGE} />
+                        <Text style={styles.friendStreakText}>{f.currentStreak}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.friendMsgBtn}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('ChatRoom', {
+                  friendUid: f.uid,
+                  friendName: f.fullName || f.username,
+                  friendAvatar: f.profileImageUrl,
+                })}
+              >
+                <MessageCircle size={18} color={ORANGE} />
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+      </View>
+
+      {/* People You May Know — suggestions */}
+      {suggestions.length > 0 && (
+        <View style={styles.suggSection}>
+          <Text style={styles.friendsSectionTitle}>People You May Know</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggScroll}>
+            {suggestions.map(sug => {
+              const sent = sentUids.has(sug.uid);
+              const busy = addBusyUid === sug.uid;
+              return (
+                <View key={sug.uid} style={styles.suggCard}>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => navigation.navigate('SocialProfileScreen', { uid: sug.uid })}
+                    style={{ alignItems: 'center' }}
+                  >
+                    <TierAvatar uri={sug.avatarUrl} size={60} uid={sug.uid} name={sug.fullName} radius={16} disableProfileLink />
+                    <Text style={styles.suggName} numberOfLines={1}>@{sug.username}</Text>
+                    <Text style={styles.suggSub} numberOfLines={1}>{sug.fullName}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.suggBtn, sent && styles.suggBtnSent]}
+                    onPress={() => !sent && handleAddSuggestion(sug.uid)}
+                    disabled={sent || busy}
+                    activeOpacity={0.85}
+                  >
+                    {busy ? <ActivityIndicator color="#fff" size="small" />
+                      : sent ? <><Clock size={12} color={ORANGE} /><Text style={[styles.suggBtnText, { color: ORANGE }]}>Sent</Text></>
+                      : <><UserPlus size={13} color="#fff" /><Text style={styles.suggBtnText}>Add</Text></>}
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 
@@ -276,7 +435,6 @@ export function FeedScreen() {
 
   const SEGMENTS: { key: SocialTab; label: string; Icon: any; badge: number }[] = [
     { key: 'feed', label: 'Feed', Icon: Rss, badge: 0 },
-    { key: 'friends', label: 'Friends', Icon: Users, badge: incomingRequests.length },
     { key: 'chat', label: 'Chat', Icon: MessageCircle, badge: unreadTotal },
   ];
 
@@ -329,8 +487,6 @@ export function FeedScreen() {
           onScroll={tabBar?.onScroll}
           scrollEventThrottle={16}
         />
-      ) : activeTab === 'friends' ? (
-        <FriendsHub />
       ) : (
         <ChatHub />
       )}
@@ -366,6 +522,44 @@ export function FeedScreen() {
           setChallengeLobbyVisible(false);
           navigation.navigate('ChallengeVideoRoom', params);
         }}
+      />
+
+      <SocialIntroModal
+        visible={introVisible}
+        onSkipOnce={handleIntroSkipOnce}
+        onRemindLater={handleIntroRemindLater}
+        onSkipForever={handleIntroSkipForever}
+      />
+
+      {/* Per-feature explainers — shown when a card is tapped */}
+      <FeatureInfoModal
+        visible={featureInfo === 'challenge'}
+        Icon={Zap}
+        title="Challenge Lobby"
+        body="Go head-to-head with anyone in the lobby, live."
+        bullets={[
+          'Get matched instantly with someone ready to train',
+          'You both do the same workout at the same time',
+          'Reps and time go head-to-head — winner takes the bragging rights',
+        ]}
+        ctaLabel="Enter Lobby"
+        onClose={() => setFeatureInfo(null)}
+        onContinue={() => { setFeatureInfo(null); setChallengeLobbyVisible(true); }}
+      />
+
+      <FeatureInfoModal
+        visible={featureInfo === 'workout'}
+        Icon={CalendarPlus}
+        title="Workout with Friends"
+        body="Pick a workout and schedule it together."
+        bullets={[
+          'Choose a friend and a workout to do together',
+          'Set a time — you both get a reminder',
+          'Train side-by-side over video and stay accountable',
+        ]}
+        ctaLabel="Get Started"
+        onClose={() => setFeatureInfo(null)}
+        onContinue={() => { setFeatureInfo(null); navigation.navigate('WorkoutWithFriendFlow'); }}
       />
     </SafeAreaView>
   );
@@ -492,6 +686,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+
+  // Your Friends list (shown on the Feed after the action cards)
+  friendsSection: { marginHorizontal: 16, marginTop: 18, gap: 10 },
+  friendsSectionTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
+  friendsCount: { color: '#7A7C90', fontSize: 14, fontWeight: '700' },
+  friendsEmpty: { paddingVertical: 16, alignItems: 'center' },
+  friendsEmptyText: { color: '#7A7C90', fontSize: 13 },
+  friendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F8FC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.06)',
+  },
+  friendRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
+  friendName: { color: '#211832', fontSize: 14, fontWeight: '700' },
+  friendMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  friendSub: { color: '#7A7C90', fontSize: 12 },
+  friendStreak: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  friendStreakText: { color: ORANGE, fontSize: 11, fontWeight: '700' },
+  friendMsgBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(76,78,120,0.1)',
+    borderWidth: 1, borderColor: 'rgba(76,78,120,0.2)',
+  },
+
+  // People You May Know
+  suggSection: { marginHorizontal: 16, marginTop: 18, gap: 10 },
+  suggScroll: { gap: 12, paddingVertical: 2, paddingRight: 16 },
+  suggCard: {
+    width: 130, alignItems: 'center', gap: 4,
+    backgroundColor: '#F8F8FC', borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: 'rgba(33,24,50,0.06)',
+  },
+  suggName: { color: '#211832', fontSize: 13, fontWeight: '700', marginTop: 8, maxWidth: 110, textAlign: 'center' },
+  suggSub: { color: '#7A7C90', fontSize: 11, maxWidth: 110, textAlign: 'center' },
+  suggBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
+    backgroundColor: '#211832', borderRadius: 18, paddingVertical: 7, paddingHorizontal: 16,
+    marginTop: 8, alignSelf: 'stretch',
+  },
+  suggBtnSent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)' },
+  suggBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   feedStatus: {
     alignItems: 'center',

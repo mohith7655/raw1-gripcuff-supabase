@@ -49,7 +49,7 @@ type Props = {
   bottomOffset?: number;
 };
 
-export function FloatingTabToggle({ activeTab, onTabChange, translateY, bottomOffset = 28 }: Props) {
+export function FloatingTabToggle({ activeTab, onTabChange, translateY, bottomOffset = 12 }: Props) {
   return (
     <Animated.View
       style={{

@@ -41,7 +41,7 @@ export function InviteTypeSelectorModal({
 
                 {/* Header */}
                 <View style={s.header}>
-                    <Text style={s.title}>Workout Together</Text>
+                    <Text style={s.title}>Workout with Friends</Text>
                     <TouchableOpacity onPress={onClose} style={s.closeBtn}>
                         <X color="#aaa" size={20} />
                     </TouchableOpacity>

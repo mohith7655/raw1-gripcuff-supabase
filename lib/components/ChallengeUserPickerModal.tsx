@@ -110,8 +110,13 @@ export function ChallengeUserPickerModal({
                                     {/* Name + streak */}
                                     <View style={s.rowInfo}>
                                         <Text style={s.rowName} numberOfLines={1}>
-                                            {friend.fullName || friend.username || 'Friend'}
+                                            {friend.username ? `@${friend.username}` : (friend.fullName || 'Friend')}
                                         </Text>
+                                        {!!friend.fullName && (
+                                            <Text style={{ color: '#7A7C90', fontSize: 12, marginTop: 1 }} numberOfLines={1}>
+                                                {friend.fullName}
+                                            </Text>
+                                        )}
                                         {(friend.currentStreak ?? 0) > 0 && (
                                             <Text style={s.rowStreak}>🔥 {friend.currentStreak} day streak</Text>
                                         )}

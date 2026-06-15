@@ -2022,7 +2022,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onCurrentPositionChange={handlePositionChange}
                         onDurationChange={handleDurationChange}
                         inviteCta={allowInvite ? {
-                            title: 'Workout Together',
+                            title: 'Workout with Friends',
                             subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F25912' }}>your way.</Text></Text>,
                             onWorkoutTogether: () => setShowWorkoutTogetherModal(true),
                             onStartNow: () => setShowInviteModal(true),

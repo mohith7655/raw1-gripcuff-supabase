@@ -340,8 +340,8 @@ export function ScheduleSessionModal({
                                     >
                                         <TierAvatar uri={item.profileImageUrl} size={38} uid={item.uid} name={item.fullName || item.username} radius={8} />
                                         <View style={s.friendInfo}>
-                                            <Text style={s.friendName}>{item.fullName || item.username}</Text>
-                                            <Text style={s.friendHandle}>@{item.username}</Text>
+                                            <Text style={s.friendName}>@{item.username}</Text>
+                                            <Text style={s.friendHandle}>{item.fullName || item.username}</Text>
                                         </View>
                                         <View style={s.scheduleChip}>
                                             <Text style={s.scheduleChipText}>Schedule</Text>

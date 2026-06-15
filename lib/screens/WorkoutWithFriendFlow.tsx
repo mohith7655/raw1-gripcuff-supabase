@@ -427,8 +427,8 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                     >
                                         <TierAvatar uri={f.profileImageUrl} size={44} uid={f.uid} name={f.fullName || f.username} radius={10} />
                                         <View style={{ marginLeft: 12 }}>
-                                            <Text style={styles.friendName}>{f.fullName}</Text>
-                                            <Text style={styles.friendUsername}>@{f.username}</Text>
+                                            <Text style={styles.friendName}>@{f.username}</Text>
+                                            <Text style={styles.friendUsername}>{f.fullName}</Text>
                                         </View>
                                         {isSelected && <Check color={AppTheme.primaryColor} size={20} style={{ marginLeft: 'auto' }} />}
                                     </TouchableOpacity>
@@ -442,7 +442,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
                                 registeredPhones: registeredPhoneNumbers
                             })}
                         >
-                            <Contact color="#211832" size={20} />
+                            <Contact color="#fff" size={20} />
                             <Text style={styles.inviteContactsText}>Invite Friends from Contacts</Text>
                         </TouchableOpacity>
 
@@ -1248,7 +1248,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     inviteContactsText: {
-        color: '#211832',
+        color: '#fff',
         fontWeight: 'bold',
         fontSize: 15,
     },

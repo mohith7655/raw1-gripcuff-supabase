@@ -287,8 +287,8 @@ export function QRCodeScreen() {
               <TierAvatar uri={avatarUrl} size={64} accessType={accessType} name={displayName} showBadge={false} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.identityName} numberOfLines={1}>{displayName || 'Athlete'}</Text>
-              {username ? <Text style={s.identityHandle}>@{username}</Text> : null}
+              <Text style={s.identityName} numberOfLines={1}>{username ? `@${username}` : (displayName || 'Athlete')}</Text>
+              {username ? <Text style={s.identityHandle}>{displayName || 'Athlete'}</Text> : null}
             </View>
           </View>
 

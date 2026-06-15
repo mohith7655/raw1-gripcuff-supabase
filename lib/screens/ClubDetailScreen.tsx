@@ -157,9 +157,9 @@ function InviteModal({
               <View style={inviteStyles.resultRow}>
                 <TierAvatar uri={item.avatar_url} size={40} uid={item.id} name={name} showBadge={false} />
                 <View style={{ flex: 1 }}>
-                  <Text style={inviteStyles.name}>{name}</Text>
+                  <Text style={inviteStyles.name}>{item.username ? `@${item.username}` : name}</Text>
                   {item.username && (
-                    <Text style={inviteStyles.username}>@{item.username}</Text>
+                    <Text style={inviteStyles.username}>{name}</Text>
                   )}
                 </View>
                 {alreadyMember ? (

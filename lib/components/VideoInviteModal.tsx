@@ -231,8 +231,8 @@ export function VideoInviteModal({ visible, videoId, videoTitle, category, progr
                                     >
                                         <TierAvatar uri={item.profileImageUrl} size={38} uid={item.uid} name={item.fullName || item.username} radius={8} />
                                         <View style={s.friendInfo}>
-                                            <Text style={s.friendName}>{item.fullName || item.username}</Text>
-                                            <Text style={s.friendUsername}>@{item.username}</Text>
+                                            <Text style={s.friendName}>@{item.username}</Text>
+                                            <Text style={s.friendUsername}>{item.fullName || item.username}</Text>
                                         </View>
                                         <View style={s.inviteNowChip}>
                                             <Text style={s.inviteNowText}>Invite Now</Text>
