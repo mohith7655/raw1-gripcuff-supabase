@@ -668,7 +668,6 @@ const HomeScreenInner = () => {
   const isCoaching = appMode === 'coaching';
 
   const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
-  const firstName = displayName.trim().split(/\s+/)[0];
 
   // ── Sectioned profile summary (Header / Identity / Social Proof) ─────────
   const locationText = socialProfile?.city
@@ -844,10 +843,10 @@ const HomeScreenInner = () => {
             <>
               {/* Quick Stats — Profile | Credits | Favourites (stacked vertically, centered) */}
               <View style={styles.compactStatsCard}>
-                {/* Profile row */}
+                {/* Profile row — opens the public "as others see it" view by default */}
                 <TouchableOpacity
                   style={[styles.compactStatRow, { flexDirection: 'row', paddingVertical: 18, alignItems: 'center', gap: 16 }]}
-                  onPress={() => navigation.navigate('ProfileScreen')}
+                  onPress={() => navigation.navigate('SocialProfileScreen')}
                   activeOpacity={0.85}
                 >
                   <View style={{ alignItems: 'center', gap: 8 }}>
@@ -863,11 +862,11 @@ const HomeScreenInner = () => {
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
-                    <Text style={[styles.compactStatRowLabel, { fontSize: 16, color: AppTheme.textWhite, fontWeight: '700' }]}>{firstName}</Text>
+                  <View style={{ alignItems: 'flex-start', gap: 1 }}>
                     {!!profile?.username && (
-                      <Text style={{ color: '#7A7C90', fontSize: 13, fontWeight: '500' }}>@{profile.username}</Text>
+                      <Text style={{ color: AppTheme.textWhite, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>@{profile.username}</Text>
                     )}
+                    <Text style={[styles.compactStatRowLabel, { fontSize: 13, color: '#7A7C90', fontWeight: '500' }]} numberOfLines={1}>{displayName}</Text>
                   </View>
                   <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
                     <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -895,7 +894,7 @@ const HomeScreenInner = () => {
                       )
                     )}
                   </View>
-                  {/* Workout time — Weekly · Avg · Lifetime */}
+                  {/* Workout time — Weekly · Lifetime */}
                   {(() => {
                     const fmt = (mins: number) => {
                       const m = Math.round(mins);
@@ -908,8 +907,6 @@ const HomeScreenInner = () => {
                       profile?.watchedMinutes ??
                       (profile?.workoutSeconds ? profile.workoutSeconds / 60 : 0)
                     );
-                    const totalWorkouts = streakData?.totalWorkouts ?? profile?.completedWorkouts ?? 0;
-                    const avgMins = totalWorkouts > 0 ? Math.round(lifetimeMins / totalWorkouts) : 0;
                     const Divider = () => (
                       <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: '#D8D8E4' }} />
                     );
@@ -922,8 +919,6 @@ const HomeScreenInner = () => {
                     return (
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
                         <Stat value={fmt(weeklyMins)} label="WEEKLY" />
-                        <Divider />
-                        <Stat value={fmt(avgMins)} label="AVG" />
                         <Divider />
                         <Stat value={fmt(lifetimeMins)} label="LIFETIME" />
                       </View>

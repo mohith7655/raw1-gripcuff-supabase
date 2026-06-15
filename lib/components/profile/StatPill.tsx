@@ -15,11 +15,13 @@ interface Props {
   streak: number;
   workouts: number;
   prs: number;
+  /** When true, drops the card background/border so it can sit inside a ProfileCard. */
+  bare?: boolean;
 }
 
-export function StatPill({ streak, workouts, prs }: Props) {
+export function StatPill({ streak, workouts, prs, bare }: Props) {
   return (
-    <View style={s.row}>
+    <View style={[s.row, bare && s.rowBare]}>
       {/* Day Streak */}
       <View style={s.cell}>
         <Flame size={28} color={ORANGE} strokeWidth={2.2} />
@@ -55,6 +57,11 @@ const s = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: BORDER,
+  },
+  rowBare: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderRadius: 0,
   },
   cell: {
     flex: 1,

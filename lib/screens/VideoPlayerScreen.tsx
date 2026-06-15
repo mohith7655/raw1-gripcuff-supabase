@@ -26,6 +26,7 @@ import { SelfScheduleModal } from '../components/SelfScheduleModal';
 import { WorkoutTogetherModal } from '../components/WorkoutTogetherModal';
 import { SharedVideoPlayer, SharedVideoPlayerRef } from '../components/SharedVideoPlayer';
 import { WorkoutStartModal } from '../components/WorkoutStartModal';
+import { VideoModeModal } from '../components/VideoModeModal';
 import MuscleVisualizer from '../components/MuscleVisualizer';
 import { PurposeSection } from '../components/PurposeSection';
 import { WorkoutCompletionModal } from '../components/workout/WorkoutCompletionModal';
@@ -113,7 +114,8 @@ function EngagementBar({
 
     return (
         <View style={engagementStyles.container}>
-            {buttons.map((btn) => (
+            {/* Favorite / Try it / Dislike — hidden in workout mode to keep focus on the timer */}
+            {modeType !== 'workout' && buttons.map((btn) => (
                 <TouchableOpacity
                     key={btn.key}
                     style={[engagementStyles.pill, btn.active && engagementStyles.pillActive]}
@@ -197,7 +199,7 @@ const engagementStyles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#F25912',
+        borderColor: '#4C4E78',
         padding: 3,
         gap: 3,
     },
@@ -207,7 +209,7 @@ const engagementStyles = StyleSheet.create({
         borderRadius: 17,
     },
     modeBtnActive: {
-        backgroundColor: '#000',
+        backgroundColor: '#4C4E78',
     },
     modeText: {
         color: '#7A7C90',
@@ -220,7 +222,13 @@ const engagementStyles = StyleSheet.create({
 });
 
 const ACCENT = '#F25912';
+// Brand indigo — used for non-CTA accents (selected chips, toggle outlines).
+// CTA orange (ACCENT) stays reserved for primary-action buttons only.
+const INDIGO = '#4C4E78';
+const INDIGO_SOFT = 'rgba(76,78,120,0.15)';
 const PANEL_BG = '#F8F8FC';
+// Dark surface for the workout-mode timer panel (deep brand indigo).
+const PANEL_DARK = '#211832';
 
 const FAQ_ITEMS = [
     {
@@ -334,6 +342,20 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const [showWorkoutStartModal, setShowWorkoutStartModal] = useState(false);
     const [currentPositionMs, setCurrentPositionMs] = useState(0);
     const sharedPlayerRef = useRef<SharedVideoPlayerRef>(null);
+
+    // ── Pre-start "Workout or Watch?" chooser ─────────────────────────────────
+    // Shown on entry for normal video launches. Skipped when the mode is already
+    // decided by the flow (auto-start workout, co-workout, or synced session).
+    const [showModeModal, setShowModeModal] = useState<boolean>(
+        () => !(
+            route?.params?.autoStartWorkout === true ||
+            !!route?.params?.coWorkoutChannel ||
+            !!route?.params?.sessionId ||
+            // initialMode is carried when navigating prev/next between videos —
+            // the user already chose a mode, so don't re-prompt.
+            !!route?.params?.initialMode
+        ),
+    );
 
     // ── Realtime playback sync ────────────────────────────────────────────────
     // sessionId + hostUserId are passed from UpcomingSessionsScreen.
@@ -1414,6 +1436,25 @@ function VideoPlayerScreen({ route, navigation }: any) {
         setModeType(mode);
     }, [resetWorkout, stopWorkoutTimer]);
 
+    // Pre-start chooser: apply the picked mode, then dismiss.
+    const handleChooseMode = useCallback((mode: 'watch' | 'workout') => {
+        setShowModeModal(false);
+        if (mode === 'workout') {
+            // switchViewMode pauses the video and drops to idle; user taps Start to begin.
+            switchViewMode('workout');
+        } else {
+            setModeType('watch');
+            sharedPlayerRef.current?.resumeVideo();
+        }
+    }, [switchViewMode]);
+
+    // While the chooser is open, hold the autoplaying video paused until they pick.
+    useEffect(() => {
+        if (!showModeModal) return;
+        const t = setTimeout(() => { try { sharedPlayerRef.current?.pauseVideo(); } catch {} }, 500);
+        return () => clearTimeout(t);
+    }, [showModeModal]);
+
     const activeProgram = useMemo(() => {
         if (!allowInvite) return undefined;
         return getProgramByVideoId(requestedVideoId ?? videoId);
@@ -1607,10 +1648,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         return (
                             <View key={type} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
-                                borderColor: active ? ACCENT : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? 'rgba(242,89,18,0.15)' : 'transparent',
+                                borderColor: active ? INDIGO : 'rgba(255,255,255,0.1)',
+                                backgroundColor: active ? INDIGO_SOFT : 'transparent',
                             }}>
-                                <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
+                                <Text style={{ color: active ? INDIGO : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
                                     {type}
                                 </Text>
                             </View>
@@ -1632,10 +1673,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         return (
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
-                                borderColor: active ? ACCENT : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? 'rgba(242,89,18,0.15)' : 'transparent',
+                                borderColor: active ? INDIGO : 'rgba(255,255,255,0.1)',
+                                backgroundColor: active ? INDIGO_SOFT : 'transparent',
                             }}>
-                                <Text style={{ color: active ? ACCENT : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
+                                <Text style={{ color: active ? INDIGO : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
                                     {label}
                                 </Text>
                             </View>
@@ -2206,6 +2247,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 }}
             />
 
+            {/* Pre-start chooser — Workout vs Watch */}
+            <VideoModeModal
+                visible={showModeModal}
+                title={title}
+                onSelect={handleChooseMode}
+                onClose={() => handleChooseMode('watch')}
+            />
+
             {/* Co-workout: replace the workout panel with camera tiles */}
             {isCoWorkout ? (
                 <CoWorkoutCameraTiles
@@ -2214,7 +2263,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     cameraPermissionDenied={cameraPermissionDenied}
                 />
             ) : (
-            <View style={[panelStyles.panel, { flex: 1 }]}>
+            <View style={[panelStyles.panel, { flex: 1 }, modeType === 'workout' && { backgroundColor: PANEL_DARK }]}>
 
                 {/* Reaction buttons — always full opacity, never dims during playback.
                     Active state and persistence are driven by useVideoInteractions
@@ -2493,7 +2542,7 @@ const navStyles = StyleSheet.create({
         gap: 8,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(33,24,50,0.08)',
+        borderColor: 'rgba(255,255,255,0.1)',
         borderRadius: 10,
         paddingHorizontal: 8,
         paddingVertical: 8,
@@ -2505,13 +2554,13 @@ const navStyles = StyleSheet.create({
     thumbFallback: { backgroundColor: 'rgba(242,89,18,0.18)' },
     textCol: { flex: 1, minWidth: 0 },
     label: {
-        color: 'rgba(33,24,50,0.5)',
+        color: 'rgba(255,255,255,0.5)',
         fontSize: 10,
         fontWeight: '700',
         letterSpacing: 0.4,
         textTransform: 'uppercase',
     },
-    titleText: { color: '#211832', fontSize: 13, fontWeight: '600' },
+    titleText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 });
 
 const s = StyleSheet.create({
@@ -2702,13 +2751,13 @@ const panelStyles = StyleSheet.create({
         letterSpacing: 2,
     },
     timerLabel: {
-        color: '#7A7C90',
+        color: 'rgba(255,255,255,0.55)',
         fontSize: 12,
         fontWeight: '500',
         marginTop: 2,
     },
     countdownText: {
-        color: '#211832',
+        color: '#fff',
         fontSize: 80,
         fontWeight: '900',
         letterSpacing: 2,
@@ -2752,11 +2801,11 @@ const panelStyles = StyleSheet.create({
         paddingVertical: 16,
         borderRadius: 30,
         borderWidth: 1,
-        borderColor: 'rgba(33,24,50,0.15)',
+        borderColor: 'rgba(255,255,255,0.18)',
         alignItems: 'center',
     },
     resetBtnText: {
-        color: '#7A7C90',
+        color: 'rgba(255,255,255,0.7)',
         fontSize: 18,
         fontWeight: '700',
     },
@@ -2790,16 +2839,16 @@ const panelStyles = StyleSheet.create({
     },
     cueStat: { flex: 1, alignItems: 'center', paddingHorizontal: 4, minWidth: 0 },
     cueStatWide: { flex: 1.5 },
-    cueStatValue: { color: '#211832', fontSize: 17, fontWeight: '800', textAlign: 'center' },
+    cueStatValue: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
     cueStatLabel: {
-        color: 'rgba(33,24,50,0.5)',
+        color: 'rgba(255,255,255,0.5)',
         fontSize: 11,
         fontWeight: '600',
         marginTop: 4,
     },
     cueDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.1)' },
     cueTip: {
-        color: 'rgba(33,24,50,0.7)',
+        color: 'rgba(255,255,255,0.7)',
         fontSize: 12,
         textAlign: 'center',
         marginTop: 12,

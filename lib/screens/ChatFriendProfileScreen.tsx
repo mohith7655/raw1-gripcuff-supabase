@@ -80,8 +80,8 @@ export const ChatFriendProfileScreen = () => {
                         <View style={{ marginBottom: 12 }}>
                             <TierAvatar uri={avatar} size={92} uid={friendUid} name={displayName} radius={20} />
                         </View>
-                        <Text style={styles.name}>{displayName}</Text>
                         <Text style={styles.username}>{displayUsername}</Text>
+                        <Text style={styles.name}>{displayName}</Text>
                     </View>
 
                     <View style={styles.card}>
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    name: { color: '#211832', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
-    username: { color: AppTheme.textGrey, fontSize: FontSizes.body, marginTop: 2 },
+    name: { color: AppTheme.textGrey, fontSize: FontSizes.body, fontWeight: '600' as any, marginTop: 2 },
+    username: { color: '#211832', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
     card: {
         backgroundColor: AppTheme.cardColor,
         borderRadius: 14,

@@ -29,13 +29,16 @@ import {
   BookOpen,
   Briefcase,
   Camera,
+  ChevronDown,
   ChevronRight,
   CircleUserRound,
   Dumbbell,
   Eye,
   Flame,
+  Globe,
   HeartHandshake,
   Home,
+  Lock,
   MapPin,
   Pencil,
   QrCode,
@@ -44,8 +47,6 @@ import {
   Users,
   Check,
   X,
-  Trash2,
-  RefreshCw,
   Sparkles,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -261,6 +262,16 @@ export const ProfileScreen = () => {
     }
   };
 
+  // Single visibility chip — opens the 3 levels as an action sheet
+  const openPrivacyMenu = () => {
+    Alert.alert('Profile visibility', 'Who can see your profile?', [
+      { text: 'Public', onPress: () => handleSetPrivacy('public') },
+      { text: 'Only Friends', onPress: () => handleSetPrivacy('friends_only') },
+      { text: 'Hidden (no commission)', onPress: () => handleSetPrivacy('private') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   // ── Per-section visibility (public/private) ──
   const isSectionPrivate = (key: string) => !!social?.sectionVisibility?.[key];
 
@@ -426,7 +437,7 @@ export const ProfileScreen = () => {
   const workouts = streakData?.totalWorkouts  ?? profile?.completedWorkouts ?? 12;
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
 
-  // Weekly · Avg · Lifetime workout-time stats (mirrors the home profile card).
+  // Weekly · Lifetime workout-time stats (mirrors the home profile card).
   const fmtMins = (mins: number) => {
     const m = Math.round(mins);
     return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
@@ -438,8 +449,6 @@ export const ProfileScreen = () => {
     profile?.watchedMinutes ??
     (profile?.workoutSeconds ? profile.workoutSeconds / 60 : 0)
   );
-  const totalWorkoutsForAvg = streakData?.totalWorkouts ?? profile?.completedWorkouts ?? 0;
-  const avgMins = totalWorkoutsForAvg > 0 ? Math.round(lifetimeMins / totalWorkoutsForAvg) : 0;
 
   // AI-curated intro blurb — generate from profile data, cache to DB.
   const handleGenerateSummary = async () => {
@@ -671,50 +680,60 @@ export const ProfileScreen = () => {
                         </LinearGradient>
                       </View>
                     )}
+                    {/* Camera corner-badge — tap to change / remove (Instagram-style) */}
+                    <TouchableOpacity
+                      style={s.editBadge}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        if (profile?.profileImageUrl) {
+                          Alert.alert('Profile photo', undefined, [
+                            { text: 'Change photo', onPress: handleReplaceAvatar },
+                            { text: 'Remove photo', style: 'destructive', onPress: handleDeleteAvatar },
+                            { text: 'Cancel', style: 'cancel' },
+                          ]);
+                        } else {
+                          handleReplaceAvatar();
+                        }
+                      }}
+                    >
+                      <Camera size={14} color="#fff" strokeWidth={2.2} />
+                    </TouchableOpacity>
                   </View>
                 </TierAvatarRing>
-
-                {/* Avatar action icons — below picture, always visible */}
-                <View style={s.avatarActions}>
-                  {profile?.profileImageUrl ? (
-                    <>
-                      <TouchableOpacity style={s.avatarActionBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
-                        <RefreshCw size={15} color="#211832" strokeWidth={2.2} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[s.avatarActionBtn, s.avatarActionDelete]} onPress={handleDeleteAvatar} activeOpacity={0.75}>
-                        <Trash2 size={15} color="#211832" strokeWidth={2.2} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <TouchableOpacity style={s.avatarUploadBtn} onPress={handleReplaceAvatar} activeOpacity={0.75}>
-                      <Camera size={15} color="#211832" strokeWidth={2.2} />
-                      <Text style={s.avatarUploadBtnText}>Upload Photo</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
               </View>
 
               <View style={s.heroInfoCol}>
                 <View style={s.nameLine}>
-                  <Text style={s.name} numberOfLines={1}>{firstName}</Text>
                   <Text style={s.handle} numberOfLines={1}>@{username}</Text>
+                  <Text style={s.name} numberOfLines={1}>{displayName}</Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                  <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
-                  </View>
-                </TouchableOpacity>
-                {/* Weekly · Avg · Lifetime — compact, under the name */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                  <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
+                    <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                    </View>
+                  </TouchableOpacity>
+                  {(() => {
+                    const lvl = social?.privacyLevel || 'public';
+                    const { label, Icon } =
+                      lvl === 'private'      ? { label: 'Hidden',  Icon: Lock } :
+                      lvl === 'friends_only' ? { label: 'Friends', Icon: Users } :
+                                               { label: 'Public',  Icon: Globe };
+                    return (
+                      <TouchableOpacity onPress={openPrivacyMenu} activeOpacity={0.7} style={s.visibilityChip}>
+                        <Icon size={12} color={C.muted} strokeWidth={2.2} />
+                        <Text style={s.visibilityChipText}>{label}</Text>
+                        <ChevronDown size={12} color={C.muted} strokeWidth={2.2} />
+                      </TouchableOpacity>
+                    );
+                  })()}
+                </View>
+                {/* Weekly · Lifetime — compact, under the name */}
                 <View style={s.heroTimeRow}>
                   <View style={s.heroTimeItem}>
                     <Text style={s.heroTimeValue}>{fmtMins(weeklyMins)}</Text>
                     <Text style={s.heroTimeLabel}>Weekly</Text>
-                  </View>
-                  <View style={s.heroTimeDivider} />
-                  <View style={s.heroTimeItem}>
-                    <Text style={s.heroTimeValue}>{fmtMins(avgMins)}</Text>
-                    <Text style={s.heroTimeLabel}>Avg</Text>
                   </View>
                   <View style={s.heroTimeDivider} />
                   <View style={s.heroTimeItem}>
@@ -725,30 +744,7 @@ export const ProfileScreen = () => {
               </View>
             </View>
 
-            {/* Privacy Controls */}
-            <View style={s.privacyRow}>
-              {[
-                { id: 'public', label: 'Public' },
-                { id: 'friends_only', label: 'Only Friends' },
-                { id: 'private', label: 'Hidden (no commission)' },
-              ].map(opt => {
-                const isActive = (social?.privacyLevel || 'public') === opt.id;
-                return (
-                  <TouchableOpacity
-                    key={opt.id}
-                    style={[s.privacyPill, isActive && s.privacyPillActive]}
-                    onPress={() => handleSetPrivacy(opt.id as any)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[s.privacyPillText, isActive && s.privacyPillTextActive]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Location labels below privacy pills */}
+            {/* Location labels below the visibility chip */}
             {(gymName || homeName || parkName) && (
               <View style={s.heroLocations}>
                 {gymName ? (
@@ -988,7 +984,12 @@ export const ProfileScreen = () => {
           </ProfileCard>
 
           {/* ── STATS (3 cards) ─────────────────────────────────────────────── */}
-          <StatPill streak={streak} workouts={workouts} prs={prs} />
+          <ProfileCard isPrivate={isSectionPrivate('stats')} onToggleVisibility={() => toggleSection('stats')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>Stats</Text>
+            </View>
+            <StatPill streak={streak} workouts={workouts} prs={prs} bare />
+          </ProfileCard>
 
           {/* ── FRIENDS ─────────────────────────────────────────────────────── */}
           <ProfileCard isPrivate={isSectionPrivate('friends')} onToggleVisibility={() => toggleSection('friends')}>
@@ -1462,37 +1463,6 @@ const s = StyleSheet.create({
     minWidth: 0,
     alignItems: 'flex-start',
   },
-  avatarActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  avatarActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(242,89,18,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarActionDelete: {
-    backgroundColor: 'rgba(239,68,68,0.85)',
-  },
-  avatarUploadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: C.orange,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  avatarUploadBtnText: {
-    color: '#211832',
-    fontSize: 13,
-    fontWeight: '700',
-  },
   avatarRing: {
     position: 'relative',
   },
@@ -1510,20 +1480,19 @@ const s = StyleSheet.create({
     borderColor: C.bg,
   },
   nameLine: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-    gap: 8,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 1,
   },
   name: {
-    color: C.text,
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  handle: {
     color: C.muted,
     fontSize: 15,
     fontWeight: '600',
+  },
+  handle: {
+    color: C.text,
+    fontSize: 22,
+    fontWeight: '800',
     marginTop: 0,
   },
   email: {
@@ -1558,32 +1527,21 @@ const s = StyleSheet.create({
     height: 22,
     backgroundColor: 'rgba(33,24,50,0.12)',
   },
-  privacyRow: {
+  visibilityChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  privacyPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 100,
     backgroundColor: C.cardBg,
     borderWidth: 1,
     borderColor: C.cardBorder,
   },
-  privacyPillActive: {
-    backgroundColor: '#4C4E78',
-    borderColor: '#4C4E78',
-  },
-  privacyPillText: {
+  visibilityChipText: {
     color: C.muted,
     fontSize: 12,
-    fontWeight: '600',
-  },
-  privacyPillTextActive: {
-    color: '#ffffff',
-    fontWeight: '800',
+    fontWeight: '700',
   },
   heroLocations: {
     gap: 4,

@@ -397,8 +397,8 @@ export function ScannedProfileScreen() {
         <View style={s.hero}>
           <TierAvatar uri={user?.profileImageUrl} size={100} accessType={user?.accessType} name={displayName} />
           <View style={{ height: 12 }} />
-          <Text style={s.name}>{displayName}</Text>
           {!!username && <Text style={s.handle}>@{username}</Text>}
+          <Text style={s.name}>{displayName}</Text>
           <View style={s.connectPill}>
             <Text style={s.connectPillText}>
               {openToConnect ? 'Open to connect' : 'Connections by Request'}
@@ -677,8 +677,8 @@ const s = StyleSheet.create({
     borderWidth: 3, borderColor: C.orange,
     alignItems: 'center', justifyContent: 'center',
   },
-  name:   { color: C.text, fontSize: 22, fontWeight: '800', marginTop: 12 },
-  handle: { color: C.muted, fontSize: 14, marginTop: 2 },
+  name:   { color: C.muted, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  handle: { color: C.text, fontSize: 22, fontWeight: '800', marginTop: 12 },
   connectPill: {
     marginTop: 10, backgroundColor: C.orange,
     borderRadius: 100, paddingHorizontal: 16, paddingVertical: 6,

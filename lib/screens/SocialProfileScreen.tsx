@@ -349,14 +349,13 @@ export function SocialProfileScreen() {
   const workouts = streakData?.totalWorkouts ?? user?.completedWorkouts ?? 0;
   const prs      = streakData?.bestStreak    ?? user?.bestStreak        ?? 0;
 
-  // Weekly · Avg · Lifetime time stats
+  // Weekly · Lifetime time stats
   const weeklyMins = streakData
     ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
     : 0;
   const lifetimeMins = Math.round(
     user?.watchedMinutes ?? (user?.workoutSeconds ? user.workoutSeconds / 60 : 0)
   );
-  const avgMins = workouts > 0 ? Math.round(lifetimeMins / workouts) : 0;
 
   // Location data
   const homeName = social?.houseName?.trim() || '';
@@ -509,10 +508,10 @@ export function SocialProfileScreen() {
 
               <View style={s.heroInfoCol}>
                 <View style={s.nameLine}>
+                  {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                   <Text style={s.name} numberOfLines={1}>{displayName}</Text>
-                  {username ? <Text style={s.handle} numberOfLines={1}> @{username}</Text> : null}
                 </View>
-                {(displayCity || homeDistanceText) ? (
+                {showSection('locationMap') && (displayCity || homeDistanceText) ? (
                   <View style={s.heroMetaRow}>
                     <MapPin size={13} color={C.muted} />
                     <Text style={s.heroMetaText} numberOfLines={1}>
@@ -520,7 +519,7 @@ export function SocialProfileScreen() {
                     </Text>
                   </View>
                 ) : null}
-                {whatIDoItems.length > 0 ? (
+                {showSection('whatIDo') && whatIDoItems.length > 0 ? (
                   <View style={s.heroMetaRow}>
                     <Briefcase size={13} color={C.muted} />
                     <Text style={s.heroMetaText} numberOfLines={2}>
@@ -541,15 +540,31 @@ export function SocialProfileScreen() {
             </View>
             <View style={s.timeStatDivider} />
             <View style={s.timeStatItem}>
-              <Text style={s.timeStatValue}>{fmtMins(avgMins)}</Text>
-              <Text style={s.timeStatLabel}>AVG</Text>
-            </View>
-            <View style={s.timeStatDivider} />
-            <View style={s.timeStatItem}>
               <Text style={s.timeStatValue}>{fmtMins(lifetimeMins)}</Text>
               <Text style={s.timeStatLabel}>LIFETIME</Text>
             </View>
           </View>
+
+          {/* ── EDIT PROFILE (own profile only) ──────────────────────────────── */}
+          {isOwn && (
+            <View style={s.ownActionRow}>
+              <TouchableOpacity
+                style={s.editProfileBtn}
+                onPress={() => navigation.navigate('ProfileScreen')}
+                activeOpacity={0.85}
+              >
+                <Edit2 size={15} color={C.text} />
+                <Text style={s.editProfileBtnText}>Edit Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.previewIconBtn}
+                onPress={() => (navigation as any).push('SocialProfileScreen', { uid: supabaseUserId, previewAsOther: true })}
+                activeOpacity={0.85}
+              >
+                <Eye size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* ── PHOTOS ───────────────────────────────────────────────────────── */}
           {(isPreview || (showSection('gallery') && photos.length > 0)) && (
@@ -711,6 +726,7 @@ export function SocialProfileScreen() {
           )}
 
           {/* ── STATS ────────────────────────────────────────────────────────── */}
+          {showSection('stats') && (
           <ProfileCard>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Stats</Text>
@@ -736,6 +752,7 @@ export function SocialProfileScreen() {
               </View>
             </View>
           </ProfileCard>
+          )}
 
           {/* ── BADGES ───────────────────────────────────────────────────────── */}
           {showSection('badges') && hasEarnedBadge && (
@@ -1038,20 +1055,19 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
   },
   nameLine: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-    gap: 8,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 1,
   },
   name: {
-    color: C.text,
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  handle: {
     color: C.muted,
     fontSize: 15,
     fontWeight: '600',
+  },
+  handle: {
+    color: C.text,
+    fontSize: 22,
+    fontWeight: '800',
   },
   openBadge: {
     flexDirection: 'row',
@@ -1372,6 +1388,39 @@ const s = StyleSheet.create({
     height: 32,
     backgroundColor: 'rgba(33,24,50,0.14)',
   },
+  ownActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+  editProfileBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: C.cardBg,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
+  editProfileBtnText: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  previewIconBtn: {
+    width: 46,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.cardBg,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
 
   // VisPill (inline Public/Private in card headers)
   visPillRow: {
@@ -1544,9 +1593,9 @@ const s = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: C.accentSoft,
+    backgroundColor: 'rgba(76,78,120,0.12)',
     borderWidth: 1.5,
-    borderColor: C.accentBorder,
+    borderColor: 'rgba(76,78,120,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1564,7 +1613,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(33,24,50,0.12)',
   },
   hobbyRankDotActive: {
-    backgroundColor: C.orange,
+    backgroundColor: '#4C4E78',
   },
   hobbyCircleLabel: {
     color: C.text,
@@ -1588,8 +1637,8 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   locTabActive: {
-    backgroundColor: C.orange,
-    borderColor: C.orange,
+    backgroundColor: '#4C4E78',
+    borderColor: '#4C4E78',
   },
   locTabText: {
     color: C.muted,
