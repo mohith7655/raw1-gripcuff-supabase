@@ -39,6 +39,9 @@ const toAppUser = (row: any, uid: string): User => {
     weightKg: row?.weight_kg != null ? Number(row.weight_kg) : undefined,
     bodyGoal: row?.body_goal || undefined,
     injuryArea: row?.injury_area || undefined,
+    injuryAreas: Array.isArray(row?.injury_areas)
+      ? row.injury_areas
+      : (typeof row?.injury_areas === 'string' ? JSON.parse(row.injury_areas) : undefined),
     injurySide: row?.injury_side || undefined,
     weightLossKg: row?.weight_loss_kg != null ? Number(row.weight_loss_kg) : undefined,
     targetMuscles: Array.isArray(row?.target_muscles)
@@ -162,6 +165,7 @@ export class UserService {
     if (data.weightKg !== undefined) payload.weight_kg = data.weightKg ?? null;
     if (data.bodyGoal !== undefined) payload.body_goal = data.bodyGoal ?? null;
     if (data.injuryArea !== undefined) payload.injury_area = data.injuryArea ?? null;
+    if (data.injuryAreas !== undefined) payload.injury_areas = data.injuryAreas ?? null;
     if (data.injurySide !== undefined) payload.injury_side = data.injurySide ?? null;
     if (data.weightLossKg !== undefined) payload.weight_loss_kg = data.weightLossKg ?? null;
     if (data.targetMuscles !== undefined) payload.target_muscles = data.targetMuscles ?? null;
@@ -194,7 +198,7 @@ export class UserService {
       throw new Error(error.message);
     }
 
-    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined || data.heightCm !== undefined || data.weightKg !== undefined || data.bodyGoal !== undefined || data.injuryArea !== undefined || data.injurySide !== undefined || data.weightLossKg !== undefined || data.targetMuscles !== undefined) {
+    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined || data.heightCm !== undefined || data.weightKg !== undefined || data.bodyGoal !== undefined || data.injuryArea !== undefined || data.injuryAreas !== undefined || data.injurySide !== undefined || data.weightLossKg !== undefined || data.targetMuscles !== undefined) {
       const { error: profileSyncErr } = await supabase
         .from('profiles')
         .upsert({
@@ -213,6 +217,7 @@ export class UserService {
           weight_kg: data.weightKg ?? undefined,
           body_goal: data.bodyGoal ?? undefined,
           injury_area: data.injuryArea ?? undefined,
+          injury_areas: data.injuryAreas ?? undefined,
           injury_side: data.injurySide ?? undefined,
           weight_loss_kg: data.weightLossKg ?? undefined,
           target_muscles: data.targetMuscles ?? undefined,

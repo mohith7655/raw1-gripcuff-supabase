@@ -28,8 +28,10 @@ export interface User {
   weightKg?: number;
   /** Body-transformation goal — powers the "My Goal" screen. */
   bodyGoal?: 'weight_loss' | 'muscle_growth' | 'injury_rehab';
-  /** Injured body part (only when bodyGoal = 'injury_rehab'). */
+  /** Injured body part (legacy single value). */
   injuryArea?: string;
+  /** Injured body parts (multi-select). */
+  injuryAreas?: string[];
   /** Which side of the body is injured (for bilateral parts). */
   injurySide?: 'left' | 'right' | 'both';
   /** Kilograms the user wants to lose (only when bodyGoal = 'weight_loss'). */

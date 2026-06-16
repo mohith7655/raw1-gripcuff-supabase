@@ -1,14 +1,14 @@
 /**
  * GoalVisualizer — "My Goal"
  *
- * Reuses the boy/girl silhouette on a ruler and tailors it per goal:
- *   • Weight loss   → ask how many kg to lose (compared to the saved weight from
- *                     "How I look now"); a ghost of the current body sits behind
- *                     the slimmer target so you can compare.
- *   • Muscle growth → pick your top 3 muscles; they light up on a broader figure.
- *   • Injury rehab  → pick a body part; bilateral parts highlight on BOTH sides.
+ * Three questions answered together (saved in one go):
+ *   1. Weight loss   → how many kg to lose (compared to the saved weight).
+ *   2. Muscle growth → pick your top 3 muscles (highlighted green).
+ *   3. Injury rehab  → which body part + which side (highlighted orange).
  *
- * Everything is committed via `onSave`; the parent persists it.
+ * The silhouette previews all answers at once: it slims for weight-loss (with a
+ * ghost of the current body behind), lights up the chosen muscles, and marks the
+ * injured side(s). Committed via `onSave`; the parent persists it.
  */
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, Image as RNImage, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -18,6 +18,7 @@ import Svg, { Circle, G, Image as SvgImage, Line, Text as SvgText } from 'react-
 const C = {
   orange:     '#F25912',
   green:      '#16a34a',
+  blue:       '#2563eb',   // recovery — distinct from the orange CTA
   text:       '#211832',
   muted:      '#7A7C90',
   canvas:     '#EEEEF2',
@@ -25,31 +26,23 @@ const C = {
   border:     'rgba(33,24,50,0.08)',
   accentSoft: 'rgba(242,89,18,0.12)',
   greenSoft:  'rgba(22,163,74,0.12)',
+  blueSoft:   'rgba(37,99,235,0.12)',
   rule:       'rgba(33,24,50,0.10)',
 };
 
-// ── Goals ─────────────────────────────────────────────────────────────────────
-export type BodyGoal = 'weight_loss' | 'muscle_growth' | 'injury_rehab';
 export type InjurySide = 'left' | 'right' | 'both';
 
 export interface GoalData {
-  goal: BodyGoal;
-  injuryArea: string | null;
-  injurySide: InjurySide | null;
   weightLossKg: number | null;
   targetMuscles: string[] | null;
+  injuryAreas: string[] | null;
+  injurySide: InjurySide | null;
 }
 
 const SIDES: { key: InjurySide; label: string }[] = [
   { key: 'left',  label: 'Left' },
   { key: 'right', label: 'Right' },
   { key: 'both',  label: 'Both' },
-];
-
-const GOALS: { key: BodyGoal; label: string; emoji: string }[] = [
-  { key: 'weight_loss',   label: 'Weight Loss',   emoji: '🔥' },
-  { key: 'muscle_growth', label: 'Muscle Growth', emoji: '💪' },
-  { key: 'injury_rehab',  label: 'Injury Rehab',  emoji: '🩹' },
 ];
 
 // ── Body landmarks (yFrac: 0=head 1=feet; xFrac: fraction of body width; both = bilateral) ──
@@ -152,8 +145,8 @@ interface Props {
   gender?: string | null;
   heightCm?: number | null;
   weightKg?: number | null;
-  goal?: BodyGoal | null;
   injuryArea?: string | null;
+  injuryAreas?: string[] | null;
   injurySide?: InjurySide | null;
   weightLossKg?: number | null;
   targetMuscles?: string[] | null;
@@ -165,24 +158,23 @@ interface Props {
 
 // ── Component ───────────────────────────────────────────────────────────────
 export default function GoalVisualizer({
-  name, gender, heightCm, weightKg, goal, injuryArea, injurySide, weightLossKg, targetMuscles,
+  name, gender, heightCm, weightKg, injuryArea, injuryAreas, injurySide, weightLossKg, targetMuscles,
   onSave, saving = false, canvasHeight = 320, editable = true,
 }: Props) {
-  const [selectedGoal, setSelectedGoal] = useState<BodyGoal>(goal ?? 'weight_loss');
-  const [selectedArea, setSelectedArea] = useState<string | null>(injuryArea ?? null);
-  const [side, setSide] = useState<InjurySide>(injurySide ?? 'both');
   const [muscles, setMuscles] = useState<string[]>(targetMuscles ?? []);
-
-  // Bilateral landmark currently selected for injury (drives the side picker).
-  const injuryLm = INJURY_AREAS.find(a => a.key === selectedArea);
-  const showSidePicker = selectedGoal === 'injury_rehab' && !!injuryLm?.both;
+  const [areas, setAreas] = useState<string[]>(
+    injuryAreas ?? (injuryArea ? [injuryArea] : []),
+  );
+  const [side, setSide] = useState<InjurySide>(injurySide ?? 'both');
 
   const curWeight = weightKg ?? 70;
   const heightM = (heightCm ?? 170) / 100;
-  const maxLose = Math.max(1, Math.round(curWeight - 35)); // never below 35 kg
-  const [lossKg, setLossKg] = useState<number>(clamp(weightLossKg ?? 5, 1, maxLose));
+  const maxLose = Math.max(1, Math.round(curWeight - 35));
+  const [lossKg, setLossKg] = useState<number>(clamp(weightLossKg ?? 0, 0, maxLose));
 
   const targetWeight = Math.max(35, curWeight - lossKg);
+  const selectedInjuries = INJURY_AREAS.filter(a => areas.includes(a.key));
+  const showSidePicker = selectedInjuries.some(a => a.both);
 
   const female = gender === 'female';
   const src = female ? GIRL_IMG : BOY_IMG;
@@ -193,62 +185,49 @@ export default function GoalVisualizer({
     const ty = GROUND - h;
     const baseW = h * aspect;
     const bmiCur = curWeight / (heightM * heightM);
-
     const girthCur = girthFromBmi(bmiCur);
-    let girthMain = girthCur;
-    let showGhost = false;
-    if (selectedGoal === 'weight_loss') {
-      girthMain = girthFromBmi(targetWeight / (heightM * heightM));
-      showGhost = true;
-    } else if (selectedGoal === 'muscle_growth') {
-      girthMain = clamp(girthCur * 1.12, 0.9, 1.5);
-      showGhost = true;
-    }
-    return { h, ty, baseW, girthCur, girthMain, showGhost };
-  }, [heightCm, aspect, curWeight, heightM, selectedGoal, targetWeight]);
+    const girthMain = lossKg > 0 ? girthFromBmi(targetWeight / (heightM * heightM)) : girthCur;
+    return { h, ty, baseW, girthCur, girthMain, showGhost: lossKg > 0 };
+  }, [heightCm, aspect, curWeight, heightM, lossKg, targetWeight]);
 
-  // Markers (injury or muscle) → screen points.
-  // Figure faces the viewer, so the body's own LEFT is on the viewer's RIGHT.
+  // Combined markers: muscles (green) + injury (orange). Body faces viewer, so
+  // its own LEFT is on the viewer's RIGHT.
   const markers = useMemo(() => {
-    const list: { x: number; y: number; r: number; label: string }[] = [];
-    const r = Math.max(11, fig.h * 0.05);
+    const list: { x: number; y: number; r: number; label: string; color: string; fill: string }[] = [];
+    const r = Math.max(10, fig.h * 0.045);
     const y = (lm: Landmark) => fig.ty + lm.yFrac * fig.h;
     const off = (lm: Landmark) => lm.xFrac * fig.baseW * fig.girthMain;
-    const bodyLeftX = (lm: Landmark) => CX + off(lm);   // viewer's right
-    const bodyRightX = (lm: Landmark) => CX - off(lm);  // viewer's left
+    const bodyLeftX = (lm: Landmark) => CX + off(lm);
+    const bodyRightX = (lm: Landmark) => CX - off(lm);
 
-    if (selectedGoal === 'injury_rehab' && injuryLm) {
-      const lm = injuryLm;
-      if (!lm.both) {
-        list.push({ x: CX + off(lm), y: y(lm), r, label: lm.label });
-      } else if (side === 'left') {
-        list.push({ x: bodyLeftX(lm), y: y(lm), r, label: `Left ${lm.label}` });
-      } else if (side === 'right') {
-        list.push({ x: bodyRightX(lm), y: y(lm), r, label: `Right ${lm.label}` });
+    muscles.forEach(key => {
+      const m = MUSCLES.find(x => x.key === key);
+      if (!m) return;
+      if (m.both) {
+        list.push({ x: bodyRightX(m), y: y(m), r, label: '', color: C.green, fill: 'rgba(22,163,74,0.22)' });
+        list.push({ x: bodyLeftX(m), y: y(m), r, label: m.label, color: C.green, fill: 'rgba(22,163,74,0.22)' });
       } else {
-        list.push({ x: bodyRightX(lm), y: y(lm), r, label: '' });
-        list.push({ x: bodyLeftX(lm), y: y(lm), r, label: lm.label });
+        list.push({ x: CX + off(m), y: y(m), r, label: m.label, color: C.green, fill: 'rgba(22,163,74,0.22)' });
       }
-    } else if (selectedGoal === 'muscle_growth') {
-      muscles.forEach(key => {
-        const m = MUSCLES.find(x => x.key === key);
-        if (!m) return;
-        if (m.both) {
-          list.push({ x: bodyRightX(m), y: y(m), r, label: '' });
-          list.push({ x: bodyLeftX(m), y: y(m), r, label: m.label });
-        } else {
-          list.push({ x: CX + off(m), y: y(m), r, label: m.label });
-        }
-      });
-    }
+    });
+
+    const bFill = 'rgba(37,99,235,0.22)';
+    selectedInjuries.forEach(lm => {
+      if (!lm.both) {
+        list.push({ x: CX + off(lm), y: y(lm), r, label: lm.label, color: C.blue, fill: bFill });
+      } else if (side === 'left') {
+        list.push({ x: bodyLeftX(lm), y: y(lm), r, label: `Left ${lm.label}`, color: C.blue, fill: bFill });
+      } else if (side === 'right') {
+        list.push({ x: bodyRightX(lm), y: y(lm), r, label: `Right ${lm.label}`, color: C.blue, fill: bFill });
+      } else {
+        list.push({ x: bodyRightX(lm), y: y(lm), r, label: '', color: C.blue, fill: bFill });
+        list.push({ x: bodyLeftX(lm), y: y(lm), r, label: lm.label, color: C.blue, fill: bFill });
+      }
+    });
     return list;
-  }, [selectedGoal, injuryLm, side, muscles, fig]);
+  }, [muscles, selectedInjuries, side, fig]);
 
-  const markerColor = selectedGoal === 'injury_rehab' ? C.orange : C.green;
-  const markerFill = selectedGoal === 'injury_rehab' ? 'rgba(242,89,18,0.22)' : 'rgba(22,163,74,0.22)';
-
-  const labelTop = clamp(fig.ty - 30, 10, GROUND);
-  const goalMeta = GOALS.find(g => g.key === selectedGoal)!;
+  const labelTop = clamp(fig.ty - 26, 10, GROUND);
 
   const toggleMuscle = (key: string) => {
     setMuscles(prev =>
@@ -258,13 +237,16 @@ export default function GoalVisualizer({
     );
   };
 
+  const toggleArea = (key: string) => {
+    setAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
   const handleSave = () => {
     onSave?.({
-      goal: selectedGoal,
-      injuryArea: selectedGoal === 'injury_rehab' ? selectedArea : null,
+      weightLossKg: lossKg > 0 ? lossKg : null,
+      targetMuscles: muscles.length > 0 ? muscles : null,
+      injuryAreas: areas.length > 0 ? areas : null,
       injurySide: showSidePicker ? side : null,
-      weightLossKg: selectedGoal === 'weight_loss' ? lossKg : null,
-      targetMuscles: selectedGoal === 'muscle_growth' ? muscles : null,
     });
   };
 
@@ -274,12 +256,20 @@ export default function GoalVisualizer({
     </G>
   );
 
+  // Read-only summary (preview card).
+  const summary: string[] = [];
+  if (lossKg > 0) summary.push(`🔥 Lose ${Math.round(lossKg)} kg`);
+  if (muscles.length) summary.push(`💪 ${muscles.map(k => MUSCLES.find(m => m.key === k)?.label ?? k).join(', ')}`);
+  if (selectedInjuries.length) {
+    const sidePrefix = showSidePicker ? `${side === 'both' ? 'Both' : side[0].toUpperCase() + side.slice(1)} · ` : '';
+    summary.push(`🩹 ${sidePrefix}${selectedInjuries.map(a => a.label).join(', ')}`);
+  }
+
   return (
     <View>
       {/* ── Stage ──────────────────────────────────────────────────────── */}
       <View style={st.stage}>
         <Svg width="100%" height={canvasHeight} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet">
-          {/* Ruler */}
           <G>
             {TICKS.map(cm => {
               const ty = GROUND - cm * PX_PER_CM;
@@ -297,131 +287,122 @@ export default function GoalVisualizer({
 
           <Line x1={RULER_X} y1={GROUND} x2={VB_W - 8} y2={GROUND} stroke={C.muted} strokeWidth={1.5} />
 
-          {/* Ghost (current body) behind, then the goal-shaped body */}
           {fig.showGhost && figureImage(fig.girthCur, 0.3)}
           {figureImage(fig.girthMain, 1)}
 
-          {/* Highlights */}
           {markers.map((m, i) => (
             <G key={i}>
-              <Circle cx={m.x} cy={m.y} r={m.r} fill={markerFill} stroke={markerColor} strokeWidth={2} />
-              <Circle cx={m.x} cy={m.y} r={2.5} fill={markerColor} />
+              <Circle cx={m.x} cy={m.y} r={m.r} fill={m.fill} stroke={m.color} strokeWidth={2} />
+              <Circle cx={m.x} cy={m.y} r={2.5} fill={m.color} />
               {!!m.label && (
-                <SvgText x={m.x} y={m.y - m.r - 5} fontSize={11} fontWeight="700" fill={markerColor} textAnchor="middle">{m.label}</SvgText>
+                <SvgText x={m.x} y={m.y - m.r - 5} fontSize={11} fontWeight="700" fill={m.color} textAnchor="middle">{m.label}</SvgText>
               )}
             </G>
           ))}
 
-          {/* Header label */}
           <SvgText x={CX} y={labelTop} fontSize={11} fill={C.text} textAnchor="middle" fontWeight="700">{name || 'Me'}</SvgText>
-          <SvgText x={CX} y={labelTop + 13} fontSize={11} fill={C.text} textAnchor="middle" fontWeight="700">
-            {`${goalMeta.emoji} ${goalMeta.label}`}
-          </SvgText>
+          <SvgText x={CX} y={labelTop + 13} fontSize={11} fill={C.muted} textAnchor="middle" fontWeight="700">My Goals</SvgText>
         </Svg>
       </View>
 
+      {/* ── Read-only summary (preview) ────────────────────────────────── */}
+      {!editable && (
+        <View style={st.summaryWrap}>
+          {summary.length === 0
+            ? <Text style={st.summaryEmpty}>Tap Edit to set your goals</Text>
+            : summary.map((line, i) => <Text key={i} style={st.summaryLine}>{line}</Text>)}
+        </View>
+      )}
+
+      {/* ── 3 questions ────────────────────────────────────────────────── */}
       {editable && (
         <>
-          {/* ── Goal chips ─────────────────────────────────────────────── */}
-          <Text style={st.ctrlLabel}>My goal</Text>
-          <View style={st.goalRow}>
-            {GOALS.map(g => {
-              const active = selectedGoal === g.key;
-              return (
-                <TouchableOpacity key={g.key} activeOpacity={0.85} onPress={() => setSelectedGoal(g.key)}
-                  style={[st.goalBtn, active && st.goalBtnActive]}>
-                  <Text style={st.goalEmoji}>{g.emoji}</Text>
-                  <Text style={[st.goalText, active && st.goalTextActive]}>{g.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+          {/* Q1 — Weight loss */}
+          <View style={st.qCard}>
+            <View style={st.qHead}>
+              <View style={st.qNum}><Text style={st.qNumText}>1</Text></View>
+              <Text style={st.qTitle}>Do you want to lose weight?</Text>
+            </View>
+            <View style={st.compareRow}>
+              <Compare label="Current" value={`${Math.round(curWeight)} kg`} />
+              <Text style={st.arrow}>→</Text>
+              <Compare label="Target" value={`${Math.round(targetWeight)} kg`} accent />
+              <View style={st.deltaPill}><Text style={st.deltaText}>{lossKg > 0 ? `−${Math.round(lossKg)} kg` : 'none'}</Text></View>
+            </View>
+            {weightKg == null && (
+              <Text style={st.hint}>Tip: set your weight in “How I look now” for an accurate comparison.</Text>
+            )}
+            <View style={st.sliderHead}>
+              <Text style={st.qLabel}>Kg to lose</Text>
+              <Text style={st.sliderValue}>{lossKg > 0 ? `${Math.round(lossKg)} kg` : '0 (skip)'}</Text>
+            </View>
+            <Slider min={0} max={maxLose} step={1} value={lossKg} color={C.orange} onChange={setLossKg} />
           </View>
 
-          {/* ── Weight loss: compare + how many kg ─────────────────────── */}
-          {selectedGoal === 'weight_loss' && (
-            <View style={st.section}>
-              <View style={st.compareRow}>
-                <Compare label="Current" value={`${Math.round(curWeight)} kg`} />
-                <Text style={st.arrow}>→</Text>
-                <Compare label="Target" value={`${Math.round(targetWeight)} kg`} accent />
-                <View style={st.deltaPill}><Text style={st.deltaText}>−{Math.round(lossKg)} kg</Text></View>
-              </View>
-              {weightKg == null && (
-                <Text style={st.hint}>Tip: set your weight in “How I look now” for an accurate comparison.</Text>
-              )}
-              <View style={st.sliderHead}>
-                <Text style={st.ctrlLabel}>How much to lose</Text>
-                <Text style={st.sliderValue}>{Math.round(lossKg)} kg</Text>
-              </View>
-              <Slider min={1} max={maxLose} step={1} value={lossKg} color={C.orange} onChange={setLossKg} />
+          {/* Q2 — Muscle growth */}
+          <View style={st.qCard}>
+            <View style={st.qHead}>
+              <View style={st.qNum}><Text style={st.qNumText}>2</Text></View>
+              <Text style={st.qTitle}>Which muscles do you want to grow?</Text>
+              <Text style={st.qCount}>{muscles.length}/{MAX_MUSCLES}</Text>
             </View>
-          )}
-
-          {/* ── Muscle growth: top 3 muscles ───────────────────────────── */}
-          {selectedGoal === 'muscle_growth' && (
-            <View style={st.section}>
-              <View style={st.sliderHead}>
-                <Text style={st.ctrlLabel}>Top muscles to grow</Text>
-                <Text style={st.sliderValue}>{muscles.length}/{MAX_MUSCLES}</Text>
-              </View>
-              <View style={st.chipGrid}>
-                {MUSCLES.map(m => {
-                  const active = muscles.includes(m.key);
-                  const full = !active && muscles.length >= MAX_MUSCLES;
-                  return (
-                    <TouchableOpacity key={m.key} activeOpacity={0.85} disabled={full}
-                      onPress={() => toggleMuscle(m.key)}
-                      style={[st.chip, active && st.chipActiveGreen, full && st.chipDisabled]}>
-                      <Text style={[st.chipText, active && st.chipTextActiveGreen]}>{m.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+            <View style={st.chipGrid}>
+              {MUSCLES.map(m => {
+                const active = muscles.includes(m.key);
+                const full = !active && muscles.length >= MAX_MUSCLES;
+                return (
+                  <TouchableOpacity key={m.key} activeOpacity={0.85} disabled={full}
+                    onPress={() => toggleMuscle(m.key)}
+                    style={[st.chip, active && st.chipActiveGreen, full && st.chipDisabled]}>
+                    <Text style={[st.chipText, active && st.chipTextActiveGreen]}>{m.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          )}
+          </View>
 
-          {/* ── Injury rehab: body part + which side ───────────────────── */}
-          {selectedGoal === 'injury_rehab' && (
-            <View style={st.section}>
-              <Text style={st.ctrlLabel}>Which body part?</Text>
-              <View style={st.chipGrid}>
-                {INJURY_AREAS.map(a => {
-                  const active = selectedArea === a.key;
-                  return (
-                    <TouchableOpacity key={a.key} activeOpacity={0.85}
-                      onPress={() => setSelectedArea(active ? null : a.key)}
-                      style={[st.chip, active && st.chipActive]}>
-                      <Text style={[st.chipText, active && st.chipTextActive]}>{a.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {showSidePicker && (
-                <>
-                  <Text style={[st.ctrlLabel, { marginTop: 16 }]}>Which side?</Text>
-                  <View style={st.sideRow}>
-                    {SIDES.map(sd => {
-                      const active = side === sd.key;
-                      return (
-                        <TouchableOpacity key={sd.key} activeOpacity={0.85} onPress={() => setSide(sd.key)}
-                          style={[st.sideBtn, active && st.chipActive]}>
-                          <Text style={[st.chipText, active && st.chipTextActive]}>{sd.label}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  <Text style={st.hint}>Left / right is your body's own side.</Text>
-                </>
-              )}
+          {/* Q3 — Injury rehab (multi-select) */}
+          <View style={st.qCard}>
+            <View style={st.qHead}>
+              <View style={[st.qNum, { backgroundColor: C.blue }]}><Text style={st.qNumText}>3</Text></View>
+              <Text style={st.qTitle}>Recovering from any injuries?</Text>
+              {areas.length > 0 && <Text style={st.qCount}>{areas.length}</Text>}
             </View>
-          )}
+            <View style={st.chipGrid}>
+              {INJURY_AREAS.map(a => {
+                const active = areas.includes(a.key);
+                return (
+                  <TouchableOpacity key={a.key} activeOpacity={0.85}
+                    onPress={() => toggleArea(a.key)}
+                    style={[st.chip, active && st.chipActiveBlue]}>
+                    <Text style={[st.chipText, active && st.chipTextActiveBlue]}>{a.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {showSidePicker && (
+              <>
+                <Text style={[st.qLabel, { marginTop: 14 }]}>Which side?</Text>
+                <View style={st.sideRow}>
+                  {SIDES.map(sd => {
+                    const active = side === sd.key;
+                    return (
+                      <TouchableOpacity key={sd.key} activeOpacity={0.85} onPress={() => setSide(sd.key)}
+                        style={[st.sideBtn, active && st.chipActiveBlue]}>
+                        <Text style={[st.chipText, active && st.chipTextActiveBlue]}>{sd.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={st.hint}>Applies to bilateral parts. Left / right is your body's own side.</Text>
+              </>
+            )}
+          </View>
 
-          {/* ── Save ─────────────────────────────────────────────────── */}
           {onSave && (
             <TouchableOpacity style={[st.saveBtn, saving && { opacity: 0.6 }]} activeOpacity={0.85}
               disabled={saving} onPress={handleSave}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={st.saveBtnText}>Save Goal</Text>}
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={st.saveBtnText}>Save Goals</Text>}
             </TouchableOpacity>
           )}
         </>
@@ -449,28 +430,38 @@ const st = StyleSheet.create({
     overflow: 'hidden',
     paddingVertical: 6,
   },
-  ctrlLabel: { color: C.text, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
-  goalRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  goalBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: C.cardBg,
-    borderWidth: 1.5, borderColor: C.border, alignItems: 'center', gap: 4,
-  },
-  goalBtnActive: { borderColor: C.orange, backgroundColor: C.accentSoft },
-  goalEmoji: { fontSize: 22 },
-  goalText: { color: C.muted, fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  goalTextActive: { color: C.text, fontWeight: '800' },
+  summaryWrap: { marginTop: 12, gap: 4 },
+  summaryLine: { color: C.text, fontSize: 14, fontWeight: '600' },
+  summaryEmpty: { color: C.muted, fontSize: 14 },
 
-  section: { marginTop: 18 },
-  compareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  qCard: {
+    marginTop: 14,
+    backgroundColor: C.cardBg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 14,
+  },
+  qHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  qNum: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: C.orange,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  qNumText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  qTitle: { flex: 1, color: C.text, fontSize: 15, fontWeight: '800' },
+  qCount: { color: C.muted, fontSize: 13, fontWeight: '700' },
+  qLabel: { color: C.text, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+
+  compareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   compareCol: { alignItems: 'center' },
   compareValue: { color: C.text, fontSize: 18, fontWeight: '800' },
   compareLabel: { color: C.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginTop: 2 },
   arrow: { color: C.muted, fontSize: 18, fontWeight: '800' },
   deltaPill: { marginLeft: 'auto', backgroundColor: C.accentSoft, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },
   deltaText: { color: C.orange, fontSize: 14, fontWeight: '800' },
-  hint: { color: C.muted, fontSize: 12, marginBottom: 8 },
+  hint: { color: C.muted, fontSize: 12, marginTop: 8 },
 
-  sliderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8, marginBottom: 10 },
+  sliderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 12, marginBottom: 10 },
   sliderValue: { color: C.text, fontSize: 13, fontWeight: '700' },
   sliderTrack: { height: 26, justifyContent: 'center' },
   sliderRail: { position: 'absolute', left: 0, right: 0, top: 10, height: 6, borderRadius: 3, backgroundColor: 'rgba(33,24,50,0.10)' },
@@ -483,21 +474,23 @@ const st = StyleSheet.create({
 
   sideRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   sideBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: C.cardBg,
+    flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: C.canvas,
     borderWidth: 1.5, borderColor: C.border, alignItems: 'center',
   },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, backgroundColor: C.cardBg,
+    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, backgroundColor: C.canvas,
     borderWidth: 1.5, borderColor: C.border,
   },
   chipActive: { borderColor: C.orange, backgroundColor: C.accentSoft },
   chipActiveGreen: { borderColor: C.green, backgroundColor: C.greenSoft },
+  chipActiveBlue: { borderColor: C.blue, backgroundColor: C.blueSoft },
   chipDisabled: { opacity: 0.4 },
   chipText: { color: C.muted, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: C.text, fontWeight: '800' },
   chipTextActiveGreen: { color: C.green, fontWeight: '800' },
+  chipTextActiveBlue: { color: C.blue, fontWeight: '800' },
 
-  saveBtn: { marginTop: 22, height: 52, borderRadius: 14, backgroundColor: C.orange, alignItems: 'center', justifyContent: 'center' },
+  saveBtn: { marginTop: 20, height: 52, borderRadius: 14, backgroundColor: C.orange, alignItems: 'center', justifyContent: 'center' },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
 });

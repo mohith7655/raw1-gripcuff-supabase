@@ -922,8 +922,8 @@ export const ProfileScreen = () => {
                 gender={profile?.gender}
                 heightCm={profile?.heightCm}
                 weightKg={profile?.weightKg}
-                goal={profile?.bodyGoal}
                 injuryArea={profile?.injuryArea}
+                injuryAreas={profile?.injuryAreas}
                 injurySide={profile?.injurySide}
                 weightLossKg={profile?.weightLossKg}
                 targetMuscles={profile?.targetMuscles}
