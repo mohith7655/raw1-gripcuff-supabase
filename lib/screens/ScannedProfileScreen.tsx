@@ -317,7 +317,7 @@ export function ScannedProfileScreen() {
   const whatIDo       = social?.whatIDo?.trim() || '';
   const openToConnect = social?.openToConnect !== false;
 
-  const streak   = streakData?.currentStreak ?? 0;
+  const squats   = user?.totalSquats         ?? 0;
   const workouts = streakData?.totalWorkouts ?? 0;
   const prs      = streakData?.bestStreak    ?? 0;
 
@@ -466,7 +466,7 @@ export function ScannedProfileScreen() {
         </View>
 
         {/* ── STATS ─────────────────────────────────────────────────────────── */}
-        <StatPill streak={streak} workouts={workouts} prs={prs} />
+        <StatPill squats={squats} workouts={workouts} prs={prs} />
 
         {/* ── FRIENDS COUNT ────────────────────────────────────────────────── */}
         <ProfileCard>

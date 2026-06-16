@@ -442,6 +442,7 @@ export const ProfileScreen = () => {
   const whatIDoItems= whatIDoRaw ? whatIDoRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
   const openToConnect = social?.openToConnect !== false;
 
+  const squats   = profile?.totalSquats       ?? 0;
   const streak   = streakData?.currentStreak  ?? profile?.currentStreak    ?? 3;
   const workouts = streakData?.totalWorkouts  ?? profile?.completedWorkouts ?? 12;
   const prs      = streakData?.bestStreak     ?? profile?.bestStreak        ?? 4;
@@ -922,11 +923,7 @@ export const ProfileScreen = () => {
                 gender={profile?.gender}
                 heightCm={profile?.heightCm}
                 weightKg={profile?.weightKg}
-                injuryArea={profile?.injuryArea}
-                injuryAreas={profile?.injuryAreas}
-                injurySide={profile?.injurySide}
-                weightLossKg={profile?.weightLossKg}
-                targetMuscles={profile?.targetMuscles}
+                goals={profile?.goals}
                 editable={false}
                 canvasHeight={260}
               />
@@ -1052,7 +1049,7 @@ export const ProfileScreen = () => {
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Stats</Text>
             </View>
-            <StatPill streak={streak} workouts={workouts} prs={prs} bare />
+            <StatPill squats={squats} workouts={workouts} prs={prs} bare />
           </ProfileCard>
 
           {/* ── FRIENDS ─────────────────────────────────────────────────────── */}
@@ -1121,6 +1118,7 @@ export const ProfileScreen = () => {
               contentContainerStyle={s.badgesScroll}
             >
               {[...BADGE_FAMILIES]
+                .filter(family => family.key !== 'streak') // streak badge removed
                 .sort((a, b) => {
                   const tA = badgeStates.find(bs => bs.familyKey === a.key)?.currentTier ?? 0;
                   const tB = badgeStates.find(bs => bs.familyKey === b.key)?.currentTier ?? 0;

@@ -30,6 +30,8 @@ import { VideoModeModal } from '../components/VideoModeModal';
 import MuscleVisualizer from '../components/MuscleVisualizer';
 import { PurposeSection } from '../components/PurposeSection';
 import { WorkoutCompletionModal } from '../components/workout/WorkoutCompletionModal';
+import { SquatCountModal } from '../components/workout/SquatCountModal';
+import { UserService } from '../services/user.service';
 import { ExerciseListTab } from '../components/workout/ExerciseListTab';
 import { InviteStrangerModal } from '../components/workout/InviteStrangerModal';
 import { StrangerInviteSenderModal } from '../components/StrangerInviteSenderModal';
@@ -1412,14 +1414,34 @@ function VideoPlayerScreen({ route, navigation }: any) {
         }
     }, [autoStartWorkout, modeType, timerState, startWorkout]);
 
+    // Move-reminder squat prompt (asks the rep count after the timer).
+    const isSquatReminder = requestedVideoId === 'move-squat';
+    const [showSquatPrompt, setShowSquatPrompt] = useState(false);
+    const [squatSaving, setSquatSaving] = useState(false);
+    const squatPromptedRef = useRef(false);
+
     // Auto-stop when the target duration (e.g. 60s squat set) is reached.
     useEffect(() => {
         if (targetDurationSec && timerState === 'running' && !workoutPaused && workoutElapsed >= targetDurationSec) {
             sharedPlayerRef.current?.pauseVideo();
             pauseWorkoutTick();
             flushWorkoutSeconds();
+            // After a move-reminder squat set, ask how many they did.
+            if (isSquatReminder && !squatPromptedRef.current) {
+                squatPromptedRef.current = true;
+                setShowSquatPrompt(true);
+            }
         }
-    }, [targetDurationSec, timerState, workoutPaused, workoutElapsed, pauseWorkoutTick, flushWorkoutSeconds]);
+    }, [targetDurationSec, timerState, workoutPaused, workoutElapsed, pauseWorkoutTick, flushWorkoutSeconds, isSquatReminder]);
+
+    const handleLogSquats = async (count: number) => {
+        setSquatSaving(true);
+        if (supabaseUserId && count > 0) {
+            await UserService.addSquats(supabaseUserId, count);
+        }
+        setSquatSaving(false);
+        setShowSquatPrompt(false);
+    };
 
     const switchViewMode = useCallback((mode: 'watch' | 'workout') => {
         if (mode === 'watch') {
@@ -1987,9 +2009,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
         ? (durationMsRef.current - currentPositionMs) / 1000
         : Infinity;
     const fsNavOpacity = fsRemainingSec <= 5 ? 1 : 0.4;
-    const fsWorkoutOverlay = (
+    // Prev/Next — shown on the video in BOTH normal and fullscreen, both modes.
+    const fsNavExtras = (
         <>
-            {/* prev / next exercise — top corners, showing the video name */}
             {prevVideo && (
                 <TouchableOpacity
                     style={[fsStyles.navBtn, fsStyles.navLeft, { opacity: fsNavOpacity }]}
@@ -2010,15 +2032,17 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     <Text style={[fsStyles.navText, fsStyles.navTextRight]} numberOfLines={1}>{nextVideo.title}</Text>
                 </TouchableOpacity>
             )}
+        </>
+    );
 
-            {/* Ready / Steady / Go */}
+    // Timer + Start/countdown — fullscreen workout only.
+    const fsWorkoutExtras = (
+        <>
             {timerState === 'countdown' && countdownPhase && (
                 <View style={fsStyles.countdownWrap} pointerEvents="none">
                     <Text style={fsStyles.countdownText}>{countdownPhase}</Text>
                 </View>
             )}
-
-            {/* Timer + Start/Pause — below the video (bottom bar) */}
             <View style={fsStyles.bottomBar}>
                 <Text style={fsStyles.timerText}>{formatWorkoutTime(workoutElapsed)}</Text>
                 {timerState === 'idle' ? (
@@ -2080,7 +2104,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onVideoEnd={handleVideoEndCallback}
                         onCurrentPositionChange={handlePositionChange}
                         onDurationChange={handleDurationChange}
-                        fullscreenExtras={modeType === 'workout' ? fsWorkoutOverlay : undefined}
+                        videoNavExtras={fsNavExtras}
+                        fullscreenExtras={modeType === 'workout' ? fsWorkoutExtras : undefined}
                         inviteCta={allowInvite ? {
                             title: 'Workout with Friends',
                             subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F25912' }}>your way.</Text></Text>,
@@ -2239,6 +2264,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 onDone={handleCompletionDone}
                 onKeepGoing={handleCompletionKeepGoing}
                 onClose={handleCompletionKeepGoing}
+            />
+
+            {/* Move-reminder: ask how many squats they did → add to lifetime total */}
+            <SquatCountModal
+                visible={showSquatPrompt}
+                saving={squatSaving}
+                onSubmit={handleLogSquats}
+                onSkip={() => setShowSquatPrompt(false)}
             />
 
             {rewardModal && (

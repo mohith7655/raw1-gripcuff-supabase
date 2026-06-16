@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     title: {
-        color: '#fff',
+        color: '#211832',
         fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',

@@ -1,10 +1,10 @@
 /**
- * StatPill — 3-card stat row: Day Streak | Workouts | PRs
+ * StatPill — 3-card stat row: Squats | Workouts | PRs
  * Used on ProfileScreen and ScannedProfileScreen.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Flame, Dumbbell, Trophy } from 'lucide-react-native';
+import { PersonStanding, Dumbbell, Trophy } from 'lucide-react-native';
 
 const ORANGE = '#F25912';
 const TEXT   = '#211832';
@@ -12,21 +12,21 @@ const MUTED  = '#7A7C90';
 const BORDER = 'rgba(33,24,50,0.06)';
 
 interface Props {
-  streak: number;
+  squats: number;
   workouts: number;
   prs: number;
   /** When true, drops the card background/border so it can sit inside a ProfileCard. */
   bare?: boolean;
 }
 
-export function StatPill({ streak, workouts, prs, bare }: Props) {
+export function StatPill({ squats, workouts, prs, bare }: Props) {
   return (
     <View style={[s.row, bare && s.rowBare]}>
-      {/* Day Streak */}
+      {/* Squats */}
       <View style={s.cell}>
-        <Flame size={28} color={ORANGE} strokeWidth={2.2} />
-        <Text style={s.value}>{streak}</Text>
-        <Text style={s.label}>Day Streak</Text>
+        <PersonStanding size={28} color={ORANGE} strokeWidth={2.2} />
+        <Text style={s.value}>{squats}</Text>
+        <Text style={s.label}>Squats</Text>
       </View>
 
       <View style={s.divider} />

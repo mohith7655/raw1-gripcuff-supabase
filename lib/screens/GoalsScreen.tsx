@@ -35,10 +35,7 @@ export const GoalsScreen = () => {
     setSaving(true);
     try {
       await updateProfile(supabaseUserId, {
-        injuryAreas: data.injuryAreas ?? (null as any),
-        injurySide: data.injurySide ?? (null as any),
-        weightLossKg: data.weightLossKg ?? (null as any),
-        targetMuscles: data.targetMuscles ?? (null as any),
+        goals: data.goals,
       });
       navigation.goBack();
     } catch (err) {
@@ -69,11 +66,7 @@ export const GoalsScreen = () => {
           gender={profile?.gender}
           heightCm={profile?.heightCm}
           weightKg={profile?.weightKg}
-          injuryArea={profile?.injuryArea}
-          injuryAreas={profile?.injuryAreas}
-          injurySide={profile?.injurySide}
-          weightLossKg={profile?.weightLossKg}
-          targetMuscles={profile?.targetMuscles}
+          goals={profile?.goals}
           canvasHeight={canvasHeight}
           saving={saving}
           onSave={handleSave}

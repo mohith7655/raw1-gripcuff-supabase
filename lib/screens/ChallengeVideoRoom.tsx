@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Mic, MicOff, PhoneOff, Flag, Video, VideoOff } from 'lucide-react-native';
 import { ChallengeSessionService, ChallengeSession } from '../services/challengeSession.service';
+import { UserService } from '../services/user.service';
 import { supabase } from '../core/config/supabase';
 import { playReminderBeep } from '../utils/webAudio';
 // Platform-split voice service — picks .native.ts (react-native-agora) on mobile
@@ -365,6 +366,10 @@ export const ChallengeVideoRoom: React.FC = () => {
                 reps: answers.reps,
                 winnerId: answers.winner === 'me' ? meId : oppId,
             });
+            // Count squats toward the lifetime profile total.
+            if (exerciseName === 'Squats' && answers.reps > 0) {
+                UserService.addSquats(meId, answers.reps).catch(() => {});
+            }
             // Saved — close the questionnaire and leave the room.
             setSubmittingFeedback(false);
             setShowQuestionnaire(false);

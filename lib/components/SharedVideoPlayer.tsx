@@ -88,8 +88,11 @@ interface SharedVideoPlayerProps {
     /** Supabase user ID — when provided, watch time is tracked automatically. */
     userId?: string;
     /** Overlay rendered on top of the video ONLY in fullscreen (e.g. workout
-     *  timer, prev/next). Positioned by the caller via absolute styles. */
+     *  timer). Positioned by the caller via absolute styles. */
     fullscreenExtras?: React.ReactNode;
+    /** Overlay rendered on top of the video in BOTH normal and fullscreen
+     *  (e.g. prev/next exercise in the top corners). */
+    videoNavExtras?: React.ReactNode;
     /** Notified when fullscreen is entered/exited. */
     onFullscreenChange?: (isFullscreen: boolean) => void;
 }
@@ -135,6 +138,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     onDurationChange,
     userId,
     fullscreenExtras,
+    videoNavExtras,
     onFullscreenChange,
 }: SharedVideoPlayerProps, ref: React.Ref<SharedVideoPlayerRef>) {
     // Stable ref for userId so event listeners never capture a stale closure
@@ -814,9 +818,9 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                 <View style={styles.controlsRow}>
                                     <TouchableOpacity onPress={togglePlay} style={styles.playBtn}>
                                         {isPlaying ? (
-                                            <Pause color="black" size={28} />
+                                            <Pause color="white" fill="white" size={26} />
                                         ) : (
-                                            <Play color="black" size={28} style={styles.playIcon} />
+                                            <Play color="white" fill="white" size={26} style={styles.playIcon} />
                                         )}
                                     </TouchableOpacity>
                                 </View>
@@ -857,7 +861,14 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                 <View style={[styles.seekThumb, { left: `${displayProgress * 100}%` }]} />
                             </View>
 
-                            {/* Caller-supplied fullscreen overlay (workout timer, prev/next) */}
+                            {/* Prev/next nav — shown in normal AND fullscreen */}
+                            {videoNavExtras && (
+                                <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                                    {videoNavExtras}
+                                </View>
+                            )}
+
+                            {/* Caller-supplied fullscreen-only overlay (workout timer) */}
                             {isFullscreen && fullscreenExtras && (
                                 <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
                                     {fullscreenExtras}
@@ -1005,16 +1016,17 @@ const styles = StyleSheet.create({
     controlBtn: {
         padding: 8,
     },
+    // YouTube-style: translucent rounded rectangle with a filled white triangle.
     playBtn: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: 'white',
+        width: 70,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: 'rgba(20,20,20,0.6)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     playIcon: {
-        marginLeft: 4,
+        marginLeft: 3,
     },
     timeText: {
         color: 'white',

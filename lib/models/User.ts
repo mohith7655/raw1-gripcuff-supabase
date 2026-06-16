@@ -12,6 +12,20 @@ export interface UserLocations {
   park?: UserLocationData;
 }
 
+export type GoalType = 'muscle_growth' | 'weight_loss' | 'injury_rehab' | 'stretching';
+
+export interface GoalEntry {
+  type: GoalType;
+  /** muscle_growth: up to 3 muscle groups. */
+  muscles?: string[];
+  /** weight_loss: kg to lose. */
+  kg?: number;
+  /** injury_rehab / stretching: body parts. */
+  areas?: string[];
+  /** injury_rehab: which side for bilateral parts. */
+  side?: 'left' | 'right' | 'both';
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -38,6 +52,8 @@ export interface User {
   weightLossKg?: number;
   /** Up to 3 target muscle groups (only when bodyGoal = 'muscle_growth'). */
   targetMuscles?: string[];
+  /** Stepped goal builder — ordered list of typed goals (My Goal screen). */
+  goals?: GoalEntry[];
   locations?: UserLocations;
   completedVideos: number;
   totalVideos: number;
@@ -52,6 +68,8 @@ export interface User {
   lastWorkoutDate?: string | null;
   weeklyActivity?: Record<string, boolean>;
   completedWorkouts?: number;
+  /** Lifetime squats logged (challenge lobby + move reminders). */
+  totalSquats?: number;
   watchedMinutes?: number;
   watchedSeconds?: number;
   workoutSeconds?: number;

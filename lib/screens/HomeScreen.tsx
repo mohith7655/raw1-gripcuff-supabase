@@ -54,6 +54,8 @@ import { ChatConversation } from '../models/Chat';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
 import { TierBars } from '../components/profile/TierBars';
 import { TierAvatar } from '../components/profile/TierAvatar';
+import BodyVisualizer from '../components/profile/BodyVisualizer';
+import GoalVisualizer from '../components/profile/GoalVisualizer';
 import { tierLevel } from '../components/profile/TierBars';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { RecommendedProgram } from '../services/recommendation.service';
@@ -874,25 +876,20 @@ const HomeScreenInner = () => {
                       <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
                     </View>
                   </TouchableOpacity>
-                  {/* Badge pills only */}
+                  {/* Badge pills — global Squats total (always shown) + earned badges */}
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                    {earnedBadges.length === 0 ? (
-                      <View style={styles.profileStatPill}>
-                        <Text style={styles.profileStatPillText}>🏅 No badges yet</Text>
-                      </View>
-                    ) : (
-                      earnedBadges.map((b, i) =>
-                        b.label === 'Streak' ? (
-                          <FireGlowPill key={i} style={styles.profileStatPill}>
-                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
-                          </FireGlowPill>
-                        ) : (
-                          <View key={i} style={styles.profileStatPill}>
-                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
-                          </View>
-                        )
-                      )
-                    )}
+                    {/* Squats — global running total, shows even at 0 */}
+                    <View style={styles.profileStatPill}>
+                      <Text style={styles.profileStatPillText}>🏋️ {profile?.totalSquats ?? 0} Squats</Text>
+                    </View>
+                    {/* Earned badges (streak removed); no "no badges" placeholder */}
+                    {earnedBadges
+                      .filter(b => b.label !== 'Streak')
+                      .map((b, i) => (
+                        <View key={i} style={styles.profileStatPill}>
+                          <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                        </View>
+                      ))}
                   </View>
                   {/* Workout time — Weekly · Lifetime */}
                   {(() => {
@@ -1466,6 +1463,47 @@ const HomeScreenInner = () => {
               </View>
             </>
           )}
+
+          {/* ── How I look now + My Goals — previews at the very bottom ─────── */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('HowILookNow')}
+            style={styles.bottomPreviewCard}
+          >
+            <View style={styles.bottomPreviewHeader}>
+              <Text style={styles.bottomPreviewTitle}>How I look now</Text>
+              <Text style={styles.bottomPreviewEdit}>Edit</Text>
+            </View>
+            <BodyVisualizer
+              name={profile?.fullName}
+              gender={profile?.gender}
+              heightCm={profile?.heightCm}
+              weightKg={profile?.weightKg}
+              age={profile?.age}
+              editable={false}
+              canvasHeight={240}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('Goals')}
+            style={styles.bottomPreviewCard}
+          >
+            <View style={styles.bottomPreviewHeader}>
+              <Text style={styles.bottomPreviewTitle}>My Goals</Text>
+              <Text style={styles.bottomPreviewEdit}>Edit</Text>
+            </View>
+            <GoalVisualizer
+              name={profile?.fullName}
+              gender={profile?.gender}
+              heightCm={profile?.heightCm}
+              weightKg={profile?.weightKg}
+              goals={profile?.goals}
+              editable={false}
+              canvasHeight={240}
+            />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -2276,6 +2314,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
+  bottomPreviewCard: {
+    marginTop: 12,
+    backgroundColor: '#F8F8FC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.06)',
+    padding: 14,
+  },
+  bottomPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  bottomPreviewTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
+  bottomPreviewEdit: { color: '#F25912', fontSize: 13, fontWeight: '700' },
   profileStatPillText: {
     color: AppTheme.textWhite,
     fontSize: 11,

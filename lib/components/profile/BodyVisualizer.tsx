@@ -131,6 +131,13 @@ function buildFigure(m: BodyMetrics) {
   return { h, ty, src, baseW, girthX };
 }
 
+// ── kg ⇄ lb (weight is shown in pounds; stored/computed in kg for BMI) ────────
+const KG_PER_LB = 0.45359237;
+const kgToLb = (kg: number) => kg / KG_PER_LB;
+const lbToKg = (lb: number) => lb * KG_PER_LB;
+const WEIGHT_MIN_LB = Math.round(kgToLb(WEIGHT_MIN)); // ~77 lb
+const WEIGHT_MAX_LB = Math.round(kgToLb(WEIGHT_MAX)); // ~353 lb
+
 // ── Ruler ticks (every 30cm) ────────────────────────────────────────────────
 const TICKS = [0, 30, 60, 90, 120, 150, 180, 210];
 const RULER_X = 56;
@@ -168,6 +175,40 @@ function Slider({
   );
 }
 
+// ── Vertical slider (bottom → top) ────────────────────────────────────────────
+function VerticalSlider({
+  min, max, step, value, onChange, onCommit, color, height,
+}: {
+  min: number; max: number; step: number; value: number;
+  onChange: (v: number) => void; onCommit?: () => void; color: string; height: number;
+}) {
+  const [h, setH] = useState(0);
+  const pct = clamp((value - min) / (max - min), 0, 1); // 0 = bottom, 1 = top
+
+  const update = (e: GestureResponderEvent) => {
+    if (!h) return;
+    const y = clamp(e.nativeEvent.locationY, 0, h);
+    const ratio = 1 - y / h; // invert: top is the maximum
+    onChange(round(min + ratio * (max - min), step));
+  };
+
+  return (
+    <View
+      style={[s.vTrack, { height }]}
+      onLayout={e => setH(e.nativeEvent.layout.height)}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={update}
+      onResponderMove={update}
+      onResponderRelease={e => { update(e); onCommit?.(); }}
+    >
+      <View style={s.vRail} />
+      <View style={[s.vFill, { height: `${pct * 100}%`, backgroundColor: color }]} />
+      <View style={[s.vThumb, { bottom: `${pct * 100}%`, borderColor: color }]} />
+    </View>
+  );
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 export default function BodyVisualizer({
   name, gender, heightCm, weightKg, age, onCommit, onSave, saving = false,
@@ -196,8 +237,20 @@ export default function BodyVisualizer({
 
   return (
     <View>
-      {/* ── Stage: ruler + morphing figure ─────────────────────────────── */}
-      <View style={s.stage}>
+      {/* ── Stage: vertical height slider (left) + ruler + morphing figure ── */}
+      <View style={s.stageRow}>
+        {editable && (
+          <View style={s.vSliderCol}>
+            <Text style={s.vValue}>{Math.round(m.heightCm)}</Text>
+            <VerticalSlider
+              height={canvasHeight - 34}
+              min={HEIGHT_MIN} max={HEIGHT_MAX} step={1} value={m.heightCm} color={C.indigo}
+              onChange={v => set({ heightCm: v })} onCommit={() => commit({ heightCm: m.heightCm })}
+            />
+            <Text style={s.vUnit}>HEIGHT</Text>
+          </View>
+        )}
+      <View style={[s.stage, { flex: 1 }]}>
         <Svg width="100%" height={canvasHeight} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet">
           {/* Ruler grid lines + labels */}
           <G>
@@ -253,11 +306,27 @@ export default function BodyVisualizer({
           />
         </Svg>
       </View>
+      </View>
+
+      {/* ── Weight: horizontal (lbs), right below the image ────────────── */}
+      {editable && (
+        <View style={s.weightBelow}>
+          <View style={s.sliderHead}>
+            <Text style={s.ctrlLabel}>Weight</Text>
+            <Text style={s.sliderValue}>{Math.round(kgToLb(m.weightKg))} lb</Text>
+          </View>
+          <Slider
+            min={WEIGHT_MIN_LB} max={WEIGHT_MAX_LB} step={1} value={Math.round(kgToLb(m.weightKg))} color={C.orange}
+            onChange={v => set({ weightKg: clamp(lbToKg(v), WEIGHT_MIN, WEIGHT_MAX) })}
+            onCommit={() => commit({ weightKg: m.weightKg })}
+          />
+        </View>
+      )}
 
       {/* ── Read-outs ──────────────────────────────────────────────────── */}
       <View style={s.statsRow}>
         <Stat label="Height" value={`${Math.round(m.heightCm)} cm`} sub={toFeetInches(m.heightCm)} />
-        <Stat label="Weight" value={`${Math.round(m.weightKg)} kg`} sub={`${Math.round(m.weightKg * 2.205)} lb`} />
+        <Stat label="Weight" value={`${Math.round(kgToLb(m.weightKg))} lb`} sub={`${Math.round(m.weightKg)} kg`} />
         <Stat label="BMI" value={bmi.toFixed(1)} sub={bmiLabel(bmi)} />
         <Stat label="Age" value={`${Math.round(m.age)}`} sub="yrs" />
       </View>
@@ -285,17 +354,7 @@ export default function BodyVisualizer({
             })}
           </View>
 
-          {/* Sliders */}
-          <SliderRow
-            label="Height" value={`${Math.round(m.heightCm)} cm · ${toFeetInches(m.heightCm)}`}
-            min={HEIGHT_MIN} max={HEIGHT_MAX} step={1} cur={m.heightCm} color={C.indigo}
-            onChange={v => set({ heightCm: v })} onCommit={() => commit({ heightCm: m.heightCm })}
-          />
-          <SliderRow
-            label="Weight" value={`${Math.round(m.weightKg)} kg`}
-            min={WEIGHT_MIN} max={WEIGHT_MAX} step={1} cur={m.weightKg} color={C.orange}
-            onChange={v => set({ weightKg: v })} onCommit={() => commit({ weightKg: m.weightKg })}
-          />
+          {/* Age (height = vertical slider on the left, weight = below image) */}
           <SliderRow
             label="Age" value={`${Math.round(m.age)} yrs`}
             min={AGE_MIN} max={AGE_MAX} step={1} cur={m.age} color={C.muted}
@@ -359,6 +418,52 @@ function bmiLabel(bmi: number): string {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
+  stageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  vSliderCol: {
+    width: 44,
+    alignItems: 'center',
+    gap: 6,
+  },
+  vValue: { color: C.text, fontSize: 13, fontWeight: '800' },
+  vUnit: { color: C.muted, fontSize: 9, fontWeight: '700', letterSpacing: 0.4 },
+  vTrack: {
+    width: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vRail: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(33,24,50,0.10)',
+  },
+  vFill: {
+    position: 'absolute',
+    bottom: 0,
+    width: 6,
+    borderRadius: 3,
+  },
+  vThumb: {
+    position: 'absolute',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    marginBottom: -11,
+    backgroundColor: '#fff',
+    borderWidth: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  weightBelow: { marginTop: 14 },
   stage: {
     backgroundColor: C.canvas,
     borderRadius: 14,

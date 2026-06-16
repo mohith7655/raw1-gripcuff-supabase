@@ -47,6 +47,9 @@ const toAppUser = (row: any, uid: string): User => {
     targetMuscles: Array.isArray(row?.target_muscles)
       ? row.target_muscles
       : (typeof row?.target_muscles === 'string' ? JSON.parse(row.target_muscles) : undefined),
+    goals: Array.isArray(row?.goals)
+      ? row.goals
+      : (typeof row?.goals === 'string' ? JSON.parse(row.goals) : undefined),
     locations: Object.keys(locations).length > 0 ? locations : undefined,
     completedVideos: Number(row?.completed_videos ?? 0),
     totalVideos: Number(row?.total_videos ?? 0),
@@ -58,6 +61,7 @@ const toAppUser = (row: any, uid: string): User => {
     lastWorkoutDate: row?.last_workout_date || null,
     weeklyActivity: typeof row?.weekly_activity === 'string' ? JSON.parse(row.weekly_activity) : (row?.weekly_activity || {}),
     completedWorkouts: Number(row?.completed_workouts ?? 0),
+    totalSquats: Number(row?.total_squats ?? 0),
     watchedMinutes: Number(row?.watched_minutes ?? 0),
     watchedSeconds: Number(row?.watched_seconds ?? 0),
     workoutSeconds: Number(row?.workout_seconds ?? 0),
@@ -96,6 +100,25 @@ export class UserService {
     }
 
     return toAppUser(data, uid);
+  }
+
+  /**
+   * Add squats to the user's lifetime counter (atomic via the add_squats RPC).
+   * Returns the new total, or null on failure. Fire-and-forget friendly.
+   */
+  static async addSquats(uid: string, count: number): Promise<number | null> {
+    if (!uid || !count || count <= 0) return null;
+    try {
+      const { data, error } = await supabase.rpc('add_squats', { p_uid: uid, p_count: Math.round(count) });
+      if (error) {
+        console.warn('[UserService] addSquats failed:', error.message);
+        return null;
+      }
+      return typeof data === 'number' ? data : null;
+    } catch (e) {
+      console.warn('[UserService] addSquats threw:', e);
+      return null;
+    }
   }
 
   /** Stamp the signed-in user's presence (last_active_at = now). Fire-and-forget. */
@@ -169,6 +192,7 @@ export class UserService {
     if (data.injurySide !== undefined) payload.injury_side = data.injurySide ?? null;
     if (data.weightLossKg !== undefined) payload.weight_loss_kg = data.weightLossKg ?? null;
     if (data.targetMuscles !== undefined) payload.target_muscles = data.targetMuscles ?? null;
+    if (data.goals !== undefined) payload.goals = data.goals ?? null;
     if (data.locations !== undefined) {
       payload.gym_location = data.locations?.gym?.address ?? null;
       payload.home_location = data.locations?.home?.address ?? null;
@@ -198,7 +222,7 @@ export class UserService {
       throw new Error(error.message);
     }
 
-    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined || data.heightCm !== undefined || data.weightKg !== undefined || data.bodyGoal !== undefined || data.injuryArea !== undefined || data.injuryAreas !== undefined || data.injurySide !== undefined || data.weightLossKg !== undefined || data.targetMuscles !== undefined) {
+    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined || data.heightCm !== undefined || data.weightKg !== undefined || data.bodyGoal !== undefined || data.injuryArea !== undefined || data.injuryAreas !== undefined || data.injurySide !== undefined || data.weightLossKg !== undefined || data.targetMuscles !== undefined || data.goals !== undefined) {
       const { error: profileSyncErr } = await supabase
         .from('profiles')
         .upsert({
@@ -221,6 +245,7 @@ export class UserService {
           injury_side: data.injurySide ?? undefined,
           weight_loss_kg: data.weightLossKg ?? undefined,
           target_muscles: data.targetMuscles ?? undefined,
+          goals: data.goals ?? undefined,
         }, { onConflict: 'id' });
       if (profileSyncErr) {
         console.warn('[UserService] profile mirror sync failed:', profileSyncErr.message);
