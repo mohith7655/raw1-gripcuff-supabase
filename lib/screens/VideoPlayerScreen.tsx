@@ -1980,6 +1980,65 @@ function VideoPlayerScreen({ route, navigation }: any) {
         </View>
     );
 
+    // ── Workout overlay shown ONLY in fullscreen (timer below video + Start,
+    //    Ready/Steady/Go on start, prev/next exercise in the top corners). ──
+    // Prev/Next titles sit faint, then jump to full opacity in the last 5s.
+    const fsRemainingSec = durationMsRef.current > 0
+        ? (durationMsRef.current - currentPositionMs) / 1000
+        : Infinity;
+    const fsNavOpacity = fsRemainingSec <= 5 ? 1 : 0.4;
+    const fsWorkoutOverlay = (
+        <>
+            {/* prev / next exercise — top corners, showing the video name */}
+            {prevVideo && (
+                <TouchableOpacity
+                    style={[fsStyles.navBtn, fsStyles.navLeft, { opacity: fsNavOpacity }]}
+                    onPress={() => goToVideo(prevVideo)}
+                    activeOpacity={0.85}
+                >
+                    <Text style={fsStyles.navHint}>‹ Prev</Text>
+                    <Text style={fsStyles.navText} numberOfLines={1}>{prevVideo.title}</Text>
+                </TouchableOpacity>
+            )}
+            {nextVideo && (
+                <TouchableOpacity
+                    style={[fsStyles.navBtn, fsStyles.navRight, { opacity: fsNavOpacity }]}
+                    onPress={() => goToVideo(nextVideo)}
+                    activeOpacity={0.85}
+                >
+                    <Text style={[fsStyles.navHint, fsStyles.navHintRight]}>Next ›</Text>
+                    <Text style={[fsStyles.navText, fsStyles.navTextRight]} numberOfLines={1}>{nextVideo.title}</Text>
+                </TouchableOpacity>
+            )}
+
+            {/* Ready / Steady / Go */}
+            {timerState === 'countdown' && countdownPhase && (
+                <View style={fsStyles.countdownWrap} pointerEvents="none">
+                    <Text style={fsStyles.countdownText}>{countdownPhase}</Text>
+                </View>
+            )}
+
+            {/* Timer + Start/Pause — below the video (bottom bar) */}
+            <View style={fsStyles.bottomBar}>
+                <Text style={fsStyles.timerText}>{formatWorkoutTime(workoutElapsed)}</Text>
+                {timerState === 'idle' ? (
+                    <TouchableOpacity style={fsStyles.startBtn} onPress={startWorkout} activeOpacity={0.85}>
+                        <Text style={fsStyles.startBtnText}>Start</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <View style={fsStyles.controlsRow}>
+                        <TouchableOpacity style={fsStyles.pauseBtn} onPress={toggleWorkoutPause} activeOpacity={0.85} disabled={timerState !== 'running'}>
+                            <Text style={fsStyles.pauseBtnText}>{workoutPaused ? 'Resume' : 'Pause'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={fsStyles.stopBtn} onPress={resetWorkout} activeOpacity={0.85}>
+                            <Text style={fsStyles.stopBtnText}>Stop</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+        </>
+    );
+
     return (
         <KeyboardAvoidingView
             style={s.container}
@@ -2021,6 +2080,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onVideoEnd={handleVideoEndCallback}
                         onCurrentPositionChange={handlePositionChange}
                         onDurationChange={handleDurationChange}
+                        fullscreenExtras={modeType === 'workout' ? fsWorkoutOverlay : undefined}
                         inviteCta={allowInvite ? {
                             title: 'Workout with Friends',
                             subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F25912' }}>your way.</Text></Text>,
@@ -2631,6 +2691,78 @@ const s = StyleSheet.create({
         fontWeight: 'bold',
         textTransform: 'uppercase',
     },
+});
+
+// Fullscreen workout overlay (rendered on top of the video in fullscreen only).
+const fsStyles = StyleSheet.create({
+    navBtn: {
+        position: 'absolute',
+        top: 16,
+        maxWidth: '38%',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 14,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    navLeft: { left: 16, alignItems: 'flex-start' },
+    navRight: { right: 16, alignItems: 'flex-end' },
+    navHint: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+    navHintRight: { textAlign: 'right' },
+    navText: { color: '#fff', fontSize: 14, fontWeight: '700', marginTop: 1 },
+    navTextRight: { textAlign: 'right' },
+    countdownWrap: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    countdownText: {
+        color: '#fff',
+        fontSize: 72,
+        fontWeight: '900',
+        letterSpacing: 1,
+        textShadowColor: 'rgba(0,0,0,0.6)',
+        textShadowRadius: 12,
+    },
+    bottomBar: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+    },
+    timerText: {
+        color: '#fff',
+        fontSize: 30,
+        fontWeight: '800',
+        fontVariant: ['tabular-nums'],
+        textShadowColor: 'rgba(0,0,0,0.6)',
+        textShadowRadius: 8,
+    },
+    controlsRow: { flexDirection: 'row', gap: 12 },
+    startBtn: {
+        backgroundColor: '#F25912',
+        paddingHorizontal: 40,
+        paddingVertical: 12,
+        borderRadius: 26,
+    },
+    startBtnText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+    pauseBtn: {
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 26,
+    },
+    pauseBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+    stopBtn: {
+        backgroundColor: 'rgba(239,68,68,0.85)',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 26,
+    },
+    stopBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
 
 const panelStyles = StyleSheet.create({

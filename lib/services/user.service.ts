@@ -35,6 +35,15 @@ const toAppUser = (row: any, uid: string): User => {
     dateOfBirth: row?.date_of_birth || undefined,
     gender: row?.gender || undefined,
     age: row?.age != null ? Number(row.age) : undefined,
+    heightCm: row?.height_cm != null ? Number(row.height_cm) : undefined,
+    weightKg: row?.weight_kg != null ? Number(row.weight_kg) : undefined,
+    bodyGoal: row?.body_goal || undefined,
+    injuryArea: row?.injury_area || undefined,
+    injurySide: row?.injury_side || undefined,
+    weightLossKg: row?.weight_loss_kg != null ? Number(row.weight_loss_kg) : undefined,
+    targetMuscles: Array.isArray(row?.target_muscles)
+      ? row.target_muscles
+      : (typeof row?.target_muscles === 'string' ? JSON.parse(row.target_muscles) : undefined),
     locations: Object.keys(locations).length > 0 ? locations : undefined,
     completedVideos: Number(row?.completed_videos ?? 0),
     totalVideos: Number(row?.total_videos ?? 0),
@@ -149,6 +158,13 @@ export class UserService {
     if (data.dateOfBirth !== undefined) payload.date_of_birth = data.dateOfBirth || null;
     if (data.gender !== undefined) payload.gender = data.gender || null;
     if (data.age !== undefined) payload.age = data.age ?? null;
+    if (data.heightCm !== undefined) payload.height_cm = data.heightCm ?? null;
+    if (data.weightKg !== undefined) payload.weight_kg = data.weightKg ?? null;
+    if (data.bodyGoal !== undefined) payload.body_goal = data.bodyGoal ?? null;
+    if (data.injuryArea !== undefined) payload.injury_area = data.injuryArea ?? null;
+    if (data.injurySide !== undefined) payload.injury_side = data.injurySide ?? null;
+    if (data.weightLossKg !== undefined) payload.weight_loss_kg = data.weightLossKg ?? null;
+    if (data.targetMuscles !== undefined) payload.target_muscles = data.targetMuscles ?? null;
     if (data.locations !== undefined) {
       payload.gym_location = data.locations?.gym?.address ?? null;
       payload.home_location = data.locations?.home?.address ?? null;
@@ -178,7 +194,7 @@ export class UserService {
       throw new Error(error.message);
     }
 
-    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined) {
+    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined || data.heightCm !== undefined || data.weightKg !== undefined || data.bodyGoal !== undefined || data.injuryArea !== undefined || data.injurySide !== undefined || data.weightLossKg !== undefined || data.targetMuscles !== undefined) {
       const { error: profileSyncErr } = await supabase
         .from('profiles')
         .upsert({
@@ -193,6 +209,13 @@ export class UserService {
           current_streak: data.currentStreak ?? undefined,
           best_streak: data.bestStreak ?? undefined,
           completed_workouts: data.completedWorkouts ?? undefined,
+          height_cm: data.heightCm ?? undefined,
+          weight_kg: data.weightKg ?? undefined,
+          body_goal: data.bodyGoal ?? undefined,
+          injury_area: data.injuryArea ?? undefined,
+          injury_side: data.injurySide ?? undefined,
+          weight_loss_kg: data.weightLossKg ?? undefined,
+          target_muscles: data.targetMuscles ?? undefined,
         }, { onConflict: 'id' });
       if (profileSyncErr) {
         console.warn('[UserService] profile mirror sync failed:', profileSyncErr.message);

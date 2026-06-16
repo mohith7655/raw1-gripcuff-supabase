@@ -79,6 +79,8 @@ import { ChatRoomScreen } from './screens/ChatRoomScreen';
 import { ChatFriendProfileScreen } from './screens/ChatFriendProfileScreen';
 import { SocialProfileScreen } from './screens/SocialProfileScreen';
 import { EditSocialProfileScreen } from './screens/EditSocialProfileScreen';
+import { HowILookNowScreen } from './screens/HowILookNowScreen';
+import { GoalsScreen } from './screens/GoalsScreen';
 import { CommunityScreen } from './screens/CommunityScreen';
 import { BadgesScreen } from './screens/BadgesScreen';
 import { QRCodeScreen } from './screens/QRCodeScreen';
@@ -466,6 +468,8 @@ function AppStack({
         {/* ── Social Profile System ── */}
         <Stack.Screen name="SocialProfileScreen" component={SocialProfileScreen} />
         <Stack.Screen name="EditSocialProfileScreen" component={EditSocialProfileScreen} />
+        <Stack.Screen name="HowILookNow" component={HowILookNowScreen} />
+        <Stack.Screen name="Goals" component={GoalsScreen} />
         <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} />
         <Stack.Screen name="QRProfileScreen" component={QRProfileScreen} />
         <Stack.Screen name="LookingToMeetEditScreen" component={LookingToMeetEditScreen} />

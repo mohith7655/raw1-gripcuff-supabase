@@ -22,6 +22,20 @@ export interface User {
   dateOfBirth?: string;
   gender?: string;
   age?: number;
+  /** Height in centimetres — powers the "How I look now" body silhouette. */
+  heightCm?: number;
+  /** Weight in kilograms — powers the "How I look now" body silhouette. */
+  weightKg?: number;
+  /** Body-transformation goal — powers the "My Goal" screen. */
+  bodyGoal?: 'weight_loss' | 'muscle_growth' | 'injury_rehab';
+  /** Injured body part (only when bodyGoal = 'injury_rehab'). */
+  injuryArea?: string;
+  /** Which side of the body is injured (for bilateral parts). */
+  injurySide?: 'left' | 'right' | 'both';
+  /** Kilograms the user wants to lose (only when bodyGoal = 'weight_loss'). */
+  weightLossKg?: number;
+  /** Up to 3 target muscle groups (only when bodyGoal = 'muscle_growth'). */
+  targetMuscles?: string[];
   locations?: UserLocations;
   completedVideos: number;
   totalVideos: number;

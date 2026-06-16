@@ -3,6 +3,8 @@ import { PulsingDot, StackedAvatars } from './LiveViewersModal';
 import { ActiveWatcher } from '../services/WorkoutWatcherService';
 import {
     Animated,
+    GestureResponderEvent,
+    Modal,
     PanResponder,
     Platform,
     StyleSheet,
@@ -18,6 +20,8 @@ import {
     ArrowLeft,
     CalendarClock,
     ChevronRight,
+    Maximize,
+    Minimize,
     Pause,
     Play,
     RotateCcw,
@@ -26,6 +30,7 @@ import {
     UserPlus,
     Users,
 } from 'lucide-react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { CastButton } from './cast/CastButton';
 import { CastStatusBanner } from './cast/CastStatusBanner';
 import { RemoteControlBar } from './cast/RemoteControlBar';
@@ -82,6 +87,33 @@ interface SharedVideoPlayerProps {
     onDurationChange?: (durationMs: number) => void;
     /** Supabase user ID — when provided, watch time is tracked automatically. */
     userId?: string;
+    /** Overlay rendered on top of the video ONLY in fullscreen (e.g. workout
+     *  timer, prev/next). Positioned by the caller via absolute styles. */
+    fullscreenExtras?: React.ReactNode;
+    /** Notified when fullscreen is entered/exited. */
+    onFullscreenChange?: (isFullscreen: boolean) => void;
+}
+
+/**
+ * Hosts the video stage. On native, fullscreen re-parents it into a full-screen
+ * Modal (the parent already locks landscape orientation). On web we use the
+ * browser Fullscreen API instead, so this is a passthrough there.
+ * Defined at module scope so toggling does not remount the player every render.
+ */
+function FullscreenHost({
+    active, onRequestClose, children,
+}: { active: boolean; onRequestClose: () => void; children: React.ReactNode }) {
+    if (!active) return <>{children}</>;
+    return (
+        <Modal
+            visible
+            animationType="fade"
+            supportedOrientations={['landscape', 'landscape-left', 'landscape-right', 'portrait']}
+            onRequestClose={onRequestClose}
+        >
+            <View style={styles.fsModalRoot}>{children}</View>
+        </Modal>
+    );
 }
 
 const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlayerProps>(function SharedVideoPlayer({
@@ -102,6 +134,8 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     onCurrentPositionChange,
     onDurationChange,
     userId,
+    fullscreenExtras,
+    onFullscreenChange,
 }: SharedVideoPlayerProps, ref: React.Ref<SharedVideoPlayerRef>) {
     // Stable ref for userId so event listeners never capture a stale closure
     const userIdRef = useRef(userId);
@@ -396,6 +430,117 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
         }
     };
 
+    // ── Double-tap to seek (YouTube style) ──────────────────────────────────────
+    // Tap left half twice → −10s, right half twice → +10s. A single tap (after a
+    // short delay to rule out a double) toggles the controls.
+    const stageWidthRef = useRef(0);
+    const lastTapRef = useRef(0);
+    const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const skipHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [skipHint, setSkipHint] = useState<'back' | 'forward' | null>(null);
+
+    const flashSkipHint = (dir: 'back' | 'forward') => {
+        setSkipHint(dir);
+        if (skipHintTimer.current) clearTimeout(skipHintTimer.current);
+        skipHintTimer.current = setTimeout(() => setSkipHint(null), 550);
+    };
+
+    const handleStageTap = (e: GestureResponderEvent) => {
+        const x = e.nativeEvent.locationX;
+        const now = Date.now();
+        if (now - lastTapRef.current < 280) {
+            // Second tap → double-tap seek.
+            if (singleTapTimer.current) { clearTimeout(singleTapTimer.current); singleTapTimer.current = null; }
+            lastTapRef.current = 0;
+            if (x < stageWidthRef.current / 2) {
+                skipBack();
+                flashSkipHint('back');
+            } else {
+                skipForward();
+                flashSkipHint('forward');
+            }
+            return;
+        }
+        // First tap → wait briefly; if no second tap arrives, just toggle controls.
+        lastTapRef.current = now;
+        if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+        singleTapTimer.current = setTimeout(() => {
+            showControls();
+            singleTapTimer.current = null;
+        }, 280);
+    };
+
+    useEffect(() => () => {
+        if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+        if (skipHintTimer.current) clearTimeout(skipHintTimer.current);
+    }, []);
+
+    // ── Fullscreen (YouTube-style) ──────────────────────────────────────────────
+    // Web: browser Fullscreen API on the stage element. Native: lock landscape +
+    // re-parent the stage into a full-screen Modal (via FullscreenHost).
+    const stageRef = useRef<View>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const enterFullscreen = async () => {
+        if (Platform.OS === 'web') {
+            try {
+                const node: any = stageRef.current;
+                if (node?.requestFullscreen) {
+                    await node.requestFullscreen();
+                    try { await (window as any).screen?.orientation?.lock?.('landscape'); } catch { /* desktop rejects */ }
+                    setIsFullscreen(true);
+                    showControls();
+                    return;
+                }
+                // iOS Safari/PWA: no element Fullscreen API — use the native <video>.
+                const video: any = node?.querySelector?.('video');
+                if (video?.webkitEnterFullscreen) {
+                    video.webkitEnterFullscreen();
+                    return; // iOS shows its own player UI; no custom overlay possible
+                }
+            } catch { /* ignore */ }
+            setIsFullscreen(true);
+        } else {
+            try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE); } catch { /* ignore */ }
+            setIsFullscreen(true);
+        }
+        showControls();
+    };
+
+    const exitFullscreen = async () => {
+        if (Platform.OS === 'web') {
+            try { if ((document as any).fullscreenElement) await (document as any).exitFullscreen(); } catch { /* ignore */ }
+            try { (window as any).screen?.orientation?.unlock?.(); } catch { /* ignore */ }
+            setIsFullscreen(false);
+        } else {
+            try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); } catch { /* ignore */ }
+            setIsFullscreen(false);
+        }
+    };
+
+    const toggleFullscreen = () => { (isFullscreen ? exitFullscreen() : enterFullscreen()); };
+
+    // Sync state when the user exits via Esc / browser UI; restore orientation.
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        const onFsChange = () => {
+            const fs = !!(document as any).fullscreenElement;
+            setIsFullscreen(fs);
+            if (!fs) { try { (window as any).screen?.orientation?.unlock?.(); } catch { /* ignore */ } }
+        };
+        document.addEventListener('fullscreenchange', onFsChange);
+        return () => document.removeEventListener('fullscreenchange', onFsChange);
+    }, []);
+
+    // Always restore portrait on unmount (native).
+    useEffect(() => () => {
+        if (Platform.OS !== 'web') {
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+        }
+    }, []);
+
+    useEffect(() => { onFullscreenChange?.(isFullscreen); }, [isFullscreen]);
+
     useEffect(() => {
         isPlayingRef.current = isPlaying;
         onPlayStateChange?.(isPlaying);
@@ -575,8 +720,13 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                 </View>
             )}
 
-            <TouchableWithoutFeedback onPress={showCastOverlay ? undefined : showControls}>
-                <View style={styles.videoStage}>
+            <FullscreenHost active={Platform.OS !== 'web' && isFullscreen} onRequestClose={exitFullscreen}>
+            <TouchableWithoutFeedback onPress={showCastOverlay ? undefined : handleStageTap}>
+                <View
+                    ref={stageRef}
+                    style={[styles.videoStage, isFullscreen && styles.videoStageFullscreen]}
+                    onLayout={(e) => { stageWidthRef.current = e.nativeEvent.layout.width; }}
+                >
 
                     {/* ── Chromecast active: show placeholder instead of video ── */}
                     {showCastOverlay ? (
@@ -658,41 +808,41 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                             )}
 
                             <Animated.View
-                                pointerEvents={controlsVisible ? 'auto' : 'none'}
+                                pointerEvents={controlsVisible ? 'box-none' : 'none'}
                                 style={[styles.controlsOverlay, { opacity: controlsOpacity }]}
                             >
                                 <View style={styles.controlsRow}>
-                                    <Text style={styles.timeText}>
-                                        {formatTime(isSeeking ? seekProgress * duration : position)}
-                                    </Text>
-
-                                    <View style={styles.mainControls}>
-                                        <TouchableOpacity onPress={skipBack} style={styles.controlBtn}>
-                                            <RotateCcw color="white" size={24} />
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity onPress={togglePlay} style={styles.playBtn}>
-                                            {isPlaying ? (
-                                                <Pause color="black" size={28} />
-                                            ) : (
-                                                <Play color="black" size={28} style={styles.playIcon} />
-                                            )}
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity onPress={skipForward} style={styles.controlBtn}>
-                                            <RotateCw color="white" size={24} />
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                                    <TouchableOpacity onPress={togglePlay} style={styles.playBtn}>
+                                        {isPlaying ? (
+                                            <Pause color="black" size={28} />
+                                        ) : (
+                                            <Play color="black" size={28} style={styles.playIcon} />
+                                        )}
+                                    </TouchableOpacity>
                                 </View>
                             </Animated.View>
 
+                            {/* Double-tap seek hint */}
+                            {skipHint === 'back' && (
+                                <View style={[styles.skipHint, styles.skipHintLeft]} pointerEvents="none">
+                                    <RotateCcw color="white" size={22} />
+                                    <Text style={styles.skipHintText}>10s</Text>
+                                </View>
+                            )}
+                            {skipHint === 'forward' && (
+                                <View style={[styles.skipHint, styles.skipHintRight]} pointerEvents="none">
+                                    <RotateCw color="white" size={22} />
+                                    <Text style={styles.skipHintText}>10s</Text>
+                                </View>
+                            )}
+
+                            {/* YouTube-style time: current / total, grouped bottom-left */}
                             <View style={styles.timeRail}>
-                                <Text style={styles.timeText}>
+                                <Text style={styles.timeCurrent}>
                                     {formatTime(isSeeking ? seekProgress * duration : position)}
                                 </Text>
-                                <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                                <Text style={styles.timeSep}> / </Text>
+                                <Text style={styles.timeTotal}>{formatTime(duration)}</Text>
                             </View>
 
                             <View
@@ -706,10 +856,29 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                 <View style={[styles.seekFill, { width: `${displayProgress * 100}%` }]} />
                                 <View style={[styles.seekThumb, { left: `${displayProgress * 100}%` }]} />
                             </View>
+
+                            {/* Caller-supplied fullscreen overlay (workout timer, prev/next) */}
+                            {isFullscreen && fullscreenExtras && (
+                                <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                                    {fullscreenExtras}
+                                </View>
+                            )}
+
+                            {/* Fullscreen toggle (YouTube-style, bottom-right) */}
+                            <TouchableOpacity
+                                style={styles.fullscreenBtn}
+                                onPress={toggleFullscreen}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                {isFullscreen
+                                    ? <Minimize color="white" size={20} />
+                                    : <Maximize color="white" size={20} />}
+                            </TouchableOpacity>
                         </>
                     )}
                 </View>
             </TouchableWithoutFeedback>
+            </FullscreenHost>
 
             {/* ── Footer: remote controls when casting, invite CTA otherwise ── */}
             {showCastOverlay ? (
@@ -826,7 +995,7 @@ const styles = StyleSheet.create({
     controlsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
     },
     mainControls: {
         flexDirection: 'row',
@@ -854,12 +1023,61 @@ const styles = StyleSheet.create({
         width: 40,
         textAlign: 'center',
     },
+    // Double-tap seek hint badges
+    skipHint: {
+        position: 'absolute',
+        top: '50%',
+        marginTop: -34,
+        width: 96,
+        height: 68,
+        borderRadius: 16,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    skipHintLeft: { left: '12%' },
+    skipHintRight: { right: '12%' },
+    skipHintText: { color: 'white', fontSize: 13, fontWeight: '700' },
+    // YouTube-style grouped time: "0:01 / 0:18"
+    timeCurrent: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    timeSep: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    timeTotal: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 12,
+        fontWeight: '600',
+    },
     videoStage: {
         flex: 1,
         width: '100%',
         backgroundColor: '#000',
         position: 'relative',
         overflow: 'hidden',
+    },
+    videoStageFullscreen: {
+        // Web: the Fullscreen API sizes the element to the screen; ensure it fills.
+        ...(Platform.OS === 'web' ? { width: '100%', height: '100%' } : {}),
+    },
+    fsModalRoot: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    fullscreenBtn: {
+        position: 'absolute',
+        right: 10,
+        bottom: 18,
+        width: 34,
+        height: 34,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     // ── Cast placeholder ───────────────────────────────────────────
     castPlaceholder: {
@@ -887,9 +1105,10 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.25)',
     },
     video: {
         width: '100%',
@@ -907,7 +1126,7 @@ const styles = StyleSheet.create({
         bottom: 24,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         pointerEvents: 'none',
     },
     seekBar: {

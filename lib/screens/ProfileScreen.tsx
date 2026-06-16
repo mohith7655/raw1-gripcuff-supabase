@@ -71,6 +71,8 @@ import { LocationRow } from '../components/profile/LocationRow';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
+import BodyVisualizer from '../components/profile/BodyVisualizer';
+import GoalVisualizer from '../components/profile/GoalVisualizer';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Fire glow badge wrapper (streak only) ─────────────────────────────────────
@@ -883,6 +885,52 @@ export const ProfileScreen = () => {
             <Text style={s.bodyText}>
               {bio.length > 100 ? `${bio.slice(0, 100).trimEnd()}…` : bio}
             </Text>
+          </ProfileCard>
+
+          {/* ── 6b. HOW I LOOK NOW — preview opens the full-screen editor ────── */}
+          <ProfileCard isPrivate={isSectionPrivate('howILookNow')} onToggleVisibility={() => toggleSection('howILookNow')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>How I look now</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('HowILookNow')}>
+                <Text style={s.viewAllBtn}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('HowILookNow')}>
+              <BodyVisualizer
+                name={profile?.fullName}
+                gender={profile?.gender}
+                heightCm={profile?.heightCm}
+                weightKg={profile?.weightKg}
+                age={profile?.age}
+                editable={false}
+                canvasHeight={260}
+              />
+            </TouchableOpacity>
+          </ProfileCard>
+
+          {/* ── 6c. MY GOAL — body-transformation goal preview ───────────────── */}
+          <ProfileCard isPrivate={isSectionPrivate('myGoal')} onToggleVisibility={() => toggleSection('myGoal')}>
+            <View style={s.cardHeaderRow}>
+              <Text style={s.cardTitle}>My Goal</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Goals')}>
+                <Text style={s.viewAllBtn}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('Goals')}>
+              <GoalVisualizer
+                name={profile?.fullName}
+                gender={profile?.gender}
+                heightCm={profile?.heightCm}
+                weightKg={profile?.weightKg}
+                goal={profile?.bodyGoal}
+                injuryArea={profile?.injuryArea}
+                injurySide={profile?.injurySide}
+                weightLossKg={profile?.weightLossKg}
+                targetMuscles={profile?.targetMuscles}
+                editable={false}
+                canvasHeight={260}
+              />
+            </TouchableOpacity>
           </ProfileCard>
 
           {/* ── 7. TOP HOBBIES — ranked 1–5 dots ─────────────────────────────── */}
