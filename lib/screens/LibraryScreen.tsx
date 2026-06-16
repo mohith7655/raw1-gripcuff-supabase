@@ -180,7 +180,7 @@ const WorkoutsTabContent = () => {
           activeOpacity={0.85}
         >
           <Users color="#fff" size={20} style={{ marginRight: 10 }} />
-          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Workout with a Friend</Text>
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Workout with Friend</Text>
         </TouchableOpacity>
 
       </ScrollView>
