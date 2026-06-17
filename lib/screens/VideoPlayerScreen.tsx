@@ -24,7 +24,7 @@ import { InviteTypeSelectorModal } from '../components/InviteTypeSelectorModal';
 import { ScheduleSessionModal } from '../components/ScheduleSessionModal';
 import { SelfScheduleModal } from '../components/SelfScheduleModal';
 import { WorkoutTogetherModal } from '../components/WorkoutTogetherModal';
-import { SharedVideoPlayer, SharedVideoPlayerRef } from '../components/SharedVideoPlayer';
+import { SharedVideoPlayer, SharedVideoPlayerRef, InviteFooter } from '../components/SharedVideoPlayer';
 import { WorkoutStartModal } from '../components/WorkoutStartModal';
 import { VideoModeModal } from '../components/VideoModeModal';
 import MuscleVisualizer from '../components/MuscleVisualizer';
@@ -89,6 +89,38 @@ interface EngagementBarProps {
     onSwitchMode: (mode: 'workout' | 'watch') => void;
 }
 
+// ── Workout / Watch mode toggle — sits inline with the reaction pills ─────────
+function ModeToggle({
+    modeType,
+    onSwitchMode,
+}: {
+    modeType: 'workout' | 'watch';
+    onSwitchMode: (mode: 'workout' | 'watch') => void;
+}) {
+    return (
+        <View style={engagementStyles.modeGroup}>
+            <TouchableOpacity
+                style={[engagementStyles.modeBtn, modeType === 'workout' && engagementStyles.modeBtnActive]}
+                onPress={() => onSwitchMode('workout')}
+                activeOpacity={0.8}
+            >
+                <Text style={[engagementStyles.modeText, modeType === 'workout' && engagementStyles.modeTextActive]}>
+                    Workout
+                </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[engagementStyles.modeBtn, modeType === 'watch' && engagementStyles.modeBtnActive]}
+                onPress={() => onSwitchMode('watch')}
+                activeOpacity={0.8}
+            >
+                <Text style={[engagementStyles.modeText, modeType === 'watch' && engagementStyles.modeTextActive]}>
+                    Watch
+                </Text>
+            </TouchableOpacity>
+        </View>
+    );
+}
+
 function EngagementBar({
     engagement,
     isFavorite,
@@ -126,36 +158,20 @@ function EngagementBar({
                     activeOpacity={0.7}
                 >
                     <Text style={engagementStyles.pillIcon}>{btn.icon}</Text>
-                    <Text
-                        numberOfLines={1}
-                        style={[engagementStyles.pillLabel, btn.active && engagementStyles.pillLabelActive]}
-                    >
-                        {btn.label}
-                    </Text>
+                    {/* Label only appears once active/pressed; otherwise icon-only */}
+                    {btn.active && (
+                        <Text
+                            numberOfLines={1}
+                            style={[engagementStyles.pillLabel, engagementStyles.pillLabelActive]}
+                        >
+                            {btn.label}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             ))}
 
-            {/* Mode toggle — Workout / Watch, inline after Dislike */}
-            <View style={engagementStyles.modeGroup}>
-                <TouchableOpacity
-                    style={[engagementStyles.modeBtn, modeType === 'workout' && engagementStyles.modeBtnActive]}
-                    onPress={() => onSwitchMode('workout')}
-                    activeOpacity={0.8}
-                >
-                    <Text style={[engagementStyles.modeText, modeType === 'workout' && engagementStyles.modeTextActive]}>
-                        Workout
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[engagementStyles.modeBtn, modeType === 'watch' && engagementStyles.modeBtnActive]}
-                    onPress={() => onSwitchMode('watch')}
-                    activeOpacity={0.8}
-                >
-                    <Text style={[engagementStyles.modeText, modeType === 'watch' && engagementStyles.modeTextActive]}>
-                        Watch
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            {/* Workout / Watch — inline on the same line */}
+            <ModeToggle modeType={modeType} onSwitchMode={onSwitchMode} />
         </View>
     );
 }
@@ -342,6 +358,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     const [showWorkoutTogetherModal, setShowWorkoutTogetherModal] = useState(false);
     const [showViewersModal, setShowViewersModal] = useState(false);
+    // Requirements tab: collapsed by default (only Experience level shows); the
+    // rest of the sections reveal on "More details".
+    const [requirementsExpanded, setRequirementsExpanded] = useState(false);
     // Legacy states kept to avoid breaking residual refs; no longer opened from primary flow
     const [showInviteTypeModal, setShowInviteTypeModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
@@ -1674,50 +1693,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     const renderRequirementsContent = () => (
         <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
-            {/* Purpose */}
-            <PurposeSection purpose={(sourceVideo as any)?.purpose ?? activeProgram?.purpose} />
-
-            {/* Muscles */}
-            <View style={reqStyles.sectionRow}>
-                <View style={[reqStyles.metaCard, { flex: 1 }]}>
-                    <View style={reqStyles.iconRow}>
-                        <Ionicons name="body-outline" size={18} color={ACCENT} />
-                        <Text style={reqStyles.metaLabel}>Muscles Targeted</Text>
-                    </View>
-                    <Text style={reqStyles.metaValue}>{reqData.muscles}</Text>
-                </View>
-            </View>
-
-            {/* Exercise Type */}
-            <View style={reqStyles.sectionCard}>
-                <View style={reqStyles.iconRow}>
-                    <Ionicons name="git-branch-outline" size={18} color={ACCENT} />
-                    <Text style={reqStyles.metaLabel}>Exercise Type</Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                    {(['General', 'Strength', 'Stretching', 'Injury', 'Athletic'] as const).map((type) => {
-                        const active = reqData.exerciseType === type;
-                        return (
-                            <View key={type} style={{
-                                paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
-                                borderColor: active ? INDIGO : 'rgba(255,255,255,0.1)',
-                                backgroundColor: active ? INDIGO_SOFT : 'transparent',
-                            }}>
-                                <Text style={{ color: active ? INDIGO : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
-                                    {type}
-                                </Text>
-                            </View>
-                        );
-                    })}
-                </View>
-            </View>
-
-            {/* Experience Level */}
+            {/* Experience & Setup — always visible, combined */}
             <View style={reqStyles.sectionCard}>
                 <View style={reqStyles.iconRow}>
                     <Ionicons name="trophy-outline" size={18} color={ACCENT} />
-                    <Text style={reqStyles.metaLabel}>Experience Level</Text>
+                    <Text style={reqStyles.metaLabel}>Experience & Setup</Text>
                 </View>
+                <Text style={reqStyles.metaValue}>
+                    How challenging this session is and how much prep you need before you start.
+                </Text>
+
+                {/* Experience level */}
+                <Text style={reqStyles.subLabel}>Experience level</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                     {(['Beginner', 'Intermediate', 'Advanced'] as const).map((lvl) => {
                         const active = reqData.experienceLevel === lvl;
@@ -1725,24 +1712,19 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         return (
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
-                                borderColor: active ? INDIGO : 'rgba(255,255,255,0.1)',
+                                borderColor: active ? INDIGO : 'rgba(33,24,50,0.12)',
                                 backgroundColor: active ? INDIGO_SOFT : 'transparent',
                             }}>
-                                <Text style={{ color: active ? INDIGO : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
+                                <Text style={{ color: active ? INDIGO : '#7A7C90', fontSize: 12, fontWeight: '600' }}>
                                     {label}
                                 </Text>
                             </View>
                         );
                     })}
                 </View>
-            </View>
 
-            {/* Setup Time — how long to get the equipment ready before starting */}
-            <View style={reqStyles.sectionCard}>
-                <View style={reqStyles.iconRow}>
-                    <Ionicons name="timer-outline" size={18} color={ACCENT} />
-                    <Text style={reqStyles.metaLabel}>Setup Time</Text>
-                </View>
+                {/* Setup time — how long to get the equipment ready before starting */}
+                <Text style={reqStyles.subLabel}>Setup time</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
                     <View style={{
                         paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
@@ -1752,6 +1734,55 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     </View>
                 </View>
                 <Text style={[reqStyles.metaValue, { marginTop: 8 }]}>{reqData.setupNote}</Text>
+            </View>
+
+            {/* More details toggle — reveals the rest of the sections */}
+            <TouchableOpacity
+                style={reqStyles.moreBtn}
+                onPress={() => setRequirementsExpanded(v => !v)}
+                activeOpacity={0.8}
+            >
+                <Text style={reqStyles.moreBtnText}>
+                    {requirementsExpanded ? 'Show less' : 'More details'}
+                </Text>
+                <Ionicons
+                    name={requirementsExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={INDIGO}
+                />
+            </TouchableOpacity>
+
+            {!requirementsExpanded ? null : (
+            <>
+            {/* Purpose */}
+            <PurposeSection purpose={(sourceVideo as any)?.purpose ?? activeProgram?.purpose} />
+
+            {/* Muscles Targeted & Exercise Type — one combined section */}
+            <View style={reqStyles.sectionCard}>
+                <View style={reqStyles.iconRow}>
+                    <Ionicons name="body-outline" size={18} color={ACCENT} />
+                    <Text style={reqStyles.metaLabel}>Muscles Targeted</Text>
+                </View>
+                <Text style={reqStyles.metaValue}>{reqData.muscles}</Text>
+
+                {/* Exercise type */}
+                <Text style={reqStyles.subLabel}>Exercise type</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                    {(['General', 'Strength', 'Stretching', 'Injury', 'Athletic'] as const).map((type) => {
+                        const active = reqData.exerciseType === type;
+                        return (
+                            <View key={type} style={{
+                                paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
+                                borderColor: active ? INDIGO : 'rgba(33,24,50,0.12)',
+                                backgroundColor: active ? INDIGO_SOFT : 'transparent',
+                            }}>
+                                <Text style={{ color: active ? INDIGO : '#7A7C90', fontSize: 12, fontWeight: '600' }}>
+                                    {type}
+                                </Text>
+                            </View>
+                        );
+                    })}
+                </View>
             </View>
 
             {/* Exercises */}
@@ -1864,6 +1895,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         ))}
                     </ScrollView>
                 </View>
+            )}
+            </>
             )}
         </View>
     );
@@ -2135,9 +2168,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         title={isCoWorkout ? (friendName ?? title) : title}
                         videoUri={sourceVideo.videoUrl}
                         onBack={isCoWorkout ? handleEndCoWorkout : handleBack}
-                        actionLabel={isCoWorkout ? 'End' : 'Done'}
+                        actionLabel={isCoWorkout ? 'End' : undefined}
                         actionVariant={isCoWorkout ? 'danger' : 'default'}
-                        onActionPress={isCoWorkout ? handleEndCoWorkout : triggerCompletionCheck}
+                        onActionPress={isCoWorkout ? handleEndCoWorkout : undefined}
                         headerTitleSuffix={isCoWorkout ? (
                             <View style={s.liveIndicatorContainer}>
                                 <View style={s.liveDot} />
@@ -2153,20 +2186,6 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         onDurationChange={handleDurationChange}
                         videoNavExtras={fsNavExtras}
                         fullscreenExtras={modeType === 'workout' ? fsWorkoutExtras : undefined}
-                        inviteCta={allowInvite ? {
-                            title: 'Workout with Friends',
-                            subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F25912' }}>your way.</Text></Text>,
-                            onWorkoutTogether: () => setShowWorkoutTogetherModal(true),
-                            onStartNow: () => setShowInviteModal(true),
-                            viewerCount: (() => {
-                                const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
-                                return exactCount > 0 ? exactCount : undefined;
-                            })(),
-                            viewers: liveViewers,
-                            currentUid: supabaseUserId ?? null,
-                            onViewersPress: () => setShowViewersModal(true),
-                            onInviteSocial: () => setShowSocialModal(true),
-                        } : undefined}
                     />
                 ) : (
                     <View style={s.missingVideo}>
@@ -2405,18 +2424,38 @@ function VideoPlayerScreen({ route, navigation }: any) {
             ) : (
             <View style={[panelStyles.panel, { flex: 1 }, modeType === 'workout' && { backgroundColor: PANEL_DARK }]}>
 
-                {/* Title + view count — YouTube-style, hidden in workout mode */}
+                {/* Title + view count — YouTube-style, hidden in workout mode.
+                    Small Workout with Friend + LIVE buttons pinned top-right. */}
                 {modeType !== 'workout' && (
-                    <View style={viewsStyles.titleBlock}>
-                        <Text style={viewsStyles.titleText} numberOfLines={2}>{title}</Text>
-                        <View style={viewsStyles.metaRow}>
-                            <Ionicons name="eye-outline" size={14} color="#7A7C90" />
-                            <Text style={viewsStyles.metaText}>
-                                {viewCount == null
-                                    ? '—'
-                                    : `${formatViews(viewCount)} ${viewCount === 1 ? 'view' : 'views'}`}
-                            </Text>
+                    <View style={[viewsStyles.titleBlock, { flexDirection: 'row', alignItems: 'flex-start', gap: 10 }]}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={viewsStyles.titleText} numberOfLines={2}>{title}</Text>
+                            <View style={viewsStyles.metaRow}>
+                                <Ionicons name="eye-outline" size={14} color="#7A7C90" />
+                                <Text style={viewsStyles.metaText}>
+                                    {viewCount == null
+                                        ? '—'
+                                        : `${formatViews(viewCount)} ${viewCount === 1 ? 'view' : 'views'}`}
+                                </Text>
+                            </View>
                         </View>
+
+                        {allowInvite && (
+                            <InviteFooter cta={{
+                                title: 'Workout with Friends',
+                                subtitle: <Text>Schedule a workout with a friend or yourself <Text style={{ color: '#F25912' }}>your way.</Text></Text>,
+                                onWorkoutTogether: () => setShowWorkoutTogetherModal(true),
+                                onStartNow: () => setShowInviteModal(true),
+                                viewerCount: (() => {
+                                    const exactCount = liveViewers.filter(v => v.uid !== supabaseUserId).length;
+                                    return exactCount > 0 ? exactCount : undefined;
+                                })(),
+                                viewers: liveViewers,
+                                currentUid: supabaseUserId ?? null,
+                                onViewersPress: () => setShowViewersModal(true),
+                                onInviteSocial: () => setShowSocialModal(true),
+                            }} />
+                        )}
                     </View>
                 )}
 
@@ -3371,6 +3410,31 @@ const reqStyles = StyleSheet.create({
         fontSize: 13,
         marginTop: 6,
         lineHeight: 18,
+    },
+    subLabel: {
+        color: '#211832',
+        fontSize: 13,
+        fontWeight: '700',
+        marginTop: 16,
+    },
+    moreBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        alignSelf: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        marginBottom: 4,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(76,78,120,0.3)',
+        backgroundColor: 'rgba(76,78,120,0.08)',
+    },
+    moreBtnText: {
+        color: '#4C4E78',
+        fontSize: 13,
+        fontWeight: '700',
     },
     iconRow: {
         flexDirection: 'row',

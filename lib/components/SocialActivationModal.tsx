@@ -108,7 +108,7 @@ const MockLobbyCard: React.FC = () => (
       <View style={mock.featureCard}>
         <View style={mock.featureIcon}><Zap color={ORANGE} size={18} /></View>
         <View style={{ flex: 1 }}>
-          <Text style={mock.featureTitle}>Enter Challenge Lobby</Text>
+          <Text style={mock.featureTitle}>Challenge Lobby</Text>
           <Text style={mock.featureSub}>Compete live with anyone in the lobby</Text>
         </View>
         <ChevronRight color={ORANGE} size={18} />
@@ -166,7 +166,7 @@ const MockFriendCard: React.FC = () => (
 const TOUR: TourStep[] = [
   {
     step: 'Step 1',
-    caption: 'Tap “Enter Challenge Lobby” on the Social tab to get matched with someone live.',
+    caption: 'Tap “Challenge Lobby” on the Social tab to get matched with someone live.',
     Mock: MockLobbyCard,
     // image: require('../../assets/media/social_lobby.png'),
   },
@@ -245,9 +245,10 @@ export function SocialActivationModal({ visible, onActivated, onDismiss }: Props
             <View style={s.popupIcon}>
               <Users size={30} color={INDIGO} strokeWidth={2} />
             </View>
-            <Text style={s.popupTitle}>Activate the Social Tab</Text>
+            <Text style={s.popupTitle}>Activate the Social Club</Text>
             <Text style={s.popupBody}>
-              Take a quick 30-second tour, agree to the house rules, and you’re in.
+              Become a Social Club member — join other people in their workouts and make it
+              more fun and healthy. Agree to the house rules.
             </Text>
             <TouchableOpacity style={s.cta} onPress={() => setPhase('tour')} activeOpacity={0.9}>
               <Text style={s.ctaText}>Activate</Text>
@@ -286,7 +287,7 @@ export function SocialActivationModal({ visible, onActivated, onDismiss }: Props
           <>
             <ScrollView contentContainerStyle={s.tourScroll} showsVerticalScrollIndicator={false}>
               <Text style={s.stepKicker}>{step.step}</Text>
-              <Text style={s.tourHeading}>How to use the Social tab</Text>
+              <Text style={s.tourHeading}>Social features</Text>
 
               <View style={s.shotWrap}>
                 {step.image ? (
@@ -329,6 +330,9 @@ export function SocialActivationModal({ visible, onActivated, onDismiss }: Props
               <Text style={s.tourHeading}>Rules & Regulations</Text>
               <Text style={s.rulesIntro}>
                 The Social tab is a shared, live space. Please read and agree to keep it safe for everyone.
+              </Text>
+              <Text style={s.banWarning}>
+                If you break these rules you will be banned from the app.
               </Text>
 
               {RULES.map((rule, i) => {
@@ -439,7 +443,8 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(76,78,120,0.22)',
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  rulesIntro: { color: MUTED, fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 20 },
+  rulesIntro: { color: MUTED, fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 12 },
+  banWarning: { color: '#DC2626', fontSize: 14, lineHeight: 20, fontWeight: '800', textAlign: 'center', marginBottom: 20 },
   ruleRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     width: '100%',

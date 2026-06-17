@@ -23,6 +23,7 @@ import { getLocalVideoTrack, getAgoraDebugInfo, getAgoraClient, getLocalAudioTra
 import { LiveSessionService, JoinRequest } from '../services/liveSession.service';
 import { recordUniversalWorkoutCompletion } from '../services/workoutCompletion.service';
 import { WatchTrackingService } from '../services/watchTracking.service';
+import { Raw1Logo } from '../raw1_logo';
 
 const SILENCE_TIMEOUT_MS = 1500;
 
@@ -588,6 +589,11 @@ export const SyncedVideoPlayerScreen = () => {
                             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                             <Text style={styles.timeText}>{formatTime(duration)}</Text>
                         </View>
+
+                        {/* RAW1 watermark — always visible, top-left */}
+                        <View style={styles.logoWatermark} pointerEvents="none">
+                            <Raw1Logo fontSize={18} transparent />
+                        </View>
                     </View>
                 </TouchableWithoutFeedback>
 
@@ -855,6 +861,11 @@ const styles = StyleSheet.create({
         aspectRatio: 16 / 9,
         backgroundColor: '#111',
         overflow: 'hidden',
+    },
+    logoWatermark: {
+        position: 'absolute',
+        top: 10,
+        left: 12,
     },
     video: {
         width: '100%',

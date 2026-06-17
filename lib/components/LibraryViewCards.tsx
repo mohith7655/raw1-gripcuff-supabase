@@ -28,6 +28,30 @@ export const VIEW_MODE_OPTIONS: { key: ViewMode; label: string; icon: string }[]
     { key: 'list', label: 'List', icon: '☰' },
 ];
 
+/**
+ * Layout glyph drawn from bars (Shopify-style) — vertical bars represent the
+ * number of grid columns; `list` renders stacked horizontal rows.
+ */
+export function ViewModeIcon({ mode, color, size = 15 }: { mode: ViewMode; color: string; size?: number }) {
+    if (mode === 'list') {
+        return (
+            <View style={{ width: size, height: size, justifyContent: 'space-between', paddingVertical: 1 }}>
+                {[0, 1, 2].map(i => (
+                    <View key={i} style={{ height: Math.max(2, size * 0.16), borderRadius: 1, backgroundColor: color }} />
+                ))}
+            </View>
+        );
+    }
+    const cols = VIEW_MODE_COLS[mode];
+    return (
+        <View style={{ width: size, height: size, flexDirection: 'row', gap: 2 }}>
+            {Array.from({ length: cols }).map((_, i) => (
+                <View key={i} style={{ flex: 1, borderRadius: 1.5, backgroundColor: color }} />
+            ))}
+        </View>
+    );
+}
+
 // Muted earthy / slate thumbnail gradients (Ash & Midnight)
 const GRADIENTS: [string, string][] = [
     ['#8B7355', '#6B5B45'],   // tan / brown

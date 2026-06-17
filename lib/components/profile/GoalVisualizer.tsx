@@ -10,6 +10,69 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, Image as RNImage, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, G, Image as SvgImage, Line, Text as SvgText } from 'react-native-svg';
 import { GoalEntry, GoalType } from '../../models/User';
+import MuscleVisualizer from '../MuscleVisualizer';
+
+// ── 3D model hotspots — tappable body-part dots overlaid on the model. ─────────
+// x = horizontal offset from centre (0.5); y = fraction of viewer height.
+type Hotspot = { key: string; label: string; y: number; x: number; both: boolean };
+const HOTSPOTS: Record<'muscle' | 'injury', { front: Hotspot[]; back: Hotspot[] }> = {
+  muscle: {
+    front: [
+      { key: 'shoulders', label: 'Shoulders', y: 0.30, x: 0.12, both: true },
+      { key: 'chest',     label: 'Chest',     y: 0.37, x: 0.07, both: true },
+      { key: 'arms',      label: 'Arms',      y: 0.45, x: 0.17, both: true },
+      { key: 'abs',       label: 'Abs',       y: 0.47, x: 0.00, both: false },
+      { key: 'quads',     label: 'Quads',     y: 0.66, x: 0.06, both: true },
+      { key: 'calves',    label: 'Calves',    y: 0.84, x: 0.05, both: true },
+    ],
+    back: [
+      { key: 'shoulders', label: 'Shoulders', y: 0.30, x: 0.12, both: true },
+      { key: 'back',      label: 'Back',      y: 0.40, x: 0.00, both: false },
+      { key: 'arms',      label: 'Arms',      y: 0.45, x: 0.17, both: true },
+      { key: 'glutes',    label: 'Glutes',    y: 0.55, x: 0.06, both: true },
+      { key: 'calves',    label: 'Calves',    y: 0.84, x: 0.05, both: true },
+    ],
+  },
+  injury: {
+    front: [
+      { key: 'neck',     label: 'Neck',     y: 0.20, x: 0.00, both: false },
+      { key: 'shoulder', label: 'Shoulder', y: 0.30, x: 0.12, both: true },
+      { key: 'elbow',    label: 'Elbow',    y: 0.46, x: 0.16, both: true },
+      { key: 'wrist',    label: 'Wrist',    y: 0.57, x: 0.18, both: true },
+      { key: 'hip',      label: 'Hip',      y: 0.52, x: 0.07, both: true },
+      { key: 'knee',     label: 'Knee',     y: 0.70, x: 0.05, both: true },
+      { key: 'ankle',    label: 'Ankle',    y: 0.90, x: 0.05, both: true },
+    ],
+    back: [
+      { key: 'neck',       label: 'Neck',       y: 0.20, x: 0.00, both: false },
+      { key: 'shoulder',   label: 'Shoulder',   y: 0.30, x: 0.12, both: true },
+      { key: 'upper_back', label: 'Upper Back', y: 0.37, x: 0.00, both: false },
+      { key: 'lower_back', label: 'Lower Back', y: 0.47, x: 0.00, both: false },
+      { key: 'elbow',      label: 'Elbow',      y: 0.46, x: 0.16, both: true },
+      { key: 'knee',       label: 'Knee',       y: 0.70, x: 0.05, both: true },
+      { key: 'ankle',      label: 'Ankle',      y: 0.90, x: 0.05, both: true },
+    ],
+  },
+};
+// Goal landmark key → MuscleVisualizer highlight group.
+const HL_MAP: Record<string, string> = {
+  shoulders: 'Shoulders', chest: 'Chest', arms: 'Arms', back: 'Back',
+  abs: 'Abs', glutes: 'Glutes', quads: 'Quads', calves: 'Calves',
+};
+
+// Selections store side-aware keys: `base` (single) or `base::left` / `base::right`.
+const SIDE_SEP = '::';
+const sideKey = (base: string, side: 'left' | 'right' | 'single') =>
+  side === 'single' ? base : `${base}${SIDE_SEP}${side}`;
+const parseKey = (k: string): { base: string; side: 'left' | 'right' | null } => {
+  const i = k.indexOf(SIDE_SEP);
+  return i === -1 ? { base: k, side: null } : { base: k.slice(0, i), side: k.slice(i + SIDE_SEP.length) as 'left' | 'right' };
+};
+const keyLabel = (lists: Landmark[], k: string): string => {
+  const { base, side } = parseKey(k);
+  const lbl = lists.find(l => l.key === base)?.label ?? base;
+  return side ? `${side === 'left' ? 'Left' : 'Right'} ${lbl}` : lbl;
+};
 
 export type { GoalEntry, GoalType };
 export type InjurySide = 'left' | 'right' | 'both';
@@ -144,6 +207,8 @@ export default function GoalVisualizer({
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const [stageW, setStageW] = useState(0);
+  // 3D model view (editable mode): front/back lets hotspots align with the body.
+  const [modelView, setModelView] = useState<'front' | 'back'>('front');
 
   const curWeight = weightKg ?? 70;
   const heightM = (heightCm ?? 170) / 100;
@@ -190,14 +255,15 @@ export default function GoalVisualizer({
       const meta = TYPE_META[g.type];
       const fill = meta.soft.replace('0.12', '0.22');
       const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
-      keys.forEach(key => {
-        const lm = lmList(g.type).find(x => x.key === key);
+      keys.forEach(rawKey => {
+        const { base, side } = parseKey(rawKey);
+        const lm = lmList(g.type).find(x => x.key === base);
         if (!lm) return;
         if (!lm.both) { out.push({ x: CX + lmOff(lm), y: lmY(lm), r, label: lm.label, color: meta.color, fill }); return; }
         const L = { x: CX + lmOff(lm), y: lmY(lm), r, color: meta.color, fill };
         const R = { x: CX - lmOff(lm), y: lmY(lm), r, color: meta.color, fill };
-        if (g.type === 'injury_rehab' && g.side === 'left')  out.push({ ...L, label: `Left ${lm.label}` });
-        else if (g.type === 'injury_rehab' && g.side === 'right') out.push({ ...R, label: `Right ${lm.label}` });
+        if (side === 'left')       out.push({ ...L, label: `Left ${lm.label}` });
+        else if (side === 'right') out.push({ ...R, label: `Right ${lm.label}` });
         else { out.push({ ...R, label: '' }); out.push({ ...L, label: lm.label }); }
       });
     });
@@ -273,16 +339,120 @@ export default function GoalVisualizer({
     const meta = TYPE_META[g.type];
     if (g.type === 'weight_loss') return `${meta.emoji} Lose ${Math.round(g.kg ?? 0)} kg`;
     const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
-    const labels = keys.map(k => lmList(g.type).find(l => l.key === k)?.label ?? k).join(', ');
+    const labels = keys.map(k => keyLabel(lmList(g.type), k)).join(', ');
     return `${meta.emoji} ${meta.label}${labels ? `: ${labels}` : ''}`;
   });
 
   const activeGoal = list[activeIndex];
   const figureInteractive = editable && activeGoal && activeGoal.type !== 'weight_loss';
 
+  // ── 3D model selection (editable mode) ──────────────────────────────────────
+  const activeKeys = activeGoal
+    ? (activeGoal.type === 'muscle_growth' ? (activeGoal.muscles ?? []) : (activeGoal.areas ?? []))
+    : [];
+  const activeMeta = activeGoal ? TYPE_META[activeGoal.type] : TYPE_META.muscle_growth;
+  const highlightMuscles = activeKeys.map(k => HL_MAP[parseKey(k).base]).filter(Boolean);
+
+  const toggleKey = (key: string) => {
+    const goal = list[activeIndex];
+    if (!goal || goal.type === 'weight_loss') return;
+    if (goal.type === 'muscle_growth') {
+      const cur = goal.muscles ?? [];
+      if (cur.includes(key)) update(activeIndex, { muscles: cur.filter(k => k !== key) });
+      else if (cur.length < MAX_MUSCLES) update(activeIndex, { muscles: [...cur, key] });
+    } else {
+      const cur = goal.areas ?? [];
+      update(activeIndex, { areas: cur.includes(key) ? cur.filter(k => k !== key) : [...cur, key] });
+    }
+  };
+
+  // Tappable hotspot dots overlaid on the 3D model for the active goal.
+  // Each side is independent (tap the left dot → only the left side is added).
+  // Dots are faint by default; the body-part word only appears once selected.
+  const renderHotspots = () => {
+    if (!activeGoal || activeGoal.type === 'weight_loss') return null;
+    const setKey = activeGoal.type === 'injury_rehab' ? 'injury' : 'muscle';
+    const spots = HOTSPOTS[setKey][modelView];
+    return (
+      <>
+        {spots.flatMap(h => {
+          const sides: ('left' | 'right' | 'single')[] = h.both ? ['left', 'right'] : ['single'];
+          return sides.map(side => {
+            const xf = side === 'single' ? 0.5 : side === 'left' ? 0.5 - h.x : 0.5 + h.x;
+            const k = sideKey(h.key, side);
+            const selected = activeKeys.includes(k);
+            const label = side === 'single' ? h.label : `${side === 'left' ? 'Left' : 'Right'} ${h.label}`;
+            return (
+              <React.Fragment key={k}>
+                <TouchableOpacity
+                  style={[st.hsDot, {
+                    left: `${xf * 100}%`, top: `${h.y * 100}%`,
+                    backgroundColor: selected ? activeMeta.color : 'rgba(33,24,50,0.22)',
+                    borderColor: selected ? '#fff' : 'rgba(255,255,255,0.65)',
+                  }]}
+                  onPress={() => toggleKey(k)}
+                  activeOpacity={0.8}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                />
+                {selected && (
+                  <Text
+                    style={[st.hsLabel, { left: `${xf * 100}%`, top: `${h.y * 100}%`, color: activeMeta.color }]}
+                    pointerEvents="none"
+                  >
+                    {label}
+                  </Text>
+                )}
+              </React.Fragment>
+            );
+          });
+        })}
+      </>
+    );
+  };
+
   return (
     <View>
-      {/* ── Stage (tap to select body parts) ───────────────────────────── */}
+      {/* ── 3D model + tappable hotspots (editable) ────────────────────── */}
+      {editable && (
+        <>
+          {/* Front / Back toggle — outside the model */}
+          <View style={st.viewToggle}>
+            {(['front', 'back'] as const).map(v => (
+              <TouchableOpacity
+                key={v}
+                style={[st.viewBtn, modelView === v && st.viewBtnActive]}
+                onPress={() => setModelView(v)}
+                activeOpacity={0.85}
+              >
+                <Text style={[st.viewBtnText, modelView === v && st.viewBtnTextActive]}>
+                  {v === 'front' ? 'Front' : 'Back'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={[st.stage, { padding: 0 }]} onLayout={e => setStageW(e.nativeEvent.layout.width)}>
+            <MuscleVisualizer
+              targetedMuscles={highlightMuscles}
+              view={modelView}
+              height={canvasHeight}
+              hideControls
+              overlay={
+                <>
+                  <View style={st.hsTitle} pointerEvents="none">
+                    <Text style={st.hsTitleName}>{name || 'Me'}</Text>
+                    <Text style={st.hsTitleSub}>My Goals</Text>
+                  </View>
+                  {renderHotspots()}
+                </>
+              }
+            />
+          </View>
+        </>
+      )}
+
+      {/* ── 2D figure (read-only preview) ──────────────────────────────── */}
+      {!editable && (
       <View
         style={st.stage}
         onLayout={e => setStageW(e.nativeEvent.layout.width)}
@@ -333,6 +503,7 @@ export default function GoalVisualizer({
           </TouchableOpacity>
         ))}
       </View>
+      )}
 
       {/* ── Preview summary ────────────────────────────────────────────── */}
       {!editable && (
@@ -398,8 +569,8 @@ export default function GoalVisualizer({
                     <View style={st.tapRow}>
                       <Text style={st.qLabel}>
                         {goal.type === 'muscle_growth'
-                          ? `Tap the figure to pick muscles (top ${MAX_MUSCLES})`
-                          : 'Tap the figure to pick body parts'}
+                          ? `Tap the 3D model to pick muscles (top ${MAX_MUSCLES})`
+                          : 'Tap the 3D model to pick body parts'}
                       </Text>
                       <Text style={st.sliderValue}>
                         {(goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? [])).length}
@@ -408,38 +579,21 @@ export default function GoalVisualizer({
                     </View>
                     {!active && (
                       <TouchableOpacity onPress={() => setActiveIndex(i)} activeOpacity={0.8}>
-                        <Text style={[st.tapHint, { color: meta.color }]}>Tap here to edit this goal on the figure ↑</Text>
+                        <Text style={[st.tapHint, { color: meta.color }]}>Tap here to edit this goal on the model ↑</Text>
                       </TouchableOpacity>
                     )}
-                    {active && <Text style={st.tapHint}>Selecting on the figure for this goal · tap a marker’s ✕ to remove</Text>}
+                    {active && <Text style={st.tapHint}>Use Front / Back, then tap a dot on the model · tap again to remove</Text>}
 
                     {/* selected as removable tags (also removable here) */}
                     <View style={st.tagRow}>
-                      {(goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? [])).map(key => {
-                        const lm = lmList(goal.type).find(l => l.key === key);
-                        return (
-                          <TouchableOpacity key={key} style={[st.tag, { borderColor: meta.color, backgroundColor: meta.soft }]}
-                            onPress={() => removeKey(i, key, goal.type)} activeOpacity={0.8}>
-                            <Text style={[st.tagText, { color: meta.color }]}>{lm?.label ?? key}</Text>
-                            <Text style={[st.tagX, { color: meta.color }]}> ✕</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                      {(goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? [])).map(key => (
+                        <TouchableOpacity key={key} style={[st.tag, { borderColor: meta.color, backgroundColor: meta.soft }]}
+                          onPress={() => removeKey(i, key, goal.type)} activeOpacity={0.8}>
+                          <Text style={[st.tagText, { color: meta.color }]}>{keyLabel(lmList(goal.type), key)}</Text>
+                          <Text style={[st.tagX, { color: meta.color }]}> ✕</Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
-
-                    {goal.type === 'injury_rehab' && lmList('injury_rehab').some(a => (goal.areas ?? []).includes(a.key) && a.both) && (
-                      <>
-                        <Text style={[st.qLabel, { marginTop: 14 }]}>Which side?</Text>
-                        <View style={st.sideRow}>
-                          {SIDES.map(sd => (
-                            <TouchableOpacity key={sd.key} activeOpacity={0.85} onPress={() => update(i, { side: sd.key })}
-                              style={[st.sideBtn, goal.side === sd.key && { borderColor: meta.color, backgroundColor: meta.soft }]}>
-                              <Text style={[st.tagText, goal.side === sd.key && { color: C.text, fontWeight: '800' }]}>{sd.label}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </>
-                    )}
                   </View>
                 )}
               </View>
@@ -473,6 +627,30 @@ function Compare({ label, value, accent }: { label: string; value: string; accen
 // ── Styles ────────────────────────────────────────────────────────────────────
 const st = StyleSheet.create({
   stage: { position: 'relative', backgroundColor: C.canvas, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden', paddingVertical: 6 },
+
+  // 3D model overlay — title + tappable body-part dots
+  hsTitle: { position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center' },
+  hsTitleName: { color: C.text, fontSize: 12, fontWeight: '800' },
+  hsTitleSub: { color: C.muted, fontSize: 11, fontWeight: '700' },
+  hsDot: {
+    position: 'absolute', width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+    marginLeft: -10, marginTop: -10,
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 3,
+  },
+  hsLabel: {
+    position: 'absolute', width: 90, marginLeft: -45, marginTop: -30, textAlign: 'center',
+    fontSize: 11, fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
+  },
+  viewToggle: {
+    flexDirection: 'row', alignSelf: 'center', marginBottom: 10,
+    backgroundColor: C.cardBg, borderRadius: 100, padding: 3,
+    borderWidth: 1, borderColor: C.border,
+  },
+  viewBtn: { paddingHorizontal: 22, paddingVertical: 7, borderRadius: 100 },
+  viewBtnActive: { backgroundColor: '#211832' },
+  viewBtnText: { color: C.muted, fontSize: 13, fontWeight: '700' },
+  viewBtnTextActive: { color: '#fff' },
   xChip: {
     position: 'absolute', width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
     borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',

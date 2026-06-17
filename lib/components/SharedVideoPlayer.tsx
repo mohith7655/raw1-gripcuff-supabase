@@ -36,6 +36,7 @@ import { CastStatusBanner } from './cast/CastStatusBanner';
 import { RemoteControlBar } from './cast/RemoteControlBar';
 import { useCast } from '../hooks/useCast';
 import { WatchTrackingService } from '../services/watchTracking.service';
+import { Raw1Logo } from '../raw1_logo';
 
 export type SharedVideoPlayerRef = {
     pauseVideo: () => void;
@@ -44,7 +45,7 @@ export type SharedVideoPlayerRef = {
     seekTo: (ms: number) => void;
 };
 
-type InviteCta = {
+export type InviteCta = {
     title: string;
     subtitle: string | React.ReactNode;
     /** Opens the unified Workout Together scheduling flow (Step 1 date/time → Step 2 type). */
@@ -70,7 +71,6 @@ interface SharedVideoPlayerProps {
     actionVariant?: 'default' | 'danger';
     /** Rendered inside the header title container, below the title — e.g. a LIVE pill. */
     headerTitleSuffix?: React.ReactNode;
-    inviteCta?: InviteCta;
     footerText?: string;
     headerLeftExtra?: React.ReactNode;
     onPlayStateChange?: (isPlaying: boolean) => void;
@@ -127,7 +127,6 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     onActionPress,
     actionVariant,
     headerTitleSuffix,
-    inviteCta,
     footerText,
     headerLeftExtra,
     onPlayStateChange,
@@ -484,6 +483,9 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
     // re-parent the stage into a full-screen Modal (via FullscreenHost).
     const stageRef = useRef<View>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    // Stage size — used to place the watermark on the letterboxed video content
+    // (the stage is taller than the 16:9 video, so the top is black bars).
+    const [stageLayout, setStageLayout] = useState({ width: 0, height: 0 });
 
     const enterFullscreen = async () => {
         if (Platform.OS === 'web') {
@@ -697,9 +699,6 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                 </View>
 
                 <View style={styles.headerActions}>
-                    {/* Cast button — auto-hides when no devices are available */}
-                    <CastButton tintColor="white" size={22} />
-
                     {actionLabel ? (
                         <TouchableOpacity
                             style={[styles.actionBtn, actionVariant === 'danger' && styles.actionBtnDanger]}
@@ -729,7 +728,10 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                 <View
                     ref={stageRef}
                     style={[styles.videoStage, isFullscreen && styles.videoStageFullscreen]}
-                    onLayout={(e) => { stageWidthRef.current = e.nativeEvent.layout.width; }}
+                    onLayout={(e) => {
+                        stageWidthRef.current = e.nativeEvent.layout.width;
+                        setStageLayout({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height });
+                    }}
                 >
 
                     {/* ── Chromecast active: show placeholder instead of video ── */}
@@ -875,6 +877,24 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                 </View>
                             )}
 
+                            {/* RAW1 watermark — small & faint, pinned to the top-left of
+                                the actual (letterboxed) video, not the black stage bars.
+                                Pushed down when the Prev/Next nav occupies the top row. */}
+                            <View
+                                style={[styles.logoWatermark, {
+                                    top: 8 + (videoNavExtras ? 34 : 0) + (isFullscreen ? 0 : Math.max(0,
+                                        (stageLayout.height - stageLayout.width * 9 / 16) / 2)),
+                                }]}
+                                pointerEvents="none"
+                            >
+                                <Raw1Logo fontSize={13} transparent />
+                            </View>
+
+                            {/* Cast button — bottom-right, just left of fullscreen */}
+                            <View style={styles.castBtn} pointerEvents="box-none">
+                                <CastButton tintColor="white" size={16} />
+                            </View>
+
                             {/* Fullscreen toggle (YouTube-style, bottom-right) */}
                             <TouchableOpacity
                                 style={styles.fullscreenBtn}
@@ -891,7 +911,7 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
             </TouchableWithoutFeedback>
             </FullscreenHost>
 
-            {/* ── Footer: remote controls when casting, invite CTA otherwise ── */}
+            {/* ── Footer: remote controls when casting ── */}
             {showCastOverlay ? (
                 <RemoteControlBar
                     mode="video"
@@ -904,43 +924,6 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                     onSeekForward={() => castSeekRelative(10)}
                     onStopCast={endSession}
                 />
-            ) : inviteCta ? (
-                <View style={styles.footerStack}>
-                    {/* ── Workout Together (primary) ── */}
-                    <TouchableOpacity
-                        style={styles.footerBtnWorkoutTogether}
-                        onPress={inviteCta.onWorkoutTogether}
-                        activeOpacity={0.85}
-                    >
-                        <CalendarClock color="#fff" size={14} />
-                        <Text style={styles.footerBtnWorkoutTogetherText}>Workout with Friend</Text>
-                    </TouchableOpacity>
-
-                    {/* ── LIVE viewer pill (replaces "Start Now") ── */}
-                    <TouchableOpacity
-                        style={styles.footerBtnLive}
-                        onPress={inviteCta.onViewersPress ?? inviteCta.onStartNow}
-                        activeOpacity={0.8}
-                    >
-                        {/* Stacked avatars for other viewers */}
-                        {(inviteCta.viewers ?? []).filter(v => v.uid !== inviteCta.currentUid).length > 0 && (
-                            <StackedAvatars
-                                viewers={inviteCta.viewers ?? []}
-                                currentUid={inviteCta.currentUid}
-                                maxVisible={3}
-                                size={20}
-                            />
-                        )}
-                        <PulsingDot size={6} color="#22C55E" />
-                        {/* LIVE + count always together; self counts as 1 */}
-                        <Text style={styles.footerBtnLiveLabel}>
-                            {'LIVE '}
-                            <Text style={styles.footerBtnLiveCount}>
-                                {Math.max(1, (inviteCta.viewerCount ?? 0) + 1)}
-                            </Text>
-                        </Text>
-                    </TouchableOpacity>
-                </View>
             ) : footerText ? (
                 <View style={styles.footerRow}>
                     <Text style={styles.footerText}>{footerText}</Text>
@@ -951,6 +934,51 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
 });
 
 export const SharedVideoPlayer = React.memo(SharedVideoPlayerInner);
+
+/**
+ * "Workout with Friend" + LIVE viewer pill. Rendered by the caller (below the
+ * video title) rather than inside the player footer.
+ */
+export function InviteFooter({ cta }: { cta: InviteCta }) {
+    return (
+        <View style={styles.footerStack}>
+            {/* ── Workout Together (primary) ── */}
+            <TouchableOpacity
+                style={styles.footerBtnWorkoutTogether}
+                onPress={cta.onWorkoutTogether}
+                activeOpacity={0.85}
+            >
+                <CalendarClock color="#fff" size={14} />
+                <Text style={styles.footerBtnWorkoutTogetherText}>Workout with Friend</Text>
+            </TouchableOpacity>
+
+            {/* ── LIVE viewer pill (replaces "Start Now") ── */}
+            <TouchableOpacity
+                style={styles.footerBtnLive}
+                onPress={cta.onViewersPress ?? cta.onStartNow}
+                activeOpacity={0.8}
+            >
+                {/* Stacked avatars for other viewers */}
+                {(cta.viewers ?? []).filter(v => v.uid !== cta.currentUid).length > 0 && (
+                    <StackedAvatars
+                        viewers={cta.viewers ?? []}
+                        currentUid={cta.currentUid}
+                        maxVisible={3}
+                        size={16}
+                    />
+                )}
+                <PulsingDot size={5} color="#22C55E" />
+                {/* LIVE + count always together; self counts as 1 */}
+                <Text style={styles.footerBtnLiveLabel}>
+                    {'LIVE '}
+                    <Text style={styles.footerBtnLiveCount}>
+                        {Math.max(1, (cta.viewerCount ?? 0) + 1)}
+                    </Text>
+                </Text>
+            </TouchableOpacity>
+        </View>
+    );
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -1091,6 +1119,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    logoWatermark: {
+        position: 'absolute',
+        top: 10,
+        left: 12,
+        opacity: 0.45,
+    },
+    castBtn: {
+        position: 'absolute',
+        right: 50,
+        bottom: 18,
+        width: 34,
+        height: 34,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     // ── Cast placeholder ───────────────────────────────────────────
     castPlaceholder: {
         flex: 1,
@@ -1175,14 +1218,11 @@ const styles = StyleSheet.create({
     },
     // ── Footer ─────────────────────────────────────────────────────
     footerStack: {
-        width: '100%',
         flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        flexWrap: 'wrap',
         gap: 8,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.06)',
     },
     footerRow: {
         width: '100%',
@@ -1241,19 +1281,18 @@ const styles = StyleSheet.create({
     },
     // ── New unified footer buttons ─────────────────────────────────────────
     footerBtnWorkoutTogether: {
-        flex: 2,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
-        paddingVertical: 11,
-        paddingHorizontal: 8,
-        borderRadius: 12,
+        gap: 5,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
         backgroundColor: '#F25912',
     },
     footerBtnWorkoutTogetherText: {
         color: '#fff',
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '700',
     },
     footerBtnStartNow: {
@@ -1276,27 +1315,27 @@ const styles = StyleSheet.create({
     },
     // ── LIVE viewer pill ──────────────────────────────────────────────────────
     footerBtnLive: {
-        flex: 1,
+        alignSelf: 'center',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 5,
-        paddingVertical: 11,
-        paddingHorizontal: 8,
-        borderRadius: 12,
-        backgroundColor: 'rgba(34,197,94,0.08)',
+        paddingVertical: 5,
+        paddingHorizontal: 11,
+        borderRadius: 20,
+        backgroundColor: 'rgba(34,197,94,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(34,197,94,0.3)',
+        borderColor: 'rgba(34,197,94,0.35)',
     },
     footerBtnLiveLabel: {
-        color: '#22C55E',
-        fontSize: 11,
+        color: '#1E9E4A',
+        fontSize: 10,
         fontWeight: '800',
         letterSpacing: 0.5,
     },
     footerBtnLiveCount: {
-        color: '#fff',
-        fontSize: 13,
+        color: '#211832',
+        fontSize: 11,
         fontWeight: '700',
     },
     footerBtnSocial: {

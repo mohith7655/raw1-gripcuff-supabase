@@ -17,7 +17,7 @@ import {
   Platform,
   LayoutAnimation,
 } from 'react-native';
-import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
+import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, ViewModeIcon, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, Flame, Zap, HeartPulse, PersonStanding, PlusCircle, Users, ChevronRight, Search } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -442,7 +442,7 @@ export const LibraryScreen = () => {
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: 140,
+          bottom: 96,
           alignItems: 'center',
           zIndex: 90,
         }} pointerEvents="box-none">
@@ -506,33 +506,41 @@ export const LibraryScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* View Style Picker */}
-            <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600', letterSpacing: 0.6, marginBottom: 10, marginTop: 4 }}>
-              VIEW STYLE
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 7, marginBottom: 22 }}>
-              {VIEW_MODE_OPTIONS.map(({ key, label, icon }) => {
-                const active = viewMode === key;
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    onPress={() => handleViewModeChange(key)}
-                    style={{
-                      flex: 1,
-                      backgroundColor: active ? 'rgba(242,89,18,0.14)' : '#EEEEF2',
-                      borderRadius: 10,
-                      borderWidth: 1.5,
-                      borderColor: active ? '#F25912' : '#F8F8FC',
-                      paddingVertical: 10,
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 15, color: active ? '#F25912' : '#7A7C90' }}>{icon}</Text>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: active ? '#F25912' : '#7A7C90' }}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+            {/* View Style Picker — Shopify-style count + layout toggles */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 4,
+              marginBottom: 22,
+            }}>
+              <Text style={{ color: '#7A7C90', fontSize: 13, fontWeight: '600' }}>
+                {gripCuffVideos.length + allVideos.length} items
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {VIEW_MODE_OPTIONS.map(({ key }) => {
+                  const active = viewMode === key;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      onPress={() => handleViewModeChange(key)}
+                      activeOpacity={0.8}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: active ? '#211832' : '#EEEEF2',
+                        borderWidth: 1,
+                        borderColor: active ? '#211832' : '#D8D8E4',
+                      }}
+                    >
+                      <ViewModeIcon mode={key} color={active ? '#fff' : '#7A7C90'} size={15} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginBottom: 16 }} />
