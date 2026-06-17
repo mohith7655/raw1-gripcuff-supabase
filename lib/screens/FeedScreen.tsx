@@ -20,7 +20,6 @@ import { AppTheme } from '../core/theme/app_theme';
 import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { ChatHub } from '../components/social/ChatHub';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useFriend } from '../providers/FriendContext';
@@ -39,10 +38,6 @@ import type { Club } from './ClubsScreen';
 
 const ORANGE = '#4C4E78';
 const TEXT_SECONDARY = '#7A7C90';
-
-// Social tab activation gate — set once the user finishes the activation flow
-// (tour + agreeing to all rules). Until then the activation modal shows on entry.
-const SOCIAL_ACTIVATED = 'social_tab_activated';
 
 type SocialTab = 'feed' | 'chat';
 
@@ -65,27 +60,21 @@ export function FeedScreen() {
   const [myClubs, setMyClubs] = useState<Club[]>([]);
   const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
 
-  // ── Social tab activation gate ──
-  // Shown on entry until the user completes the activation flow (tour + agreeing
-  // to the rules). Once activated it never shows again.
+  // ── Social tab activation prompt ──
+  // Shown every time the tab is opened. The user can run through it (tour +
+  // rules) or skip it — either way it re-appears on the next visit.
   const [activationVisible, setActivationVisible] = useState(false);
 
   useFocusEffect(useCallback(() => {
-    (async () => {
-      try {
-        if (await AsyncStorage.getItem(SOCIAL_ACTIVATED) === '1') return;
-        setActivationVisible(true);
-      } catch { /* ignore storage errors */ }
-    })();
+    setActivationVisible(true);
   }, []));
 
-  // Finished the flow and agreed to everything — activate permanently.
-  const handleActivated = useCallback(async () => {
+  // Finished the flow and agreed to everything.
+  const handleActivated = useCallback(() => {
     setActivationVisible(false);
-    try { await AsyncStorage.setItem(SOCIAL_ACTIVATED, '1'); } catch {}
   }, []);
 
-  // Dismissed without finishing — shows again on the next visit.
+  // Skipped / dismissed — shows again on the next visit.
   const handleActivationDismiss = useCallback(() => {
     setActivationVisible(false);
   }, []);
