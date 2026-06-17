@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { SCREEN_PADDING } from '../constants/theme';
 import { useFavorites } from '../hooks/useFavorites';
+import { VideoViewsLabel } from './VideoViewsLabel';
 import { useLibrary } from '../providers/LibraryContext';
 import {
     getProgramsByCategory,
@@ -199,6 +200,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                     <Text style={styles.videoTitle} numberOfLines={1}>
                         {video.title}
                     </Text>
+                    <VideoViewsLabel videoId={video.id} />
                 </View>
             </View>
         );

@@ -6,6 +6,7 @@ import { Raw1Logo } from '../raw1_logo';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { formatDifficulty } from '../core/difficulty';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
+import { useVideoViews, formatViews } from '../services/videoViews.service';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
 
 const THUMBNAIL_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
@@ -22,6 +23,7 @@ export const GridVideoCard = ({
     const { isFavorite, toggleFavorite } = useFavorites();
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const fav = isFavorite(video.id);
+    const views = useVideoViews(video.id != null ? String(video.id) : null);
     const bgColor = THUMBNAIL_COLORS[index % THUMBNAIL_COLORS.length];
 
     const handleFavoritePress = () => {
@@ -70,9 +72,17 @@ export const GridVideoCard = ({
                 <Text style={styles.videoTitle} numberOfLines={2}>
                     {video.title}
                 </Text>
-                {!!formatDifficulty((video as any).difficulty) && (
-                    <Text style={styles.videoDifficulty}>{formatDifficulty((video as any).difficulty)}</Text>
-                )}
+                <View style={styles.metaRow}>
+                    {!!formatDifficulty((video as any).difficulty) && (
+                        <Text style={styles.videoDifficulty}>{formatDifficulty((video as any).difficulty)}</Text>
+                    )}
+                    {!!views && (
+                        <Text style={styles.videoViews}>
+                            {!!formatDifficulty((video as any).difficulty) && '· '}
+                            {formatViews(views)} views
+                        </Text>
+                    )}
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -122,10 +132,20 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 8,
     },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        marginTop: 3,
+    },
     videoDifficulty: {
         color: '#7A7C90',
         fontSize: 11,
         fontWeight: '600',
-        marginTop: 3,
+    },
+    videoViews: {
+        color: '#7A7C90',
+        fontSize: 11,
+        fontWeight: '600',
     },
 });

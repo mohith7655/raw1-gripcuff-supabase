@@ -53,6 +53,7 @@ import { RewardUnlockModal } from '../components/rewards/RewardUnlockModal';
 import { addWorkoutMinutes } from '../services/leaderboard.service';
 import { useVideoEngagement } from '../hooks/useVideoEngagement';
 import { useVideoGlobalCounts, formatCount } from '../services/videoEngagement.service';
+import { useVideoViews, incrementVideoView, formatViews } from '../services/videoViews.service';
 import { getSimilarPrograms, RecommendedProgram } from '../services/recommendation.service';
 import { useFocusEffect } from '@react-navigation/native';
 import { AgoraVoice } from '../services/agora/AgoraVoice';
@@ -290,6 +291,17 @@ const EQUIPMENT_BY_CATEGORY: Record<string, { equipment: string; description: st
         { equipment: 'Water Bottle', description: 'Stay hydrated throughout the workout' },
         { equipment: 'Towel', description: 'For wiping down equipment and sweat' },
     ],
+};
+
+// Estimated time to set up / assemble the equipment before starting, keyed by
+// category. Shown in the requirements tab so users can prep their space ahead.
+const SETUP_TIME_BY_CATEGORY: Record<string, { time: string; note: string }> = {
+    Gripcuff: { time: '1–2 min', note: 'Strap on the cuff and dial in your resistance.' },
+    MuscleGrowth: { time: '8–10 min', note: 'Load the barbell, adjust the bench and set your cable pins.' },
+    Stretching: { time: '1 min', note: 'Roll out a mat and grab a band — almost no setup.' },
+    AthleticPerformance: { time: '5–7 min', note: 'Lay out the agility ladder, set the plyo box and space your cones.' },
+    InjuryRehab: { time: '2–3 min', note: 'Keep a light band, stability ball and mat within reach.' },
+    default: { time: '2–3 min', note: 'Get your gear, towel and water within reach before you start.' },
 };
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -821,10 +833,15 @@ function VideoPlayerScreen({ route, navigation }: any) {
         setLightsOut(playing);
 
         // Record watch on first play
-        if (playing && !hasRecordedWatchRef.current && supabaseUserId && videoId) {
+        if (playing && !hasRecordedWatchRef.current && videoId && videoId !== 'default-video') {
             hasRecordedWatchRef.current = true;
             const vType = allowInvite ? 'premade_workout' : 'exercise_library';
-            recordVideoWatch(supabaseUserId, videoId, vType).catch(() => {});
+            const watchVideoId = requestedVideoId ?? videoId;
+            if (supabaseUserId) {
+                recordVideoWatch(supabaseUserId, videoId, vType).catch(() => {});
+            }
+            // Global YouTube-style view count — one bump per visit, any viewer.
+            incrementVideoView(watchVideoId, vType).catch(() => {});
         }
 
         if (!isHost || !syncSessionId || !supabaseUserId) return;
@@ -1176,6 +1193,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
         },
     );
     const globalCounts = useVideoGlobalCounts(videoId !== 'default-video' ? videoId : null);
+    const viewCount = useVideoViews(videoId !== 'default-video' ? (requestedVideoId ?? videoId) : null);
 
     // Supabase-backed per-user interactions (Like / Dislike / Want to Try / Favourite)
     const interactionVideoId =
@@ -1236,6 +1254,13 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         if (!isVideoPlayingRef.current) {
                             console.log('[Timer] video playing — YouTube playerState=1, elapsed will start counting');
                             isVideoPlayingRef.current = true;
+                        }
+                        // Global YouTube-style view count — one bump per visit.
+                        if (!hasRecordedWatchRef.current && videoId && videoId !== 'default-video') {
+                            hasRecordedWatchRef.current = true;
+                            const vType = allowInvite ? 'premade_workout' : 'exercise_library';
+                            if (supabaseUserId) recordVideoWatch(supabaseUserId, videoId, vType).catch(() => {});
+                            incrementVideoView(requestedVideoId ?? videoId, vType).catch(() => {});
                         }
                         // Resume the workout clock alongside the video
                         if (modeTypeRef.current === 'workout' && timerStateRef.current === 'running') {
@@ -1489,6 +1514,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
         const equipmentList = categoryKey && EQUIPMENT_BY_CATEGORY[categoryKey]
             ? EQUIPMENT_BY_CATEGORY[categoryKey]
             : EQUIPMENT_BY_CATEGORY.default;
+        const setup = categoryKey && SETUP_TIME_BY_CATEGORY[categoryKey]
+            ? SETUP_TIME_BY_CATEGORY[categoryKey]
+            : SETUP_TIME_BY_CATEGORY.default;
         const programMuscles = activeProgram?.exercises
             .flatMap((exercise) => exercise.muscleGroup.split(','))
             .map((muscle) => muscle.trim())
@@ -1500,6 +1528,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
             muscles: v?.muscles || (uniqueProgramMuscles.length > 0 ? uniqueProgramMuscles.join(', ') : 'Forearms, Grip Strength'),
             exerciseType: v?.exerciseType || 'General',
             experienceLevel: v?.experienceLevel || v?.difficulty || 'Beginner',
+            setupTime: v?.setupTime || setup.time,
+            setupNote: v?.setupNote || setup.note,
         };
     }, [activeProgram, sourceVideo]);
 
@@ -1705,6 +1735,23 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         );
                     })}
                 </View>
+            </View>
+
+            {/* Setup Time — how long to get the equipment ready before starting */}
+            <View style={reqStyles.sectionCard}>
+                <View style={reqStyles.iconRow}>
+                    <Ionicons name="timer-outline" size={18} color={ACCENT} />
+                    <Text style={reqStyles.metaLabel}>Setup Time</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <View style={{
+                        paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
+                        borderColor: INDIGO, backgroundColor: INDIGO_SOFT,
+                    }}>
+                        <Text style={{ color: INDIGO, fontSize: 12, fontWeight: '700' }}>{reqData.setupTime}</Text>
+                    </View>
+                </View>
+                <Text style={[reqStyles.metaValue, { marginTop: 8 }]}>{reqData.setupNote}</Text>
             </View>
 
             {/* Exercises */}
@@ -2358,6 +2405,21 @@ function VideoPlayerScreen({ route, navigation }: any) {
             ) : (
             <View style={[panelStyles.panel, { flex: 1 }, modeType === 'workout' && { backgroundColor: PANEL_DARK }]}>
 
+                {/* Title + view count — YouTube-style, hidden in workout mode */}
+                {modeType !== 'workout' && (
+                    <View style={viewsStyles.titleBlock}>
+                        <Text style={viewsStyles.titleText} numberOfLines={2}>{title}</Text>
+                        <View style={viewsStyles.metaRow}>
+                            <Ionicons name="eye-outline" size={14} color="#7A7C90" />
+                            <Text style={viewsStyles.metaText}>
+                                {viewCount == null
+                                    ? '—'
+                                    : `${formatViews(viewCount)} ${viewCount === 1 ? 'view' : 'views'}`}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
                 {/* Reaction buttons — always full opacity, never dims during playback.
                     Active state and persistence are driven by useVideoInteractions
                     (Supabase video_interactions table). Original engagement / favourites
@@ -2654,6 +2716,31 @@ const navStyles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     titleText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+});
+
+const viewsStyles = StyleSheet.create({
+    titleBlock: {
+        paddingHorizontal: 14,
+        paddingTop: 12,
+        paddingBottom: 6,
+    },
+    titleText: {
+        color: '#211832',
+        fontSize: 16,
+        fontWeight: '700',
+        lineHeight: 21,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 4,
+    },
+    metaText: {
+        color: '#7A7C90',
+        fontSize: 12,
+        fontWeight: '600',
+    },
 });
 
 const s = StyleSheet.create({

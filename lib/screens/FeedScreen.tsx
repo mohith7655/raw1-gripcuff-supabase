@@ -18,8 +18,7 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { AppTheme } from '../core/theme/app_theme';
 import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
-import { SocialIntroModal } from '../components/SocialIntroModal';
-import { FeatureInfoModal } from '../components/FeatureInfoModal';
+import { SocialActivationModal } from '../components/SocialActivationModal';
 import { ChatHub } from '../components/social/ChatHub';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../core/config/supabase';
@@ -41,9 +40,9 @@ import type { Club } from './ClubsScreen';
 const ORANGE = '#4C4E78';
 const TEXT_SECONDARY = '#7A7C90';
 
-// Social intro explainer persistence keys
-const SOCIAL_INTRO_SKIP = 'social_intro_skip_forever';
-const SOCIAL_INTRO_REMIND = 'social_intro_remind_at';
+// Social tab activation gate — set once the user finishes the activation flow
+// (tour + agreeing to all rules). Until then the activation modal shows on entry.
+const SOCIAL_ACTIVATED = 'social_tab_activated';
 
 type SocialTab = 'feed' | 'chat';
 
@@ -65,41 +64,30 @@ export function FeedScreen() {
   const [commentPost, setCommentPost] = useState<Post | null>(null);
   const [myClubs, setMyClubs] = useState<Club[]>([]);
   const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
-  // Which feature explainer popup is open (shown when its card is tapped).
-  const [featureInfo, setFeatureInfo] = useState<'challenge' | 'workout' | null>(null);
 
-  // ── Social intro explainer (Challenge Lobby + Workout with a Friend) ──
-  // Shown every time the screen is focused, unless the user chose "Never show
-  // again" (permanent) or is still inside a "remind in 7 days" window.
-  const [introVisible, setIntroVisible] = useState(false);
+  // ── Social tab activation gate ──
+  // Shown on entry until the user completes the activation flow (tour + agreeing
+  // to the rules). Once activated it never shows again.
+  const [activationVisible, setActivationVisible] = useState(false);
 
   useFocusEffect(useCallback(() => {
     (async () => {
       try {
-        if (await AsyncStorage.getItem(SOCIAL_INTRO_SKIP) === '1') return;
-        const remindAt = await AsyncStorage.getItem(SOCIAL_INTRO_REMIND);
-        if (remindAt && Date.now() < Number(remindAt)) return;
-        setIntroVisible(true);
+        if (await AsyncStorage.getItem(SOCIAL_ACTIVATED) === '1') return;
+        setActivationVisible(true);
       } catch { /* ignore storage errors */ }
     })();
   }, []));
 
-  // "Skip for now" — just close; it shows again on the next visit.
-  const handleIntroSkipOnce = useCallback(() => {
-    setIntroVisible(false);
+  // Finished the flow and agreed to everything — activate permanently.
+  const handleActivated = useCallback(async () => {
+    setActivationVisible(false);
+    try { await AsyncStorage.setItem(SOCIAL_ACTIVATED, '1'); } catch {}
   }, []);
 
-  // "Never show again" — permanent.
-  const handleIntroSkipForever = useCallback(async () => {
-    setIntroVisible(false);
-    try { await AsyncStorage.setItem(SOCIAL_INTRO_SKIP, '1'); } catch {}
-  }, []);
-
-  // "Remind me in 7 days" — suppress for a week.
-  const handleIntroRemindLater = useCallback(async () => {
-    setIntroVisible(false);
-    const remindAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
-    try { await AsyncStorage.setItem(SOCIAL_INTRO_REMIND, String(remindAt)); } catch {}
+  // Dismissed without finishing — shows again on the next visit.
+  const handleActivationDismiss = useCallback(() => {
+    setActivationVisible(false);
   }, []);
 
   // ── People You May Know (friend suggestions) ──
@@ -225,7 +213,7 @@ export function FeedScreen() {
     <View>
       <TouchableOpacity
         style={styles.challengeCard}
-        onPress={() => setFeatureInfo('challenge')}
+        onPress={() => setChallengeLobbyVisible(true)}
         activeOpacity={0.85}
       >
         <View style={styles.challengeIcon}>
@@ -240,7 +228,7 @@ export function FeedScreen() {
 
       <TouchableOpacity
         style={styles.inviteCard}
-        onPress={() => setFeatureInfo('workout')}
+        onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
         activeOpacity={0.85}
       >
         <View style={styles.inviteIcon}>
@@ -524,42 +512,10 @@ export function FeedScreen() {
         }}
       />
 
-      <SocialIntroModal
-        visible={introVisible}
-        onSkipOnce={handleIntroSkipOnce}
-        onRemindLater={handleIntroRemindLater}
-        onSkipForever={handleIntroSkipForever}
-      />
-
-      {/* Per-feature explainers — shown when a card is tapped */}
-      <FeatureInfoModal
-        visible={featureInfo === 'challenge'}
-        Icon={Zap}
-        title="Challenge Lobby"
-        body="Go head-to-head with anyone in the lobby, live."
-        bullets={[
-          'Get matched instantly with someone ready to train',
-          'You both do the same workout at the same time',
-          'Reps and time go head-to-head — winner takes the bragging rights',
-        ]}
-        ctaLabel="Enter Lobby"
-        onClose={() => setFeatureInfo(null)}
-        onContinue={() => { setFeatureInfo(null); setChallengeLobbyVisible(true); }}
-      />
-
-      <FeatureInfoModal
-        visible={featureInfo === 'workout'}
-        Icon={CalendarPlus}
-        title="Workout with Friends"
-        body="Pick a workout and schedule it together."
-        bullets={[
-          'Choose a friend and a workout to do together',
-          'Set a time — you both get a reminder',
-          'Train side-by-side over video and stay accountable',
-        ]}
-        ctaLabel="Get Started"
-        onClose={() => setFeatureInfo(null)}
-        onContinue={() => { setFeatureInfo(null); navigation.navigate('WorkoutWithFriendFlow'); }}
+      <SocialActivationModal
+        visible={activationVisible}
+        onActivated={handleActivated}
+        onDismiss={handleActivationDismiss}
       />
     </SafeAreaView>
   );
