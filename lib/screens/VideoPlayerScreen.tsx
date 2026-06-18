@@ -251,7 +251,7 @@ const ACCENT = '#F25912';
 // CTA orange (ACCENT) stays reserved for primary-action buttons only.
 const INDIGO = '#4C4E78';
 const INDIGO_SOFT = 'rgba(76,78,120,0.15)';
-const PANEL_BG = '#F8F8FC';
+const PANEL_BG = '#D8D8E4'; // clearly grey panel (was near-white #F8F8FC)
 // Dark surface for the workout-mode timer panel (deep brand indigo).
 const PANEL_DARK = '#211832';
 
@@ -788,9 +788,35 @@ function VideoPlayerScreen({ route, navigation }: any) {
         outputRange: [SCREEN_HEIGHT * 0.42, 160],
         extrapolate: 'clamp',
     });
+    // Tracks whether the panel has been swiped up (scrolled) to read it. While
+    // revealed it stays at full opacity even if the video keeps playing.
+    const panelRevealedRef = useRef(false);
+    // Any interaction with the panel (scroll-drag or touch) brings it back to
+    // full opacity so the text is readable while the video keeps playing.
+    const revealPanel = useCallback(() => {
+        if (panelRevealedRef.current) return;
+        panelRevealedRef.current = true;
+        Animated.timing(panelDimAnim, { toValue: 1, duration: 150, useNativeDriver: false }).start();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const handleTabScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: videoScrollY } } }],
-        { useNativeDriver: false }
+        {
+            useNativeDriver: false,
+            listener: (e: any) => {
+                const y = e?.nativeEvent?.contentOffset?.y ?? 0;
+                if (y > 24 && !panelRevealedRef.current) {
+                    // Swiped up → bring the panel back to 100% opacity.
+                    panelRevealedRef.current = true;
+                    Animated.timing(panelDimAnim, { toValue: 1, duration: 150, useNativeDriver: false }).start();
+                } else if (y <= 4 && panelRevealedRef.current) {
+                    // Back at the top → re-dim if the video is still playing.
+                    panelRevealedRef.current = false;
+                    if (isVideoPlayingRef.current) {
+                        Animated.timing(panelDimAnim, { toValue: 0.4, duration: 200, useNativeDriver: false }).start();
+                    }
+                }
+            },
+        }
     );
     // Single shared scroll container — the ONE element that scrolls all tab
     // content. Switching tabs resets both the scroll position and the animated
@@ -960,10 +986,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
     // Lights-out: dim the panel when the video is actively playing
     const panelDimAnim = useRef(new Animated.Value(1)).current;
     const setLightsOut = useCallback((playing: boolean) => {
+        // Skip dimming while the panel is scrolled up (user is reading it).
+        if (playing && panelRevealedRef.current) return;
         Animated.timing(panelDimAnim, {
-            toValue: playing ? 0.15 : 1,
+            toValue: playing ? 0.4 : 1,
             duration: 400,
-            useNativeDriver: Platform.OS !== 'web',
+            useNativeDriver: false, // JS-driven so the scroll listener can also drive it
         }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -1037,6 +1065,22 @@ function VideoPlayerScreen({ route, navigation }: any) {
     }, [setLightsOut]);
 
     const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
+    // Down-chevron in the player header → minimize to the floating mini-player
+    // (YouTube style). Falls back to a plain back when the video isn't eligible
+    // (e.g. YouTube embeds).
+    const handleMinimize = useCallback(() => {
+        const h = miniHandoffRef.current;
+        if (h.eligible && h.videoUrl && openMiniRef.current) {
+            openMiniRef.current({
+                videoUrl: h.videoUrl,
+                title: h.title ?? '',
+                positionMs: currentPositionRef.current,
+                expandParams: { ...(h.params ?? {}) },
+            });
+        }
+        navigation.goBack();
+    }, [navigation]);
 
     // Co-workout: channel name passed when another user accepted an invite.
     // Declared before useFocusEffect so it's in scope for the join/leave logic.
@@ -2368,7 +2412,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         ref={sharedPlayerRef}
                         title={isCoWorkout ? (friendName ?? title) : title}
                         videoUri={sourceVideo.videoUrl}
-                        onBack={isCoWorkout ? handleEndCoWorkout : handleBack}
+                        onBack={isCoWorkout ? handleEndCoWorkout : handleMinimize}
                         actionLabel={isCoWorkout ? 'End' : undefined}
                         actionVariant={isCoWorkout ? 'danger' : 'default'}
                         onActionPress={isCoWorkout ? handleEndCoWorkout : undefined}
@@ -2759,6 +2803,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             contentContainerStyle={{ minHeight: SCREEN_HEIGHT }}
                             showsVerticalScrollIndicator={false}
                             onScroll={handleTabScroll}
+                            onScrollBeginDrag={revealPanel}
+                            onTouchStart={revealPanel}
                             scrollEventThrottle={16}
                             keyboardShouldPersistTaps="handled"
                         >

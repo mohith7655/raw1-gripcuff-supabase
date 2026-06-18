@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import {
-    ArrowLeft,
+    ChevronDown,
     CalendarClock,
     ChevronRight,
     Maximize,
@@ -684,32 +684,6 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.headerBtn}>
-                    <ArrowLeft color="white" size={24} />
-                </TouchableOpacity>
-
-                {headerLeftExtra}
-
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
-                        {title}
-                    </Text>
-                    {headerTitleSuffix}
-                </View>
-
-                <View style={styles.headerActions}>
-                    {actionLabel ? (
-                        <TouchableOpacity
-                            style={[styles.actionBtn, actionVariant === 'danger' && styles.actionBtnDanger]}
-                            onPress={onActionPress ?? onBack}
-                        >
-                            <Text style={styles.actionBtnText}>{actionLabel}</Text>
-                        </TouchableOpacity>
-                    ) : null}
-                </View>
-            </View>
-
             {/* AirPlay status banner (shown when iOS has routed video externally) */}
             {isAirPlayActive && !isCastingChromecast && (
                 <View style={styles.airPlayBanner}>
@@ -905,6 +879,32 @@ const SharedVideoPlayerInner = forwardRef<SharedVideoPlayerRef, SharedVideoPlaye
                                     ? <Minimize color="white" size={20} />
                                     : <Maximize color="white" size={20} />}
                             </TouchableOpacity>
+
+                            {/* Minimize (down) chevron + any header extras — overlaid
+                                on the video's top-left, YouTube-style. Hidden in
+                                fullscreen (which has its own exit control). */}
+                            {!isFullscreen && (
+                                <View style={styles.topOverlay} pointerEvents="box-none">
+                                    <TouchableOpacity
+                                        onPress={onBack}
+                                        style={styles.topOverlayBtn}
+                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    >
+                                        <ChevronDown color="white" size={26} />
+                                    </TouchableOpacity>
+                                    {headerLeftExtra}
+                                    {headerTitleSuffix}
+                                    <View style={{ flex: 1 }} />
+                                    {actionLabel ? (
+                                        <TouchableOpacity
+                                            style={[styles.actionBtn, actionVariant === 'danger' && styles.actionBtnDanger]}
+                                            onPress={onActionPress ?? onBack}
+                                        >
+                                            <Text style={styles.actionBtnText}>{actionLabel}</Text>
+                                        </TouchableOpacity>
+                                    ) : null}
+                                </View>
+                            )}
                         </>
                     )}
                 </View>
@@ -1119,10 +1119,25 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    topOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 8,
+        paddingTop: 8,
+        zIndex: 6,
+    },
+    topOverlayBtn: {
+        padding: 6,
+    },
     logoWatermark: {
         position: 'absolute',
         top: 10,
-        left: 12,
+        left: 48, // clear the minimize chevron at the top-left
         opacity: 0.45,
     },
     castBtn: {
