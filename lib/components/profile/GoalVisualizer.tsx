@@ -191,6 +191,8 @@ interface Props {
   saving?: boolean;
   canvasHeight?: number;
   editable?: boolean;
+  /** Read-only mode: show the goal summary lines beneath the figure. */
+  showSummary?: boolean;
 }
 
 const newGoal = (type: GoalType): GoalEntry =>
@@ -201,6 +203,7 @@ const newGoal = (type: GoalType): GoalEntry =>
 // ── Component ───────────────────────────────────────────────────────────────
 export default function GoalVisualizer({
   name, gender, heightCm, weightKg, goals, onSave, saving = false, canvasHeight = 320, editable = true,
+  showSummary = true,
 }: Props) {
   const [list, setList] = useState<GoalEntry[]>(
     goals && goals.length ? goals : [newGoal('muscle_growth')],
@@ -506,7 +509,7 @@ export default function GoalVisualizer({
       )}
 
       {/* ── Preview summary ────────────────────────────────────────────── */}
-      {!editable && (
+      {!editable && showSummary && (
         <View style={st.summaryWrap}>
           {summary.length === 0
             ? <Text style={st.summaryEmpty}>Tap Edit to set your goals</Text>

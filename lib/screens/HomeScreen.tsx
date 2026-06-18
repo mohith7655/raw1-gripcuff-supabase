@@ -54,8 +54,7 @@ import { ChatConversation } from '../models/Chat';
 import { WebSafeAvatar } from '../components/WebSafeAvatar';
 import { TierBars } from '../components/profile/TierBars';
 import { TierAvatar } from '../components/profile/TierAvatar';
-import BodyVisualizer from '../components/profile/BodyVisualizer';
-import GoalVisualizer from '../components/profile/GoalVisualizer';
+import BodyGoalComparison from '../components/profile/BodyGoalComparison';
 import { tierLevel } from '../components/profile/TierBars';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { RecommendedProgram } from '../services/recommendation.service';
@@ -1464,46 +1463,17 @@ const HomeScreenInner = () => {
             </>
           )}
 
-          {/* ── How I look now + My Goals — previews at the very bottom ─────── */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('HowILookNow')}
-            style={styles.bottomPreviewCard}
-          >
-            <View style={styles.bottomPreviewHeader}>
-              <Text style={styles.bottomPreviewTitle}>How I look now</Text>
-              <Text style={styles.bottomPreviewEdit}>Edit</Text>
-            </View>
-            <BodyVisualizer
-              name={profile?.fullName}
-              gender={profile?.gender}
-              heightCm={profile?.heightCm}
-              weightKg={profile?.weightKg}
-              age={profile?.age}
-              editable={false}
-              canvasHeight={240}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('Goals')}
-            style={styles.bottomPreviewCard}
-          >
-            <View style={styles.bottomPreviewHeader}>
-              <Text style={styles.bottomPreviewTitle}>My Goals</Text>
-              <Text style={styles.bottomPreviewEdit}>Edit</Text>
-            </View>
-            <GoalVisualizer
-              name={profile?.fullName}
-              gender={profile?.gender}
-              heightCm={profile?.heightCm}
-              weightKg={profile?.weightKg}
-              goals={profile?.goals}
-              editable={false}
-              canvasHeight={240}
-            />
-          </TouchableOpacity>
+          {/* ── Now vs Goal — body & goals comparison at the very bottom ───── */}
+          <BodyGoalComparison
+            name={profile?.fullName}
+            gender={profile?.gender}
+            heightCm={profile?.heightCm}
+            weightKg={profile?.weightKg}
+            age={profile?.age}
+            goals={profile?.goals}
+            onPressNow={() => navigation.navigate('HowILookNow')}
+            onPressGoal={() => navigation.navigate('Goals')}
+          />
         </View>
       </ScrollView>
 
