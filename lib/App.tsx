@@ -30,6 +30,8 @@ import { WorkoutSessionProvider, useWorkoutSession } from './providers/WorkoutSe
 import { StrangerInviteProvider } from './providers/StrangerInviteProvider';
 import { FavoritesProvider } from './providers/FavoritesContext';
 import { NotificationProvider } from './providers/NotificationProvider';
+import { MiniPlayerProvider } from './providers/MiniPlayerContext';
+import { MiniPlayer } from './components/MiniPlayer';
 import { AppTheme, CoachingTheme } from './core/theme/app_theme';
 
 // Screens
@@ -1002,6 +1004,8 @@ function MainApp() {
           <AuthStack initialPublicProfile={initialPublicProfile} />
         )}
       </NavigationContainer>
+      {/* Floating mini-player — above the navigator, persists across screens */}
+      {!!supabaseUserId && <MiniPlayer />}
       {/* Survey + Paywall overlays — sit above all navigation */}
       {!!supabaseUserId && <GripcuffSurveyModal />}
       {!!supabaseUserId && <PaywallScreen />}
@@ -1136,7 +1140,9 @@ export default function App() {
                     <NotificationProvider>
                       <AccessProvider>
                         <TierProvider>
-                          <MainApp />
+                          <MiniPlayerProvider>
+                            <MainApp />
+                          </MiniPlayerProvider>
                         </TierProvider>
                       </AccessProvider>
                     </NotificationProvider>

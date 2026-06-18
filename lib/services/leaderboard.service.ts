@@ -13,6 +13,7 @@ export type LeaderboardEntry = {
     liveSessions: number;
     totalMinutes?: number;
     workoutsCompleted?: number;
+    totalSquats: number;
 };
 
 // ── Singleton channel state ───────────────────────────────────────────────────
@@ -36,7 +37,7 @@ async function fetchLeaderboardEntries(
 ) {
     const { data, error } = await supabase
         .from('users')
-        .select('id, username, full_name, avatar_url, current_streak, best_streak, completed_workouts, total_live_sessions, watched_seconds')
+        .select('id, username, full_name, avatar_url, current_streak, best_streak, completed_workouts, total_live_sessions, watched_seconds, total_squats')
         .or('username.not.is.null,full_name.not.is.null')
         .order('watched_seconds', { ascending: false })
         .limit(50);
@@ -62,6 +63,7 @@ async function fetchLeaderboardEntries(
             workouts:         Number(row.completed_workouts ?? 0),
             liveSessions:     Number(row.total_live_sessions ?? 0),
             workoutsCompleted: Number(row.completed_workouts ?? 0),
+            totalSquats:      Number(row.total_squats ?? 0),
         };
     });
 

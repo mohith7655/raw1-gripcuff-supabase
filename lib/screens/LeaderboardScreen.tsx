@@ -124,7 +124,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
                     })()}
                 </View>
                 <Text style={styles.subText}>
-                    💪 {item.workoutsCompleted || 0} workouts · 🔥 {item.currentStreak || 0} day streak
+                    🏋️ {item.totalSquats || 0} squats · 💪 {item.workoutsCompleted || 0} workouts · 🔥 {item.currentStreak || 0} day streak
                 </Text>
             </View>
 
@@ -162,6 +162,7 @@ function injectSelf(
         workouts: Number(profile.completedWorkouts ?? 0),
         liveSessions: Number(profile.totalLiveSessions ?? 0),
         workoutsCompleted: Number(profile.completedWorkouts ?? 0),
+        totalSquats: Number(profile.totalSquats ?? 0),
     };
 
     const merged = [...entries, selfEntry];

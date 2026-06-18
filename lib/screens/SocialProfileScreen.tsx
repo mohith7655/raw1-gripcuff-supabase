@@ -520,15 +520,21 @@ export function SocialProfileScreen() {
                   {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                   <Text style={s.name} numberOfLines={1}>{displayName}</Text>
                 </View>
-                <TouchableOpacity
-                  style={s.connectsPill}
-                  onPress={() => setConnectionsOpen(true)}
-                  activeOpacity={0.75}
-                  disabled={connections.length === 0}
-                >
-                  <Text style={s.connectsCount}>{connections.length}</Text>
-                  <Text style={s.connectsLabel}>CONNECTS</Text>
-                </TouchableOpacity>
+                {/* Connects + Squats — same row */}
+                <View style={s.connectsRow}>
+                  <TouchableOpacity
+                    style={s.connectsPill}
+                    onPress={() => setConnectionsOpen(true)}
+                    activeOpacity={0.75}
+                    disabled={connections.length === 0}
+                  >
+                    <Text style={s.connectsCount}>{connections.length}</Text>
+                    <Text style={s.connectsLabel}>CONNECTS</Text>
+                  </TouchableOpacity>
+                  <View style={s.squatsPill}>
+                    <Text style={s.squatsPillText}>🏋️ {user?.totalSquats ?? 0} Squats</Text>
+                  </View>
+                </View>
                 {showSection('locationMap') && (displayCity || homeDistanceText) ? (
                   <View style={s.heroMetaRow}>
                     <MapPin size={13} color={C.muted} />
@@ -1127,11 +1133,17 @@ const s = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
   },
+  connectsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
   connectsPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    marginTop: 6,
     backgroundColor: '#211832',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -1139,6 +1151,15 @@ const s = StyleSheet.create({
   },
   connectsCount: { color: '#fff', fontSize: 13, fontWeight: '700' },
   connectsLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
+  squatsPill: {
+    backgroundColor: 'rgba(242,89,18,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(242,89,18,0.30)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  squatsPillText: { color: '#211832', fontSize: 12, fontWeight: '700' },
   connOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   connSheet: {
     maxHeight: '75%',

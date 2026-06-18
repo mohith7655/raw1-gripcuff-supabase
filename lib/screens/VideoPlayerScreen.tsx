@@ -17,6 +17,7 @@ import {
     Dimensions,
     Animated,
     Easing,
+    PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VideoInviteModal } from '../components/VideoInviteModal';
@@ -37,6 +38,7 @@ import { InviteStrangerModal } from '../components/workout/InviteStrangerModal';
 import { StrangerInviteSenderModal } from '../components/StrangerInviteSenderModal';
 import { useSocialInvite } from '../hooks/useStrangerInvite';
 import { useVideoPlayerNotificationParams } from '../hooks/useVideoPlayerNotificationParams';
+import { useMiniPlayer } from '../providers/MiniPlayerContext';
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
 import { useWorkoutWatchers } from '../hooks/useWorkoutWatchers';
 import { useWorkoutSocialHub } from '../hooks/useWorkoutSocialHub';
@@ -68,7 +70,7 @@ import { LiveViewersModal } from '../components/LiveViewersModal';
 import { TierAvatar } from '../components/profile/TierAvatar';
 import Svg, { Circle } from 'react-native-svg';
 import { supabase } from '../core/config/supabase';
-import { formatDifficulty } from '../core/difficulty';
+import { formatDifficulty, difficultyEmoji } from '../core/difficulty';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -140,7 +142,7 @@ function EngagementBar({
         { key: 'try', label: state.tryIntent ? 'Trying' : 'Try it', icon: '🔥', active: state.tryIntent, onPress: onTryIntent },
         {
             key: 'dislike',
-            label: totalDislikes > 0 ? formatCount(totalDislikes) : 'Dislike',
+            label: totalDislikes > 0 ? formatCount(totalDislikes) : 'Skip',
             icon: '👎',
             active: state.disliked,
             onPress: onDislike,
@@ -149,29 +151,30 @@ function EngagementBar({
 
     return (
         <View style={engagementStyles.container}>
-            {/* Favorite / Try it / Dislike — hidden in workout mode to keep focus on the timer */}
-            {modeType !== 'workout' && buttons.map((btn) => (
-                <TouchableOpacity
-                    key={btn.key}
-                    style={[engagementStyles.pill, btn.active && engagementStyles.pillActive]}
-                    onPress={btn.onPress}
-                    activeOpacity={0.7}
-                >
-                    <Text style={engagementStyles.pillIcon}>{btn.icon}</Text>
-                    {/* Label only appears once active/pressed; otherwise icon-only */}
-                    {btn.active && (
-                        <Text
-                            numberOfLines={1}
-                            style={[engagementStyles.pillLabel, engagementStyles.pillLabelActive]}
-                        >
-                            {btn.label}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-            ))}
-
-            {/* Workout / Watch — inline on the same line */}
+            {/* Workout / Watch — pinned to the left */}
             <ModeToggle modeType={modeType} onSwitchMode={onSwitchMode} />
+
+            {/* Favorite / Try it / Dislike — hidden in workout mode to keep focus on the timer */}
+            {modeType !== 'workout' && (
+                <View style={engagementStyles.pillRow}>
+                    {buttons.map((btn) => (
+                        <TouchableOpacity
+                            key={btn.key}
+                            style={[engagementStyles.pill, btn.active && engagementStyles.pillActive]}
+                            onPress={btn.onPress}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={engagementStyles.pillIcon}>{btn.icon}</Text>
+                            {/* Label only appears once active/pressed; otherwise icon-only */}
+                            {btn.active && (
+                                <Text numberOfLines={1} style={engagementStyles.pillLabel}>
+                                    {btn.label}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
         </View>
     );
 }
@@ -185,7 +188,12 @@ const engagementStyles = StyleSheet.create({
         gap: 6,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: 'rgba(33,24,50,0.06)',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
+    },
+    pillRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     pill: {
         flexDirection: 'row',
@@ -206,12 +214,10 @@ const engagementStyles = StyleSheet.create({
         fontSize: 13,
     },
     pillLabel: {
-        color: 'rgba(33,24,50,0.5)',
+        // Neutral text — labels are not color-coded for fav / try / dislike.
+        color: '#211832',
         fontSize: 12,
         fontWeight: '600',
-    },
-    pillLabelActive: {
-        color: '#F25912',
     },
     modeGroup: {
         flexDirection: 'row',
@@ -355,6 +361,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const { hasAccess, loading: accessLoading, showPaywall } = useAccess();
     const { profile } = useUser();
     const { supabaseUserId, email } = useAuth();
+    const { openMini, closeMini } = useMiniPlayer();
 
     const [showWorkoutTogetherModal, setShowWorkoutTogetherModal] = useState(false);
     const [showViewersModal, setShowViewersModal] = useState(false);
@@ -611,6 +618,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
 
     const handlePositionChange = useCallback((posMs: number) => {
         setCurrentPositionMs(posMs);
+        currentPositionRef.current = posMs;
         // Note: lastSyncPositionMsRef is updated by the playback-sync useEffect (not here)
         // so the seek-detection delta calculation stays accurate across renders.
         if (posMs > maxWatchedMsRef.current) maxWatchedMsRef.current = posMs;
@@ -794,6 +802,93 @@ function VideoPlayerScreen({ route, navigation }: any) {
         smoothVideoScrollY.setValue(0);
         sharedScrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [videoScrollY, smoothVideoScrollY]);
+
+    // ── Swipe-down-to-dismiss (YouTube-style) ──────────────────────────────────
+    // Dragging the video down translates the whole screen with it; releasing past
+    // a threshold (or a fast flick) animates it the rest of the way out and pops
+    // back to the previous screen. The responder only claims clear *downward*
+    // drags that start on the video, so taps / horizontal seeks on the player and
+    // vertical scrolling of the content below still work.
+    const dismissDragY = useRef(new Animated.Value(0)).current;
+    // JS driver (not native): we also animate borderRadius, which the native
+    // driver can't handle.
+    const useNative = false;
+    // Drag distance over which the screen fully shrinks into the bottom-right
+    // corner (matching where the mini-player docks), YouTube-minimize style.
+    const DISMISS_SHRINK = 300;
+    const MINI_W = 210;
+    const sMin = Math.min(0.62, Math.max(0.34, MINI_W / SCREEN_WIDTH));
+    const cornerTX = (SCREEN_WIDTH * (1 - sMin)) / 2 - 12;   // → right edge (12px margin)
+    const cornerTY = (SCREEN_HEIGHT * (1 - sMin)) / 2 - 96;  // → bottom (clear tab bar)
+    // Live values read by the (once-created) pan responder at gesture time.
+    const currentPositionRef = useRef(0);
+    const miniHandoffRef = useRef<{ videoUrl?: string; title?: string; params?: any; eligible?: boolean; allowDismiss?: boolean }>({});
+    const openMiniRef = useRef<((p: any) => void) | null>(null);
+    const dismissPan = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, g) =>
+                miniHandoffRef.current.allowDismiss !== false && g.dy > 14 && g.dy > Math.abs(g.dx) * 1.8,
+            onPanResponderMove: (_, g) => { if (g.dy > 0) dismissDragY.setValue(g.dy); },
+            onPanResponderRelease: (_, g) => {
+                if (g.dy > 130 || g.vy > 0.85) {
+                    Animated.timing(dismissDragY, {
+                        toValue: DISMISS_SHRINK,
+                        duration: 200,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: useNative,
+                    }).start(() => {
+                        // Hand off to the floating mini-player (normal videos only),
+                        // then pop this screen so the user lands on the previous one.
+                        const h = miniHandoffRef.current;
+                        if (h.eligible && h.videoUrl && openMiniRef.current) {
+                            openMiniRef.current({
+                                videoUrl: h.videoUrl,
+                                title: h.title ?? '',
+                                positionMs: currentPositionRef.current,
+                                expandParams: { ...(h.params ?? {}) },
+                            });
+                        }
+                        navigation.goBack();
+                    });
+                } else {
+                    Animated.spring(dismissDragY, { toValue: 0, bounciness: 2, useNativeDriver: useNative }).start();
+                }
+            },
+            onPanResponderTerminate: () => {
+                Animated.spring(dismissDragY, { toValue: 0, useNativeDriver: useNative }).start();
+            },
+        })
+    ).current;
+    const dismissScale = dismissDragY.interpolate({
+        inputRange: [0, DISMISS_SHRINK], outputRange: [1, sMin], extrapolate: 'clamp',
+    });
+    const dismissTranslateX = dismissDragY.interpolate({
+        inputRange: [0, DISMISS_SHRINK], outputRange: [0, cornerTX], extrapolate: 'clamp',
+    });
+    const dismissTranslateY = dismissDragY.interpolate({
+        inputRange: [0, DISMISS_SHRINK], outputRange: [0, cornerTY], extrapolate: 'clamp',
+    });
+    const dismissRadius = dismissDragY.interpolate({
+        inputRange: [0, DISMISS_SHRINK], outputRange: [0, 14], extrapolate: 'clamp',
+    });
+    const dismissOpacity = dismissDragY.interpolate({
+        inputRange: [0, DISMISS_SHRINK], outputRange: [1, 0.92], extrapolate: 'clamp',
+    });
+
+    // Opening the full player removes any floating mini-player still on screen.
+    useEffect(() => { closeMini(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Resume from the mini-player hand-off position once, after the player loads.
+    const resumePositionMs = route?.params?.resumePositionMs;
+    const didResumeRef = useRef(false);
+    useEffect(() => {
+        if (!resumePositionMs || didResumeRef.current) return;
+        const t = setTimeout(() => {
+            try { sharedPlayerRef.current?.seekTo(resumePositionMs); } catch {}
+            didResumeRef.current = true;
+        }, 900);
+        return () => clearTimeout(t);
+    }, [resumePositionMs]);
 
     // Lights-out: dim the panel when the video is actively playing
     const panelDimAnim = useRef(new Animated.Value(1)).current;
@@ -1071,6 +1166,18 @@ function VideoPlayerScreen({ route, navigation }: any) {
         .toString()
         .replace(/[^a-zA-Z0-9-_]/g, '-')
         .toLowerCase();
+
+    // Keep the swipe-down → mini-player hand-off data fresh each render. Only
+    // plain (non-YouTube, non-co-workout) videos can pop into the mini player.
+    openMiniRef.current = openMini;
+    miniHandoffRef.current = {
+        videoUrl: sourceVideo?.videoUrl,
+        title,
+        params: route?.params,
+        eligible: !isYT && !isCoWorkout && !!sourceVideo?.videoUrl,
+        // Co-workout sessions must exit via the End button (cleanup), not swipe.
+        allowDismiss: !isCoWorkout,
+    };
 
     // ── Previous / next video in the current list (for workout-mode nav) ──────
     const playlist = useMemo(() => {
@@ -1703,12 +1810,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     How challenging this session is and how much prep you need before you start.
                 </Text>
 
-                {/* Experience level */}
-                <Text style={reqStyles.subLabel}>Experience level</Text>
+                {/* Exercise difficulty */}
+                <Text style={reqStyles.subLabel}>Exercise difficulty</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                     {(['Beginner', 'Intermediate', 'Advanced'] as const).map((lvl) => {
                         const active = reqData.experienceLevel === lvl;
-                        const label = formatDifficulty(lvl);
+                        // Only the highlighted level shows its word; the others show
+                        // just their colored icon (🟢 / 🟡 / 🔴).
+                        const label = active ? formatDifficulty(lvl) : difficultyEmoji(lvl);
                         return (
                             <View key={lvl} style={{
                                 paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
@@ -2150,8 +2259,27 @@ function VideoPlayerScreen({ route, navigation }: any) {
         >
             <StatusBar barStyle="light-content" backgroundColor="#000" />
 
+            {/* Swipe-down-to-minimize wrapper — shrinks toward the bottom-right
+                corner (where the mini-player docks) as the drag progresses. */}
+            <Animated.View
+                style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    borderRadius: dismissRadius,
+                    opacity: dismissOpacity,
+                    transform: [
+                        { translateX: dismissTranslateX },
+                        { translateY: dismissTranslateY },
+                        { scale: dismissScale },
+                    ],
+                }}
+            >
+
             {/* Video player — shrinks when tab content is scrolled */}
-            <Animated.View style={[s.playerSection, { height: videoHeight }]}>
+            <Animated.View
+                style={[s.playerSection, { height: videoHeight }]}
+                {...dismissPan.panHandlers}
+            >
                 {isYT ? (
                     <View style={{ width: '100%', height: 220, backgroundColor: '#000' }}>
                         <WebYouTubePlayer videoId={youtubeId} />
@@ -2718,6 +2846,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 )}
             </View>
             )}
+            </Animated.View>
         </KeyboardAvoidingView>
     );
 }

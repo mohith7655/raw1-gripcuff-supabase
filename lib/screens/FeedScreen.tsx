@@ -61,18 +61,28 @@ export function FeedScreen() {
   const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
 
   // ── Social tab activation prompt ──
-  // Shown every time the tab is opened. The user can run through it (tour +
-  // rules) or skip it — either way it re-appears on the next visit.
+  // Shown on each visit UNTIL the user agrees to the rules. Once activated, the
+  // agreement is persisted per-user and the prompt never shows again. Skipping
+  // (without agreeing) still re-shows it on the next visit.
   const [activationVisible, setActivationVisible] = useState(false);
+  const activationKey = supabaseUserId ? `social_activated_${supabaseUserId}` : null;
+  const isActivated = useCallback(() => {
+    if (!activationKey || typeof localStorage === 'undefined') return false;
+    return !!localStorage.getItem(activationKey);
+  }, [activationKey]);
 
   useFocusEffect(useCallback(() => {
-    setActivationVisible(true);
-  }, []));
+    if (!isActivated()) setActivationVisible(true);
+  }, [isActivated]));
 
-  // Finished the flow and agreed to everything.
+  // Finished the flow and agreed to everything — remember it so the rules popup
+  // never shows again for this user.
   const handleActivated = useCallback(() => {
+    if (activationKey && typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(activationKey, '1'); } catch {}
+    }
     setActivationVisible(false);
-  }, []);
+  }, [activationKey]);
 
   // Skipped / dismissed — shows again on the next visit.
   const handleActivationDismiss = useCallback(() => {

@@ -395,6 +395,7 @@ function LeaderboardTab() {
         workouts: Number(profile?.completedWorkouts ?? 0),
         liveSessions: Number(profile?.totalLiveSessions ?? 0),
         workoutsCompleted: Number(profile?.completedWorkouts ?? 0),
+        totalSquats: Number(profile?.totalSquats ?? 0),
       };
       return [...list, selfEntry].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
     };

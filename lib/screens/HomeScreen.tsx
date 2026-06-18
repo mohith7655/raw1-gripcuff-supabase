@@ -869,27 +869,31 @@ const HomeScreenInner = () => {
                     )}
                     <Text style={[styles.compactStatRowLabel, { fontSize: 13, color: '#7A7C90', fontWeight: '500' }]} numberOfLines={1}>{displayName}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                    <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
-                    </View>
-                  </TouchableOpacity>
-                  {/* Badge pills — global Squats total (always shown) + earned badges */}
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  {/* Connects + Squats — same row */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                    <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
+                      <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                      </View>
+                    </TouchableOpacity>
                     {/* Squats — global running total, shows even at 0 */}
                     <View style={styles.profileStatPill}>
                       <Text style={styles.profileStatPillText}>🏋️ {profile?.totalSquats ?? 0} Squats</Text>
                     </View>
-                    {/* Earned badges (streak removed); no "no badges" placeholder */}
-                    {earnedBadges
-                      .filter(b => b.label !== 'Streak')
-                      .map((b, i) => (
-                        <View key={i} style={styles.profileStatPill}>
-                          <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
-                        </View>
-                      ))}
                   </View>
+                  {/* Earned badges (streak removed); no "no badges" placeholder */}
+                  {earnedBadges.filter(b => b.label !== 'Streak').length > 0 && (
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                      {earnedBadges
+                        .filter(b => b.label !== 'Streak')
+                        .map((b, i) => (
+                          <View key={i} style={styles.profileStatPill}>
+                            <Text style={styles.profileStatPillText}>{b.emoji} {b.label} Lv.{b.level}</Text>
+                          </View>
+                        ))}
+                    </View>
+                  )}
                   {/* Workout time — Weekly · Lifetime */}
                   {(() => {
                     const fmt = (mins: number) => {

@@ -186,6 +186,7 @@ export function ScannedProfileScreen() {
     lastWorkoutDate: null,
     weeklyActivity: {},
     completedWorkouts: Number(row?.completed_workouts ?? 0),
+    totalSquats: Number(row?.total_squats ?? 0),
     watchedMinutes: 0, watchedSeconds: 0, todayWatchSeconds: 0,
     totalWatchSessions: 0, lastVideoWatchAt: null, totalLiveSessions: 0,
     hasAccess: Boolean(row?.has_access),
@@ -228,7 +229,7 @@ export function ScannedProfileScreen() {
         UserService.getProfile(targetUid),
         SocialProfileService.get(targetUid),
         StreakService.getStreakData(targetUid),
-        supabase.from('profiles').select('id, full_name, username, avatar_url, email, age, gender, date_of_birth, phone, has_access, access_type, current_streak, best_streak, completed_workouts').eq('id', targetUid).maybeSingle(),
+        supabase.from('profiles').select('id, full_name, username, avatar_url, email, age, gender, date_of_birth, phone, has_access, access_type, current_streak, best_streak, completed_workouts, total_squats').eq('id', targetUid).maybeSingle(),
       ]);
       setSocial(spRes.status === 'fulfilled' ? spRes.value : null);
       setStreakData(streakRes.status === 'fulfilled' ? streakRes.value : null);

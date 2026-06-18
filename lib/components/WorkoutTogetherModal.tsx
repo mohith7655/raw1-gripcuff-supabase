@@ -50,7 +50,8 @@ import { WorkoutReminderService } from '../services/workoutReminder.service';
 import type { User } from '../models/User';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const ACCENT  = '#F25912';
+// Brand indigo — this modal intentionally avoids CTA orange.
+const ACCENT  = '#4C4E78';
 const BG      = '#EEEEF2';
 const SURFACE = 'rgba(255,255,255,0.06)';
 const BORDER  = 'rgba(255,255,255,0.08)';
@@ -446,7 +447,7 @@ export function WorkoutTogetherModal({
                                     <CalendarClock color="#818CF8" size={20} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.optionTitle}>Self Schedule</Text>
+                                    <Text style={s.optionTitle}>Workout Solo</Text>
                                     <Text style={s.optionSub}>Workout privately on your own schedule</Text>
                                 </View>
                             </TouchableOpacity>
@@ -457,12 +458,12 @@ export function WorkoutTogetherModal({
                                 onPress={() => setSelectedType('friend')}
                                 activeOpacity={0.82}
                             >
-                                <View style={[s.iconCircle, { backgroundColor: 'rgba(242,89,18,0.12)' }]}>
+                                <View style={[s.iconCircle, { backgroundColor: 'rgba(76,78,120,0.12)' }]}>
                                     <Users color={ACCENT} size={20} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.optionTitle}>Invite Friend</Text>
-                                    <Text style={s.optionSub}>Train together with a friend</Text>
+                                    <Text style={s.optionTitle}>Workout with Friends or Family</Text>
+                                    <Text style={s.optionSub}>Train together with a friend or family</Text>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -634,18 +635,18 @@ const s = StyleSheet.create({
     // Banner
     banner: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(242,89,18,0.08)',
-        borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
+        backgroundColor: 'rgba(76,78,120,0.08)',
+        borderWidth: 1, borderColor: 'rgba(76,78,120,0.2)',
         borderRadius: 12, padding: 12, marginBottom: 14,
     },
     thumb: { width: 44, height: 44, borderRadius: 8, flexShrink: 0 },
     thumbPlaceholder: {
         width: 44, height: 44, borderRadius: 8,
-        backgroundColor: 'rgba(242,89,18,0.15)',
+        backgroundColor: 'rgba(76,78,120,0.15)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     bannerMeta: {
-        color: 'rgba(242,89,18,0.7)', fontSize: 10, fontWeight: '600',
+        color: 'rgba(76,78,120,0.7)', fontSize: 10, fontWeight: '600',
         letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2,
     },
     bannerTitle: { color: '#211832', fontSize: 13, fontWeight: '600' },
@@ -666,7 +667,7 @@ const s = StyleSheet.create({
         borderRadius: 12, backgroundColor: SURFACE,
         borderWidth: 1, borderColor: BORDER,
     },
-    chipActive: { backgroundColor: 'rgba(242,89,18,0.15)', borderColor: ACCENT },
+    chipActive: { backgroundColor: 'rgba(76,78,120,0.15)', borderColor: ACCENT },
     chipTopText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
     chipBotText: { color: '#7A7C90', fontSize: 11, marginTop: 2 },
     chipActiveText: { color: ACCENT },
@@ -677,9 +678,9 @@ const s = StyleSheet.create({
     // Summary pill
     summaryBox: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(242,89,18,0.08)',
+        backgroundColor: 'rgba(76,78,120,0.08)',
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-        marginBottom: 12, borderWidth: 1, borderColor: 'rgba(242,89,18,0.2)',
+        marginBottom: 12, borderWidth: 1, borderColor: 'rgba(76,78,120,0.2)',
     },
     summaryText: { color: ACCENT, fontSize: 13, fontWeight: '600', flex: 1 },
 
@@ -693,8 +694,8 @@ const s = StyleSheet.create({
         borderRadius: 14, padding: 14,
     },
     optionCardSelected: {
-        borderColor: '#F25912',
-        backgroundColor: 'rgba(242,89,18,0.08)',
+        borderColor: '#4C4E78',
+        backgroundColor: 'rgba(76,78,120,0.08)',
     },
     iconCircle: {
         width: 36, height: 36, borderRadius: 18,
@@ -725,13 +726,13 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     friendRowSelected: {
-        backgroundColor: 'rgba(242,89,18,0.07)',
-        borderColor: 'rgba(242,89,18,0.25)',
+        backgroundColor: 'rgba(76,78,120,0.07)',
+        borderColor: 'rgba(76,78,120,0.25)',
     },
     avatar: { width: 40, height: 40, borderRadius: 9, flexShrink: 0 },
     avatarPlaceholder: {
         width: 40, height: 40, borderRadius: 9,
-        backgroundColor: 'rgba(242,89,18,0.1)',
+        backgroundColor: 'rgba(76,78,120,0.1)',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     },
     friendInfo: { flex: 1 },
@@ -761,10 +762,10 @@ const s = StyleSheet.create({
 
     // CTA button
     ctaBtn: {
-        backgroundColor: '#F25912',
+        backgroundColor: '#4C4E78',
         borderRadius: 14, paddingVertical: 14,
         alignItems: 'center', marginTop: 6,
     },
-    ctaBtnDisabled: { backgroundColor: 'rgba(242,89,18,0.35)' },
+    ctaBtnDisabled: { backgroundColor: 'rgba(76,78,120,0.35)' },
     ctaBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

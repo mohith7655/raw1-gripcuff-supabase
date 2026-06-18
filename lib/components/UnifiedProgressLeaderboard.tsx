@@ -596,6 +596,10 @@ function LeaderboardTab({ period, currentUserId }: { period: 'weekly' | 'alltime
                   </View>
                 );
               })()}
+              {/* Squats — shown for every user, even at 0 */}
+              <View style={s.lbSquatPill}>
+                <Text style={s.lbSquatText}>🏋️ {entry.totalSquats ?? 0}</Text>
+              </View>
             </View>
             {!isMe && period === 'alltime' ? (
               <TouchableOpacity
@@ -990,6 +994,19 @@ const s = StyleSheet.create({
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  lbSquatPill: {
+    backgroundColor: 'rgba(242,89,18,0.10)',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(242,89,18,0.30)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  lbSquatText: {
+    color: ACCENT,
+    fontSize: 8,
+    fontWeight: '700',
   },
   lbScore: {
     color: '#211832',
