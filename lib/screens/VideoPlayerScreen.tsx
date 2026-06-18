@@ -826,8 +826,11 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const openMiniRef = useRef<((p: any) => void) | null>(null);
     const dismissPan = useRef(
         PanResponder.create({
+            // Web uses a DOM pointer-event handler instead (PanResponder doesn't
+            // reliably fire over the <video> element in a touch PWA).
             onMoveShouldSetPanResponder: (_, g) =>
-                miniHandoffRef.current.allowDismiss !== false && g.dy > 14 && g.dy > Math.abs(g.dx) * 1.8,
+                Platform.OS !== 'web' && miniHandoffRef.current.allowDismiss !== false &&
+                g.dy > 14 && g.dy > Math.abs(g.dx) * 1.8,
             onPanResponderMove: (_, g) => { if (g.dy > 0) dismissDragY.setValue(g.dy); },
             onPanResponderRelease: (_, g) => {
                 if (g.dy > 130 || g.vy > 0.85) {
@@ -874,6 +877,70 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const dismissOpacity = dismissDragY.interpolate({
         inputRange: [0, DISMISS_SHRINK], outputRange: [1, 0.92], extrapolate: 'clamp',
     });
+
+    // ── Web/PWA swipe-down handler ─────────────────────────────────────────────
+    // PanResponder's responder negotiation is unreliable over the <video> element
+    // in a touch browser, and the browser itself may swallow the vertical swipe
+    // (scroll / pull-to-refresh). So on web we bind raw pointer events to the
+    // player node (which also carries `touchAction: 'none'`) and run the same
+    // shrink-to-corner → mini-player hand-off.
+    const webGestureRef = useRef<any>(null);
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        const node: any = webGestureRef.current;
+        if (!node || typeof node.addEventListener !== 'function') return;
+
+        let active = false, claimed = false, startX = 0, startY = 0, startT = 0, lastY = 0;
+        const onDown = (e: any) => {
+            if (miniHandoffRef.current.allowDismiss === false) return;
+            active = true; claimed = false;
+            startX = e.clientX; startY = e.clientY; startT = Date.now(); lastY = e.clientY;
+        };
+        const onMove = (e: any) => {
+            if (!active) return;
+            const dy = e.clientY - startY, dx = e.clientX - startX;
+            lastY = e.clientY;
+            if (!claimed && dy > 10 && dy > Math.abs(dx) * 1.5) claimed = true;
+            if (claimed) {
+                e.preventDefault();
+                if (dy > 0) dismissDragY.setValue(dy);
+            }
+        };
+        const onUp = (e: any) => {
+            if (!active) return;
+            active = false;
+            if (!claimed) return;
+            const dy = (e.clientY || lastY) - startY;
+            const vy = dy / Math.max(1, Date.now() - startT);
+            if (dy > 130 || vy > 0.85) {
+                Animated.timing(dismissDragY, {
+                    toValue: DISMISS_SHRINK, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: false,
+                }).start(() => {
+                    const h = miniHandoffRef.current;
+                    if (h.eligible && h.videoUrl && openMiniRef.current) {
+                        openMiniRef.current({
+                            videoUrl: h.videoUrl, title: h.title ?? '',
+                            positionMs: currentPositionRef.current, expandParams: { ...(h.params ?? {}) },
+                        });
+                    }
+                    navigation.goBack();
+                });
+            } else {
+                Animated.spring(dismissDragY, { toValue: 0, bounciness: 2, useNativeDriver: false }).start();
+            }
+        };
+
+        node.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        return () => {
+            node.removeEventListener('pointerdown', onDown);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+        };
+    }, [navigation]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Opening the full player removes any floating mini-player still on screen.
     useEffect(() => { closeMini(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2280,6 +2347,12 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 style={[s.playerSection, { height: videoHeight }]}
                 {...dismissPan.panHandlers}
             >
+              <View
+                ref={webGestureRef}
+                style={Platform.OS === 'web'
+                    ? ({ flex: 1, width: '100%', touchAction: 'none' } as any)
+                    : { flex: 1, width: '100%' }}
+              >
                 {isYT ? (
                     <View style={{ width: '100%', height: 220, backgroundColor: '#000' }}>
                         <WebYouTubePlayer videoId={youtubeId} />
@@ -2326,6 +2399,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         </TouchableOpacity>
                     </View>
                 )}
+              </View>
             </Animated.View>
 
             {allowInvite && (() => {
