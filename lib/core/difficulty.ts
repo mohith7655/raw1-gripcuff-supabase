@@ -5,13 +5,13 @@
  * data, filters and comparisons). These helpers map them to the user-facing
  * labels — renamed with emojis:
  *
- *   Beginner     → 🟢 Simplex
+ *   Beginner     → 🟢 Simple
  *   Intermediate → 🟡 Medium
  *   Advanced     → 🔴 Complex
  */
 
 export const DIFFICULTY_DISPLAY: Record<string, { label: string; emoji: string }> = {
-  Beginner:     { label: 'Simplex', emoji: '🟢' },
+  Beginner:     { label: 'Simple', emoji: '🟢' },
   Intermediate: { label: 'Medium',  emoji: '🟡' },
   Advanced:     { label: 'Complex', emoji: '🔴' },
 };
