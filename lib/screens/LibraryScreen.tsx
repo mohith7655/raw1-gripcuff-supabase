@@ -167,10 +167,10 @@ const WorkoutsTabContent = () => {
 
         {/* Category rows */}
         <View style={{ marginHorizontal: SCREEN_PADDING, backgroundColor: '#F8F8FC', borderRadius: 14, borderWidth: 1, borderColor: '#D8D8E4', overflow: 'hidden', marginBottom: 16 }}>
-          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#EF4444" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
+          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#66BB6A" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
           <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" IconName={PersonStanding} color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
           <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#D4A600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
-          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#66BB6A" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#f44336" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
         </View>
 
         {/* Workout with a Friend */}

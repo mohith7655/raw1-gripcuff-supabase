@@ -18,7 +18,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import {
     ChevronDown,
-    CalendarClock,
     ChevronRight,
     Maximize,
     Minimize,
@@ -942,15 +941,9 @@ export const SharedVideoPlayer = React.memo(SharedVideoPlayerInner);
 export function InviteFooter({ cta }: { cta: InviteCta }) {
     return (
         <View style={styles.footerStack}>
-            {/* ── Workout Together (primary) ── */}
-            <TouchableOpacity
-                style={styles.footerBtnWorkoutTogether}
-                onPress={cta.onWorkoutTogether}
-                activeOpacity={0.85}
-            >
-                <CalendarClock color="#fff" size={14} />
-                <Text style={styles.footerBtnWorkoutTogetherText}>Workout with Friend</Text>
-            </TouchableOpacity>
+            {/* "Invite Friend" lives inside the engagement bar now (between the
+                Workout/Watch toggle and the reaction pills). Only the LIVE
+                viewer pill remains pinned here next to the title. */}
 
             {/* ── LIVE viewer pill (replaces "Start Now") ── */}
             <TouchableOpacity

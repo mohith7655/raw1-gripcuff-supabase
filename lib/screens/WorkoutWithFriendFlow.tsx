@@ -41,10 +41,10 @@ const CATEGORY_OPTIONS: {
     IconName: any;
     color: string;
 }[] = [
-        { key: 'MuscleGrowth', title: 'Muscle Growth', subtitle: 'Hypertrophy focused programs', IconName: Flame, color: '#f44336' },
+        { key: 'MuscleGrowth', title: 'Muscle Growth', subtitle: 'Hypertrophy focused programs', IconName: Flame, color: '#66BB6A' },
         { key: 'Stretching', title: 'Stretching', subtitle: 'Improve flexibility & range of motion', IconName: PersonStanding, color: '#4FC3F7' },
         { key: 'AthleticPerformance', title: 'Athletic Performance', subtitle: 'Speed, power & agility training', IconName: Zap, color: '#FFD600' },
-        { key: 'InjuryRehab', title: 'Injury Rehab', subtitle: 'Safe recovery & rehabilitation', IconName: HeartPulse, color: '#66BB6A' },
+        { key: 'InjuryRehab', title: 'Injury Rehab', subtitle: 'Safe recovery & rehabilitation', IconName: HeartPulse, color: '#f44336' },
     ];
 
 export const WorkoutWithFriendFlow = ({ route }: any) => {

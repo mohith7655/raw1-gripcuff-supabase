@@ -89,9 +89,48 @@ interface EngagementBarProps {
     onFavorite: () => void;
     modeType: 'workout' | 'watch';
     onSwitchMode: (mode: 'workout' | 'watch') => void;
+    allowInvite?: boolean;
+    onInviteFriend?: () => void;
 }
 
-// ── Workout / Watch mode toggle — sits inline with the reaction pills ─────────
+// ── Workout / Watch mode toggle — YouTube-style collapsing control ────────────
+// Like YouTube's play/pause control: only the *active* segment shows its label;
+// the inactive one collapses to an icon-only chip. Switching morphs the widths
+// with a layout spring, plus a subtle press-scale bounce on tap.
+function ModeSegment({
+    mode,
+    label,
+    icon,
+    active,
+    onPress,
+}: {
+    mode: 'workout' | 'watch';
+    label: string;
+    icon: 'barbell' | 'eye';
+    active: boolean;
+    onPress: (mode: 'workout' | 'watch') => void;
+}) {
+    return (
+        <TouchableOpacity
+            style={[engagementStyles.modeBtn, active && engagementStyles.modeBtnActive]}
+            onPress={() => onPress(mode)}
+            activeOpacity={0.85}
+        >
+            <Ionicons
+                name={active ? icon : (`${icon}-outline` as const)}
+                size={14}
+                color={active ? '#fff' : '#7A7C90'}
+            />
+            {/* Only the selected segment shows its word. */}
+            {active && (
+                <Text style={[engagementStyles.modeText, engagementStyles.modeTextActive]}>
+                    {label}
+                </Text>
+            )}
+        </TouchableOpacity>
+    );
+}
+
 function ModeToggle({
     modeType,
     onSwitchMode,
@@ -99,27 +138,27 @@ function ModeToggle({
     modeType: 'workout' | 'watch';
     onSwitchMode: (mode: 'workout' | 'watch') => void;
 }) {
+    const scale = useRef(new Animated.Value(1)).current;
+
+    const press = (mode: 'workout' | 'watch') => {
+        if (mode === modeType) return;
+        // Smoothly morph the segment widths as one collapses and the other expands.
+        LayoutAnimation.configureNext(
+            LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
+        );
+        // Quick "pop" like the YouTube control reacting to a tap.
+        Animated.sequence([
+            Animated.timing(scale, { toValue: 0.92, duration: 70, useNativeDriver: true, easing: Easing.out(Easing.quad) }),
+            Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 12 }),
+        ]).start();
+        onSwitchMode(mode);
+    };
+
     return (
-        <View style={engagementStyles.modeGroup}>
-            <TouchableOpacity
-                style={[engagementStyles.modeBtn, modeType === 'workout' && engagementStyles.modeBtnActive]}
-                onPress={() => onSwitchMode('workout')}
-                activeOpacity={0.8}
-            >
-                <Text style={[engagementStyles.modeText, modeType === 'workout' && engagementStyles.modeTextActive]}>
-                    Workout
-                </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={[engagementStyles.modeBtn, modeType === 'watch' && engagementStyles.modeBtnActive]}
-                onPress={() => onSwitchMode('watch')}
-                activeOpacity={0.8}
-            >
-                <Text style={[engagementStyles.modeText, modeType === 'watch' && engagementStyles.modeTextActive]}>
-                    Watch
-                </Text>
-            </TouchableOpacity>
-        </View>
+        <Animated.View style={[engagementStyles.modeGroup, { transform: [{ scale }] }]}>
+            <ModeSegment mode="workout" label="Workout" icon="barbell" active={modeType === 'workout'} onPress={press} />
+            <ModeSegment mode="watch" label="Watch" icon="eye" active={modeType === 'watch'} onPress={press} />
+        </Animated.View>
     );
 }
 
@@ -134,6 +173,8 @@ function EngagementBar({
     onFavorite,
     modeType,
     onSwitchMode,
+    allowInvite,
+    onInviteFriend,
 }: EngagementBarProps) {
     const { state } = engagement;
 
@@ -153,6 +194,18 @@ function EngagementBar({
         <View style={engagementStyles.container}>
             {/* Workout / Watch — pinned to the left */}
             <ModeToggle modeType={modeType} onSwitchMode={onSwitchMode} />
+
+            {/* Invite Friend — sits between the mode toggle and the reaction pills */}
+            {allowInvite && !!onInviteFriend && (
+                <TouchableOpacity
+                    style={engagementStyles.inviteBtn}
+                    onPress={onInviteFriend}
+                    activeOpacity={0.85}
+                >
+                    <Ionicons name="person-add-outline" size={14} color="#fff" />
+                    <Text style={engagementStyles.inviteText}>Invite Friend</Text>
+                </TouchableOpacity>
+            )}
 
             {/* Favorite / Try it / Dislike — hidden in workout mode to keep focus on the timer */}
             {modeType !== 'workout' && (
@@ -229,10 +282,15 @@ const engagementStyles = StyleSheet.create({
         gap: 3,
     },
     modeBtn: {
-        paddingHorizontal: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        paddingHorizontal: 9,
         paddingVertical: 6,
         borderRadius: 17,
     },
+    // Only the active segment gets the filled pill + label.
     modeBtnActive: {
         backgroundColor: '#4C4E78',
     },
@@ -243,6 +301,20 @@ const engagementStyles = StyleSheet.create({
     },
     modeTextActive: {
         color: '#fff',
+    },
+    inviteBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 20,
+        backgroundColor: '#F25912',
+    },
+    inviteText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
     },
 });
 
@@ -2740,6 +2812,8 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     }}
                     modeType={modeType}
                     onSwitchMode={switchViewMode}
+                    allowInvite={allowInvite}
+                    onInviteFriend={() => setShowWorkoutTogetherModal(true)}
                 />
 
                 {/* Prev / Next video nav — workout mode only */}

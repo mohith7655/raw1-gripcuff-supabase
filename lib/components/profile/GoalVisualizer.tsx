@@ -14,50 +14,41 @@ import MuscleVisualizer from '../MuscleVisualizer';
 
 // ── 3D model hotspots — tappable body-part dots overlaid on the model. ─────────
 // x = horizontal offset from centre (0.5); y = fraction of viewer height.
+// Single unified set (type-agnostic): tap a part → choose side → choose goal type.
 type Hotspot = { key: string; label: string; y: number; x: number; both: boolean };
-const HOTSPOTS: Record<'muscle' | 'injury', { front: Hotspot[]; back: Hotspot[] }> = {
-  muscle: {
-    front: [
-      { key: 'shoulders', label: 'Shoulders', y: 0.30, x: 0.12, both: true },
-      { key: 'chest',     label: 'Chest',     y: 0.37, x: 0.07, both: true },
-      { key: 'arms',      label: 'Arms',      y: 0.45, x: 0.17, both: true },
-      { key: 'abs',       label: 'Abs',       y: 0.47, x: 0.00, both: false },
-      { key: 'quads',     label: 'Quads',     y: 0.66, x: 0.06, both: true },
-      { key: 'calves',    label: 'Calves',    y: 0.84, x: 0.05, both: true },
-    ],
-    back: [
-      { key: 'shoulders', label: 'Shoulders', y: 0.30, x: 0.12, both: true },
-      { key: 'back',      label: 'Back',      y: 0.40, x: 0.00, both: false },
-      { key: 'arms',      label: 'Arms',      y: 0.45, x: 0.17, both: true },
-      { key: 'glutes',    label: 'Glutes',    y: 0.55, x: 0.06, both: true },
-      { key: 'calves',    label: 'Calves',    y: 0.84, x: 0.05, both: true },
-    ],
-  },
-  injury: {
-    front: [
-      { key: 'neck',     label: 'Neck',     y: 0.20, x: 0.00, both: false },
-      { key: 'shoulder', label: 'Shoulder', y: 0.30, x: 0.12, both: true },
-      { key: 'elbow',    label: 'Elbow',    y: 0.46, x: 0.16, both: true },
-      { key: 'wrist',    label: 'Wrist',    y: 0.57, x: 0.18, both: true },
-      { key: 'hip',      label: 'Hip',      y: 0.52, x: 0.07, both: true },
-      { key: 'knee',     label: 'Knee',     y: 0.70, x: 0.05, both: true },
-      { key: 'ankle',    label: 'Ankle',    y: 0.90, x: 0.05, both: true },
-    ],
-    back: [
-      { key: 'neck',       label: 'Neck',       y: 0.20, x: 0.00, both: false },
-      { key: 'shoulder',   label: 'Shoulder',   y: 0.30, x: 0.12, both: true },
-      { key: 'upper_back', label: 'Upper Back', y: 0.37, x: 0.00, both: false },
-      { key: 'lower_back', label: 'Lower Back', y: 0.47, x: 0.00, both: false },
-      { key: 'elbow',      label: 'Elbow',      y: 0.46, x: 0.16, both: true },
-      { key: 'knee',       label: 'Knee',       y: 0.70, x: 0.05, both: true },
-      { key: 'ankle',      label: 'Ankle',      y: 0.90, x: 0.05, both: true },
-    ],
-  },
+const BODY_PARTS: Record<'front' | 'back', Hotspot[]> = {
+  front: [
+    { key: 'neck',      label: 'Neck',      y: 0.20, x: 0.00, both: false },
+    { key: 'shoulders', label: 'Shoulders', y: 0.30, x: 0.12, both: true  },
+    { key: 'chest',     label: 'Chest',     y: 0.37, x: 0.07, both: true  },
+    { key: 'arms',      label: 'Arms',      y: 0.45, x: 0.17, both: true  },
+    { key: 'abs',       label: 'Abs',       y: 0.48, x: 0.00, both: false },
+    { key: 'hip',       label: 'Hip',       y: 0.55, x: 0.08, both: true  },
+    { key: 'wrist',     label: 'Wrist',     y: 0.59, x: 0.18, both: true  },
+    { key: 'quads',     label: 'Quads',     y: 0.66, x: 0.06, both: true  },
+    { key: 'knee',      label: 'Knee',      y: 0.76, x: 0.06, both: true  },
+    { key: 'calves',    label: 'Calves',    y: 0.85, x: 0.05, both: true  },
+    { key: 'ankle',     label: 'Ankle',     y: 0.93, x: 0.05, both: true  },
+  ],
+  back: [
+    { key: 'neck',       label: 'Neck',       y: 0.20, x: 0.00, both: false },
+    { key: 'shoulders',  label: 'Shoulders',  y: 0.30, x: 0.12, both: true  },
+    { key: 'upper_back', label: 'Upper Back', y: 0.37, x: 0.00, both: false },
+    { key: 'arms',       label: 'Arms',       y: 0.45, x: 0.17, both: true  },
+    { key: 'lower_back', label: 'Lower Back', y: 0.47, x: 0.00, both: false },
+    { key: 'glutes',     label: 'Glutes',     y: 0.55, x: 0.06, both: true  },
+    { key: 'knee',       label: 'Knee',       y: 0.72, x: 0.06, both: true  },
+    { key: 'calves',     label: 'Calves',     y: 0.85, x: 0.05, both: true  },
+    { key: 'ankle',      label: 'Ankle',      y: 0.93, x: 0.05, both: true  },
+  ],
 };
-// Goal landmark key → MuscleVisualizer highlight group.
+// Goal landmark key → MuscleVisualizer bone-group (must match BONE_GROUPS names
+// in MuscleVisualizer so the mesh actually paints; joints have their own groups).
 const HL_MAP: Record<string, string> = {
   shoulders: 'Shoulders', chest: 'Chest', arms: 'Arms', back: 'Back',
   abs: 'Abs', glutes: 'Glutes', quads: 'Quads', calves: 'Calves',
+  neck: 'Neck', hip: 'Hip', wrist: 'Wrist', knee: 'Knee',
+  ankle: 'Ankle', upper_back: 'Back', lower_back: 'Back',
 };
 
 // Selections store side-aware keys: `base` (single) or `base::left` / `base::right`.
@@ -84,6 +75,8 @@ const C = {
   green:      '#16a34a',
   blue:       '#2563eb',
   purple:     '#7c3aed',
+  red:        '#dc2626',
+  yellow:     '#d4a600',
   text:       '#211832',
   muted:      '#7A7C90',
   canvas:     '#EEEEF2',
@@ -93,10 +86,10 @@ const C = {
 };
 
 const TYPE_META: Record<GoalType, { label: string; emoji: string; color: string; soft: string; noun: string }> = {
-  muscle_growth: { label: 'Muscle Growth', emoji: '💪', color: C.green,  soft: 'rgba(22,163,74,0.12)', noun: 'muscles' },
-  weight_loss:   { label: 'Weight Loss',   emoji: '🔥', color: C.orange, soft: 'rgba(242,89,18,0.12)', noun: '' },
-  injury_rehab:  { label: 'Injury Rehab',  emoji: '🩹', color: C.blue,   soft: 'rgba(37,99,235,0.12)', noun: 'body parts' },
-  stretching:    { label: 'Stretching',    emoji: '🧘', color: C.purple, soft: 'rgba(124,58,237,0.12)', noun: 'body parts' },
+  muscle_growth: { label: 'Muscle Growth', emoji: '💪', color: C.green,  soft: 'rgba(22,163,74,0.12)',  noun: 'muscles' },
+  weight_loss:   { label: 'Weight Loss',   emoji: '🔥', color: C.yellow, soft: 'rgba(212,166,0,0.14)',  noun: '' },
+  injury_rehab:  { label: 'Injury Rehab',  emoji: '🩹', color: C.red,    soft: 'rgba(220,38,38,0.12)',  noun: 'body parts' },
+  stretching:    { label: 'Stretching',    emoji: '🧘', color: C.blue,   soft: 'rgba(37,99,235,0.12)',  noun: 'body parts' },
 };
 const TYPE_ORDER: GoalType[] = ['muscle_growth', 'weight_loss', 'injury_rehab', 'stretching'];
 
@@ -130,7 +123,22 @@ const MUSCLES: Landmark[] = [
   { key: 'calves',    label: 'Calves',    yFrac: 0.82, xFrac: 0.13, both: true  },
 ];
 const MAX_MUSCLES = 3;
-const lmList = (type: GoalType): Landmark[] => (type === 'injury_rehab' ? INJURY_AREAS : MUSCLES);
+// Merged master list (dedup by key) so a part chosen on the model resolves to a
+// landmark regardless of which goal type it ends up under.
+const MASTER_AREAS: Landmark[] = (() => {
+  const seen = new Set<string>();
+  const out: Landmark[] = [];
+  for (const lm of [...MUSCLES, ...INJURY_AREAS]) {
+    if (seen.has(lm.key)) continue;
+    seen.add(lm.key);
+    out.push(lm);
+  }
+  return out;
+})();
+const lmList = (_type: GoalType): Landmark[] => MASTER_AREAS;
+
+// Goal types offered in the part-first picker (weight loss isn't body-part based).
+const PART_TYPES: GoalType[] = ['muscle_growth', 'injury_rehab', 'stretching'];
 
 // ── Canvas geometry ───────────────────────────────────────────────────────────
 const VB_W = 300, VB_H = 360, GROUND = 338, TOP_PAD = 16, HEIGHT_MAX = 215;
@@ -212,6 +220,10 @@ export default function GoalVisualizer({
   const [stageW, setStageW] = useState(0);
   // 3D model view (editable mode): front/back lets hotspots align with the body.
   const [modelView, setModelView] = useState<'front' | 'back'>('front');
+  // Part-first guided picker: tap a body part → choose side → choose goal type.
+  const [picker, setPicker] = useState<
+    { base: string; label: string; both: boolean; xf: number; y: number; side: InjurySide | null } | null
+  >(null);
 
   const curWeight = weightKg ?? 70;
   const heightM = (heightCm ?? 170) / 100;
@@ -350,66 +362,186 @@ export default function GoalVisualizer({
   const figureInteractive = editable && activeGoal && activeGoal.type !== 'weight_loss';
 
   // ── 3D model selection (editable mode) ──────────────────────────────────────
-  const activeKeys = activeGoal
-    ? (activeGoal.type === 'muscle_growth' ? (activeGoal.muscles ?? []) : (activeGoal.areas ?? []))
-    : [];
-  const activeMeta = activeGoal ? TYPE_META[activeGoal.type] : TYPE_META.muscle_growth;
-  const highlightMuscles = activeKeys.map(k => HL_MAP[parseKey(k).base]).filter(Boolean);
-
-  const toggleKey = (key: string) => {
-    const goal = list[activeIndex];
-    if (!goal || goal.type === 'weight_loss') return;
-    if (goal.type === 'muscle_growth') {
-      const cur = goal.muscles ?? [];
-      if (cur.includes(key)) update(activeIndex, { muscles: cur.filter(k => k !== key) });
-      else if (cur.length < MAX_MUSCLES) update(activeIndex, { muscles: [...cur, key] });
-    } else {
-      const cur = goal.areas ?? [];
-      update(activeIndex, { areas: cur.includes(key) ? cur.filter(k => k !== key) : [...cur, key] });
+  // Highlight every part picked across ALL body goals, coloured by goal type
+  // (muscle growth → green, injury → red, stretching → blue).
+  const { highlightMuscles, groupColors } = useMemo(() => {
+    const colors: Record<string, string> = {};
+    const groups: string[] = [];
+    for (const g of list) {
+      if (g.type === 'weight_loss') continue;
+      const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
+      const col = TYPE_META[g.type].color;
+      for (const k of keys) {
+        const grp = HL_MAP[parseKey(k).base];
+        if (!grp) continue;
+        groups.push(grp);
+        colors[grp] = col; // last selection wins if a group is shared
+      }
     }
+    return { highlightMuscles: groups, groupColors: colors };
+  }, [list]);
+
+  // Which goal (if any) owns this base body part → drives the dot colour/label.
+  const ownerOf = (base: string) => {
+    for (const g of list) {
+      if (g.type === 'weight_loss') continue;
+      const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
+      if (keys.some(k => parseKey(k).base === base)) return { meta: TYPE_META[g.type] };
+    }
+    return null;
   };
 
-  // Tappable hotspot dots overlaid on the 3D model for the active goal.
-  // Each side is independent (tap the left dot → only the left side is added).
-  // Dots are faint by default; the body-part word only appears once selected.
-  const renderHotspots = () => {
-    if (!activeGoal || activeGoal.type === 'weight_loss') return null;
-    const setKey = activeGoal.type === 'injury_rehab' ? 'injury' : 'muscle';
-    const spots = HOTSPOTS[setKey][modelView];
+  // Commit a part-first selection: add the chosen part (+ side) to the goal of the
+  // chosen type, creating that goal if it doesn't exist yet.
+  const commitPart = (type: GoalType) => {
+    if (!picker) return;
+    const base = picker.base;
+    const tokens: ('left' | 'right' | 'single')[] = !picker.both
+      ? ['single']
+      : picker.side === 'both'
+        ? ['left', 'right']
+        : [(picker.side ?? 'both') as 'left' | 'right'];
+    const newKeys = tokens.map(s => sideKey(base, s));
+
+    const existing = list.findIndex(g => g.type === type);
+    setActiveIndex(existing === -1 ? list.length : existing);
+    setList(prev => {
+      const next = [...prev];
+      let idx = next.findIndex(g => g.type === type);
+      if (idx === -1) { next.push(newGoal(type)); idx = next.length - 1; }
+      const g = next[idx];
+      if (type === 'muscle_growth') {
+        const merged = Array.from(new Set([...(g.muscles ?? []), ...newKeys])).slice(0, MAX_MUSCLES);
+        next[idx] = { ...g, muscles: merged };
+      } else {
+        const merged = Array.from(new Set([...(g.areas ?? []), ...newKeys]));
+        next[idx] = { ...g, areas: merged };
+      }
+      return next;
+    });
+    setPicker(null);
+  };
+
+  // Remove a body part straight from the model — clears every side variant of it
+  // from all goals.
+  const removePart = (base: string) => {
+    setList(prev => prev.map(g => {
+      if (g.type === 'muscle_growth') return { ...g, muscles: (g.muscles ?? []).filter(k => parseKey(k).base !== base) };
+      if (g.type === 'injury_rehab' || g.type === 'stretching') return { ...g, areas: (g.areas ?? []).filter(k => parseKey(k).base !== base) };
+      return g;
+    }));
+    setPicker(null);
+  };
+
+  // Tap anywhere on the model → nearest body part → open the guided picker.
+  const handleModelTap = (e: GestureResponderEvent) => {
+    if (!stageW) return;
+    const fx = clamp(e.nativeEvent.locationX / stageW, 0, 1);
+    const fy = clamp(e.nativeEvent.locationY / canvasHeight, 0, 1);
+    let best: { h: Hotspot; hx: number } | null = null;
+    let bestD = Infinity;
+    for (const h of BODY_PARTS[modelView]) {
+      const xs = h.both ? [0.5 + h.x, 0.5 - h.x] : [0.5];
+      for (const hx of xs) {
+        const d = Math.hypot(hx - fx, h.y - fy);
+        if (d < bestD) { bestD = d; best = { h, hx }; }
+      }
+    }
+    if (!best || bestD > 0.2) return; // tapped empty space (head, off-body)
+    setPicker({ base: best.h.key, label: best.h.label, both: best.h.both, xf: best.hx, y: best.h.y, side: null });
+  };
+
+  // No visible dots — just the coloured name labels for parts already selected.
+  const renderHotspots = () => (
+    <>
+      {BODY_PARTS[modelView].map(h => {
+        const owner = ownerOf(h.key);
+        if (!owner || picker?.base === h.key) return null;
+        const xf = h.both ? 0.5 + h.x : 0.5;
+        return (
+          <Text
+            key={h.key}
+            // White text reads on any highlight colour (green/red/blue); the dark
+            // outline keeps it legible on the light-blue unselected body too.
+            style={[st.hsLabel, { left: `${xf * 100}%`, top: `${h.y * 100}%` }]}
+            pointerEvents="none"
+          >
+            {h.label}
+          </Text>
+        );
+      })}
+    </>
+  );
+
+  // Small inline mini-menu anchored at the tapped dot (sized like the body labels).
+  const POP_W = 132;
+  const renderPicker = () => {
+    if (!picker || !stageW) return null;
+    const dotX = picker.xf * stageW;
+    const dotY = picker.y * canvasHeight;
+    const left = clamp(dotX - POP_W / 2, 4, Math.max(4, stageW - POP_W - 4));
+    // Prefer floating above the dot so the menu never covers the goal cards below.
+    const below = picker.y < 0.28;
+    const showType = !picker.both || picker.side !== null;
+    const isSelected = !!ownerOf(picker.base);
     return (
-      <>
-        {spots.flatMap(h => {
-          const sides: ('left' | 'right' | 'single')[] = h.both ? ['left', 'right'] : ['single'];
-          return sides.map(side => {
-            const xf = side === 'single' ? 0.5 : side === 'left' ? 0.5 - h.x : 0.5 + h.x;
-            const k = sideKey(h.key, side);
-            const selected = activeKeys.includes(k);
-            const label = side === 'single' ? h.label : `${side === 'left' ? 'Left' : 'Right'} ${h.label}`;
-            return (
-              <React.Fragment key={k}>
+      <View
+        style={[
+          st.pop,
+          { width: POP_W, left },
+          below ? { top: dotY + 12 } : { bottom: canvasHeight - dotY + 12 },
+        ]}
+      >
+        <View style={st.popHead}>
+          <Text style={st.popTitle} numberOfLines={1}>{picker.label}</Text>
+          <TouchableOpacity onPress={() => setPicker(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={st.popClose}>✕</Text>
+          </TouchableOpacity>
+        </View>
+
+        {!showType ? (
+          <View style={st.popRow}>
+            {SIDES.map(s => (
+              <TouchableOpacity
+                key={s.key}
+                style={st.popChip}
+                activeOpacity={0.85}
+                onPress={() => setPicker(p => (p ? { ...p, side: s.key } : p))}
+              >
+                <Text style={st.popChipText}>{s.key === 'both' ? 'Both' : s.label[0]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <>
+            {PART_TYPES.map(t => {
+              const tm = TYPE_META[t];
+              return (
                 <TouchableOpacity
-                  style={[st.hsDot, {
-                    left: `${xf * 100}%`, top: `${h.y * 100}%`,
-                    backgroundColor: selected ? activeMeta.color : 'rgba(33,24,50,0.22)',
-                    borderColor: selected ? '#fff' : 'rgba(255,255,255,0.65)',
-                  }]}
-                  onPress={() => toggleKey(k)}
-                  activeOpacity={0.8}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                />
-                {selected && (
-                  <Text
-                    style={[st.hsLabel, { left: `${xf * 100}%`, top: `${h.y * 100}%`, color: activeMeta.color }]}
-                    pointerEvents="none"
-                  >
-                    {label}
-                  </Text>
-                )}
-              </React.Fragment>
-            );
-          });
-        })}
-      </>
+                  key={t}
+                  style={[st.popType, { borderColor: tm.color, backgroundColor: tm.soft }]}
+                  activeOpacity={0.85}
+                  onPress={() => commitPart(t)}
+                >
+                  <Text style={st.popTypeEmoji}>{tm.emoji}</Text>
+                  <Text style={st.popTypeText} numberOfLines={1}>{tm.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            {picker.both && (
+              <TouchableOpacity onPress={() => setPicker(p => (p ? { ...p, side: null } : p))} activeOpacity={0.8}>
+                <Text style={st.popBack}>← side</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {isSelected && (
+          <TouchableOpacity style={st.popRemove} activeOpacity={0.85} onPress={() => removePart(picker.base)}>
+            <Text style={st.popRemoveText}>🗑  Remove</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     );
   };
 
@@ -434,23 +566,38 @@ export default function GoalVisualizer({
             ))}
           </View>
 
-          <View style={[st.stage, { padding: 0 }]} onLayout={e => setStageW(e.nativeEvent.layout.width)}>
-            <MuscleVisualizer
-              targetedMuscles={highlightMuscles}
-              view={modelView}
-              height={canvasHeight}
-              hideControls
-              overlay={
-                <>
-                  <View style={st.hsTitle} pointerEvents="none">
-                    <Text style={st.hsTitleName}>{name || 'Me'}</Text>
-                    <Text style={st.hsTitleSub}>My Goals</Text>
-                  </View>
-                  {renderHotspots()}
-                </>
-              }
-            />
+          {/* Wrapper keeps the popover visible even though the stage clips its content. */}
+          <View style={st.modelWrap}>
+            <View style={[st.stage, { padding: 0 }]} onLayout={e => setStageW(e.nativeEvent.layout.width)}>
+              <MuscleVisualizer
+                targetedMuscles={highlightMuscles}
+                groupColors={groupColors}
+                view={modelView}
+                height={canvasHeight}
+                hideControls
+                overlay={
+                  <>
+                    {/* Invisible tap layer — tap the body directly to open the picker. */}
+                    <View
+                      style={StyleSheet.absoluteFill}
+                      onStartShouldSetResponder={() => true}
+                      onResponderRelease={handleModelTap}
+                    />
+                    <View style={st.hsTitle} pointerEvents="none">
+                      <Text style={st.hsTitleName}>{name || 'Me'}</Text>
+                      <Text style={st.hsTitleSub}>My Goals</Text>
+                    </View>
+                    {renderHotspots()}
+                  </>
+                }
+              />
+            </View>
+            {renderPicker()}
           </View>
+
+          <Text style={st.pickHint}>
+            Tap a body part → pick a side → choose Muscle Growth, Injury Rehab or Stretching.
+          </Text>
         </>
       )}
 
@@ -642,8 +789,9 @@ const st = StyleSheet.create({
   },
   hsLabel: {
     position: 'absolute', width: 90, marginLeft: -45, marginTop: -30, textAlign: 'center',
-    fontSize: 11, fontWeight: '800',
-    textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
+    fontSize: 11, fontWeight: '900', color: '#3F3F49',
+    // Light halo keeps the dark-grey text legible on any highlight colour.
+    textShadowColor: 'rgba(255,255,255,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
   },
   viewToggle: {
     flexDirection: 'row', alignSelf: 'center', marginBottom: 10,
@@ -660,6 +808,30 @@ const st = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 3,
   },
   xChipText: { fontSize: 12, fontWeight: '900', lineHeight: 14 },
+
+  // Guided part-first picker — compact inline mini-menu
+  modelWrap: { position: 'relative' },
+  pickHint: { color: C.muted, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 10 },
+  pop: {
+    position: 'absolute', backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 10, padding: 6,
+    borderWidth: 1, borderColor: C.border, zIndex: 50,
+    shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 8,
+  },
+  popHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5, paddingHorizontal: 2 },
+  popTitle: { flex: 1, color: C.text, fontSize: 12, fontWeight: '800' },
+  popClose: { color: C.muted, fontSize: 11, fontWeight: '900', paddingLeft: 4 },
+  popRow: { flexDirection: 'row', gap: 4 },
+  popChip: { flex: 1, paddingVertical: 6, borderRadius: 7, backgroundColor: C.canvas, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
+  popChipText: { color: C.text, fontSize: 12, fontWeight: '800' },
+  popType: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 7, borderRadius: 8, borderWidth: 1, marginTop: 4 },
+  popTypeEmoji: { fontSize: 13 },
+  popTypeText: { flex: 1, color: C.text, fontSize: 11, fontWeight: '700' },
+  popBack: { color: C.muted, fontSize: 11, fontWeight: '700', marginTop: 5, textAlign: 'center' },
+  popRemove: {
+    marginTop: 6, paddingVertical: 6, borderRadius: 8, alignItems: 'center',
+    backgroundColor: 'rgba(220,38,38,0.10)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.35)',
+  },
+  popRemoveText: { color: '#dc2626', fontSize: 11, fontWeight: '800' },
 
   summaryWrap: { marginTop: 12, gap: 4 },
   summaryLine: { color: C.text, fontSize: 14, fontWeight: '600' },

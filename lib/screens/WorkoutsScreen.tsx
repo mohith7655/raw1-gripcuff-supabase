@@ -148,7 +148,7 @@ export const WorkoutsScreen = () => {
                                         title="Muscle Growth"
                                         subtitle="Hypertrophy focused programs"
                                         IconName={Flame}
-                                        color="#f44336"
+                                        color="#66BB6A"
                                         onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })}
                                     />
                                     <View style={styles.rowDivider} />
@@ -172,7 +172,7 @@ export const WorkoutsScreen = () => {
                                         title="Injury Rehab"
                                         subtitle="Safe recovery & rehabilitation"
                                         IconName={HeartPulse}
-                                        color="#66BB6A"
+                                        color="#f44336"
                                         onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })}
                                     />
                                 </View>
