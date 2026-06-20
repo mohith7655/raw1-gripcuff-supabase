@@ -861,27 +861,44 @@ function VideoPlayerScreen({ route, navigation }: any) {
         extrapolate: 'clamp',
     });
     // Tracks whether the panel has been swiped up (scrolled) to read it. While
-    // revealed it stays at full opacity even if the video keeps playing.
+    // revealed it stays at full colour even if the video keeps playing.
     const panelRevealedRef = useRef(false);
-    // Any interaction with the panel (scroll-drag or touch) brings it back to
-    // full opacity so the text is readable while the video keeps playing.
-    const revealPanel = useCallback(() => {
-        if (panelRevealedRef.current) return;
-        panelRevealedRef.current = true;
-        Animated.timing(panelDimAnim, { toValue: 1, duration: 150, useNativeDriver: false }).start();
+    const panelScrollYRef = useRef(0);
+    const reWashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // After interaction stops, let the wash return — but only when the user is at
+    // the top (not mid-read) and the video is still playing.
+    const scheduleReWash = useCallback(() => {
+        if (reWashTimer.current) clearTimeout(reWashTimer.current);
+        reWashTimer.current = setTimeout(() => {
+            if (!isVideoPlayingRef.current || panelScrollYRef.current > 8) return;
+            panelRevealedRef.current = false;
+            Animated.timing(panelDimAnim, { toValue: 0.4, duration: 400, useNativeDriver: false }).start();
+        }, 2600);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Any interaction (scroll-drag or touch) brings the section back to 100% so
+    // the text is readable; each interaction also resets the re-wash timer.
+    const revealPanel = useCallback(() => {
+        if (!panelRevealedRef.current) {
+            panelRevealedRef.current = true;
+            Animated.timing(panelDimAnim, { toValue: 1, duration: 150, useNativeDriver: false }).start();
+        }
+        scheduleReWash();
+    }, [scheduleReWash]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => () => { if (reWashTimer.current) clearTimeout(reWashTimer.current); }, []);
     const handleTabScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: videoScrollY } } }],
         {
             useNativeDriver: false,
             listener: (e: any) => {
                 const y = e?.nativeEvent?.contentOffset?.y ?? 0;
+                panelScrollYRef.current = y;
                 if (y > 24 && !panelRevealedRef.current) {
-                    // Swiped up → bring the panel back to 100% opacity.
+                    // Swiped up → bring the section back to its full colour.
                     panelRevealedRef.current = true;
+                    if (reWashTimer.current) clearTimeout(reWashTimer.current);
                     Animated.timing(panelDimAnim, { toValue: 1, duration: 150, useNativeDriver: false }).start();
                 } else if (y <= 4 && panelRevealedRef.current) {
-                    // Back at the top → re-dim if the video is still playing.
+                    // Back at the top → re-wash if the video is still playing.
                     panelRevealedRef.current = false;
                     if (isVideoPlayingRef.current) {
                         Animated.timing(panelDimAnim, { toValue: 0.4, duration: 200, useNativeDriver: false }).start();
@@ -1055,8 +1072,14 @@ function VideoPlayerScreen({ route, navigation }: any) {
         return () => clearTimeout(t);
     }, [resumePositionMs]);
 
-    // Lights-out: dim the panel when the video is actively playing
+    // Lights-out: while the video plays we wash the whole bottom section with a
+    // muted colour (not opacity) so the info recedes. 1 = revealed/paused → clear,
+    // 0.4 = playing → tinted. A touch/swipe brings it back to the present colour.
     const panelDimAnim = useRef(new Animated.Value(1)).current;
+    const panelScrimColor = panelDimAnim.interpolate({
+        inputRange: [0.4, 1],
+        outputRange: ['rgba(33,24,50,0.55)', 'rgba(33,24,50,0)'],
+    });
     const setLightsOut = useCallback((playing: boolean) => {
         // Skip dimming while the panel is scrolled up (user is reading it).
         if (playing && panelRevealedRef.current) return;
@@ -1111,6 +1134,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
             }
         }
 
+        // Keep the play-state ref accurate (progress ticks set it true but never
+        // clear it on pause) so the colour-wash / re-wash logic is correct.
+        isVideoPlayingRef.current = playing;
         setLightsOut(playing);
 
         // Record watch on first play
@@ -2740,7 +2766,11 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     cameraPermissionDenied={cameraPermissionDenied}
                 />
             ) : (
-            <View style={[panelStyles.panel, { flex: 1 }, modeType === 'workout' && { backgroundColor: PANEL_DARK }]}>
+            <View
+                style={[panelStyles.panel, { flex: 1 }, modeType === 'workout' && { backgroundColor: PANEL_DARK }]}
+                // A touch anywhere on the section brings the colour back to 100%.
+                onTouchStart={modeType === 'watch' ? revealPanel : undefined}
+            >
 
                 {/* Title + view count — YouTube-style, hidden in workout mode.
                     Small Workout with Friend + LIVE buttons pinned top-right. */}
@@ -2864,8 +2894,9 @@ function VideoPlayerScreen({ route, navigation }: any) {
                 )}
 
                 {modeType === 'watch' ? (
-                    /* Everything below reaction buttons dims during playback */
-                    <Animated.View style={{ opacity: panelDimAnim, flex: 1 }}>
+                    /* Content stays fully opaque — the colour wash (scrim) below
+                       is what makes the section recede during playback. */
+                    <View style={{ flex: 1 }}>
 
                         {/* The ONE shared scroll container — drives the video resize
                             for every tab. Each tab renders plain content (no inner
@@ -2930,7 +2961,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             </TouchableOpacity>
                         </View>
 
-                    </Animated.View>
+                    </View>
                 ) : (
                     /* Workout Mode panel */
                     <ScrollView
@@ -3037,6 +3068,15 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             </>
                         )}
                     </ScrollView>
+                )}
+
+                {/* Colour wash over the whole section while the video plays.
+                    pointerEvents="none" so controls underneath stay tappable. */}
+                {modeType === 'watch' && (
+                    <Animated.View
+                        pointerEvents="none"
+                        style={[StyleSheet.absoluteFillObject, { backgroundColor: panelScrimColor }]}
+                    />
                 )}
             </View>
             )}
