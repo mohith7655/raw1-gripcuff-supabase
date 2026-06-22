@@ -41,6 +41,7 @@ export const HowILookNowScreen = () => {
         age: Math.round(m.age),
         heightCm: Math.round(m.heightCm),
         weightKg: Math.round(m.weightKg),
+        bodyConditions: m.conditions,
       });
       navigation.goBack();
     } catch (err) {
@@ -77,6 +78,7 @@ export const HowILookNowScreen = () => {
           heightCm={profile?.heightCm}
           weightKg={profile?.weightKg}
           age={profile?.age}
+          conditions={profile?.bodyConditions}
           canvasHeight={canvasHeight}
           saving={saving}
           onSave={handleSave}

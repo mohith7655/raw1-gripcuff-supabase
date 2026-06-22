@@ -14,6 +14,17 @@ export interface UserLocations {
 
 export type GoalType = 'muscle_growth' | 'weight_loss' | 'injury_rehab' | 'stretching';
 
+/** "How I look now" body annotations — tightness or an injury at a body part. */
+export type BodyConditionType = 'tightness' | 'injury';
+
+export interface BodyCondition {
+  /** Body-part landmark key (e.g. 'knee', 'lower_back'). */
+  part: string;
+  type: BodyConditionType;
+  /** Which side for bilateral parts. */
+  side?: 'left' | 'right' | 'both';
+}
+
 export interface GoalEntry {
   type: GoalType;
   /** muscle_growth: up to 3 muscle groups. */
@@ -40,6 +51,8 @@ export interface User {
   heightCm?: number;
   /** Weight in kilograms — powers the "How I look now" body silhouette. */
   weightKg?: number;
+  /** "How I look now" tightness / injury markers on the body figure. */
+  bodyConditions?: BodyCondition[];
   /** Body-transformation goal — powers the "My Goal" screen. */
   bodyGoal?: 'weight_loss' | 'muscle_growth' | 'injury_rehab';
   /** Injured body part (legacy single value). */

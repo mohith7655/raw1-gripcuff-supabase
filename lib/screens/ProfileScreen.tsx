@@ -903,6 +903,7 @@ export const ProfileScreen = () => {
                 heightCm={profile?.heightCm}
                 weightKg={profile?.weightKg}
                 age={profile?.age}
+                conditions={profile?.bodyConditions}
                 editable={false}
                 canvasHeight={260}
               />
