@@ -570,6 +570,7 @@ export default function GoalVisualizer({
           <View style={st.modelWrap}>
             <View style={[st.stage, { padding: 0 }]} onLayout={e => setStageW(e.nativeEvent.layout.width)}>
               <MuscleVisualizer
+                gender={female ? 'female' : 'male'}
                 targetedMuscles={highlightMuscles}
                 groupColors={groupColors}
                 view={modelView}

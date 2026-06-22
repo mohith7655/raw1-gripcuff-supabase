@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  ScrollView,
   Image,
   ActivityIndicator,
   RefreshControl,
-  Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Rss, Users, ChevronRight, Zap, CalendarPlus, MessageCircle, Flame, UserPlus, Clock } from 'lucide-react-native';
+import { ArrowLeft, Rss, Users, ChevronRight, Hand, MessageCircle, Flame } from 'lucide-react-native';
+import Svg, { Path, Defs, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
 import { TierAvatar } from '../components/profile/TierAvatar';
-import { SocialProfileService } from '../services/socialProfile.service';
 import { AppTheme } from '../core/theme/app_theme';
 import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
 import { SocialActivationModal } from '../components/SocialActivationModal';
@@ -39,13 +39,137 @@ import type { Club } from './ClubsScreen';
 const ORANGE = '#4C4E78';
 const TEXT_SECONDARY = '#7A7C90';
 
+// ── Animated gradient-cycling border for the action cards ─────────────────────
+// Core Animated (reanimated isn't installed). A single looping driver cycles the
+// border colour through a palette — warm "fire" for the Challenge Lobby, cool
+// "electric" for Workout with Friend. useNativeDriver:false because colour isn't
+// native-animatable, but it's one cheap interpolation so it stays smooth.
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
+const BORDER_THEMES: Record<'fire' | 'cool', string[]> = {
+  // Loop back to the first colour so the cycle has no visible seam.
+  fire: ['#F25912', '#FF9D2E', '#FFC53D', '#E11D2A', '#F25912'],
+  cool: ['#4C4E78', '#6E8BFF', '#22D3EE', '#7C6CF0', '#4C4E78'],
+};
+
+// A drawn flame (gradient-filled SVG) so it reads like the 🔥 emoji without using
+// the emoji glyph — red at the base, orange mid, gold tip.
+function SvgFlame({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Defs>
+        <SvgGradient id="flameGrad" x1="0" y1="1" x2="0" y2="0">
+          <Stop offset="0" stopColor="#E11D2A" />
+          <Stop offset="0.45" stopColor="#F25912" />
+          <Stop offset="1" stopColor="#FFD24D" />
+        </SvgGradient>
+      </Defs>
+      <Path
+        d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+        fill="url(#flameGrad)"
+      />
+    </Svg>
+  );
+}
+
+// The leading fire icon, flickering in place: a gentle rise, taller-when-bright
+// stretch and fade on a loop. Native-driver (transform/opacity).
+function AnimatedFlameIcon({ size = 22 }: { size?: number }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 1, duration: 520, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0, duration: 520, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+
+  const translateY = v.interpolate({ inputRange: [0, 1], outputRange: [1.5, -2.5] });
+  const scaleX     = v.interpolate({ inputRange: [0, 1], outputRange: [1.06, 0.94] });
+  const scaleY     = v.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.14] });
+  const opacity    = v.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] });
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }, { scaleX }, { scaleY }] }}>
+      <SvgFlame size={size} />
+    </Animated.View>
+  );
+}
+
+// A raised hand that "high-fives": two quick slap taps (tilt + pop) then a pause,
+// looping. Native-driver (rotate/scale/translate).
+function AnimatedHandIcon({ size = 22, color = ORANGE }: { size?: number; color?: string }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const tap = (to: number, d: number, ease: any) =>
+      Animated.timing(v, { toValue: to, duration: d, easing: ease, useNativeDriver: true });
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(650),
+        tap(1, 130, Easing.out(Easing.quad)),
+        tap(0, 180, Easing.in(Easing.quad)),
+        tap(1, 130, Easing.out(Easing.quad)),
+        tap(0, 240, Easing.in(Easing.quad)),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+
+  const rotate     = v.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-24deg'] });
+  const scale      = v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.2] });
+  const translateX = v.interpolate({ inputRange: [0, 1], outputRange: [0, -2] });
+  return (
+    <Animated.View style={{ transform: [{ translateX }, { rotate }, { scale }] }}>
+      <Hand color={color} size={size} />
+    </Animated.View>
+  );
+}
+
+function AnimatedBorderCard({
+  variant, style, onPress, children,
+}: {
+  variant: 'fire' | 'cool';
+  style?: any;
+  onPress?: () => void;
+  children: React.ReactNode;
+}) {
+  const drive = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(drive, {
+        toValue: 1,
+        duration: variant === 'fire' ? 2400 : 3200,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [drive, variant]);
+
+  const stops = BORDER_THEMES[variant];
+  const borderColor = drive.interpolate({
+    inputRange: stops.map((_, i) => i / (stops.length - 1)),
+    outputRange: stops,
+  });
+
+  return (
+    <AnimatedTouchable style={[style, { borderWidth: 3.5, borderColor }]} onPress={onPress} activeOpacity={0.85}>
+      {children}
+    </AnimatedTouchable>
+  );
+}
+
 type SocialTab = 'feed' | 'chat';
 
 export function FeedScreen() {
   const navigation = useNavigation<any>();
   const tabBar = useTabBarVisibility();
   const { supabaseUserId, user } = useAuth();
-  const { friends, incomingRequests, outgoingRequests, sendRequest } = useFriend();
+  const { friends } = useFriend();
   const [activeTab, setActiveTab] = useState<SocialTab>('feed');
 
   // Reveal the bottom bar when switching social sub-tabs (friends/chat don't drive
@@ -88,35 +212,6 @@ export function FeedScreen() {
   const handleActivationDismiss = useCallback(() => {
     setActivationVisible(false);
   }, []);
-
-  // ── People You May Know (friend suggestions) ──
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [sentUids, setSentUids] = useState<Set<string>>(new Set());
-  const [addBusyUid, setAddBusyUid] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!supabaseUserId) return;
-    const exclude = [
-      ...friends.map(f => f.uid),
-      ...incomingRequests.map(r => r.fromUid),
-      ...outgoingRequests.map(r => r.toUid),
-    ];
-    SocialProfileService.getSuggestions(supabaseUserId, exclude, 12)
-      .then(rows => setSuggestions(rows))
-      .catch(() => {});
-  }, [supabaseUserId, friends, incomingRequests, outgoingRequests]);
-
-  const handleAddSuggestion = useCallback(async (uid: string) => {
-    setAddBusyUid(uid);
-    try {
-      await sendRequest(uid);
-      setSentUids(p => new Set(p).add(uid));
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Could not send request.');
-    } finally {
-      setAddBusyUid(null);
-    }
-  }, [sendRequest]);
 
   // Unread chat total — powers the Chat segment badge.
   useEffect(() => {
@@ -210,35 +305,35 @@ export function FeedScreen() {
   // ── Challenge Lobby entry + Daily Feed section header ──
   const ListHeader = (
     <View>
-      <TouchableOpacity
+      <AnimatedBorderCard
+        variant="fire"
         style={styles.challengeCard}
         onPress={() => setChallengeLobbyVisible(true)}
-        activeOpacity={0.85}
       >
         <View style={styles.challengeIcon}>
-          <Zap color={ORANGE} size={18} />
+          <AnimatedFlameIcon size={22} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.challengeTitle}>Enter Challenge Lobby</Text>
+          <Text style={styles.challengeTitle}>Challenge Lobby</Text>
           <Text style={styles.challengeSub}>Compete live with anyone in the lobby</Text>
         </View>
         <ChevronRight color={ORANGE} size={18} />
-      </TouchableOpacity>
+      </AnimatedBorderCard>
 
-      <TouchableOpacity
+      <AnimatedBorderCard
+        variant="cool"
         style={styles.inviteCard}
         onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
-        activeOpacity={0.85}
       >
         <View style={styles.inviteIcon}>
-          <CalendarPlus color={ORANGE} size={18} />
+          <AnimatedHandIcon size={20} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.challengeTitle}>Workout with Friend</Text>
           <Text style={styles.challengeSub}>Pick a workout & schedule it together</Text>
         </View>
         <ChevronRight color={ORANGE} size={18} />
-      </TouchableOpacity>
+      </AnimatedBorderCard>
 
       {/* Your Friends — full list, shown right after the action cards */}
       <View style={styles.friendsSection}>
@@ -287,42 +382,6 @@ export function FeedScreen() {
           ))
         )}
       </View>
-
-      {/* People You May Know — suggestions */}
-      {suggestions.length > 0 && (
-        <View style={styles.suggSection}>
-          <Text style={styles.friendsSectionTitle}>People You May Know</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggScroll}>
-            {suggestions.map(sug => {
-              const sent = sentUids.has(sug.uid);
-              const busy = addBusyUid === sug.uid;
-              return (
-                <View key={sug.uid} style={styles.suggCard}>
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => navigation.navigate('SocialProfileScreen', { uid: sug.uid })}
-                    style={{ alignItems: 'center' }}
-                  >
-                    <TierAvatar uri={sug.avatarUrl} size={60} uid={sug.uid} name={sug.fullName} radius={16} disableProfileLink />
-                    <Text style={styles.suggName} numberOfLines={1}>@{sug.username}</Text>
-                    <Text style={styles.suggSub} numberOfLines={1}>{sug.fullName}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.suggBtn, sent && styles.suggBtnSent]}
-                    onPress={() => !sent && handleAddSuggestion(sug.uid)}
-                    disabled={sent || busy}
-                    activeOpacity={0.85}
-                  >
-                    {busy ? <ActivityIndicator color="#fff" size="small" />
-                      : sent ? <><Clock size={12} color={ORANGE} /><Text style={[styles.suggBtnText, { color: ORANGE }]}>Sent</Text></>
-                      : <><UserPlus size={13} color="#fff" /><Text style={styles.suggBtnText}>Add</Text></>}
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
     </View>
   );
 
@@ -429,7 +488,11 @@ export function FeedScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={() => (activeTab === 'chat' ? setActiveTab('feed') : navigation.goBack())}
+          style={styles.backBtn}
+          activeOpacity={0.7}
+        >
           <ArrowLeft size={22} color="#211832" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Social</Text>
@@ -669,24 +732,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(76,78,120,0.1)',
     borderWidth: 1, borderColor: 'rgba(76,78,120,0.2)',
   },
-
-  // People You May Know
-  suggSection: { marginHorizontal: 16, marginTop: 18, gap: 10 },
-  suggScroll: { gap: 12, paddingVertical: 2, paddingRight: 16 },
-  suggCard: {
-    width: 130, alignItems: 'center', gap: 4,
-    backgroundColor: '#F8F8FC', borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: 'rgba(33,24,50,0.06)',
-  },
-  suggName: { color: '#211832', fontSize: 13, fontWeight: '700', marginTop: 8, maxWidth: 110, textAlign: 'center' },
-  suggSub: { color: '#7A7C90', fontSize: 11, maxWidth: 110, textAlign: 'center' },
-  suggBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
-    backgroundColor: '#211832', borderRadius: 18, paddingVertical: 7, paddingHorizontal: 16,
-    marginTop: 8, alignSelf: 'stretch',
-  },
-  suggBtnSent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)' },
-  suggBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   feedStatus: {
     alignItems: 'center',

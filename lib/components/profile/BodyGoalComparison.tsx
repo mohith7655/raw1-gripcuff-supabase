@@ -88,8 +88,9 @@ interface Props {
 }
 
 export default function BodyGoalComparison({
-  heightCm, weightKg, goals, conditions, onPressNow, onPressGoal,
+  gender, heightCm, weightKg, goals, conditions, onPressNow, onPressGoal,
 }: Props) {
+  const modelGender = gender === 'female' ? 'female' : 'male';
   const h = clamp(heightCm ?? 170, HEIGHT_MIN, HEIGHT_MAX);
   const w = weightKg ?? 70;
   const heightM = h / 100;
@@ -153,14 +154,14 @@ export default function BodyGoalComparison({
       {/* ── Two 3D bodies, Now vs Goal (goal muscles painted green) ────────── */}
       <View style={s.figuresRow}>
         <FigureColumn
-          label="NOW"  labelColor={C.orange}
+          label="NOW"  labelColor={C.orange} gender={modelGender}
           girth={nowGirth} targeted={nowRegions} groupColors={nowColors}
           caption={`${Math.round(h)} cm · ${kgToLb(w)} lb`}
           onEdit={onPressNow}
         />
         <View style={s.vsCol}><Text style={s.vsText}>vs</Text></View>
         <FigureColumn
-          label="GOAL" labelColor={C.green}
+          label="GOAL" labelColor={C.green} gender={modelGender}
           girth={goalGirth} targeted={goalRegions}
           caption={goalCaption}
           onEdit={onPressGoal}
@@ -216,9 +217,9 @@ export default function BodyGoalComparison({
 
 // ── One figure column: header (label + Edit), 3D body, caption ─────────────────
 function FigureColumn({
-  label, labelColor, girth, targeted, groupColors, caption, onEdit,
+  label, labelColor, gender, girth, targeted, groupColors, caption, onEdit,
 }: {
-  label: string; labelColor: string;
+  label: string; labelColor: string; gender?: string;
   girth: number; targeted: string[]; groupColors?: Record<string, string>;
   caption: string; onEdit?: () => void;
 }) {
@@ -232,6 +233,7 @@ function FigureColumn({
       </View>
       <TouchableOpacity style={s.figStage} activeOpacity={0.9} onPress={onEdit}>
         <MuscleVisualizer
+          gender={gender}
           view="front"
           hideControls
           height={240}

@@ -448,6 +448,7 @@ export default function BodyVisualizer({
         {/* 3D body — height scales the whole figure, weight (BMI) adds girth.
             Tightness / injury parts are painted via targetedMuscles + colours. */}
         <MuscleVisualizer
+          gender={m.gender}
           view={editable ? modelView : 'front'}
           hideControls
           height={canvasHeight}
