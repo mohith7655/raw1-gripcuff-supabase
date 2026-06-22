@@ -540,7 +540,7 @@ export default function BodyVisualizer({
 
           {/* Tightness / injury chips */}
           <View style={s.condBlock}>
-            <Text style={s.ctrlLabel}>Tightness &amp; injuries</Text>
+            <Text style={s.ctrlLabel}>Help with</Text>
             {m.conditions.length === 0 ? (
               <Text style={s.condEmpty}>Tap the figure above to flag a tight or injured part.</Text>
             ) : (

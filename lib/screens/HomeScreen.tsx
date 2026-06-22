@@ -1475,6 +1475,7 @@ const HomeScreenInner = () => {
             weightKg={profile?.weightKg}
             age={profile?.age}
             goals={profile?.goals}
+            conditions={profile?.bodyConditions}
             onPressNow={() => navigation.navigate('HowILookNow')}
             onPressGoal={() => navigation.navigate('Goals')}
           />
@@ -2082,7 +2083,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SCREEN_PADDING,
-    paddingBottom: 40,
+    // Clear the floating bottom tab bar (≈95–110px) so it never overlays content.
+    paddingBottom: 120,
   },
 
   /* ── Toggle ── */

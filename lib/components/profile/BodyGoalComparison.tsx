@@ -13,7 +13,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MuscleVisualizer from '../MuscleVisualizer';
-import { GoalEntry } from '../../models/User';
+import { BodyCondition, GoalEntry } from '../../models/User';
 
 const HIT = { top: 8, bottom: 8, left: 8, right: 8 };
 
@@ -49,6 +49,17 @@ const AREA_TO_GROUP: Record<string, string> = {
 const prettyKey = (k: string) =>
   k.split('::')[0].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+// "How I look now" tightness / injury markers — painted on the NOW figure.
+const COND_META: Record<string, { emoji: string; label: string; color: string }> = {
+  tightness: { emoji: '🟡', label: 'Tightness', color: '#d4a600' },
+  injury:    { emoji: '🩹', label: 'Injury',    color: '#dc2626' },
+};
+function condLine(c: BodyCondition): string {
+  const meta = COND_META[c.type];
+  const side = c.side === 'left' ? 'Left ' : c.side === 'right' ? 'Right ' : '';
+  return `${meta.emoji} ${meta.label}: ${side}${prettyKey(c.part)}`;
+}
+
 const GOAL_META: Record<string, { emoji: string; verb: string }> = {
   muscle_growth: { emoji: '💪', verb: 'Build' },
   weight_loss:   { emoji: '🔥', verb: 'Lose' },
@@ -71,12 +82,13 @@ interface Props {
   weightKg?: number | null;
   age?: number | null;
   goals?: GoalEntry[] | null;
+  conditions?: BodyCondition[] | null;
   onPressNow?: () => void;
   onPressGoal?: () => void;
 }
 
 export default function BodyGoalComparison({
-  heightCm, weightKg, goals, onPressNow, onPressGoal,
+  heightCm, weightKg, goals, conditions, onPressNow, onPressGoal,
 }: Props) {
   const h = clamp(heightCm ?? 170, HEIGHT_MIN, HEIGHT_MAX);
   const w = weightKg ?? 70;
@@ -110,7 +122,23 @@ export default function BodyGoalComparison({
     return Array.from(out);
   }, [JSON.stringify(list)]);
 
+  // "Now" figure: paint tightness (amber) / injury (red) parts from the body
+  // conditions, coloured by type (last condition on a shared group wins).
+  const condList = conditions ?? [];
+  const { nowRegions, nowColors } = useMemo(() => {
+    const groups: string[] = [];
+    const colors: Record<string, string> = {};
+    for (const c of condList) {
+      const grp = AREA_TO_GROUP[c.part.split('::')[0]];
+      if (!grp) continue;
+      groups.push(grp);
+      colors[grp] = COND_META[c.type].color;
+    }
+    return { nowRegions: groups, nowColors: colors };
+  }, [JSON.stringify(condList)]);
+
   const goalLines = list.map(goalLine);
+  const condLines = condList.map(condLine);
   const goalCaption =
     lossKg > 0 ? `${kgToLb(goalWeight)} lb`
     : goalRegions.length ? 'Target areas'
@@ -126,7 +154,7 @@ export default function BodyGoalComparison({
       <View style={s.figuresRow}>
         <FigureColumn
           label="NOW"  labelColor={C.orange}
-          girth={nowGirth} targeted={[]}
+          girth={nowGirth} targeted={nowRegions} groupColors={nowColors}
           caption={`${Math.round(h)} cm · ${kgToLb(w)} lb`}
           onEdit={onPressNow}
         />
@@ -147,6 +175,22 @@ export default function BodyGoalComparison({
             {`📏 ${Math.round(h)} cm   ·   ⚖️ ${kgToLb(w)} lb   ·   📊 BMI ${bmi.toFixed(1)} (${bmiLabel(bmi)})`}
           </Text>
         </View>
+
+        {condLines.length > 0 && (
+          <TouchableOpacity
+            style={[s.summaryBlock, { marginTop: 12 }]}
+            activeOpacity={0.7}
+            onPress={onPressNow}
+          >
+            <View style={s.summaryHead}>
+              <Text style={s.summaryLabel}>HELP WITH</Text>
+              <Text style={[s.summaryEdit, { color: C.orange }]}>Edit ›</Text>
+            </View>
+            {condLines.map((line, i) => (
+              <Text key={i} style={s.summaryText}>{line}</Text>
+            ))}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[s.summaryBlock, { marginTop: 12 }]}
@@ -172,10 +216,11 @@ export default function BodyGoalComparison({
 
 // ── One figure column: header (label + Edit), 3D body, caption ─────────────────
 function FigureColumn({
-  label, labelColor, girth, targeted, caption, onEdit,
+  label, labelColor, girth, targeted, groupColors, caption, onEdit,
 }: {
   label: string; labelColor: string;
-  girth: number; targeted: string[]; caption: string; onEdit?: () => void;
+  girth: number; targeted: string[]; groupColors?: Record<string, string>;
+  caption: string; onEdit?: () => void;
 }) {
   return (
     <View style={s.figCol}>
@@ -192,6 +237,7 @@ function FigureColumn({
           height={240}
           girthScale={girth}
           targetedMuscles={targeted}
+          groupColors={groupColors}
         />
       </TouchableOpacity>
       <Text style={s.figCaption}>{caption}</Text>
