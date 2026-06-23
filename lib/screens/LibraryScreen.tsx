@@ -173,16 +173,6 @@ const WorkoutsTabContent = () => {
           <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#f44336" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
         </View>
 
-        {/* Workout with a Friend */}
-        <TouchableOpacity
-          style={{ marginHorizontal: SCREEN_PADDING, borderRadius: 14, backgroundColor: '#211832', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, marginBottom: 16 }}
-          onPress={() => navigation.navigate('WorkoutWithFriendFlow')}
-          activeOpacity={0.85}
-        >
-          <Users color="#fff" size={20} style={{ marginRight: 10 }} />
-          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Workout with Friend</Text>
-        </TouchableOpacity>
-
       </ScrollView>
     </View>
   );
