@@ -546,7 +546,7 @@ const s = StyleSheet.create({
   bubbleImg: { width: '100%', height: '100%' },
   handBadge: {
     position: 'absolute',
-    top: 64,
+    top: 0,
     left: 0,
     right: 0,
     height: 64,
