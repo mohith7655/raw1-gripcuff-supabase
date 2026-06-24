@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Rss, Users, ChevronRight, MessageCircle } from 'lucide-react-native';
+import { Rss, Users, ChevronRight, MessageCircle } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { ChatHub } from '../components/social/ChatHub';
@@ -362,13 +362,7 @@ export function FeedScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => (activeTab === 'chat' ? setActiveTab('feed') : navigation.goBack())}
-          style={styles.backBtn}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={22} color="#211832" />
-        </TouchableOpacity>
+        <View style={{ width: 34 }} />
         <Text style={styles.headerTitle}>Social</Text>
         <View style={{ width: 34 }} />
       </View>
@@ -458,7 +452,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(33,24,50,0.07)',
   },
-  backBtn: { padding: 4 },
   headerTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
 
   // Segmented control — matches the Library Exercises/Workouts capsule toggle

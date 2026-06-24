@@ -375,6 +375,15 @@ export function SocialProfileScreen() {
   const username    = user?.username || '';
   const bio         = social?.bio?.trim() || '';
 
+  // Gender icon shown before the connects pill.
+  const genderKey = (user?.gender || '').toLowerCase();
+  const genderMeta =
+    genderKey === 'male'
+      ? { icon: '♂', color: '#2563eb', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.30)' }
+    : genderKey === 'female'
+      ? { icon: '♀', color: '#db2777', bg: 'rgba(219,39,119,0.12)', border: 'rgba(219,39,119,0.30)' }
+    : null;
+
   const whatIDoItems = (social?.whatIDo?.trim() || '')
     .split(',').map(s => s.trim()).filter(Boolean);
   const lookingItems = (social?.lookingToMeet?.trim() || '')
@@ -556,8 +565,13 @@ export function SocialProfileScreen() {
                   {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                   <Text style={s.name} numberOfLines={1}>{displayName}</Text>
                 </View>
-                {/* Connects + Squats — same row */}
+                {/* Gender · Connects · Squats — same row */}
                 <View style={s.connectsRow}>
+                  {genderMeta && (
+                    <View style={[s.genderPill, { backgroundColor: genderMeta.bg, borderColor: genderMeta.border }]}>
+                      <Text style={[s.genderPillText, { color: genderMeta.color }]}>{genderMeta.icon}</Text>
+                    </View>
+                  )}
                   <TouchableOpacity
                     style={s.connectsPill}
                     onPress={() => setConnectionsOpen(true)}
@@ -1186,6 +1200,15 @@ const s = StyleSheet.create({
     marginTop: 6,
     flexWrap: 'wrap',
   },
+  genderPill: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  genderPillText: { fontSize: 15, fontWeight: '900', lineHeight: 18 },
   connectsPill: {
     flexDirection: 'row',
     alignItems: 'center',

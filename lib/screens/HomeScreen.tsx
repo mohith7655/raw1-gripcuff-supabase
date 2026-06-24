@@ -479,6 +479,10 @@ const HomeScreenInner = () => {
   const [streakData, setStreakData] = useState<StreakData | null>(null);
   // Today's watched_minutes fetched fresh from user_daily_activity after each flush.
   const [todayDbMinutes, setTodayDbMinutes] = useState(0);
+  // Weekly + lifetime watch minutes, summed from user_daily_activity (source of
+  // truth for watch time — keeps the header consistent with the streak bars).
+  const [dbWeekMinutes, setDbWeekMinutes] = useState(0);
+  const [dbLifetimeMinutes, setDbLifetimeMinutes] = useState(0);
 
   // Serialize weeklyActivity to a string so React sees a primitive dep,
   // not an object reference that is brand-new every render.
@@ -497,6 +501,29 @@ const HomeScreenInner = () => {
       .eq('activity_date', today)
       .maybeSingle()
       .then(({ data: row }) => setTodayDbMinutes(Number(row?.watched_minutes || 0)));
+  }, [supabaseUserId, profile?.lastVideoWatchAt]);
+
+  // Weekly + lifetime watch minutes from user_daily_activity. The header used to
+  // show only today's minutes for WEEKLY and the (drift-prone) users.watched_minutes
+  // for LIFETIME; summing the daily rows keeps both in step with the streak bars.
+  useEffect(() => {
+    if (!supabaseUserId) { setDbWeekMinutes(0); setDbLifetimeMinutes(0); return; }
+    const tz = getResolvedTimezone();
+    const weekSet = new Set(buildWeekDates(tz, 0));
+    supabase
+      .from('user_daily_activity')
+      .select('activity_date, watched_minutes')
+      .eq('user_id', supabaseUserId)
+      .then(({ data: rows }) => {
+        let life = 0, wk = 0;
+        for (const r of rows ?? []) {
+          const m = Number(r.watched_minutes || 0);
+          life += m;
+          if (weekSet.has(String(r.activity_date).slice(0, 10))) wk += m;
+        }
+        setDbWeekMinutes(wk);
+        setDbLifetimeMinutes(life);
+      });
   }, [supabaseUserId, profile?.lastVideoWatchAt]);
 
   useEffect(() => {
@@ -900,13 +927,15 @@ const HomeScreenInner = () => {
                       const m = Math.round(mins);
                       return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
                     };
-                    const weeklyMins = streakData
-                      ? Object.values(streakData.weeklyMinutes).reduce((a, b) => a + b, 0)
-                      : 0;
-                    const lifetimeMins = Math.round(
+                    // WEEKLY + LIFETIME both come from user_daily_activity (the
+                    // watch-time source of truth) so they match the streak bars.
+                    // Lifetime takes the larger of the daily sum or the legacy
+                    // users.watched_minutes so pre-table history never regresses.
+                    const weeklyMins = dbWeekMinutes;
+                    const legacyLifetime =
                       profile?.watchedMinutes ??
-                      (profile?.workoutSeconds ? profile.workoutSeconds / 60 : 0)
-                    );
+                      (profile?.workoutSeconds ? profile.workoutSeconds / 60 : 0);
+                    const lifetimeMins = Math.round(Math.max(dbLifetimeMinutes, legacyLifetime));
                     const Divider = () => (
                       <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: '#D8D8E4' }} />
                     );

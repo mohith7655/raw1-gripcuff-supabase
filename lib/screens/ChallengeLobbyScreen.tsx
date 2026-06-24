@@ -561,7 +561,8 @@ const s = StyleSheet.create({
   howHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 6,
     marginTop: 22,
     marginBottom: 10,
   },
