@@ -41,6 +41,7 @@ export interface PreviousChallenge {
     isHost: boolean;
     opponentUid: string;
     opponentName: string;
+    opponentUsername: string | null;
     opponentAvatar: string | null;
     feedback: ChallengeFeedback | null;
 }
@@ -172,14 +173,18 @@ export const ChallengeSessionService = {
             new Set(sessions.map(s => (s.hostId === uid ? s.guestId : s.hostId)).filter(Boolean)),
         );
 
-        const nameMap: Record<string, { name: string; avatar: string | null }> = {};
+        const nameMap: Record<string, { name: string; username: string | null; avatar: string | null }> = {};
         if (opponentIds.length > 0) {
             const { data: profs } = await supabase
                 .from('profiles')
-                .select('id, full_name, avatar_url')
+                .select('id, full_name, username, avatar_url')
                 .in('id', opponentIds);
             (profs ?? []).forEach((p: any) => {
-                nameMap[p.id] = { name: p.full_name ?? 'Athlete', avatar: p.avatar_url ?? null };
+                nameMap[p.id] = {
+                    name: p.full_name ?? p.username ?? 'Athlete',
+                    username: p.username ?? null,
+                    avatar: p.avatar_url ?? null,
+                };
             });
         }
 
@@ -224,6 +229,7 @@ export const ChallengeSessionService = {
                 isHost,
                 opponentUid,
                 opponentName: prof?.name ?? 'Athlete',
+                opponentUsername: prof?.username ?? null,
                 opponentAvatar: prof?.avatar ?? null,
                 feedback: feedbackMap[s.id] ?? null,
             };

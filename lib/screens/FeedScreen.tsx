@@ -20,7 +20,6 @@ import { ArrowLeft, Rss, Users, ChevronRight, MessageCircle, Flame } from 'lucid
 import Svg, { Defs, Stop, RadialGradient, Rect } from 'react-native-svg';
 import { TierAvatar } from '../components/profile/TierAvatar';
 import { AppTheme } from '../core/theme/app_theme';
-import { ChallengeLobbyModal } from '../components/ChallengeLobbyModal';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { ChatHub } from '../components/social/ChatHub';
 import { supabase } from '../core/config/supabase';
@@ -258,7 +257,6 @@ export function FeedScreen() {
   const [videoVisible, setVideoVisible] = useState(false);
   const [commentPost, setCommentPost] = useState<Post | null>(null);
   const [myClubs, setMyClubs] = useState<Club[]>([]);
-  const [challengeLobbyVisible, setChallengeLobbyVisible] = useState(false);
 
   // ── Social tab activation prompt ──
   // Shown on each visit UNTIL the user agrees to the rules. Once activated, the
@@ -383,8 +381,8 @@ export function FeedScreen() {
     <View>
       {/* Gamified Social header — two side-by-side animated action cards */}
       <View style={styles.cardRow}>
-        <ChallengeCard onPress={() => setChallengeLobbyVisible(true)} avatarUri={user?.profileImageUrl} />
-        <FriendCard onPress={() => navigation.navigate('WorkoutWithFriendFlow')} avatarUri={user?.profileImageUrl} />
+        <ChallengeCard onPress={() => navigation.navigate('ChallengeLobbyScreen')} avatarUri={user?.profileImageUrl} />
+        <FriendCard onPress={() => navigation.navigate('WorkoutWithFriendScreen')} avatarUri={user?.profileImageUrl} />
       </View>
 
       {/* Your Friends — full list, shown right after the action cards */}
@@ -615,17 +613,6 @@ export function FeedScreen() {
         onCommentAdded={handleCommentAdded}
         onCommentDeleted={handleCommentDeleted}
       />
-      <ChallengeLobbyModal
-        visible={challengeLobbyVisible}
-        exerciseName="Squats"
-        workoutDurationSecs={60}
-        onClose={() => setChallengeLobbyVisible(false)}
-        onChallengeStarted={(params) => {
-          setChallengeLobbyVisible(false);
-          navigation.navigate('ChallengeVideoRoom', params);
-        }}
-      />
-
       <SocialActivationModal
         visible={activationVisible}
         onActivated={handleActivated}

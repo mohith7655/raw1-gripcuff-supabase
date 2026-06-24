@@ -76,6 +76,8 @@ import { InviteFriendsFlow } from './screens/InviteFriendsFlow';
 import RecommendationScreen from './screens/RecommendationScreen';
 import { AgoraVideoRoom } from './screens/AgoraVideoRoom';
 import { ChallengeVideoRoom } from './screens/ChallengeVideoRoom';
+import { ChallengeLobbyScreen } from './screens/ChallengeLobbyScreen';
+import { WorkoutWithFriendScreen } from './screens/WorkoutWithFriendScreen';
 import { ChatInboxScreen } from './screens/ChatInboxScreen';
 import { ChatRoomScreen } from './screens/ChatRoomScreen';
 import { ChatFriendProfileScreen } from './screens/ChatFriendProfileScreen';
@@ -479,6 +481,8 @@ function AppStack({
         <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
         <Stack.Screen name="BadgesScreen" component={BadgesScreen} />
         <Stack.Screen name="FeedScreen" component={FeedScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ChallengeLobbyScreen" component={ChallengeLobbyScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="WorkoutWithFriendScreen" component={WorkoutWithFriendScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ClubsScreen" component={ClubsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ClubDetailScreen" component={ClubDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ClubChatScreen" component={ClubChatScreen} options={{ headerShown: false }} />

@@ -26,7 +26,7 @@ const CTA    = '#4C4E78';
 const BG     = '#EEEEF2';
 const CARD   = '#F8F8FC';
 
-const LOBBY_CHANNEL = 'challenge-lobby';
+export const LOBBY_CHANNEL = 'challenge-lobby';
 
 interface LobbyMember {
     uid: string;
