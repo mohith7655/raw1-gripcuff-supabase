@@ -23,11 +23,12 @@ import {
   Easing,
   Dimensions,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useIsFocused, useFocusEffect } from '@react-navigation/native';
-import { ChevronLeft, ChevronRight, CircleUserRound } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, CircleUserRound } from 'lucide-react-native';
 import { useUser } from '../providers/UserContext';
 import { useAuth } from '../providers/AuthContext';
 import { supabase } from '../core/config/supabase';
@@ -48,7 +49,7 @@ const WON_BG = 'rgba(34,197,94,0.12)';
 const LOST_FG = '#b91c1c';
 const LOST_BG = 'rgba(122,38,38,0.1)';
 
-const { width: SCREEN_W } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SCREEN_PAD = 16;
 const CONTENT_W = SCREEN_W - SCREEN_PAD * 2;
 const HERO_H = 230;
@@ -152,126 +153,14 @@ function useLobbyLiveCount(active: boolean) {
   return count;
 }
 
-// ── Looping-animation helper (focus-aware) ────────────────────────────────────
-// Builds a 0-driver loop that only runs while `active` is true, and tears it
-// down (resetting to 0) when inactive. Keeps every animation on the native
-// driver and paused when the screen is unfocused.
-function useLoop(
-  builder: (v: Animated.Value) => Animated.CompositeAnimation,
-  active: boolean,
-) {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (!active) return;
-    const anim = builder(v);
-    anim.start();
-    return () => {
-      anim.stop();
-      v.setValue(0);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
-  return v;
-}
-
-// Ease-in-out swing 0→1→0 forever.
-const pingPong = (v: Animated.Value, dur: number) =>
-  Animated.loop(
-    Animated.sequence([
-      Animated.timing(v, { toValue: 1, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(v, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ]),
-  );
-
-// A small twinkling spark dot, started after `delay`.
-function SparkDot({
-  top, left, size, delay, active,
-}: { top: number; left: number; size: number; delay: number; active: boolean }) {
-  const v = useLoop(
-    (x) => Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(x, { toValue: 1, duration: 650, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(x, { toValue: 0, duration: 650, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ]),
-    ),
-    active,
-  );
-  const opacity = v.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.9] });
-  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.3] });
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[s.spark, { top, left, width: size, height: size, borderRadius: size / 2, opacity, transform: [{ scale }] }]}
-    />
-  );
-}
-
-// Diagonal light bar sweeping across `width` every ~`period` ms.
-function Shimmer({ width, height, period, active }: { width: number; height: number; period: number; active: boolean }) {
-  const sweep = Math.max(period - 1100, 0);
-  const v = useLoop(
-    (x) => Animated.loop(
-      Animated.sequence([
-        Animated.timing(x, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.delay(sweep),
-        Animated.timing(x, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ]),
-    ),
-    active,
-  );
-  const translateX = v.interpolate({ inputRange: [0, 1], outputRange: [-width * 0.7, width * 1.2] });
-  return (
-    <Animated.View pointerEvents="none" style={[s.shimmer, { height, transform: [{ translateX }, { rotate: '20deg' }] }]}>
-      <LinearGradient
-        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-    </Animated.View>
-  );
-}
-
-const HERO_SPARKS = [
-  { top: 30, left: 36, size: 5, delay: 0 },
-  { top: 64, left: SCREEN_W - 84, size: 4, delay: 520 },
-  { top: 120, left: 52, size: 3, delay: 1100 },
-];
-
-// ── Hero "VS arena" ───────────────────────────────────────────────────────────
+// ── Hero "VS arena" (static) ──────────────────────────────────────────────────
 function VsArena({
-  liveCount, selfAvatarUri, active, onBack, onAvatarPress,
+  liveCount, selfAvatarUri, onAvatarPress,
 }: {
   liveCount: number;
   selfAvatarUri?: string | null;
-  active: boolean;
-  onBack: () => void;
   onAvatarPress?: (side: 'left' | 'right') => void;
 }) {
-  const clash = useLoop((v) => pingPong(v, 1500), active);
-  const pulse = useLoop((v) => pingPong(v, 1100), active);
-  const dot = useLoop((v) => pingPong(v, 800), active);
-
-  // Avatars clash toward the centre, in opposite phases, with a small rotate.
-  const leftClash = {
-    transform: [
-      { translateX: clash.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) },
-      { rotate: clash.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '4deg'] }) },
-    ],
-  };
-  const rightClash = {
-    transform: [
-      { translateX: clash.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) },
-      { rotate: clash.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-4deg'] }) },
-    ],
-  };
-  const badgePulse = { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }) }] };
-  const dotStyle = {
-    opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }),
-    transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.25] }) }],
-  };
-
   return (
     <View style={s.heroShadow}>
       <View style={s.hero}>
@@ -282,38 +171,30 @@ function VsArena({
           style={StyleSheet.absoluteFill}
         />
 
-        {HERO_SPARKS.map((sp, i) => <SparkDot key={i} {...sp} active={active} />)}
-        <Shimmer width={CONTENT_W} height={HERO_H + 48} period={3400} active={active} />
-
-        {/* Back chevron */}
-        <Pressable onPress={onBack} hitSlop={10} style={s.heroBack}>
-          <ChevronLeft size={22} color="#fff" />
-        </Pressable>
-
         {/* Live pill */}
         <View style={s.livePill}>
-          <Animated.View style={[s.liveDot, dotStyle]} />
+          <View style={s.liveDot} />
           <Text style={s.liveText}>{liveCount} live</Text>
         </View>
 
         {/* VS bubbles */}
         <View style={s.arenaRow}>
           <Pressable onPress={() => onAvatarPress?.('left')}>
-            <Animated.View style={[s.bubble, leftClash]}>
+            <View style={s.bubble}>
               {selfAvatarUri
                 ? <Image source={{ uri: selfAvatarUri }} style={s.bubbleImg} />
                 : <CircleUserRound size={30} color="rgba(255,255,255,0.85)" strokeWidth={1.5} />}
-            </Animated.View>
+            </View>
           </Pressable>
 
-          <Animated.View style={[s.vsBadge, badgePulse]}>
+          <View style={s.vsBadge}>
             <Text style={s.vsText}>VS</Text>
-          </Animated.View>
+          </View>
 
           <Pressable onPress={() => onAvatarPress?.('right')}>
-            <Animated.View style={[s.bubble, rightClash]}>
+            <View style={s.bubble}>
               <CircleUserRound size={30} color="rgba(255,255,255,0.85)" strokeWidth={1.5} />
-            </Animated.View>
+            </View>
           </Pressable>
         </View>
 
@@ -343,6 +224,7 @@ export function ChallengeLobbyScreen({
   const { profile } = useUser();
   const { supabaseUserId } = useAuth();
   const [lobbyVisible, setLobbyVisible] = useState(false);
+  const [howOpen, setHowOpen] = useState(false);
 
   // Live count comes from the lobby's presence channel; `liveCount` can override.
   // Pause the read-only observer while the modal is open: it shares the
@@ -353,6 +235,41 @@ export function ChallengeLobbyScreen({
   const displayedLiveCount = liveCount ?? presenceCount;
 
   const heroAvatar = selfAvatarUri ?? profile?.profileImageUrl ?? null;
+
+  // ── Swipe-down-to-dismiss ──
+  // Drag the screen down to close it (replaces the back button). Only engages
+  // when the scroll view is at the top and the gesture is a downward drag, so
+  // normal vertical scrolling is untouched.
+  const dragY = useRef(new Animated.Value(0)).current;
+  const scrollTopRef = useRef(0);
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        scrollTopRef.current <= 0 && g.dy > 8 && g.dy > Math.abs(g.dx) * 1.5,
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) dragY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 130 || g.vy > 0.85) {
+          Animated.timing(dragY, {
+            toValue: SCREEN_H,
+            duration: 220,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+          }).start(() => navigation.goBack());
+        } else {
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 4,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+      },
+    }),
+  ).current;
 
   // ── Real challenge history from the database ──
   // Skipped entirely when an explicit `history` prop is supplied (e.g. tests).
@@ -390,18 +307,24 @@ export function ChallengeLobbyScreen({
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <Animated.ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-      >
-        <VsArena
-          liveCount={displayedLiveCount}
-          selfAvatarUri={heroAvatar}
-          active={isFocused}
-          onBack={() => navigation.goBack()}
-          onAvatarPress={onAvatarPress}
-        />
+    <Animated.View
+      style={[s.dragWrap, { transform: [{ translateY: dragY }] }]}
+      {...pan.panHandlers}
+    >
+      <SafeAreaView style={s.safe} edges={['top']}>
+        {/* Grab handle — drag down to close */}
+        <View style={s.handle} />
+        <Animated.ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollTopRef.current = e.nativeEvent.contentOffset.y; }}
+        >
+          <VsArena
+            liveCount={displayedLiveCount}
+            selfAvatarUri={heroAvatar}
+            onAvatarPress={onAvatarPress}
+          />
 
         {/* Enter Lobby CTA */}
         <Pressable
@@ -415,26 +338,38 @@ export function ChallengeLobbyScreen({
               end={{ x: 0.9, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <Shimmer width={CONTENT_W} height={64} period={3400} active={isFocused} />
             <Text style={s.ctaText}>⚔️  Enter Lobby</Text>
           </View>
         </Pressable>
 
-        {/* How it works */}
-        <Text style={s.sectionTitle}>How it works</Text>
-        <View style={s.howCard}>
-          {steps.map((step, i) => (
-            <View key={step.n} style={[s.howRow, i > 0 && s.howRowDivider]}>
-              <View style={s.howNum}>
-                <Text style={s.howNumText}>{step.n}</Text>
+        {/* How it works — collapsible */}
+        <Pressable
+          style={s.howHeader}
+          onPress={() => setHowOpen((o) => !o)}
+          hitSlop={6}
+        >
+          <Text style={s.howHeaderText}>How it works</Text>
+          <ChevronDown
+            size={18}
+            color={MUTED}
+            style={howOpen ? { transform: [{ rotate: '180deg' }] } : undefined}
+          />
+        </Pressable>
+        {howOpen && (
+          <View style={s.howCard}>
+            {steps.map((step, i) => (
+              <View key={step.n} style={[s.howRow, i > 0 && s.howRowDivider]}>
+                <View style={s.howNum}>
+                  <Text style={s.howNumText}>{step.n}</Text>
+                </View>
+                <Text style={s.howText}>
+                  <Text style={s.howLabel}>{step.label}</Text>
+                  <Text style={s.howTail}> — {step.tail}</Text>
+                </Text>
               </View>
-              <Text style={s.howText}>
-                <Text style={s.howLabel}>{step.label}</Text>
-                <Text style={s.howTail}> — {step.tail}</Text>
-              </Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* Challenge History */}
         <View style={s.historyHead}>
@@ -511,12 +446,23 @@ export function ChallengeLobbyScreen({
           navigation.navigate('ChallengeVideoRoom', params);
         }}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </Animated.View>
   );
 }
 
 const s = StyleSheet.create({
+  dragWrap: { flex: 1, backgroundColor: BG },
   safe: { flex: 1, backgroundColor: BG },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: BORDER,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   scroll: { paddingHorizontal: SCREEN_PAD, paddingTop: 8, paddingBottom: 40 },
 
   // ── Hero ──
@@ -533,18 +479,6 @@ const s = StyleSheet.create({
     borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: '#7A2604',
-  },
-  heroBack: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    zIndex: 3,
   },
   livePill: {
     position: 'absolute',
@@ -600,9 +534,6 @@ const s = StyleSheet.create({
   heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800' },
   heroSub: { color: 'rgba(255,255,255,0.9)', fontSize: 12.5, fontWeight: '500', marginTop: 4 },
 
-  spark: { position: 'absolute', backgroundColor: '#fff', zIndex: 1 },
-  shimmer: { position: 'absolute', top: -24, left: 0, width: 56 },
-
   // ── CTA ──
   ctaShadow: {
     marginTop: 14,
@@ -626,7 +557,15 @@ const s = StyleSheet.create({
   // ── Sections ──
   sectionTitle: { color: TEXT, fontSize: 18, fontWeight: '800', marginTop: 26, marginBottom: 12 },
 
-  // ── How it works ──
+  // ── How it works (collapsible) ──
+  howHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 22,
+    marginBottom: 10,
+  },
+  howHeaderText: { color: MUTED, fontSize: 13, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase' },
   howCard: {
     backgroundColor: CARD,
     borderRadius: 16,

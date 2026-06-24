@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,18 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
-  Animated,
-  Easing,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Rss, Users, ChevronRight, MessageCircle, Flame } from 'lucide-react-native';
-import Svg, { Defs, Stop, RadialGradient, Rect } from 'react-native-svg';
-import { TierAvatar } from '../components/profile/TierAvatar';
+import { ArrowLeft, Rss, Users, ChevronRight, MessageCircle } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { ChatHub } from '../components/social/ChatHub';
+import { SocialActivity } from '../components/social/SocialActivity';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
-import { useFriend } from '../providers/FriendContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { ChatService } from '../services/chat.service';
 import { ChatConversation } from '../models/Chat';
@@ -41,147 +37,33 @@ import type { Club } from './ClubsScreen';
 const ORANGE = '#4C4E78';
 const TEXT_SECONDARY = '#7A7C90';
 
-// ── Gamified "Social" action cards ────────────────────────────────────────────
-// Two side-by-side cards above the friends list. Animated with core Animated
-// (reanimated isn't installed in this project); transforms/opacity run on the
-// native driver. expo-linear-gradient paints the fills, react-native-svg the
-// radial highlight behind the avatars.
+// ── "Social" action cards ─────────────────────────────────────────────────────
+// Two side-by-side static cards above the activity feed. expo-linear-gradient
+// paints the fills; no motion or glow effects.
 const { width: SCREEN_W } = Dimensions.get('window');
 const SECTION_PAD = 16;
 const CARD_GAP = 12;
-const CARD_W = (SCREEN_W - SECTION_PAD * 2 - CARD_GAP) / 2;
 const CARD_H = 168;
 
 // ~155° diagonal expressed as expo-linear-gradient start/end points.
 const GRAD_START = { x: 0.29, y: 0.05 };
 const GRAD_END = { x: 0.71, y: 0.95 };
 
-// Looping-animation helper: returns a driver Value and wires up / tears down the
-// loop produced by `builder`.
-function useLoop(builder: (v: Animated.Value) => Animated.CompositeAnimation, deps: any[] = []) {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const anim = builder(v);
-    anim.start();
-    return () => anim.stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return v;
-}
-
-// An ease-in-out value that swings 0→1→0 forever on the native driver.
-const pingPong = (v: Animated.Value, dur: number) =>
-  Animated.loop(
-    Animated.sequence([
-      Animated.timing(v, { toValue: 1, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(v, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ]),
-  );
-
-// Soft radial highlight behind the avatar bubbles. `id` keeps the gradient def
-// unique per card.
-function GlowBehindAvatars({ id }: { id: string }) {
-  return (
-    <Svg width={CARD_W} height={120} style={styles.glow} pointerEvents="none">
-      <Defs>
-        <RadialGradient id={id} cx="50%" cy="38%" r="55%">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.3" />
-          <Stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-        </RadialGradient>
-      </Defs>
-      <Rect x="0" y="0" width={CARD_W} height="120" fill={`url(#${id})`} />
-    </Svg>
-  );
-}
-
-// A small twinkling dot.
-function SparkDot({ top, left, size, delay }: { top: number; left: number; size: number; delay: number }) {
-  const v = useLoop(
-    (x) => Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(x, { toValue: 1, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(x, { toValue: 0, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ]),
-    ),
-    [delay],
-  );
-  const opacity = v.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.9] });
-  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.25] });
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.spark, { top, left, width: size, height: size, borderRadius: size / 2, opacity, transform: [{ scale }] }]}
-    />
-  );
-}
-
-// Diagonal light bar sweeping across the card every ~3.2s.
-function Shimmer() {
-  const v = useLoop(
-    (x) => Animated.loop(
-      Animated.sequence([
-        Animated.timing(x, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.delay(2100),
-        Animated.timing(x, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ]),
-    ),
-    [],
-  );
-  const translateX = v.interpolate({ inputRange: [0, 1], outputRange: [-CARD_W * 0.7, CARD_W * 1.2] });
-  return (
-    <Animated.View pointerEvents="none" style={[styles.shimmer, { transform: [{ translateX }, { rotate: '20deg' }] }]}>
-      <LinearGradient
-        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-    </Animated.View>
-  );
-}
-
-const SPARKS = [
-  { top: 16, left: 16, size: 5, delay: 0 },
-  { top: 44, left: CARD_W - 26, size: 4, delay: 500 },
-  { top: 70, left: 24, size: 3, delay: 1100 },
-];
-
-// Left card — "Challenge Lobby". Orange gradient, clashing avatars + pulsing VS.
+// Left card — "Challenge Lobby". Static orange gradient, avatars + VS badge.
 function ChallengeCard({ onPress, avatarUri }: { onPress?: () => void; avatarUri?: string | null }) {
-  const clash = useLoop((v) => pingPong(v, 1500), []);
-  const pulse = useLoop((v) => pingPong(v, 1100), []);
-
-  const leftClash = {
-    transform: [
-      { translateX: clash.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) },
-      { rotate: clash.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '3deg'] }) },
-    ],
-  };
-  const rightClash = {
-    transform: [
-      { translateX: clash.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
-      { rotate: clash.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-3deg'] }) },
-    ],
-  };
-  const badgePulse = { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }) }] };
-
   return (
     <View style={[styles.cardShadow, styles.cardShadowOrange]}>
       <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
         <LinearGradient colors={['#F25912', '#C7400A', '#8F2D05']} start={GRAD_START} end={GRAD_END} style={StyleSheet.absoluteFill} />
-        <GlowBehindAvatars id="glowOrange" />
-        {SPARKS.map((s, i) => <SparkDot key={i} {...s} />)}
-        <Shimmer />
 
         <View style={styles.avatarRow}>
-          <Animated.View style={[styles.avatarBubble, leftClash]}>
+          <View style={styles.avatarBubble}>
             {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImg} /> : null}
-          </Animated.View>
-          <Animated.View style={[styles.badge, badgePulse]}>
+          </View>
+          <View style={styles.badge}>
             <Text style={styles.vsText}>VS</Text>
-          </Animated.View>
-          <Animated.View style={[styles.avatarBubble, rightClash]} />
+          </View>
+          <View style={styles.avatarBubble} />
         </View>
 
         <View style={styles.labelBlock}>
@@ -196,34 +78,21 @@ function ChallengeCard({ onPress, avatarUri }: { onPress?: () => void; avatarUri
   );
 }
 
-// Right card — "Workout with Friend". Indigo gradient, bobbing avatars + 🤝 twinkle.
+// Right card — "Workout with Friend". Static indigo gradient, avatars + 🤝 badge.
 function FriendCard({ onPress, avatarUri }: { onPress?: () => void; avatarUri?: string | null }) {
-  const bob = useLoop((v) => pingPong(v, 1600), []);
-  const twinkle = useLoop((v) => pingPong(v, 900), []);
-
-  const leftBob = { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [-4, 4] }) }] };
-  const rightBob = { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [4, -4] }) }] };
-  const badgeTwinkle = {
-    opacity: twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }),
-    transform: [{ scale: twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.12] }) }],
-  };
-
   return (
     <View style={[styles.cardShadow, styles.cardShadowIndigo]}>
       <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
         <LinearGradient colors={['#5A5C8E', '#3D3F66', '#2A2B47']} start={GRAD_START} end={GRAD_END} style={StyleSheet.absoluteFill} />
-        <GlowBehindAvatars id="glowIndigo" />
-        {SPARKS.map((s, i) => <SparkDot key={i} {...s} />)}
-        <Shimmer />
 
         <View style={styles.avatarRow}>
-          <Animated.View style={[styles.avatarBubble, leftBob]}>
+          <View style={styles.avatarBubble}>
             {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImg} /> : null}
-          </Animated.View>
-          <Animated.View style={[styles.badge, badgeTwinkle]}>
+          </View>
+          <View style={styles.badge}>
             <Text style={styles.handEmoji}>🤝</Text>
-          </Animated.View>
-          <Animated.View style={[styles.avatarBubble, rightBob]} />
+          </View>
+          <View style={styles.avatarBubble} />
         </View>
 
         <View style={styles.labelBlock}>
@@ -244,7 +113,6 @@ export function FeedScreen() {
   const navigation = useNavigation<any>();
   const tabBar = useTabBarVisibility();
   const { supabaseUserId, user } = useAuth();
-  const { friends } = useFriend();
   const [activeTab, setActiveTab] = useState<SocialTab>('feed');
 
   // Reveal the bottom bar when switching social sub-tabs (friends/chat don't drive
@@ -385,53 +253,9 @@ export function FeedScreen() {
         <FriendCard onPress={() => navigation.navigate('WorkoutWithFriendScreen')} avatarUri={user?.profileImageUrl} />
       </View>
 
-      {/* Your Friends — full list, shown right after the action cards */}
-      <View style={styles.friendsSection}>
-        <Text style={styles.friendsSectionTitle}>
-          Your Friends
-          {friends.length > 0 ? <Text style={styles.friendsCount}>  ·  {friends.length}</Text> : null}
-        </Text>
-        {friends.length === 0 ? (
-          <View style={styles.friendsEmpty}>
-            <Text style={styles.friendsEmptyText}>No friends yet — add some to work out together.</Text>
-          </View>
-        ) : (
-          friends.map(f => (
-            <View key={f.uid} style={styles.friendRow}>
-              <TouchableOpacity
-                style={styles.friendRowLeft}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('SocialProfileScreen', { uid: f.uid })}
-              >
-                <TierAvatar uri={f.profileImageUrl} size={44} uid={f.uid} name={f.fullName} radius={11} disableProfileLink />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.friendName} numberOfLines={1}>@{f.username}</Text>
-                  <View style={styles.friendMetaRow}>
-                    <Text style={styles.friendSub} numberOfLines={1}>{f.fullName || f.username}</Text>
-                    {(f.currentStreak ?? 0) > 0 && (
-                      <View style={styles.friendStreak}>
-                        <Flame size={11} color={ORANGE} />
-                        <Text style={styles.friendStreakText}>{f.currentStreak}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.friendMsgBtn}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('ChatRoom', {
-                  friendUid: f.uid,
-                  friendName: f.fullName || f.username,
-                  friendAvatar: f.profileImageUrl,
-                })}
-              >
-                <MessageCircle size={18} color={ORANGE} />
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-      </View>
+      {/* Unified activity feed (friend requests, challenges, workouts, messages)
+          — replaces the old "Your Friends" list. Customizable via its gear. */}
+      <SocialActivity />
     </View>
   );
 
@@ -715,10 +539,6 @@ const styles = StyleSheet.create({
   },
   cardPressed: { opacity: 0.9 },
 
-  glow: { position: 'absolute', top: 4, left: 0 },
-  shimmer: { position: 'absolute', top: -24, left: 0, width: 56, height: CARD_H + 48 },
-  spark: { position: 'absolute', backgroundColor: '#fff' },
-
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -756,34 +576,6 @@ const styles = StyleSheet.create({
   labelEmoji: { fontSize: 14 },
   cardTitle: { color: '#fff', fontSize: 14, fontWeight: '800' },
   cardSub: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '500', marginTop: 2 },
-
-  // Your Friends list (shown on the Feed after the action cards)
-  friendsSection: { marginHorizontal: 16, marginTop: 18, gap: 10 },
-  friendsSectionTitle: { color: '#211832', fontSize: 16, fontWeight: '800' },
-  friendsCount: { color: '#7A7C90', fontSize: 14, fontWeight: '700' },
-  friendsEmpty: { paddingVertical: 16, alignItems: 'center' },
-  friendsEmptyText: { color: '#7A7C90', fontSize: 13 },
-  friendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F8FC',
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(33,24,50,0.06)',
-  },
-  friendRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
-  friendName: { color: '#211832', fontSize: 14, fontWeight: '700' },
-  friendMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
-  friendSub: { color: '#7A7C90', fontSize: 12 },
-  friendStreak: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  friendStreakText: { color: ORANGE, fontSize: 11, fontWeight: '700' },
-  friendMsgBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(76,78,120,0.1)',
-    borderWidth: 1, borderColor: 'rgba(76,78,120,0.2)',
-  },
 
   feedStatus: {
     alignItems: 'center',

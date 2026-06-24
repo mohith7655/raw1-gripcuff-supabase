@@ -90,6 +90,12 @@ export interface User {
   totalWatchSessions?: number;
   lastVideoWatchAt?: string | null;
   lastActiveAt?: string | null;
+  /** Privacy opt-out for the activity / reply-time hint (users.show_activity_status). */
+  showActivityStatus?: boolean;
+  /** Median message reply latency in minutes (users.avg_reply_minutes). */
+  avgReplyMinutes?: number | null;
+  /** How many reply samples avg_reply_minutes is based on (users.reply_sample_count). */
+  replySampleCount?: number;
   totalLiveSessions?: number;
   // ── Access / subscription fields (from users.has_access, etc.) ──────────────
   hasAccess?: boolean;

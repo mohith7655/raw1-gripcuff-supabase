@@ -171,6 +171,32 @@ const fmtMins = (mins: number) => {
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
 };
 
+// ── Activity / responsiveness hint ──────────────────────────────────────────────
+// "Last online" comes from last_active_at (stamped on every app open). The reply
+// line comes from avg_reply_minutes (median reply latency from the messages
+// table) once there's a reliable sample.
+function fmtDuration(mins: number): string {
+  if (mins < 1) return 'under a minute';
+  if (mins < 60) return `~${Math.round(mins)}m`;
+  const h = mins / 60;
+  if (h < 24) return `~${Math.round(h)}h`;
+  return `~${Math.round(h / 24)}d`;
+}
+
+function lastSeenText(lastActiveAt?: string | null): { text: string; color: string } | null {
+  const t = lastActiveAt ? new Date(lastActiveAt).getTime() : NaN;
+  if (!Number.isFinite(t)) return null;
+  const mins = (Date.now() - t) / 60_000;
+  const GREEN = '#16a34a', AMBER = '#d4a600', GRAY = '#7A7C90';
+  if (mins < 5)  return { text: 'Active now', color: GREEN };
+  if (mins < 60) return { text: `Active ${Math.round(mins)}m ago`, color: GREEN };
+  const hrs = mins / 60;
+  if (hrs < 24)  return { text: `Active ${Math.round(hrs)}h ago`, color: GREEN };
+  const days = hrs / 24;
+  if (days < 7)  return { text: `Active ${Math.round(days)}d ago`, color: AMBER };
+  return { text: `Last online ${new Date(t).toLocaleDateString()}`, color: GRAY };
+}
+
 // ── Screen ─────────────────────────────────────────────────────────────────────
 export function SocialProfileScreen() {
   const navigation = useNavigation<any>();
@@ -365,6 +391,16 @@ export function SocialProfileScreen() {
   const lifetimeMins = Math.round(
     user?.watchedMinutes ?? (user?.workoutSeconds ? user.workoutSeconds / 60 : 0)
   );
+
+  // Activity hint — last online + reply time. Shown to viewers (not on your own
+  // non-preview profile) and respects the user's privacy opt-out.
+  const activityVisible = (!isOwn || isPreview) && user?.showActivityStatus !== false;
+  const lastSeen = activityVisible
+    ? lastSeenText(user?.lastActiveAt ?? user?.lastVideoWatchAt ?? user?.lastWorkoutDate ?? null)
+    : null;
+  const replyText = (lastSeen && user?.avgReplyMinutes != null && (user?.replySampleCount ?? 0) >= 3)
+    ? `usually replies in ${fmtDuration(user.avgReplyMinutes)}`
+    : null;
 
   // Location data
   const homeName = social?.houseName?.trim() || '';
@@ -568,6 +604,16 @@ export function SocialProfileScreen() {
               <Text style={s.timeStatLabel}>LIFETIME</Text>
             </View>
           </View>
+
+          {/* ── ACTIVITY HINT (last online · usually replies in …) ──────────── */}
+          {lastSeen && (
+            <View style={s.activityHint}>
+              <View style={[s.activityDot, { backgroundColor: lastSeen.color }]} />
+              <Text style={s.activityHintText}>
+                {lastSeen.text}{replyText ? ` · ${replyText}` : ''}
+              </Text>
+            </View>
+          )}
 
           {/* ── EDIT PROFILE (own profile only) ──────────────────────────────── */}
           {isOwn && (
@@ -1509,6 +1555,25 @@ const s = StyleSheet.create({
     height: 32,
     backgroundColor: 'rgba(33,24,50,0.14)',
   },
+
+  // Likely-to-connect hint
+  activityHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginHorizontal: 16,
+    marginTop: 2,
+    marginBottom: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: C.cardBg,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
+  activityDot: { width: 7, height: 7, borderRadius: 4 },
+  activityHintText: { color: C.text, fontSize: 12, fontWeight: '600' },
   ownActionRow: {
     flexDirection: 'row',
     gap: 10,

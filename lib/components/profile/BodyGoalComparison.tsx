@@ -1,14 +1,15 @@
 /**
- * BodyGoalComparison — home-screen "Now vs Goal" card.
+ * BodyGoalComparison — home-screen "My Body" card.
  *
- * Two side-by-side 3D bodies: the current body ("Now", sized to the current
- * girth) next to the goal body ("Goal", target muscles painted green, girth
- * reduced toward the target weight). A summary beneath spells out what the user
- * is now and what they want to achieve. Each figure has its own Edit link and
- * deep-links to its full editor (body metrics / goals).
+ * A SINGLE 3D body (sized to the current girth) that visualises everything in
+ * one place:
+ *   • Injury conditions  → a 🩹 bandage badge pinned on that body part.
+ *   • Tightness          → a ⚡ badge (distinct from injury) on that body part.
+ *   • Muscle-growth goals → a "💪 (Abs)" chip next to the target muscle, with
+ *     the muscle painted green on the figure.
  *
- * Both figures are independent WebGL models; MuscleVisualizer clones the GLB per
- * instance so they can mount together and paint different colors.
+ * A summary beneath spells out the metrics, what to "help with", and the goals.
+ * The figure and each summary block deep-link to their editors.
  */
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -28,30 +29,50 @@ const C = {
   border: 'rgba(33,24,50,0.08)',
 };
 
-const HEIGHT_MIN = 120, HEIGHT_MAX = 215, WEIGHT_FLOOR = 35;
+const HEIGHT_MIN = 120, HEIGHT_MAX = 215;
 const KG_PER_LB = 0.45359237;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const kgToLb = (kg: number) => Math.round(kg / KG_PER_LB);
 const girthFromBmi = (bmi: number) => clamp(1 + (bmi - 22) * 0.022, 0.86, 1.34);
 const bmiLabel = (bmi: number) => (bmi < 18.5 ? 'lean' : bmi < 25 ? 'normal' : bmi < 30 ? 'curvy' : 'heavy');
 
-// goal body-part key (e.g. "chest::left", "knee") → MuscleVisualizer highlight
-// group. Covers muscle-growth, stretching and injury-rehab parts.
+// goal/condition body-part key (e.g. "chest::left", "knee") → MuscleVisualizer
+// highlight group. Covers muscle-growth, stretching and injury-rehab parts.
 const AREA_TO_GROUP: Record<string, string> = {
-  // muscles / stretches
   shoulders: 'Shoulders', shoulder: 'Shoulders',
   chest: 'Chest', arms: 'Arms',
   back: 'Back', upper_back: 'Back', lower_back: 'Back',
   abs: 'Abs', glutes: 'Glutes', quads: 'Quads', calves: 'Calves',
-  // injury-rehab joints
   neck: 'Neck', elbow: 'Elbow', wrist: 'Wrist', hip: 'Hip', knee: 'Knee', ankle: 'Ankle',
 };
 const prettyKey = (k: string) =>
   k.split('::')[0].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-// "How I look now" tightness / injury markers — painted on the NOW figure.
+// Front-facing 2D positions for pinning condition icons onto the figure. `x` is
+// the horizontal offset from centre (0.5); `y` is the fraction of figure height.
+const FRONT_POS: Record<string, { x: number; y: number; both?: boolean }> = {
+  neck:       { x: 0,    y: 0.16 },
+  shoulders:  { x: 0.14, y: 0.27, both: true },
+  chest:      { x: 0.09, y: 0.35, both: true },
+  arms:       { x: 0.21, y: 0.46, both: true },
+  upper_back: { x: 0,    y: 0.37 },
+  back:       { x: 0,    y: 0.40 },
+  lower_back: { x: 0,    y: 0.47 },
+  abs:        { x: 0,    y: 0.49 },
+  elbow:      { x: 0.18, y: 0.45, both: true },
+  wrist:      { x: 0.19, y: 0.59, both: true },
+  hip:        { x: 0.10, y: 0.55, both: true },
+  glutes:     { x: 0.08, y: 0.56, both: true },
+  quads:      { x: 0.08, y: 0.66, both: true },
+  knee:       { x: 0.07, y: 0.77, both: true },
+  calves:     { x: 0.06, y: 0.86, both: true },
+  ankle:      { x: 0.06, y: 0.93, both: true },
+};
+
+// Condition icons — injury = bandage, tightness = a clearly distinct mark.
+// Colours match the summary lines.
 const COND_META: Record<string, { emoji: string; label: string; color: string }> = {
-  tightness: { emoji: '🟡', label: 'Tightness', color: '#d4a600' },
+  tightness: { emoji: '⚡', label: 'Tightness', color: '#d4a600' },
   injury:    { emoji: '🩹', label: 'Injury',    color: '#dc2626' },
 };
 function condLine(c: BodyCondition): string {
@@ -87,6 +108,8 @@ interface Props {
   onPressGoal?: () => void;
 }
 
+const FIG_H = 300;
+
 export default function BodyGoalComparison({
   gender, heightCm, weightKg, goals, conditions, onPressNow, onPressGoal,
 }: Props) {
@@ -97,76 +120,72 @@ export default function BodyGoalComparison({
   const bmi = w / (heightM * heightM);
 
   const list = goals ?? [];
+  const condList = conditions ?? [];
 
-  // "Now" figure girth (horizontal scale) from current BMI.
+  // Figure girth from current BMI.
   const nowGirth = girthFromBmi(bmi);
 
-  // Target weight after all weight-loss goals → slimmer goal figure + chip.
-  const lossKg = list.filter((g) => g.type === 'weight_loss').reduce((a, g) => a + (g.kg ?? 0), 0);
-  const goalWeight = Math.max(WEIGHT_FLOOR, w - lossKg);
-  const goalGirth = girthFromBmi(goalWeight / (heightM * heightM));
-
-  // Regions to light up green on the body — across every goal type that names a
-  // body part (muscle-growth muscles, injury-rehab / stretching areas).
-  const goalRegions = useMemo(() => {
-    const out = new Set<string>();
-    for (const g of list) {
-      const keys =
-        g.type === 'muscle_growth' ? (g.muscles ?? [])
-        : g.type === 'injury_rehab' || g.type === 'stretching' ? (g.areas ?? [])
-        : [];
-      for (const k of keys) {
-        const grp = AREA_TO_GROUP[k.split('::')[0]];
-        if (grp) out.add(grp);
-      }
-    }
-    return Array.from(out);
-  }, [JSON.stringify(list)]);
-
-  // "Now" figure: paint tightness (amber) / injury (red) parts from the body
-  // conditions, coloured by type (last condition on a shared group wins).
-  const condList = conditions ?? [];
-  const { nowRegions, nowColors } = useMemo(() => {
-    const groups: string[] = [];
+  // ── Condition icons pinned ON the model (injury / tightness) + painted groups ──
+  // Goals are NOT drawn on the figure — they live in the "You want to achieve"
+  // summary and are edited in the Goals questions screen.
+  const { condMarkers, targeted, groupColors } = useMemo(() => {
+    const markers: { id: string; xf: number; y: number; emoji: string; color: string }[] = [];
+    const regions: string[] = [];
     const colors: Record<string, string> = {};
-    for (const c of condList) {
-      const grp = AREA_TO_GROUP[c.part.split('::')[0]];
-      if (!grp) continue;
-      groups.push(grp);
-      colors[grp] = COND_META[c.type].color;
-    }
-    return { nowRegions: groups, nowColors: colors };
+    condList.forEach((c, i) => {
+      const base = c.part.split('::')[0];
+      const grp = AREA_TO_GROUP[base];
+      if (grp) { regions.push(grp); colors[grp] = COND_META[c.type].color; }
+      const meta = COND_META[c.type];
+      const p = FRONT_POS[base];
+      if (meta && p) {
+        // Pin to the requested side for bilateral parts.
+        const xf = p.both ? (c.side === 'left' ? 0.5 - p.x : 0.5 + p.x) : 0.5;
+        markers.push({ id: `${base}_${c.side ?? 'both'}_${i}`, xf, y: p.y, emoji: meta.emoji, color: meta.color });
+      }
+    });
+    return { condMarkers: markers, targeted: Array.from(new Set(regions)), groupColors: colors };
   }, [JSON.stringify(condList)]);
 
   const goalLines = list.map(goalLine);
   const condLines = condList.map(condLine);
-  const goalCaption =
-    lossKg > 0 ? `${kgToLb(goalWeight)} lb`
-    : goalRegions.length ? 'Target areas'
-    : 'Set a goal';
 
   return (
     <View style={s.card}>
       <View style={s.headerRow}>
-        <Text style={s.cardTitle}>Now vs Goal</Text>
+        <Text style={s.cardTitle}>My Body</Text>
+        <TouchableOpacity onPress={onPressNow} activeOpacity={0.7} hitSlop={HIT}>
+          <Text style={[s.summaryEdit, { color: C.orange }]}>Edit ›</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ── Two 3D bodies, Now vs Goal (goal muscles painted green) ────────── */}
-      <View style={s.figuresRow}>
-        <FigureColumn
-          label="NOW"  labelColor={C.orange} gender={modelGender}
-          girth={nowGirth} targeted={nowRegions} groupColors={nowColors}
-          caption={`${Math.round(h)} cm · ${kgToLb(w)} lb`}
-          onEdit={onPressNow}
+      {/* ── Single 3D body with condition badges + goal chips pinned on it ──── */}
+      <TouchableOpacity style={s.figStage} activeOpacity={0.9} onPress={onPressNow}>
+        <MuscleVisualizer
+          gender={modelGender}
+          view="front"
+          hideControls
+          height={FIG_H}
+          girthScale={nowGirth}
+          targetedMuscles={targeted}
+          groupColors={groupColors}
+          overlay={
+            <>
+              {/* Condition icons pinned on the body part (injury / tightness) */}
+              {condMarkers.map((m) => (
+                <View
+                  key={`c_${m.id}`}
+                  style={[s.condBadge, { left: `${m.xf * 100}%`, top: `${m.y * 100}%`, borderColor: m.color }]}
+                  pointerEvents="none"
+                >
+                  <Text style={s.condBadgeIcon}>{m.emoji}</Text>
+                </View>
+              ))}
+            </>
+          }
         />
-        <View style={s.vsCol}><Text style={s.vsText}>vs</Text></View>
-        <FigureColumn
-          label="GOAL" labelColor={C.green} gender={modelGender}
-          girth={goalGirth} targeted={goalRegions}
-          caption={goalCaption}
-          onEdit={onPressGoal}
-        />
-      </View>
+      </TouchableOpacity>
+      <Text style={s.figCaption}>{`${Math.round(h)} cm · ${kgToLb(w)} lb`}</Text>
 
       {/* ── What you are / want ───────────────────────────────────────────── */}
       <View style={s.summary}>
@@ -215,38 +234,6 @@ export default function BodyGoalComparison({
   );
 }
 
-// ── One figure column: header (label + Edit), 3D body, caption ─────────────────
-function FigureColumn({
-  label, labelColor, gender, girth, targeted, groupColors, caption, onEdit,
-}: {
-  label: string; labelColor: string; gender?: string;
-  girth: number; targeted: string[]; groupColors?: Record<string, string>;
-  caption: string; onEdit?: () => void;
-}) {
-  return (
-    <View style={s.figCol}>
-      <View style={s.figHead}>
-        <Text style={[s.figLabel, { color: labelColor }]}>{label}</Text>
-        <TouchableOpacity onPress={onEdit} activeOpacity={0.7} hitSlop={HIT}>
-          <Text style={s.summaryEdit}>Edit ›</Text>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity style={s.figStage} activeOpacity={0.9} onPress={onEdit}>
-        <MuscleVisualizer
-          gender={gender}
-          view="front"
-          hideControls
-          height={240}
-          girthScale={girth}
-          targetedMuscles={targeted}
-          groupColors={groupColors}
-        />
-      </TouchableOpacity>
-      <Text style={s.figCaption}>{caption}</Text>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
   card: {
     backgroundColor: C.cardBg,
@@ -259,18 +246,20 @@ const s = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   cardTitle: { color: C.text, fontSize: 16, fontWeight: '800' },
 
-  // Two figure columns + a "vs" divider
-  figuresRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  figCol: { flex: 1 },
-  figHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  figLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
-  figStage: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
+  figStage: { borderRadius: 14, overflow: 'hidden' },
   figCaption: { color: C.text, fontSize: 12, fontWeight: '700', textAlign: 'center', marginTop: 6 },
-  vsCol: { width: 22, alignItems: 'center', justifyContent: 'center', paddingBottom: 110 },
-  vsText: { color: C.muted, fontSize: 12, fontWeight: '800' },
+
+  // Injury / tightness icon pinned on the body part (centred on its anchor).
+  condBadge: {
+    position: 'absolute',
+    width: 24, height: 24, borderRadius: 12,
+    marginLeft: -12, marginTop: -12,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3,
+  },
+  condBadgeIcon: { fontSize: 12 },
 
   summary: {
     marginTop: 14,

@@ -72,6 +72,9 @@ const toAppUser = (row: any, uid: string): User => {
     totalWatchSessions: Number(row?.total_watch_sessions ?? 0),
     lastVideoWatchAt: row?.last_video_watch_at || null,
     lastActiveAt: row?.last_active_at || null,
+    showActivityStatus: row?.show_activity_status ?? true,
+    avgReplyMinutes: row?.avg_reply_minutes != null ? Number(row.avg_reply_minutes) : null,
+    replySampleCount: Number(row?.reply_sample_count ?? 0),
     totalLiveSessions: Number(row?.total_live_sessions ?? 0),
     // ── Access / subscription ──────────────────────────────────────────────────
     hasAccess: Boolean(row?.has_access),
