@@ -345,7 +345,11 @@ export function ChallengeLobbyScreen({
   const [lobbyVisible, setLobbyVisible] = useState(false);
 
   // Live count comes from the lobby's presence channel; `liveCount` can override.
-  const presenceCount = useLobbyLiveCount(isFocused);
+  // Pause the read-only observer while the modal is open: it shares the
+  // 'challenge-lobby' topic, and supabase.channel() reuses an existing channel
+  // by topic — so leaving it subscribed makes the modal inherit this already-
+  // subscribed channel and crash when it adds presence callbacks.
+  const presenceCount = useLobbyLiveCount(isFocused && !lobbyVisible);
   const displayedLiveCount = liveCount ?? presenceCount;
 
   const heroAvatar = selfAvatarUri ?? profile?.profileImageUrl ?? null;

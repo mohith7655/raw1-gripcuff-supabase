@@ -93,6 +93,15 @@ export function ChallengeLobbyModal({
     useEffect(() => {
         if (!visible || !supabaseUserId) return;
 
+        // supabase.channel() returns an existing channel for the same topic, and
+        // presence callbacks can't be added after a channel has subscribe()'d.
+        // Drop any stale instance (e.g. a screen's read-only count observer) so
+        // we always get a fresh channel we fully own.
+        supabase
+            .getChannels()
+            .filter((c) => c.topic === `realtime:${LOBBY_CHANNEL}`)
+            .forEach((c) => supabase.removeChannel(c));
+
         const channel = supabase.channel(LOBBY_CHANNEL, {
             config: { presence: { key: supabaseUserId } },
         });
