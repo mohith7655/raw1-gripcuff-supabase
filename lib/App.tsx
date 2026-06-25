@@ -8,6 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, Video, Dumbbell, User, Users, Calendar } from 'lucide-react-native';
 import { useNotifications } from './hooks/useNotifications';
 import * as Notifications from 'expo-notifications';
+import { SwipeBackView } from './components/SwipeBackView';
 import { WorkoutReminderModal } from './components/WorkoutReminderModal';
 import { WorkoutReminderService } from './services/workoutReminder.service';
 import { EXERCISE_SQUAT_VIDEO_URL } from './constants/videoUrls';
@@ -140,6 +141,13 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any
 }
 
 const Stack = createNativeStackNavigator();
+
+// Drag-down-to-go-back, applied to every stacked screen via the `layout` prop.
+// Full-screen video / call rooms opt out with `passthroughLayout`.
+const swipeBackLayout = ({ children }: { children: React.ReactNode }) => (
+  <SwipeBackView>{children}</SwipeBackView>
+);
+const passthroughLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 const Tab = createBottomTabNavigator();
 type PublicProfileParams = { uid?: string; username?: string; slug?: string } | null;
 
@@ -422,6 +430,7 @@ function AppStack({
       />
       {/* Modal screens for other flows */}
       <Stack.Group
+        layout={swipeBackLayout}
         screenOptions={{
           presentation: 'card',
           contentStyle: { backgroundColor: '#EEEEF2' }
@@ -437,9 +446,9 @@ function AppStack({
         <Stack.Screen name="EarnCreditsScreen" component={EarnCreditsScreen} />
         <Stack.Screen name="GripCuffTrainingScreen" component={GripCuffTrainingScreen} />
         <Stack.Screen name="GripCuffVideos" component={GripCuffVideosScreen} />
-        <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} />
+        <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} layout={passthroughLayout} />
         <Stack.Screen name="VideoDetail" component={VideoDetailScreen} />
-        <Stack.Screen name="SyncedVideoPlayer" component={SyncedVideoPlayerScreen} />
+        <Stack.Screen name="SyncedVideoPlayer" component={SyncedVideoPlayerScreen} layout={passthroughLayout} />
         <Stack.Screen name="CategoryVideos" component={CategoryVideosScreen} />
         <Stack.Screen name="MuscleGrowth" component={MuscleGrowthScreen} />
         <Stack.Screen name="Stretching" component={StretchingScreen} />
@@ -458,15 +467,17 @@ function AppStack({
         <Stack.Screen
           name="AgoraVideoRoom"
           component={AgoraVideoRoom}
+          layout={passthroughLayout}
           options={{ gestureEnabled: false }}
         />
         <Stack.Screen
           name="ChallengeVideoRoom"
           component={ChallengeVideoRoom}
+          layout={passthroughLayout}
           options={{ headerShown: false, gestureEnabled: false }}
         />
         <Stack.Screen name="ChatInbox" component={ChatInboxScreen} />
-        <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
+        <Stack.Screen name="ChatRoom" component={ChatRoomScreen} layout={passthroughLayout} options={{ presentation: 'modal' }} />
         <Stack.Screen name="ChatFriendProfile" component={ChatFriendProfileScreen} />
         <Stack.Screen name="LeaderboardScreen" component={LeaderboardScreen} />
         {/* ── Social Profile System ── */}

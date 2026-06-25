@@ -178,13 +178,16 @@ function EngagementBar({
 }: EngagementBarProps) {
     const { state } = engagement;
 
+    // Monochrome icons (no color-coded glyphs) — favorite / try / dislike all
+    // render in a neutral hue; the filled variant marks the active state.
     const buttons = [
-        { key: 'fav', label: isFavorite ? 'Favorited' : 'Favorite', icon: '❤️', active: isFavorite, onPress: onFavorite },
-        { key: 'try', label: state.tryIntent ? 'Trying' : 'Try it', icon: '🔥', active: state.tryIntent, onPress: onTryIntent },
+        { key: 'fav', label: isFavorite ? 'Favorited' : 'Favorite', icon: 'heart-outline' as const, iconActive: 'heart' as const, active: isFavorite, onPress: onFavorite },
+        { key: 'try', label: state.tryIntent ? 'Trying' : 'Try it', icon: 'flame-outline' as const, iconActive: 'flame' as const, active: state.tryIntent, onPress: onTryIntent },
         {
             key: 'dislike',
             label: totalDislikes > 0 ? formatCount(totalDislikes) : 'Skip',
-            icon: '👎',
+            icon: 'thumbs-down-outline' as const,
+            iconActive: 'thumbs-down' as const,
             active: state.disliked,
             onPress: onDislike,
         },
@@ -217,7 +220,11 @@ function EngagementBar({
                             onPress={btn.onPress}
                             activeOpacity={0.7}
                         >
-                            <Text style={engagementStyles.pillIcon}>{btn.icon}</Text>
+                            <Ionicons
+                                name={btn.active ? btn.iconActive : btn.icon}
+                                size={15}
+                                color={btn.active ? '#211832' : '#7A7C90'}
+                            />
                             {/* Label only appears once active/pressed; otherwise icon-only */}
                             {btn.active && (
                                 <Text numberOfLines={1} style={engagementStyles.pillLabel}>
@@ -259,12 +266,10 @@ const engagementStyles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(33,24,50,0.1)',
     },
+    // Active state is neutral (no orange) — a subtle grey fill + darker border.
     pillActive: {
-        backgroundColor: 'rgba(242,89,18,0.15)',
-        borderColor: '#F25912',
-    },
-    pillIcon: {
-        fontSize: 13,
+        backgroundColor: 'rgba(33,24,50,0.06)',
+        borderColor: 'rgba(33,24,50,0.25)',
     },
     pillLabel: {
         // Neutral text — labels are not color-coded for fav / try / dislike.
@@ -1549,10 +1554,11 @@ function VideoPlayerScreen({ route, navigation }: any) {
         },
     }), [engagement, interactions.liked, interactions.disliked, interactions.wantToTry]);
 
-    // Similar programs (sync — uses in-memory program data)
+    // Similar programs (sync — uses in-memory program data). Hides workouts that
+    // load a body part the user has flagged as painful / injured.
     const similarPrograms = useMemo(
-        () => getSimilarPrograms(requestedVideoId ?? videoId, 6),
-        [requestedVideoId, videoId],
+        () => getSimilarPrograms(requestedVideoId ?? videoId, 6, profile?.bodyConditions),
+        [requestedVideoId, videoId, profile?.bodyConditions],
     );
 
 

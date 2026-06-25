@@ -30,11 +30,14 @@ import {
     ConnectionGoal,
     Hobby,
     AgeGroup,
+    ChallengeExercise,
     ALL_HOBBIES,
     ALL_CONNECTION_GOALS,
     ALL_AGE_GROUPS,
+    ALL_CHALLENGE_EXERCISES,
     HOBBY_META,
     CONNECTION_GOAL_META,
+    CHALLENGE_EXERCISE_META,
     AGE_GROUP_META,
     WHAT_I_DO_PRESETS,
 } from '../models/SocialProfile';
@@ -324,6 +327,7 @@ export function EditSocialProfileScreen() {
     const [helpingBeginners, setHelpBeginners] = useState(false);
     const [openToMentor, setOpenToMentor] = useState(false);
     const [ageGroups, setAgeGroups] = useState<Set<AgeGroup>>(new Set());
+    const [challengeExercises, setChallengeExercises] = useState<Set<ChallengeExercise>>(new Set());
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
@@ -376,6 +380,7 @@ export function EditSocialProfileScreen() {
                 setHelpBeginners(sp.helpingBeginners ?? false);
                 setOpenToMentor(sp.openToMentor ?? false);
                 setAgeGroups(new Set((sp.openToTrainAgeGroups ?? []) as AgeGroup[]));
+                setChallengeExercises(new Set((sp.openToChallenge ?? []) as ChallengeExercise[]));
                 setLoaded(true);
             })
             .catch(() => {})
@@ -399,6 +404,14 @@ export function EditSocialProfileScreen() {
         setGoals(prev => {
             const next = new Set(prev);
             next.has(g) ? next.delete(g) : next.add(g);
+            return next;
+        });
+    }, []);
+
+    const toggleChallengeExercise = useCallback((ex: ChallengeExercise) => {
+        setChallengeExercises(prev => {
+            const next = new Set(prev);
+            next.has(ex) ? next.delete(ex) : next.add(ex);
             return next;
         });
     }, []);
@@ -468,6 +481,7 @@ export function EditSocialProfileScreen() {
                 helpingBeginners,
                 openToMentor,
                 openToTrainAgeGroups: [...ageGroups],
+                openToChallenge: [...challengeExercises],
                 projectsWorkingOn: projectsWorkingOn.trim() || null,
                 needHelpWith: needHelpWith.trim() || null,
             });
@@ -906,6 +920,26 @@ export function EditSocialProfileScreen() {
                                 </Card>
                             </>
                         )}
+                    </>
+                )}
+
+                {(section === 'all' || section === 'challenge') && (
+                    <>
+                        <SectionTitle text="Open to Challenge" />
+                        <Card>
+                            <Text style={s.rateHint}>Pick the exercises you're up for being challenged on. Others can send you a head-to-head on these.</Text>
+                            <View style={s.chipWrap}>
+                                {ALL_CHALLENGE_EXERCISES.map(ex => (
+                                    <ToggleChip
+                                        key={ex}
+                                        value={ex}
+                                        selected={challengeExercises.has(ex)}
+                                        onToggle={toggleChallengeExercise}
+                                        label={metaLabel(CHALLENGE_EXERCISE_META[ex])}
+                                    />
+                                ))}
+                            </View>
+                        </Card>
                     </>
                 )}
 

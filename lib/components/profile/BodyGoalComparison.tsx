@@ -71,29 +71,56 @@ const FRONT_POS: Record<string, { x: number; y: number; both?: boolean }> = {
 
 // Condition icons — injury = bandage, tightness = a clearly distinct mark.
 // Colours match the summary lines.
-const COND_META: Record<string, { emoji: string; label: string; color: string }> = {
-  tightness: { emoji: '⚡', label: 'Tightness', color: '#d4a600' },
-  injury:    { emoji: '🩹', label: 'Injury',    color: '#dc2626' },
+type Chip = { key: string; emoji: string; label: string; color: string; soft: string; num?: number };
+
+const COND_META: Record<string, { emoji: string; label: string; color: string; soft: string }> = {
+  tightness: { emoji: '⚡', label: 'Tightness', color: '#b08900', soft: 'rgba(212,166,0,0.16)' },
+  pain:      { emoji: '😣', label: 'Pain',      color: '#ea580c', soft: 'rgba(234,88,12,0.14)' },
+  injury:    { emoji: '🩹', label: 'Injury',    color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
 };
-function condLine(c: BodyCondition): string {
-  const meta = COND_META[c.type];
-  const side = c.side === 'left' ? 'Left ' : c.side === 'right' ? 'Right ' : '';
-  return `${meta.emoji} ${meta.label}: ${side}${prettyKey(c.part)}`;
+
+// One chip per condition (compact, colour-coded by type).
+function condChips(conds: BodyCondition[]): Chip[] {
+  return conds.map((c, i) => {
+    const meta = COND_META[c.type];
+    const side = c.side === 'left' ? 'Left ' : c.side === 'right' ? 'Right ' : '';
+    return { key: `${c.part}-${c.side ?? 'both'}-${i}`, emoji: meta.emoji, label: `${side}${prettyKey(c.part)}`, color: meta.color, soft: meta.soft };
+  });
 }
 
-const GOAL_META: Record<string, { emoji: string; verb: string }> = {
-  muscle_growth: { emoji: '💪', verb: 'Build' },
-  weight_loss:   { emoji: '🔥', verb: 'Lose' },
-  injury_rehab:  { emoji: '🩹', verb: 'Rehab' },
-  stretching:    { emoji: '🧘', verb: 'Stretch' },
+const GOAL_META: Record<string, { emoji: string; verb: string; color: string; soft: string }> = {
+  muscle_growth: { emoji: '💪', verb: 'Build',   color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
+  weight_loss:   { emoji: '🔥', verb: 'Lose',    color: '#F25912', soft: 'rgba(242,89,18,0.12)' },
+  injury_rehab:  { emoji: '🩹', verb: 'Rehab',   color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
+  stretching:    { emoji: '🧘', verb: 'Stretch', color: '#4C4E78', soft: 'rgba(76,78,120,0.12)' },
 };
 
-function goalLine(g: GoalEntry): string {
-  const meta = GOAL_META[g.type];
-  if (g.type === 'weight_loss') return `${meta.emoji} Lose ${Math.round(g.kg ?? 0)} kg`;
-  const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
-  const labels = Array.from(new Set(keys.map(prettyKey))).join(', ');
-  return `${meta.emoji} ${meta.verb}${labels ? `: ${labels}` : ''}`;
+// Short type label pinned next to a goal marker on the figure.
+const GOAL_TYPE_LABEL: Record<string, string> = {
+  muscle_growth: 'Muscle Growth',
+  weight_loss:   'Weight Loss',
+  injury_rehab:  'Rehab',
+  stretching:    'Stretching',
+};
+
+// Flatten goals into one chip per target area (weight-loss stays a single chip);
+// the emoji conveys the goal type so chips pack tightly across the row.
+function goalChips(goals: GoalEntry[]): Chip[] {
+  const out: Chip[] = [];
+  goals.forEach((g, gi) => {
+    const meta = GOAL_META[g.type];
+    if (!meta) return;
+    const num = gi + 1; // one number per goal, shared by its areas + the figure pin
+    if (g.type === 'weight_loss') {
+      out.push({ key: `wl-${gi}`, num, emoji: meta.emoji, label: `Lose ${Math.round(g.kg ?? 0)} kg`, color: meta.color, soft: meta.soft });
+      return;
+    }
+    const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
+    Array.from(new Set(keys.map(prettyKey))).forEach((label, ai) => {
+      out.push({ key: `${g.type}-${gi}-${ai}`, num, emoji: meta.emoji, label, color: meta.color, soft: meta.soft });
+    });
+  });
+  return out;
 }
 
 interface Props {
@@ -125,13 +152,16 @@ export default function BodyGoalComparison({
   // Figure girth from current BMI.
   const nowGirth = girthFromBmi(bmi);
 
-  // ── Condition icons pinned ON the model (injury / tightness) + painted groups ──
-  // Goals are NOT drawn on the figure — they live in the "You want to achieve"
-  // summary and are edited in the Goals questions screen.
-  const { condMarkers, targeted, groupColors } = useMemo(() => {
+  // ── Icons pinned ON the model + painted groups ───────────────────────────────
+  // Conditions (injury / tightness) get an emoji badge; goals ("you want to
+  // achieve") get a numbered badge + a short type label (e.g. "1 Muscle Growth").
+  const { condMarkers, goalMarkers, targeted, groupColors } = useMemo(() => {
     const markers: { id: string; xf: number; y: number; emoji: string; color: string }[] = [];
+    const gMarkers: { id: string; xf: number; y: number; num: number; typeLabel: string; color: string; showLabel: boolean }[] = [];
     const regions: string[] = [];
     const colors: Record<string, string> = {};
+
+    // Conditions first — they take colour priority on any shared body group.
     condList.forEach((c, i) => {
       const base = c.part.split('::')[0];
       const grp = AREA_TO_GROUP[base];
@@ -144,11 +174,33 @@ export default function BodyGoalComparison({
         markers.push({ id: `${base}_${c.side ?? 'both'}_${i}`, xf, y: p.y, emoji: meta.emoji, color: meta.color });
       }
     });
-    return { condMarkers: markers, targeted: Array.from(new Set(regions)), groupColors: colors };
-  }, [JSON.stringify(condList)]);
 
-  const goalLines = list.map(goalLine);
-  const condLines = condList.map(condLine);
+    // Goals — each goal owns ONE number (its position in the list, matching the
+    // chip legend below), shared by all of that goal's body-part pins. The type
+    // text is shown once per goal to keep the figure uncluttered.
+    list.forEach((g, gi) => {
+      const meta = GOAL_META[g.type];
+      if (!meta || g.type === 'weight_loss') return; // weight-loss has no body part
+      const num = gi + 1;
+      const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
+      const bases = Array.from(new Set(keys.map((k) => k.split('::')[0])));
+      let first = true;
+      bases.forEach((base) => {
+        const p = FRONT_POS[base];
+        if (!p) return;
+        const xf = p.both ? 0.5 + p.x : 0.5;
+        gMarkers.push({ id: `g_${gi}_${base}`, xf, y: p.y, num, typeLabel: GOAL_TYPE_LABEL[g.type] ?? meta.verb, color: meta.color, showLabel: first });
+        first = false;
+        const grp = AREA_TO_GROUP[base];
+        if (grp && !colors[grp]) { regions.push(grp); colors[grp] = meta.color; }
+      });
+    });
+
+    return { condMarkers: markers, goalMarkers: gMarkers, targeted: Array.from(new Set(regions)), groupColors: colors };
+  }, [JSON.stringify(condList), JSON.stringify(list)]);
+
+  const goalItems = goalChips(list);
+  const condItems = condChips(condList);
 
   return (
     <View style={s.card}>
@@ -181,52 +233,75 @@ export default function BodyGoalComparison({
                   <Text style={s.condBadgeIcon}>{m.emoji}</Text>
                 </View>
               ))}
+
+              {/* Goal markers — numbered badge + type label ("1 Muscle Growth") */}
+              {goalMarkers.map((g) => (
+                <View
+                  key={g.id}
+                  style={[s.goalPin, { left: `${g.xf * 100}%`, top: `${g.y * 100}%` }]}
+                  pointerEvents="none"
+                >
+                  <View style={[s.goalNum, { backgroundColor: g.color }]}>
+                    <Text style={s.goalNumText}>{g.num}</Text>
+                  </View>
+                  {g.showLabel && (
+                    <Text style={[s.goalPinLabel, { color: g.color }]} numberOfLines={1}>{g.typeLabel}</Text>
+                  )}
+                </View>
+              ))}
             </>
           }
         />
       </TouchableOpacity>
       <Text style={s.figCaption}>{`${Math.round(h)} cm · ${kgToLb(w)} lb`}</Text>
 
-      {/* ── What you are / want ───────────────────────────────────────────── */}
+      {/* ── What you are / want — packed chip rows, minimal whitespace ─────── */}
       <View style={s.summary}>
-        <View style={s.summaryBlock}>
+        <View style={s.summaryHead}>
           <Text style={s.summaryLabel}>YOU ARE NOW</Text>
-          <Text style={s.summaryText}>
-            {`📏 ${Math.round(h)} cm   ·   ⚖️ ${kgToLb(w)} lb   ·   📊 BMI ${bmi.toFixed(1)} (${bmiLabel(bmi)})`}
-          </Text>
+        </View>
+        <View style={s.chipRow}>
+          <View style={s.metricChip}><Text style={s.metricChipText}>📏 {Math.round(h)} cm</Text></View>
+          <View style={s.metricChip}><Text style={s.metricChipText}>⚖️ {kgToLb(w)} lb</Text></View>
+          <View style={s.metricChip}><Text style={s.metricChipText}>📊 BMI {bmi.toFixed(1)} · {bmiLabel(bmi)}</Text></View>
         </View>
 
-        {condLines.length > 0 && (
-          <TouchableOpacity
-            style={[s.summaryBlock, { marginTop: 12 }]}
-            activeOpacity={0.7}
-            onPress={onPressNow}
-          >
+        {condItems.length > 0 && (
+          <TouchableOpacity style={s.summaryBlock} activeOpacity={0.7} onPress={onPressNow}>
             <View style={s.summaryHead}>
               <Text style={s.summaryLabel}>HELP WITH</Text>
               <Text style={[s.summaryEdit, { color: C.orange }]}>Edit ›</Text>
             </View>
-            {condLines.map((line, i) => (
-              <Text key={i} style={s.summaryText}>{line}</Text>
-            ))}
+            <View style={s.chipRow}>
+              {condItems.map((c) => (
+                <View key={c.key} style={[s.chip, { borderColor: c.color, backgroundColor: c.soft }]}>
+                  <Text style={s.chipText}>{c.emoji} {c.label}</Text>
+                </View>
+              ))}
+            </View>
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          style={[s.summaryBlock, { marginTop: 12 }]}
-          activeOpacity={0.7}
-          onPress={onPressGoal}
-        >
+        <TouchableOpacity style={s.summaryBlock} activeOpacity={0.7} onPress={onPressGoal}>
           <View style={s.summaryHead}>
             <Text style={s.summaryLabel}>YOU WANT TO ACHIEVE</Text>
             <Text style={s.summaryEdit}>Edit ›</Text>
           </View>
-          {goalLines.length === 0 ? (
+          {goalItems.length === 0 ? (
             <Text style={[s.summaryText, { color: C.muted }]}>Tap to set what you want to achieve</Text>
           ) : (
-            goalLines.map((line, i) => (
-              <Text key={i} style={s.summaryText}>{line}</Text>
-            ))
+            <View style={s.chipRow}>
+              {goalItems.map((g) => (
+                <View key={g.key} style={[s.chip, { borderColor: g.color, backgroundColor: g.soft }]}>
+                  {g.num != null && (
+                    <View style={[s.chipNumDot, { backgroundColor: g.color }]}>
+                      <Text style={s.chipNumText}>{g.num}</Text>
+                    </View>
+                  )}
+                  <Text style={s.chipText}>{g.emoji} {g.label}</Text>
+                </View>
+              ))}
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -261,15 +336,51 @@ const s = StyleSheet.create({
   },
   condBadgeIcon: { fontSize: 12 },
 
+  // Goal marker pinned on the body part: numbered dot + short type label.
+  goalPin: {
+    position: 'absolute',
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginLeft: -10, marginTop: -10,
+  },
+  goalNum: {
+    width: 20, height: 20, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fff',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3,
+  },
+  goalNumText: { color: '#fff', fontSize: 11, fontWeight: '900' },
+  goalPinLabel: {
+    fontSize: 11, fontWeight: '900',
+    textShadowColor: 'rgba(255,255,255,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
+  },
+
   summary: {
-    marginTop: 14,
+    marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: C.border,
-    paddingTop: 12,
+    paddingTop: 10,
   },
-  summaryBlock: { gap: 4 },
-  summaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  summaryBlock: { marginTop: 10 },
+  summaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   summaryLabel: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
   summaryEdit: { color: C.green, fontSize: 12, fontWeight: '700' },
   summaryText: { color: C.text, fontSize: 13, fontWeight: '600', lineHeight: 19 },
+
+  // Packed, wrapping chip rows (replaces stacked single-item lines)
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingVertical: 4, paddingHorizontal: 9,
+    borderRadius: 100, borderWidth: 1,
+  },
+  chipText: { color: C.text, fontSize: 12.5, fontWeight: '700' },
+  chipNumDot: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  chipNumText: { color: '#fff', fontSize: 9.5, fontWeight: '900' },
+  metricChip: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 4, paddingHorizontal: 9,
+    borderRadius: 100, borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
+    backgroundColor: C.canvas,
+  },
+  metricChipText: { color: C.text, fontSize: 12.5, fontWeight: '700' },
 });

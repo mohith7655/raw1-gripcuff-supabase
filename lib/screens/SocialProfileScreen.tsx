@@ -39,6 +39,7 @@ import {
   Flame,
   MapPin,
   MessageCircle,
+  Swords,
   Trophy,
   UserCheck,
   UserPlus,
@@ -54,9 +55,10 @@ import { FriendService } from '../services/friend.service';
 import { BADGE_FAMILIES, TIER_COLORS } from '../services/badge.types';
 import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 import { User } from '../models/User';
-import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META } from '../models/SocialProfile';
+import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, CHALLENGE_EXERCISE_META } from '../models/SocialProfile';
 import { RelationshipStatus } from '../models/Friend';
 import { ProfileCard } from '../components/profile/ProfileCard';
+import { ActivityMap } from '../components/profile/ActivityMap';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -606,6 +608,33 @@ export function SocialProfileScreen() {
 
           </View>
 
+          {/* ── OPEN TO CHALLENGE — directly above the time stats ────────────── */}
+          {(isOwn || (showSection('openToChallenge') && (social?.openToChallenge?.length ?? 0) > 0)) && (
+            <TouchableOpacity
+              style={s.challengeStripe}
+              activeOpacity={isOwn ? 0.7 : 1}
+              disabled={!isOwn}
+              onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'challenge' })}
+            >
+              <Swords size={14} color={C.orange} strokeWidth={2.2} />
+              <Text style={s.challengeLabel}>Open to Challenge</Text>
+              {(social?.openToChallenge?.length ?? 0) > 0 ? (
+                <View style={s.challengeChips}>
+                  {social!.openToChallenge!.map((ex, idx) => {
+                    const meta = CHALLENGE_EXERCISE_META[ex];
+                    return (
+                      <View key={`${ex}-${idx}`} style={s.challengeChip}>
+                        <Text style={s.challengeChipText}>{meta ? `${meta.emoji} ${meta.label}` : ex}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text style={s.challengePrompt}>— add exercises</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
           {/* ── STANDALONE TIME STATS ────────────────────────────────────────── */}
           <View style={s.timeStatsRow}>
             <View style={s.timeStatItem}>
@@ -627,6 +656,14 @@ export function SocialProfileScreen() {
                 {lastSeen.text}{replyText ? ` · ${replyText}` : ''}
               </Text>
             </View>
+          )}
+
+          {/* ── ACTIVITY MAP — GitHub-style heatmap of workouts / co-workouts /
+                challenges, with days since last workout ───────────────────── */}
+          {!!uid && (
+            <ProfileCard>
+              <ActivityMap uid={uid} lastWorkoutDate={streakData?.lastWorkoutDate} />
+            </ProfileCard>
           )}
 
           {/* ── EDIT PROFILE (own profile only) ──────────────────────────────── */}
@@ -1548,6 +1585,44 @@ const s = StyleSheet.create({
   },
 
   // Standalone time stats row (below hero, above cards)
+  challengeStripe: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  challengeLabel: {
+    color: C.text,
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  challengeChips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  challengeChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(242,89,18,0.28)',
+    backgroundColor: 'rgba(242,89,18,0.10)',
+  },
+  challengeChipText: {
+    color: C.orange,
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  challengePrompt: {
+    color: C.muted,
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
   timeStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',

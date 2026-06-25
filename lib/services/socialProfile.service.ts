@@ -61,6 +61,7 @@ const fromRow = (row: any): SocialProfile => ({
     aiSummary: row.ai_summary ?? null,
     projectsWorkingOn: row.projects_working_on ?? null,
     needHelpWith: row.need_help_with ?? null,
+    openToChallenge: Array.isArray(row.open_to_challenge_exercises) ? row.open_to_challenge_exercises : [],
     sectionVisibility: (row.section_visibility && typeof row.section_visibility === 'object' && !Array.isArray(row.section_visibility))
         ? row.section_visibility
         : {},
@@ -105,6 +106,7 @@ const ALL_COLS = [
     'hobby_ranks',
     'projects_working_on',
     'need_help_with',
+    'open_to_challenge_exercises',
 ].join(', ');
 
 export class SocialProfileService {
@@ -234,6 +236,7 @@ export class SocialProfileService {
         if (patch.hobbyRanks !== undefined)             payload.hobby_ranks = patch.hobbyRanks;
         if (patch.projectsWorkingOn !== undefined)      payload.projects_working_on = patch.projectsWorkingOn;
         if (patch.needHelpWith !== undefined)           payload.need_help_with = patch.needHelpWith;
+        if (patch.openToChallenge !== undefined)        payload.open_to_challenge_exercises = toArray(patch.openToChallenge);
 
         if (Object.keys(payload).length === 0) return;
 

@@ -43,6 +43,7 @@ import {
   Pencil,
   QrCode,
   Settings,
+  Swords,
   Trees,
   Users,
   Check,
@@ -63,7 +64,7 @@ import { StreakService, StreakData } from '../services/streak.service';
 import { ALL_BADGES, Badge } from '../services/rewards.service';
 import { BADGE_FAMILIES, TIER_COLORS, getTierName } from '../services/badge.types';
 import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
-import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, Hobby } from '../models/SocialProfile';
+import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, CHALLENGE_EXERCISE_META, Hobby } from '../models/SocialProfile';
 import { StatPill } from '../components/profile/StatPill';
 import { HobbyCircle } from '../components/profile/HobbyCircle';
 import { ChipPill } from '../components/profile/ChipPill';
@@ -739,6 +740,33 @@ export const ProfileScreen = () => {
                     );
                   })()}
                 </View>
+                {/* Open to Challenge — compact chips, directly above the time stats */}
+                <TouchableOpacity
+                  style={s.heroChallengeRow}
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'challenge' })}
+                >
+                  <Swords size={13} color={C.orange} strokeWidth={2.2} />
+                  <Text style={s.heroChallengeLabel}>Open to Challenge</Text>
+                  {(social?.openToChallenge?.length ?? 0) > 0 ? (
+                    <View style={s.heroChallengeChips}>
+                      {social!.openToChallenge!.slice(0, 4).map((ex, idx) => {
+                        const meta = CHALLENGE_EXERCISE_META[ex];
+                        return (
+                          <View key={`${ex}-${idx}`} style={s.heroChallengeChip}>
+                            <Text style={s.heroChallengeChipText}>{meta ? `${meta.emoji} ${meta.label}` : ex}</Text>
+                          </View>
+                        );
+                      })}
+                      {social!.openToChallenge!.length > 4 && (
+                        <Text style={s.heroChallengeMore}>+{social!.openToChallenge!.length - 4}</Text>
+                      )}
+                    </View>
+                  ) : (
+                    <Text style={s.heroChallengePrompt}>— add exercises</Text>
+                  )}
+                </TouchableOpacity>
+
                 {/* Weekly · Lifetime — compact, under the name */}
                 <View style={s.heroTimeRow}>
                   <View style={s.heroTimeItem}>
@@ -1562,6 +1590,47 @@ const s = StyleSheet.create({
     color: C.muted,
     fontSize: 14,
     marginTop: 2,
+  },
+  heroChallengeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  heroChallengeLabel: {
+    color: C.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroChallengeChips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  heroChallengeChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(242,89,18,0.28)',
+    backgroundColor: 'rgba(242,89,18,0.10)',
+  },
+  heroChallengeChipText: {
+    color: C.orange,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  heroChallengeMore: {
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  heroChallengePrompt: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   heroTimeRow: {
     flexDirection: 'row',

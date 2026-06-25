@@ -14,8 +14,8 @@ export interface UserLocations {
 
 export type GoalType = 'muscle_growth' | 'weight_loss' | 'injury_rehab' | 'stretching';
 
-/** "How I look now" body annotations — tightness or an injury at a body part. */
-export type BodyConditionType = 'tightness' | 'injury';
+/** "How I look now" body annotations — tightness, pain, or an injury at a body part. */
+export type BodyConditionType = 'tightness' | 'pain' | 'injury';
 
 export interface BodyCondition {
   /** Body-part landmark key (e.g. 'knee', 'lower_back'). */

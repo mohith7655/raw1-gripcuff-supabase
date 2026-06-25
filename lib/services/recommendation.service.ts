@@ -6,6 +6,7 @@ import {
     getProgramByVideoId,
     getProgramCategoryKey,
 } from '../data/preRecordedPrograms';
+import { BodyCondition } from '../models/User';
 
 // ── Scoring weights ────────────────────────────────────────────────────────────
 const W = {
@@ -63,6 +64,80 @@ export interface RecommendationSections {
     hasData: boolean;
 }
 
+// ── Pain / injury avoidance ─────────────────────────────────────────────────
+// We never recommend exercises or workouts that load a body part the user has
+// flagged as painful or injured. Each figure body-part key maps to the muscle
+// keywords that appear in a program's `focus` + exercise `muscleGroup` strings,
+// and to the coarse exercise `bodyPart` tags used by the library videos.
+const PART_TO_MUSCLE: Record<string, string[]> = {
+    knee:       ['quad', 'hamstring', 'glute', 'leg', 'calf', 'squat', 'lunge'],
+    quads:      ['quad', 'leg', 'squat', 'lunge'],
+    calves:     ['calf', 'calves'],
+    ankle:      ['calf', 'leg'],
+    hip:        ['glute', 'hip', 'hamstring'],
+    glutes:     ['glute', 'hamstring'],
+    lower_back: ['back', 'spine', 'deadlift', 'hamstring'],
+    upper_back: ['back', 'trap', 'spine'],
+    back:       ['back', 'spine', 'trap'],
+    neck:       ['neck', 'trap'],
+    shoulders:  ['shoulder', 'delt'],
+    chest:      ['chest'],
+    abs:        ['core', 'oblique', 'abs'],
+    elbow:      ['bicep', 'tricep', 'curl'],
+    wrist:      ['forearm', 'wrist'],
+    arms:       ['bicep', 'tricep', 'forearm', 'arm'],
+};
+const PART_TO_BODYPART: Record<string, string[]> = {
+    knee: ['legs'], quads: ['legs'], calves: ['legs'], ankle: ['legs'], hip: ['legs'], glutes: ['legs'],
+    lower_back: ['back'], upper_back: ['back'], back: ['back'], neck: ['back', 'shoulders'],
+    shoulders: ['shoulders'], chest: ['chest'], abs: ['core'],
+    elbow: ['biceps', 'triceps', 'arms'], wrist: ['biceps', 'triceps', 'arms'], arms: ['biceps', 'triceps', 'arms'],
+};
+
+// Body parts the user has flagged as pain or injury (tightness is fine — that's
+// what stretching is for, so it does NOT block recommendations).
+const avoidedParts = (conditions?: BodyCondition[] | null): string[] =>
+    Array.from(new Set(
+        (conditions ?? [])
+            .filter((c) => c.type === 'pain' || c.type === 'injury')
+            .map((c) => c.part.split('::')[0]),
+    ));
+
+const tokensFor = (parts: string[], map: Record<string, string[]>): string[] =>
+    Array.from(new Set(parts.flatMap((p) => map[p] ?? [])));
+
+/** True when a program loads a painful/injured area and should be hidden. */
+function programHurts(prog: PreRecordedProgram, muscleTokens: string[]): boolean {
+    if (muscleTokens.length === 0) return false;
+    const hay = `${prog.focus} ${prog.exercises.map((e) => e.muscleGroup).join(' ')}`.toLowerCase();
+    return muscleTokens.some((t) => hay.includes(t));
+}
+
+/** Drop programs that load a body part flagged as pain / injury. */
+export function filterProgramsForPain<T extends PreRecordedProgram>(
+    progs: T[],
+    conditions?: BodyCondition[] | null,
+): T[] {
+    const tokens = tokensFor(avoidedParts(conditions), PART_TO_MUSCLE);
+    if (tokens.length === 0) return progs;
+    return progs.filter((p) => !programHurts(p, tokens));
+}
+
+/** Drop library exercise videos whose bodyPart is flagged as pain / injury. */
+export function filterExercisesForPain<T extends { bodyPart?: string | null }>(
+    videos: T[],
+    conditions?: BodyCondition[] | null,
+): T[] {
+    const parts = tokensFor(avoidedParts(conditions), PART_TO_BODYPART);
+    if (parts.length === 0) return videos;
+    return videos.filter((v) => {
+        const bp = (v.bodyPart ?? '').toLowerCase();
+        // "Full Body" work inevitably loads the area — keep it out too when avoiding.
+        if (bp.includes('full')) return false;
+        return !parts.some((p) => bp.includes(p));
+    });
+}
+
 // ── Convert program → UI-ready object ─────────────────────────────────────────
 function toRecommended(
     prog: PreRecordedProgram,
@@ -101,7 +176,13 @@ export async function generateRecommendations(uid: string): Promise<Recommendati
 }
 
 // ── Similar programs for a given video (sync, uses in-memory data) ─────────────
-export function getSimilarPrograms(videoId: string, limit = 6): RecommendedProgram[] {
+// `conditions` (the user's body markers) lets us hide workouts that load a
+// painful / injured area.
+export function getSimilarPrograms(
+    videoId: string,
+    limit = 6,
+    conditions?: BodyCondition[] | null,
+): RecommendedProgram[] {
     const currentProg = getProgramByVideoId(videoId);
     if (!currentProg) return [];
     const catKey = getProgramCategoryKey(currentProg.id);
@@ -110,8 +191,10 @@ export function getSimilarPrograms(videoId: string, limit = 6): RecommendedProgr
     const levelOrder: Record<string, number> = { Beginner: 0, Intermediate: 1, Advanced: 2 };
     const currentLevel = levelOrder[currentProg.level] ?? 1;
 
-    return getAllPrograms()
-        .filter((p) => p.id !== currentProg.id && getProgramCategoryKey(p.id) === catKey)
+    const candidates = getAllPrograms()
+        .filter((p) => p.id !== currentProg.id && getProgramCategoryKey(p.id) === catKey);
+
+    return filterProgramsForPain(candidates, conditions)
         .sort((a, b) => {
             const aDiff = Math.abs((levelOrder[a.level] ?? 1) - currentLevel);
             const bDiff = Math.abs((levelOrder[b.level] ?? 1) - currentLevel);

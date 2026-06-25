@@ -51,6 +51,14 @@ const ORANGE = '#F25912';
 const INDIGO = '#4C4E78';
 const GREEN = '#16a34a';
 
+// Per-category accent colors — each activity type gets its own hue so the feed
+// is scannable at a glance (orange = requests, rose = challenges, green =
+// workouts, blue = messages).
+const C_REQUESTS = '#F25912';   // orange
+const C_CHALLENGES = '#E11D48'; // rose / head-to-head
+const C_WORKOUTS = '#16a34a';   // green
+const C_MESSAGES = '#2563EB';   // blue
+
 // ── Categories ────────────────────────────────────────────────────────────────
 export type ActivityCategory = 'requests' | 'challenges' | 'workouts' | 'messages';
 
@@ -61,10 +69,10 @@ const CATEGORIES: {
   Icon: any;
   color: string;
 }[] = [
-  { key: 'requests',   label: 'Friend requests', hint: 'People who want to connect', Icon: UserPlus,      color: ORANGE },
-  { key: 'challenges', label: 'Challenges',       hint: 'Head-to-head history',        Icon: Swords,        color: ORANGE },
-  { key: 'workouts',   label: 'Workouts',         hint: 'Co-workout invites & history',Icon: Dumbbell,      color: INDIGO },
-  { key: 'messages',   label: 'Messages',         hint: 'Recent conversations',        Icon: MessageCircle, color: INDIGO },
+  { key: 'requests',   label: 'Friend requests', hint: 'People who want to connect', Icon: UserPlus,      color: C_REQUESTS },
+  { key: 'challenges', label: 'Challenges',       hint: 'Head-to-head history',        Icon: Swords,        color: C_CHALLENGES },
+  { key: 'workouts',   label: 'Workouts',         hint: 'Co-workout invites & history',Icon: Dumbbell,      color: C_WORKOUTS },
+  { key: 'messages',   label: 'Messages',         hint: 'Recent conversations',        Icon: MessageCircle, color: C_MESSAGES },
 ];
 
 const DEFAULT_PREFS: Record<ActivityCategory, boolean> = {
@@ -97,10 +105,10 @@ const ICON_FOR: Record<ActivityCategory, any> = {
   messages: MessageCircle,
 };
 const COLOR_FOR: Record<ActivityCategory, string> = {
-  requests: ORANGE,
-  challenges: ORANGE,
-  workouts: INDIGO,
-  messages: INDIGO,
+  requests: C_REQUESTS,
+  challenges: C_CHALLENGES,
+  workouts: C_WORKOUTS,
+  messages: C_MESSAGES,
 };
 
 function timeAgo(ms: number): string {

@@ -10,10 +10,13 @@ import {
     Platform,
     ActivityIndicator,
     Image,
+    Animated,
+    PanResponder,
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Send, CircleUserRound } from 'lucide-react-native';
+import { Send, CircleUserRound } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
@@ -42,6 +45,36 @@ export const ChatRoomScreen = () => {
     const [sending, setSending] = useState(false);
     const [ready, setReady] = useState(false);
     const listRef = useRef<FlatList>(null);
+
+    // Drag-down-to-close: the header/grabber acts as a drag handle.
+    // (The message FlatList consumes its own vertical scroll, so we don't
+    // rely on the native modal swipe gesture which only fires at the top.)
+    const screenHeight = Dimensions.get('window').height;
+    const translateY = useRef(new Animated.Value(0)).current;
+    const dragResponder = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && g.dy > Math.abs(g.dx),
+            onPanResponderMove: (_, g) => {
+                if (g.dy > 0) translateY.setValue(g.dy);
+            },
+            onPanResponderRelease: (_, g) => {
+                const shouldClose = g.dy > 120 || g.vy > 0.6;
+                if (shouldClose) {
+                    Animated.timing(translateY, {
+                        toValue: screenHeight,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => navigation.goBack());
+                } else {
+                    Animated.spring(translateY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 4,
+                    }).start();
+                }
+            },
+        })
+    ).current;
 
     // Ensure conversation doc exists
     useEffect(() => {
@@ -140,38 +173,40 @@ export const ChatRoomScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color="#211832" size={24} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.headerCenter}
-                    activeOpacity={0.75}
-                    onPress={() =>
-                        navigation.navigate('ChatFriendProfile', {
-                            friendUid,
-                            friendName,
-                            friendAvatar,
-                        })
-                    }
-                >
-                    <TierAvatar
-                        uri={friendAvatar}
-                        size={36}
-                        uid={friendUid}
-                        name={friendName}
-                        showBadge={false}
-                        fallback={
-                            <View style={styles.headerAvatarFallback}>
-                                <CircleUserRound color={AppTheme.primaryColor} size={20} />
-                            </View>
+        <Animated.View style={[styles.safeArea, { transform: [{ translateY }] }]}>
+          <SafeAreaView style={styles.flex} edges={['top']}>
+            {/* Drag handle — swipe down to close */}
+            <View {...dragResponder.panHandlers}>
+                <View style={styles.grabber} />
+
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        style={styles.headerCenter}
+                        activeOpacity={0.75}
+                        onPress={() =>
+                            navigation.navigate('ChatFriendProfile', {
+                                friendUid,
+                                friendName,
+                                friendAvatar,
+                            })
                         }
-                    />
-                    <Text style={styles.headerName} numberOfLines={1}>{friendName}</Text>
-                </TouchableOpacity>
-                <View style={{ width: 40 }} />
+                    >
+                        <TierAvatar
+                            uri={friendAvatar}
+                            size={36}
+                            uid={friendUid}
+                            name={friendName}
+                            showBadge={false}
+                            fallback={
+                                <View style={styles.headerAvatarFallback}>
+                                    <CircleUserRound color={AppTheme.primaryColor} size={20} />
+                                </View>
+                            }
+                        />
+                        <Text style={styles.headerName} numberOfLines={1}>{friendName}</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <KeyboardAvoidingView
@@ -227,7 +262,8 @@ export const ChatRoomScreen = () => {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </Animated.View>
     );
 };
 
@@ -235,18 +271,26 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: AppTheme.background },
     flex: { flex: 1 },
 
+    grabber: {
+        alignSelf: 'center',
+        width: 40,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: 'rgba(33,24,50,0.18)',
+        marginTop: 8,
+        marginBottom: 4,
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingHorizontal: 20,
         paddingTop: 10,
         paddingBottom: 14,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(33,24,50,0.05)',
     },
-    backButton: { width: 40, height: 40, justifyContent: 'center' },
-    headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+    headerCenter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     headerAvatar: { width: 36, height: 36, borderRadius: 18 },
     headerAvatarFallback: {
         width: 36,

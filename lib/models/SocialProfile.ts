@@ -41,6 +41,17 @@ export type AgeGroup =
     | 'middle_aged'
     | 'seniors';
 
+/** Exercises a user can declare themselves "open to challenge" on. */
+export type ChallengeExercise =
+    | 'squats'
+    | 'pushups'
+    | 'pullups'
+    | 'plank'
+    | 'burpees'
+    | 'lunges'
+    | 'situps'
+    | 'jumping_jacks';
+
 export interface ProfilePlace {
     placeId?: string | null;
     name?: string | null;
@@ -99,6 +110,12 @@ export interface SocialProfile {
     needHelpWith?: string | null;
 
     /**
+     * Exercises the user is open to being challenged on (e.g. ['squats','pullups']).
+     * Maps to profiles.open_to_challenge_exercises (text[]).
+     */
+    openToChallenge?: ChallengeExercise[];
+
+    /**
      * Per-section visibility. `true` = the owner marked that section private
      * (hidden from other viewers). Missing/false = public. Maps to
      * profiles.section_visibility (jsonb).
@@ -142,6 +159,17 @@ export const HOBBY_META: Record<Hobby, { label: string; emoji: string }> = {
     art: { label: 'Art', emoji: '🎨' },
 };
 
+export const CHALLENGE_EXERCISE_META: Record<ChallengeExercise, { label: string; emoji: string }> = {
+    squats: { label: 'Squats', emoji: '🏋️' },
+    pushups: { label: 'Push-ups', emoji: '💪' },
+    pullups: { label: 'Pull-ups', emoji: '🧗' },
+    plank: { label: 'Plank', emoji: '🧘' },
+    burpees: { label: 'Burpees', emoji: '🔥' },
+    lunges: { label: 'Lunges', emoji: '🦵' },
+    situps: { label: 'Sit-ups', emoji: '🤸' },
+    jumping_jacks: { label: 'Jumping Jacks', emoji: '⭐' },
+};
+
 export const AGE_GROUP_META: Record<AgeGroup, string> = {
     teens: 'Teens (13-17)',
     young_adults: 'Young Adults (18-25)',
@@ -153,6 +181,7 @@ export const AGE_GROUP_META: Record<AgeGroup, string> = {
 export const ALL_HOBBIES = Object.keys(HOBBY_META) as Hobby[];
 export const ALL_CONNECTION_GOALS = Object.keys(CONNECTION_GOAL_META) as ConnectionGoal[];
 export const ALL_AGE_GROUPS = Object.keys(AGE_GROUP_META) as AgeGroup[];
+export const ALL_CHALLENGE_EXERCISES = Object.keys(CHALLENGE_EXERCISE_META) as ChallengeExercise[];
 
 export const WHAT_I_DO_PRESETS = [
     'Gym & Fitness',

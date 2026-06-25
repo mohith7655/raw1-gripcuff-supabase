@@ -17,6 +17,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Settings } from 'lucide-react-native';
 import MuscleVisualizer from '../MuscleVisualizer';
 import { BodyCondition, BodyConditionType } from '../../models/User';
 
@@ -104,6 +105,31 @@ const lbToKg = (lb: number) => lb * KG_PER_LB;
 const WEIGHT_MIN_LB = Math.round(kgToLb(WEIGHT_MIN)); // ~77 lb
 const WEIGHT_MAX_LB = Math.round(kgToLb(WEIGHT_MAX)); // ~353 lb
 
+// ── Unit-system preference (imperial / metric) ────────────────────────────────
+// Body metrics are always stored/computed in metric (kg, cm); this only changes
+// how every metric is *displayed* + which units the sliders work in.
+//   • imperial → weight lb, height ft·in
+//   • metric   → weight kg, height cm
+// Persisted per-device (web-safe).
+export type UnitSystem = 'imperial' | 'metric';
+const UNITS_KEY = 'body_metrics_units';
+function loadUnits(): UnitSystem {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const v = localStorage.getItem(UNITS_KEY);
+      if (v === 'metric' || v === 'imperial') return v;
+    }
+  } catch {}
+  return 'imperial';
+}
+function saveUnits(u: UnitSystem) {
+  try { if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, u); } catch {}
+}
+const fmtWeight = (kg: number, sys: UnitSystem) =>
+  sys === 'metric' ? `${Math.round(kg)} kg` : `${Math.round(kgToLb(kg))} lb`;
+const fmtHeight = (cm: number, sys: UnitSystem) =>
+  sys === 'metric' ? `${Math.round(cm)} cm` : toFeetInches(cm);
+
 // ── Body-condition picker ─────────────────────────────────────────────────────
 // Tappable body-part dots overlaid on the model. x = horizontal offset from
 // centre (0.5); y = fraction of viewer height. `both` = bilateral (offer L/R).
@@ -150,9 +176,10 @@ const PART_LABEL: Record<string, string> = (() => {
 
 const COND_META: Record<BodyConditionType, { label: string; emoji: string; color: string; soft: string }> = {
   tightness: { label: 'Tightness', emoji: '🟡', color: '#d4a600', soft: 'rgba(212,166,0,0.16)' },
+  pain:      { label: 'Pain',      emoji: '😣', color: '#ea580c', soft: 'rgba(234,88,12,0.14)' },
   injury:    { label: 'Injury',    emoji: '🩹', color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
 };
-const COND_ORDER: BodyConditionType[] = ['tightness', 'injury'];
+const COND_ORDER: BodyConditionType[] = ['tightness', 'pain', 'injury'];
 
 type Side = 'left' | 'right' | 'both';
 const SIDES: { key: Side; label: string }[] = [
@@ -246,6 +273,11 @@ export default function BodyVisualizer({
     conditions: Array.isArray(conditions) ? conditions : [],
   });
 
+  // Unit-system display preference (imperial / metric) + its little gear menu.
+  const [units, setUnits] = useState<UnitSystem>(() => loadUnits());
+  const [unitMenuOpen, setUnitMenuOpen] = useState(false);
+  const pickUnits = (u: UnitSystem) => { setUnits(u); saveUnits(u); setUnitMenuOpen(false); };
+
   // Body-condition picker UI state.
   const [modelView, setModelView] = useState<'front' | 'back'>('front');
   const [stageW, setStageW] = useState(0);
@@ -272,8 +304,11 @@ export default function BodyVisualizer({
     for (const c of m.conditions) {
       const grp = HL_MAP[c.part];
       if (!grp) continue;
-      groups.push(grp);
-      colors[grp] = COND_META[c.type].color;
+      // Encode the side so the painter highlights only the chosen half; 'both'
+      // (or centre parts) stays a bare group name = the whole region.
+      const token = (c.side === 'left' || c.side === 'right') ? `${grp}|${c.side}` : grp;
+      groups.push(token);
+      colors[token] = COND_META[c.type].color;
     }
     return { highlightMuscles: groups, groupColors: colors };
   }, [m.conditions]);
@@ -433,13 +468,13 @@ export default function BodyVisualizer({
       <View style={s.stageRow}>
         {editable && (
           <View style={s.vSliderCol}>
-            <Text style={s.vValue}>{Math.round(m.heightCm)}</Text>
+            <Text style={s.vValue}>{units === 'metric' ? Math.round(m.heightCm) : toFeetInches(m.heightCm)}</Text>
             <VerticalSlider
               height={canvasHeight - 34}
               min={HEIGHT_MIN} max={HEIGHT_MAX} step={1} value={m.heightCm} color={C.indigo}
               onChange={v => set({ heightCm: v })} onCommit={() => commit({ heightCm: m.heightCm })}
             />
-            <Text style={s.vUnit}>HEIGHT</Text>
+            <Text style={s.vUnit}>{units === 'metric' ? 'CM' : 'HEIGHT'}</Text>
           </View>
         )}
       {/* Wrapper keeps the picker popover visible even though the stage clips. */}
@@ -468,7 +503,7 @@ export default function BodyVisualizer({
               <View style={s.figLabel} pointerEvents="none">
                 <Text style={s.figLabelName}>{name || 'Me'}</Text>
                 <Text style={s.figLabelSub}>
-                  {`${Math.round(m.heightCm)} cm · ${toFeetInches(m.heightCm)}`}
+                  {`${fmtHeight(m.heightCm, units)} · ${fmtWeight(m.weightKg, units)}`}
                 </Text>
               </View>
               {renderHotspots()}
@@ -477,34 +512,85 @@ export default function BodyVisualizer({
         />
       </View>
       {editable && renderPicker()}
+
+      {/* ── Units gear — set weight display preference (lb / kg) ──────────── */}
+      <TouchableOpacity
+        style={s.gearBtn}
+        onPress={() => setUnitMenuOpen(o => !o)}
+        activeOpacity={0.8}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Settings size={16} color={C.muted} />
+      </TouchableOpacity>
+      {unitMenuOpen && (
+        <View style={s.unitMenu}>
+          <Text style={s.unitMenuTitle}>Units</Text>
+          {([
+            { key: 'imperial' as UnitSystem, label: 'Imperial', sub: 'lb · ft/in' },
+            { key: 'metric' as UnitSystem,   label: 'Metric',   sub: 'kg · cm' },
+          ]).map(opt => {
+            const active = units === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[s.unitOpt, active && s.unitOptActive]}
+                onPress={() => pickUnits(opt.key)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.unitOptText, active && s.unitOptTextActive]}>{opt.label}</Text>
+                  <Text style={s.unitOptSub}>{opt.sub}</Text>
+                </View>
+                {active && <Text style={s.unitOptCheck}>✓</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
       </View>
       </View>
 
       {editable && (
         <Text style={s.pickHint}>
-          Tap a body part → pick a side → mark Tightness or Injury.
+          Tap a body part → pick a side → mark Tightness, Pain or Injury.
         </Text>
       )}
 
-      {/* ── Weight: horizontal (lbs), right below the image ────────────── */}
+      {/* ── Weight: horizontal slider in the chosen unit, below the image ── */}
       {editable && (
         <View style={s.weightBelow}>
           <View style={s.sliderHead}>
             <Text style={s.ctrlLabel}>Weight</Text>
-            <Text style={s.sliderValue}>{Math.round(kgToLb(m.weightKg))} lb</Text>
+            <Text style={s.sliderValue}>{fmtWeight(m.weightKg, units)}</Text>
           </View>
-          <Slider
-            min={WEIGHT_MIN_LB} max={WEIGHT_MAX_LB} step={1} value={Math.round(kgToLb(m.weightKg))} color={C.orange}
-            onChange={v => set({ weightKg: clamp(lbToKg(v), WEIGHT_MIN, WEIGHT_MAX) })}
-            onCommit={() => commit({ weightKg: m.weightKg })}
-          />
+          {units === 'imperial' ? (
+            <Slider
+              min={WEIGHT_MIN_LB} max={WEIGHT_MAX_LB} step={1} value={Math.round(kgToLb(m.weightKg))} color={C.orange}
+              onChange={v => set({ weightKg: clamp(lbToKg(v), WEIGHT_MIN, WEIGHT_MAX) })}
+              onCommit={() => commit({ weightKg: m.weightKg })}
+            />
+          ) : (
+            <Slider
+              min={WEIGHT_MIN} max={WEIGHT_MAX} step={1} value={Math.round(m.weightKg)} color={C.orange}
+              onChange={v => set({ weightKg: clamp(v, WEIGHT_MIN, WEIGHT_MAX) })}
+              onCommit={() => commit({ weightKg: m.weightKg })}
+            />
+          )}
         </View>
       )}
 
       {/* ── Read-outs ──────────────────────────────────────────────────── */}
       <View style={s.statsRow}>
-        <Stat label="Height" value={`${Math.round(m.heightCm)} cm`} sub={toFeetInches(m.heightCm)} />
-        <Stat label="Weight" value={`${Math.round(kgToLb(m.weightKg))} lb`} sub={`${Math.round(m.weightKg)} kg`} />
+        <Stat
+          label="Height"
+          value={fmtHeight(m.heightCm, units)}
+          sub={fmtHeight(m.heightCm, units === 'metric' ? 'imperial' : 'metric')}
+        />
+        <Stat
+          label="Weight"
+          value={fmtWeight(m.weightKg, units)}
+          sub={fmtWeight(m.weightKg, units === 'metric' ? 'imperial' : 'metric')}
+        />
         <Stat label="BMI" value={bmi.toFixed(1)} sub={bmiLabel(bmi)} />
         <Stat label="Age" value={`${Math.round(m.age)}`} sub="yrs" />
       </View>
@@ -684,6 +770,31 @@ const s = StyleSheet.create({
   },
   weightBelow: { marginTop: 14 },
   modelWrap: { flex: 1, position: 'relative' },
+
+  // Units gear + popover menu (anchored top-right of the model)
+  gearBtn: {
+    position: 'absolute', top: 8, right: 8,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: C.cardBg, borderWidth: 1, borderColor: C.border,
+    alignItems: 'center', justifyContent: 'center', zIndex: 60,
+    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3,
+  },
+  unitMenu: {
+    position: 'absolute', top: 46, right: 8, minWidth: 168,
+    backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: C.border,
+    paddingVertical: 4, zIndex: 60,
+    shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 10,
+  },
+  unitMenuTitle: {
+    color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 0.5,
+    textTransform: 'uppercase', paddingHorizontal: 12, paddingTop: 6, paddingBottom: 4,
+  },
+  unitOpt: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9, paddingHorizontal: 12 },
+  unitOptActive: { backgroundColor: C.accentSoft },
+  unitOptText: { color: C.text, fontSize: 13, fontWeight: '600' },
+  unitOptTextActive: { color: C.orange, fontWeight: '800' },
+  unitOptSub: { color: C.muted, fontSize: 11, fontWeight: '600', marginTop: 1 },
+  unitOptCheck: { color: C.orange, fontSize: 13, fontWeight: '900', marginLeft: 8 },
   stage: {
     borderRadius: 14,
     overflow: 'hidden',
