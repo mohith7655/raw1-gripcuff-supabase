@@ -51,9 +51,9 @@ import { deriveBadgeStates, UserBadgeStats } from '../services/badge.service';
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
   bg:           '#EEEEF2',
-  bgCard:       'rgba(255,255,255,0.04)',
-  bgInner:      'rgba(255,255,255,0.06)',
-  border:       'rgba(255,255,255,0.06)',
+  bgCard:       '#F8F8FC',
+  bgInner:      '#F8F8FC',
+  border:       'rgba(33,24,50,0.10)',
   orange:       '#F25912',
   accentSoft:   'rgba(242,89,18,0.12)',
   accentBorder: 'rgba(242,89,18,0.28)',
@@ -66,7 +66,7 @@ const C = {
   purple:       '#a78bfa',
   purpleSoft:   'rgba(167,139,250,0.12)',
   purpleBorder: 'rgba(167,139,250,0.28)',
-  text:         '#ffffff',
+  text:         '#211832',
   muted:        '#7A7C90',
   dim:          '#7A7C90',
 };
@@ -746,7 +746,7 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   accessPillText: {
-    color: '#000000',
+    color: '#fff',
     fontSize: 12,
     fontWeight: '800',
   },

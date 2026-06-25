@@ -26,13 +26,13 @@ import { supabase } from '../core/config/supabase';
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
   bg:           '#EEEEF2',
-  bgCard:       'rgba(255,255,255,0.04)',
-  bgInput:      'rgba(255,255,255,0.06)',
-  border:       'rgba(255,255,255,0.06)',
+  bgCard:       '#F8F8FC',
+  bgInput:      '#F8F8FC',
+  border:       'rgba(33,24,50,0.10)',
   orange:       '#F25912',
   accentSoft:   'rgba(242,89,18,0.12)',
   accentBorder: 'rgba(242,89,18,0.28)',
-  text:         '#ffffff',
+  text:         '#211832',
   muted:        '#7A7C90',
   modalBg:      '#EEEEF2',
 };
@@ -350,7 +350,7 @@ const s = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 15,
   },
-  fabText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  fabText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
   // Modal
   modalOverlay: {
@@ -379,7 +379,7 @@ const s = StyleSheet.create({
   },
   modalClose: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(33,24,50,0.06)',
     alignItems: 'center', justifyContent: 'center',
   },
   inputLabel: {
@@ -410,5 +410,5 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   saveBtnDisabled: { opacity: 0.5 },
-  saveBtnText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

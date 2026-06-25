@@ -24,7 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
-import { formatDifficulty } from '../core/difficulty';
+import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -1147,23 +1147,23 @@ const VideoTile = ({
             <Lock color="#211832" size={28} />
           </View>
         )}
+        <ThumbnailCategory category={video.category} />
       </LinearGradient>
 
       {/* Text Info */}
       <View style={styles.videoInfo}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
-            <Text
-              style={[
-                styles.videoTitle,
-                video.isCompleted && styles.videoTitleCompleted,
-              ]}
-              numberOfLines={1}
-            >
-              {displayTitle}
-            </Text>
-            <Text style={styles.videoCategory}>{video.category} • {formatDifficulty(video.difficulty)}</Text>
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingRight: 8 }}>
+          <Text
+            style={[
+              styles.videoTitle,
+              { flex: 1 },
+              video.isCompleted && styles.videoTitleCompleted,
+            ]}
+            numberOfLines={1}
+          >
+            {displayTitle}
+          </Text>
+          <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 4 }} />
         </View>
       </View>
     </TouchableOpacity>

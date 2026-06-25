@@ -38,6 +38,7 @@ import { RelationshipStatus } from '../models/Friend';
 import { User } from '../models/User';
 import { AppTheme } from '../core/theme/app_theme';
 import { TierAvatar } from '../components/profile/TierAvatar';
+import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -140,6 +141,7 @@ function FriendsTab() {
 
     const [query,     setQuery]     = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [preview,   setPreview]   = useState<PreviewUser | null>(null);
 
     const filtered = query.trim()
         ? friends.filter(f =>
@@ -170,6 +172,7 @@ function FriendsTab() {
     if (loading) return <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />;
 
     return (
+        <>
         <FlatList
             data={filtered}
             keyExtractor={i => i.uid}
@@ -202,7 +205,13 @@ function FriendsTab() {
             renderItem={({ item }) => (
                 <FriendRow
                     user={item}
-                    onProfile={() => navigation.navigate('SocialProfileScreen', { uid: item.uid })}
+                    onProfile={() => setPreview({
+                        uid: item.uid,
+                        fullName: item.fullName,
+                        username: item.username,
+                        avatarUrl: item.profileImageUrl,
+                        gender: item.gender,
+                    })}
                     onMessage={() => navigation.navigate('ChatRoom', {
                         friendUid: item.uid,
                         friendName: item.fullName || item.username,
@@ -219,6 +228,21 @@ function FriendsTab() {
                 />
             }
         />
+        <ProfilePreviewSheet
+            user={preview}
+            visible={!!preview}
+            onClose={() => setPreview(null)}
+            onViewProfile={(uid) => { setPreview(null); navigation.navigate('SocialProfileScreen', { uid }); }}
+            onMessage={(u) => {
+                setPreview(null);
+                navigation.navigate('ChatRoom', {
+                    friendUid: u.uid,
+                    friendName: u.fullName || u.username,
+                    friendAvatar: u.avatarUrl,
+                });
+            }}
+        />
+        </>
     );
 }
 

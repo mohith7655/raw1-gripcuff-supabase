@@ -31,6 +31,7 @@ const toAppUser = (row: any): User => ({
     totalLiveSessions: Number(row.total_live_sessions ?? 0),
     hasAccess: Boolean(row.has_access),
     accessType: row.access_type ?? null,
+    lastActiveAt: row.last_active_at ?? null,
 });
 
 const toFriendRequest = (row: any): FriendRequest => ({

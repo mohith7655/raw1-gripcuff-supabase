@@ -30,20 +30,20 @@ export function ProfileCard({ children, style, padding = 16, isPrivate, onToggle
           <Text style={styles.visLabel}>Who can see this</Text>
           <View style={styles.visSeg}>
             <TouchableOpacity
-              style={[styles.segOpt, !isPrivate && styles.segOptPublic]}
+              style={[styles.segOpt, !isPrivate && styles.segOptActive]}
               onPress={() => { if (isPrivate) onToggleVisibility(); }}
               activeOpacity={0.8}
             >
-              <Globe size={11} color={!isPrivate ? '#fff' : MUTED} />
-              <Text style={[styles.segText, { color: !isPrivate ? '#fff' : MUTED }]}>Public</Text>
+              <Globe size={12} color={!isPrivate ? '#fff' : MUTED} />
+              {!isPrivate && <Text style={styles.segTextActive}>Public</Text>}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segOpt, isPrivate && styles.segOptPrivate]}
+              style={[styles.segOpt, isPrivate && styles.segOptActive]}
               onPress={() => { if (!isPrivate) onToggleVisibility(); }}
               activeOpacity={0.8}
             >
-              <Lock size={11} color={isPrivate ? '#fff' : MUTED} />
-              <Text style={[styles.segText, { color: isPrivate ? '#fff' : MUTED }]}>Private</Text>
+              <Lock size={12} color={isPrivate ? '#fff' : MUTED} />
+              {isPrivate && <Text style={styles.segTextActive}>Private</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -69,24 +69,25 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(33,24,50,0.06)',
   },
   visLabel: { color: MUTED, fontSize: 11, fontWeight: '600' },
+  // Matches the Library Exercises/Workouts capsule toggle: light track,
+  // dark active segment. Inactive side collapses to its icon only.
   visSeg: {
     flexDirection: 'row',
-    gap: 3,
-    padding: 3,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    gap: 2,
+    padding: 2,
+    borderRadius: 100,
+    backgroundColor: '#EEEEF2',
     borderWidth: 1,
-    borderColor: 'rgba(33,24,50,0.07)',
+    borderColor: '#D8D8E4',
   },
   segOpt: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 100,
   },
-  segOptPublic: { backgroundColor: '#4C4E78' },
-  segOptPrivate: { backgroundColor: '#D8D8E4' },
-  segText: { fontSize: 11, fontWeight: '700' },
+  segOptActive: { backgroundColor: '#211832' },
+  segTextActive: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });

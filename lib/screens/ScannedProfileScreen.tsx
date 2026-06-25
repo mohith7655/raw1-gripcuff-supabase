@@ -60,8 +60,8 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
   bg:           '#EEEEF2',
-  bgCard:       'rgba(255,255,255,0.04)',
-  border:       'rgba(255,255,255,0.06)',
+  bgCard:       '#F8F8FC',
+  border:       'rgba(33,24,50,0.10)',
   orange:       '#F25912',
   accentSoft:   'rgba(242,89,18,0.12)',
   accentBorder: 'rgba(242,89,18,0.28)',
@@ -69,7 +69,7 @@ const C = {
   purpleSoft:   'rgba(139,92,246,0.12)',
   purpleBorder: 'rgba(139,92,246,0.35)',
   green:        '#22c55e',
-  text:         '#ffffff',
+  text:         '#211832',
   muted:        '#7A7C90',
 };
 
@@ -684,7 +684,7 @@ const s = StyleSheet.create({
     marginTop: 10, backgroundColor: C.orange,
     borderRadius: 100, paddingHorizontal: 16, paddingVertical: 6,
   },
-  connectPillText: { color: '#000', fontSize: 12, fontWeight: '700' },
+  connectPillText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   // Cards
   cardHeaderRow: {
@@ -760,7 +760,7 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   accessPillText: {
-    color: '#000000',
+    color: '#fff',
     fontSize: 12,
     fontWeight: '800',
   },
@@ -804,7 +804,7 @@ const s = StyleSheet.create({
   },
   moreBadge: {
     width: 52, height: 52, borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: C.bgCard,
     borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -832,14 +832,14 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   connectBtnPending: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: C.bgCard,
     borderWidth: 1, borderColor: C.border,
   },
   connectBtnFriend: {
     backgroundColor: 'rgba(34,197,94,0.1)',
     borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)',
   },
-  connectBtnText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  connectBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
   // Not found
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
@@ -849,5 +849,5 @@ const s = StyleSheet.create({
     marginTop: 24, backgroundColor: C.orange,
     borderRadius: 12, paddingVertical: 13, paddingHorizontal: 32,
   },
-  goBackBtnText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  goBackBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

@@ -43,6 +43,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { formatDifficulty } from '../core/difficulty';
+import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { AppTheme, CoachingTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,7 +61,7 @@ import { useRecommendations } from '../hooks/useRecommendations';
 import { RecommendedProgram } from '../services/recommendation.service';
 import { LiveSessionService, LiveSession } from '../services/liveSession.service';
 import { Ionicons } from '@expo/vector-icons';
-import { getProgramByVideoId } from '../data/preRecordedPrograms';
+import { getProgramByVideoId, getProgramCategoryKey } from '../data/preRecordedPrograms';
 import { StreakService, StreakData } from '../services/streak.service';
 import { DailyActivityService } from '../services/dailyActivity.service';
 import { supabase } from '../core/config/supabase';
@@ -899,7 +900,7 @@ const HomeScreenInner = () => {
                   {/* Connects + Squats — same row */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                     <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
-                      <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <View style={{ backgroundColor: '#4C4E78', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
                         <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
                       </View>
@@ -1057,12 +1058,11 @@ const HomeScreenInner = () => {
                                   <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                                     <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
                                   </View>
+                                  <ThumbnailCategory category={(localVideo as any)?.category ?? (program ? getProgramCategoryKey(program.id) : undefined)} />
                                 </LinearGradient>
-                                <View style={{ padding: 8 }}>
-                                  <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
-                                  {!!formatDifficulty(difficulty) && (
-                                    <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 3 }}>{formatDifficulty(difficulty)}</Text>
-                                  )}
+                                <View style={{ padding: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+                                  <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
+                                  <DifficultyDot difficulty={difficulty} size={8} style={{ marginTop: 3 }} />
                                 </View>
                               </TouchableOpacity>
                             );
@@ -1091,28 +1091,29 @@ const HomeScreenInner = () => {
                                 videoUrl: item.videoUrl,
                               })}
                             >
-                              {item.thumbnail ? (
-                                <Image source={{ uri: item.thumbnail }} style={{ width: '100%', height: 80 }} resizeMode="cover" />
-                              ) : (
-                                <LinearGradient
-                                  colors={[COLORS[idx % COLORS.length][0], COLORS[idx % COLORS.length][1]]}
-                                  start={{ x: 0, y: 0 }}
-                                  end={{ x: 1, y: 1 }}
-                                  style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
-                                >
-                                  <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                                    <Raw1Logo fontSize={12} transparent />
-                                  </View>
-                                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
-                                  </View>
-                                </LinearGradient>
-                              )}
-                              <View style={{ padding: 8 }}>
-                                <Text numberOfLines={2} style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
-                                {!!formatDifficulty(item.difficulty) && (
-                                  <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 3 }}>{formatDifficulty(item.difficulty)}</Text>
+                              <View style={{ width: '100%', height: 80 }}>
+                                {item.thumbnail ? (
+                                  <Image source={{ uri: item.thumbnail }} style={{ width: '100%', height: 80 }} resizeMode="cover" />
+                                ) : (
+                                  <LinearGradient
+                                    colors={[COLORS[idx % COLORS.length][0], COLORS[idx % COLORS.length][1]]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
+                                  >
+                                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                                      <Raw1Logo fontSize={12} transparent />
+                                    </View>
+                                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                      <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
+                                    </View>
+                                  </LinearGradient>
                                 )}
+                                <ThumbnailCategory category={(item as any).category ?? getProgramCategoryKey(getProgramByVideoId(item.id)?.id ?? '')} />
+                              </View>
+                              <View style={{ padding: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+                                <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
+                                <DifficultyDot difficulty={item.difficulty} size={8} style={{ marginTop: 3 }} />
                               </View>
                             </TouchableOpacity>
                           ))}

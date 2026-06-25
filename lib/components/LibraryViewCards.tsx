@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme } from '../core/theme/app_theme';
-import { formatDifficulty } from '../core/difficulty';
+import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
 import { useFavorites } from '../hooks/useFavorites';
 import { Video } from '../models/Video';
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
@@ -137,15 +137,14 @@ export function MultiColVideoCard({
                 <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
                     <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
+                <ThumbnailCategory category={video.category} />
             </LinearGradient>
 
-            <View style={{ paddingTop: 4, paddingHorizontal: 1 }}>
-                <Text style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
+            <View style={{ paddingTop: 4, paddingHorizontal: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+                <Text style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
                     {displayTitle}
                 </Text>
-                {!!formatDifficulty(video.difficulty) && (
-                    <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '600', marginTop: 2 }}>{formatDifficulty(video.difficulty)}</Text>
-                )}
+                <DifficultyDot difficulty={video.difficulty} size={8} style={{ marginTop: 3 }} />
             </View>
         </TouchableOpacity>
     );
@@ -197,15 +196,17 @@ export function ListVideoCard({
                 <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
                     <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
+                <ThumbnailCategory category={video.category} />
             </LinearGradient>
 
             <View style={{ flex: 1 }}>
-                <Text style={{ color: '#211832', fontSize: 13, fontWeight: '600', lineHeight: 18 }} numberOfLines={2}>
-                    {displayTitle}
-                </Text>
-                <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>
-                    {[formatDifficulty(video.difficulty), video.category, durationLabel].filter(Boolean).join(' · ')}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                    <Text style={{ flex: 1, color: '#211832', fontSize: 13, fontWeight: '600', lineHeight: 18 }} numberOfLines={2}>
+                        {displayTitle}
+                    </Text>
+                    <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 5 }} />
+                </View>
+                <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>{durationLabel}</Text>
             </View>
 
         </TouchableOpacity>

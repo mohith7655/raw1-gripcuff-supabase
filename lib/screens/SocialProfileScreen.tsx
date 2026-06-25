@@ -58,6 +58,10 @@ import { User } from '../models/User';
 import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, CHALLENGE_EXERCISE_META } from '../models/SocialProfile';
 import { RelationshipStatus } from '../models/Friend';
 import { ProfileCard } from '../components/profile/ProfileCard';
+import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
+import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats } from '../utils/activityHeat';
+import { loadActivityMap } from '../services/activityMap.service';
+import { HeatPills } from '../components/social/HeatPills';
 import { ActivityMap } from '../components/profile/ActivityMap';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
@@ -232,6 +236,8 @@ export function SocialProfileScreen() {
   const [fullscreenIdx, setFullscreenIdx] = useState<number | null>(null);
   const [connections, setConnections] = useState<User[]>([]);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [connPreview, setConnPreview] = useState<PreviewUser | null>(null);
+  const [heats, setHeats] = useState<ActivityHeats | null>(null);
 
   // Hide bottom CTA bar while scrolling, reveal when idle
   const ctaAnim = useRef(new RNAnimated.Value(1)).current;
@@ -288,6 +294,17 @@ export function SocialProfileScreen() {
   useEffect(() => {
     if (!uid) { setConnections([]); return; }
     FriendService.getFriends(uid).then(setConnections).catch(() => {});
+  }, [uid]);
+
+  // Recent (last 30d) social / workout heat — the hot↔cold pills.
+  useEffect(() => {
+    if (!uid) { setHeats(null); return; }
+    let alive = true;
+    setHeats(null);
+    loadActivityMap(uid)
+      .then((d) => { if (alive) setHeats(computeHeats(d)); })
+      .catch(() => { if (alive) setHeats(null); });
+    return () => { alive = false; };
   }, [uid]);
 
   // Load viewer's own home coords (used to compute distance to profile user)
@@ -608,6 +625,14 @@ export function SocialProfileScreen() {
 
           </View>
 
+          {/* ── RECENT ACTIVITY — social (high-five) + workout (dumbbell) heat ── */}
+          {heats && (
+            <View style={s.heatStripe}>
+              <Text style={s.heatLabel}>Recent activity</Text>
+              <HeatPills social={heats.social} workout={heats.workout} size="sm" />
+            </View>
+          )}
+
           {/* ── OPEN TO CHALLENGE — directly above the time stats ────────────── */}
           {(isOwn || (showSection('openToChallenge') && (social?.openToChallenge?.length ?? 0) > 0)) && (
             <TouchableOpacity
@@ -656,6 +681,40 @@ export function SocialProfileScreen() {
                 {lastSeen.text}{replyText ? ` · ${replyText}` : ''}
               </Text>
             </View>
+          )}
+
+          {/* ── ABOUT ME ─────────────────────────────────────────────────────── */}
+          {showSection('about') && (bio.length > 0 || social?.projectsWorkingOn || social?.needHelpWith) && (
+            <ProfileCard>
+              <View style={s.cardHeaderRow}>
+                <View style={s.aboutTitleGroup}>
+                  <Text style={s.cardTitle}>About Me</Text>
+                  {isPreview && (
+                    <TouchableOpacity style={s.editBtn} activeOpacity={0.7}>
+                      <Edit2 size={11} color={C.muted} />
+                      <Text style={s.editBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+              {bio.length > 0 && <Text style={[s.bodyText, s.bodyTextOrange]}>{bio}</Text>}
+              {(social?.projectsWorkingOn || social?.needHelpWith) && (
+                <View style={{ marginTop: bio.length > 0 ? 12 : 0, gap: 10 }}>
+                  {social?.projectsWorkingOn ? (
+                    <View style={{ gap: 2 }}>
+                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>🚀 Working on</Text>
+                      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{social.projectsWorkingOn}</Text>
+                    </View>
+                  ) : null}
+                  {social?.needHelpWith ? (
+                    <View style={{ gap: 2 }}>
+                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>🤝 Need help with</Text>
+                      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{social.needHelpWith}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+            </ProfileCard>
           )}
 
           {/* ── ACTIVITY MAP — GitHub-style heatmap of workouts / co-workouts /
@@ -721,40 +780,6 @@ export function SocialProfileScreen() {
                   <Text style={s.photosTapHint}>Tap to view all</Text>
                 </TouchableOpacity>
               </View>
-            </ProfileCard>
-          )}
-
-          {/* ── ABOUT ME ─────────────────────────────────────────────────────── */}
-          {showSection('about') && (bio.length > 0 || social?.projectsWorkingOn || social?.needHelpWith) && (
-            <ProfileCard>
-              <View style={s.cardHeaderRow}>
-                <View style={s.aboutTitleGroup}>
-                  <Text style={s.cardTitle}>About Me</Text>
-                  {isPreview && (
-                    <TouchableOpacity style={s.editBtn} activeOpacity={0.7}>
-                      <Edit2 size={11} color={C.muted} />
-                      <Text style={s.editBtnText}>Edit</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-              {bio.length > 0 && <Text style={[s.bodyText, s.bodyTextOrange]}>{bio}</Text>}
-              {(social?.projectsWorkingOn || social?.needHelpWith) && (
-                <View style={{ marginTop: bio.length > 0 ? 12 : 0, gap: 10 }}>
-                  {social?.projectsWorkingOn ? (
-                    <View style={{ gap: 2 }}>
-                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>🚀 Working on</Text>
-                      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{social.projectsWorkingOn}</Text>
-                    </View>
-                  ) : null}
-                  {social?.needHelpWith ? (
-                    <View style={{ gap: 2 }}>
-                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>🤝 Need help with</Text>
-                      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{social.needHelpWith}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              )}
             </ProfileCard>
           )}
 
@@ -1136,12 +1161,40 @@ export function SocialProfileScreen() {
                   key={c.uid}
                   style={s.connRow}
                   activeOpacity={0.8}
-                  onPress={() => { setConnectionsOpen(false); (navigation as any).push('SocialProfileScreen', { uid: c.uid }); }}
+                  onPress={() => {
+                    setConnectionsOpen(false);
+                    setConnPreview({
+                      uid: c.uid,
+                      fullName: c.fullName,
+                      username: c.username,
+                      avatarUrl: c.profileImageUrl,
+                      gender: c.gender,
+                    });
+                  }}
                 >
                   <Avatar uri={c.profileImageUrl} size={44} />
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.connName} numberOfLines={1}>@{c.username}</Text>
+                    <View style={s.connNameRow}>
+                      <Text style={s.connName} numberOfLines={1}>@{c.username}</Text>
+                      {(() => {
+                        const gm = genderMetaOf(c.gender);
+                        return gm ? (
+                          <View style={[s.connGenderPill, { backgroundColor: gm.bg, borderColor: gm.border }]}>
+                            <Text style={[s.connGenderIcon, { color: gm.color }]}>{gm.icon}</Text>
+                          </View>
+                        ) : null;
+                      })()}
+                    </View>
                     <Text style={s.connSub} numberOfLines={1}>{c.fullName}</Text>
+                    {(() => {
+                      const a = appActiveLabel(c.lastActiveAt);
+                      return (
+                        <View style={s.connActivityRow}>
+                          <View style={[s.connDot, { backgroundColor: a.color }]} />
+                          <Text style={[s.connActivityText, { color: a.color }]}>{a.text}</Text>
+                        </View>
+                      );
+                    })()}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -1149,6 +1202,22 @@ export function SocialProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ── Connection short-profile preview ─────────────────────────────────── */}
+      <ProfilePreviewSheet
+        user={connPreview}
+        visible={!!connPreview}
+        onClose={() => setConnPreview(null)}
+        onViewProfile={(u) => { setConnPreview(null); (navigation as any).push('SocialProfileScreen', { uid: u }); }}
+        onMessage={(u) => {
+          setConnPreview(null);
+          navigation.navigate('ChatRoom', {
+            friendUid: u.uid,
+            friendName: u.fullName || u.username,
+            friendAvatar: u.avatarUrl,
+          });
+        }}
+      />
     </View>
   );
 }
@@ -1250,7 +1319,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#211832',
+    backgroundColor: '#4C4E78',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1294,8 +1363,17 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.cardBorder,
   },
-  connName: { color: C.text, fontSize: 14, fontWeight: '700' },
+  connNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  connName: { color: C.text, fontSize: 14, fontWeight: '700', flexShrink: 1 },
   connSub: { color: C.muted, fontSize: 12, marginTop: 2 },
+  connGenderPill: {
+    width: 18, height: 18, borderRadius: 9, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  connGenderIcon: { fontSize: 11, fontWeight: '900', lineHeight: 13 },
+  connActivityRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  connDot: { width: 7, height: 7, borderRadius: 3.5 },
+  connActivityText: { fontSize: 11, fontWeight: '700' },
   openBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1585,6 +1663,19 @@ const s = StyleSheet.create({
   },
 
   // Standalone time stats row (below hero, above cards)
+  heatStripe: {
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 8,
+    gap: 8,
+  },
+  heatLabel: {
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   challengeStripe: {
     flexDirection: 'row',
     alignItems: 'center',

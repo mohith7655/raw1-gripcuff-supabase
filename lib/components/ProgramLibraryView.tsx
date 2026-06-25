@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Heart, BookOpen, Lock } from 'lucide-react-native';
+import { Heart, BookOpen, Lock } from 'lucide-react-native';
 import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
@@ -23,6 +23,7 @@ import {
     ProgramVideo,
 } from '../data/preRecordedPrograms';
 import { useFloatingToggle, FloatingTabToggle } from './FloatingTabToggle';
+import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
 import { SubTab } from '../models/Video';
 
 const THUMBNAIL_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
@@ -176,7 +177,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
         </TouchableOpacity>
     );
 
-    const renderVideoCard = (video: ProgramVideo, index: number) => {
+    const renderVideoCard = (video: ProgramVideo, index: number, program: PreRecordedProgram) => {
         const isFavorite = favorites.some((fav) => fav.id === video.id);
         const baseColor = THUMBNAIL_COLORS[index % THUMBNAIL_COLORS.length];
 
@@ -194,12 +195,16 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                     <View style={{ position: 'absolute', top: 6, left: 6 }}>
                         <Raw1Logo fontSize={12} transparent />
                     </View>
+                    <ThumbnailCategory category={categoryKey} />
                 </LinearGradient>
 
                 <View style={styles.videoInfo}>
-                    <Text style={styles.videoTitle} numberOfLines={1}>
-                        {video.title}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[styles.videoTitle, { flex: 1 }]} numberOfLines={1}>
+                            {video.title}
+                        </Text>
+                        <DifficultyDot difficulty={(video as any).difficulty ?? program.level} size={8} />
+                    </View>
                     <VideoViewsLabel videoId={video.id} />
                 </View>
             </View>
@@ -236,7 +241,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                         onPress={() => openVideo(video, program)}
                         activeOpacity={0.8}
                     >
-                        {renderVideoCard(video, index)}
+                        {renderVideoCard(video, index, program)}
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -250,10 +255,9 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            {/* No back button — swipe down from the top to go back (SwipeBackView). */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft color={AppTheme.textWhite} size={24} />
-                </TouchableOpacity>
+                <View style={{ width: 40 }} />
                 <Text style={styles.headerTitle}>{title}</Text>
                 <View style={{ width: 40 }} />
             </View>

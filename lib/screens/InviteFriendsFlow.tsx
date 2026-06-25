@@ -30,7 +30,7 @@ const THEME = {
     cardBorder: '#F8F8FC',
     primaryGradStart: '#C86830',
     primaryGradEnd: '#A04E1E',
-    textMain: '#ffffff',
+    textMain: '#211832',
     textSub: '#7A7C90',
     inputBg: '#EEEEF2',
     btnCancel: '#C15F2A',
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     // Buttons
     gradientBtnWrapper: { width: '100%', borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
     gradientBtn: { paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
-    gradientBtnText: { color: THEME.textMain, fontSize: 16, fontWeight: 'bold' },
+    gradientBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 
     outlineBtn: {
         width: '100%',
@@ -623,5 +623,5 @@ const styles = StyleSheet.create({
     },
     selectedCountText: { color: THEME.textMain, fontWeight: 'bold', fontSize: 16 },
     smallGradientBtn: { borderRadius: 8, paddingHorizontal: 20, paddingVertical: 12 },
-    smallGradientBtnText: { color: THEME.textMain, fontWeight: 'bold', fontSize: 14 },
+    smallGradientBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });

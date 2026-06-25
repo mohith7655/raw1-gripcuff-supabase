@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 import { useLibrary } from '../providers/LibraryContext';
 import { getAllPrograms } from '../data/preRecordedPrograms';
-import { formatDifficulty } from '../core/difficulty';
+import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
 import { Raw1Logo } from '../raw1_logo';
 
 // Muted earthy / slate thumbnail gradients — matches the library cards (Ash & Midnight).
@@ -68,12 +68,11 @@ export function AllRecentlyWatchedScreen() {
                                     <Raw1Logo fontSize={12} transparent />
                                 </View>
                                 <Play color="rgba(255,255,255,0.12)" size={30} fill="rgba(255,255,255,0.12)" />
+                                <ThumbnailCategory category={(localVideo as any)?.category} />
                             </LinearGradient>
-                            <View style={s.info}>
-                                <Text numberOfLines={2} style={s.cardTitle}>{title}</Text>
-                                {!!formatDifficulty(difficulty) && (
-                                    <Text style={s.cardDifficulty}>{formatDifficulty(difficulty)}</Text>
-                                )}
+                            <View style={[s.info, { flexDirection: 'row', alignItems: 'flex-start', gap: 5 }]}>
+                                <Text numberOfLines={2} style={[s.cardTitle, { flex: 1 }]}>{title}</Text>
+                                <DifficultyDot difficulty={difficulty} size={8} style={{ marginTop: 3 }} />
                             </View>
                         </TouchableOpacity>
                     );

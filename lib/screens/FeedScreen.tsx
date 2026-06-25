@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -107,6 +110,11 @@ function FriendCard({ onPress, avatarUri }: { onPress?: () => void; avatarUri?: 
   );
 }
 
+// Smooth collapse for the top toggle on Android (no-op on web).
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 type SocialTab = 'feed' | 'chat';
 
 export function FeedScreen() {
@@ -115,10 +123,49 @@ export function FeedScreen() {
   const { supabaseUserId, user } = useAuth();
   const [activeTab, setActiveTab] = useState<SocialTab>('feed');
 
-  // Reveal the bottom bar when switching social sub-tabs (friends/chat don't drive
-  // scroll) and whenever the tab regains focus (e.g. returning from a pushed screen).
-  useEffect(() => { tabBar?.show(); }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Feed/Chat toggle behaviour (mirrors the Library Exercises/Workouts effect) ──
+  // The TOP toggle collapses away once you scroll down past the threshold and
+  // re-appears at the top; the FLOATING toggle docks above the nav bar once
+  // scrolling pauses while scrolled down (and hides while actively scrolling).
+  const [floatToggleVisible, setFloatToggleVisible] = useState(false);
+  const [topToggleShown, setTopToggleShown] = useState(true);
+  const topShownRef = useRef(true);
+  const floatScrollY = useRef(0);
+  const floatPauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetToggles = useCallback(() => {
+    if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current);
+    setFloatToggleVisible(false);
+    topShownRef.current = true;
+    setTopToggleShown(true);
+    floatScrollY.current = 0;
+  }, []);
+
+  // Reveal the bottom bar + reset toggles when switching sub-tabs / regaining focus.
+  useEffect(() => { tabBar?.show(); resetToggles(); }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
+
+  const onFloatScroll = useCallback((e: any) => {
+    const y = e?.nativeEvent?.contentOffset?.y ?? 0;
+    floatScrollY.current = y;
+
+    // Collapse the top toggle once scrolled down; restore it near the top.
+    const showTop = y <= 120;
+    if (topShownRef.current !== showTop) {
+      topShownRef.current = showTop;
+      LayoutAnimation.configureNext(LayoutAnimation.create(180, 'easeInEaseOut', 'opacity'));
+      setTopToggleShown(showTop);
+    }
+
+    // Floating toggle: hidden while scrolling, docks after a pause when scrolled.
+    setFloatToggleVisible(false);
+    if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current);
+    floatPauseTimer.current = setTimeout(() => {
+      if (floatScrollY.current > 120) setFloatToggleVisible(true);
+    }, 350);
+  }, []);
+  useEffect(() => () => { if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current); }, []);
+  const handleScroll = useCallback((e: any) => { onFloatScroll(e); tabBar?.onScroll?.(e); }, [onFloatScroll, tabBar]);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [createVisible, setCreateVisible] = useState(false);
   const [tweetVisible, setTweetVisible] = useState(false);
@@ -367,28 +414,30 @@ export function FeedScreen() {
         <View style={{ width: 34 }} />
       </View>
 
-      {/* Segmented control: Feed · Friends · Chat */}
-      <View style={styles.segmentRow}>
-        {SEGMENTS.map(({ key, label, Icon, badge }) => {
-          const active = activeTab === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[styles.segment, active && styles.segmentActive]}
-              onPress={() => setActiveTab(key)}
-              activeOpacity={0.85}
-            >
-              <Icon size={15} color={active ? '#fff' : TEXT_SECONDARY} />
-              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text>
-              {badge > 0 && (
-                <View style={styles.segBadge}>
-                  <Text style={styles.segBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Segmented control — collapses away once scrolled (floating one takes over) */}
+      {topToggleShown && (
+        <View style={styles.segmentRow}>
+          {SEGMENTS.map(({ key, label, Icon, badge }) => {
+            const active = activeTab === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.segment, active && styles.segmentActive]}
+                onPress={() => setActiveTab(key)}
+                activeOpacity={0.85}
+              >
+                <Icon size={15} color={active ? '#fff' : TEXT_SECONDARY} />
+                <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text>
+                {badge > 0 && (
+                  <View style={styles.segBadge}>
+                    <Text style={styles.segBadgeText}>{badge > 9 ? '9+' : badge}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       {/* ── Active view ── */}
       {activeTab === 'feed' ? (
@@ -402,11 +451,39 @@ export function FeedScreen() {
           ListFooterComponent={ListFooter}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          onScroll={tabBar?.onScroll}
+          onScroll={handleScroll}
           scrollEventThrottle={16}
         />
       ) : (
-        <ChatHub />
+        <ChatHub onScroll={handleScroll} />
+      )}
+
+      {/* Floating Feed/Chat toggle — docks centered above the nav bar once the
+          user scrolls down and scrolling pauses (same effect as the Library). */}
+      {floatToggleVisible && (
+        <View style={styles.floatToggleWrap} pointerEvents="box-none">
+          <View style={styles.floatToggle}>
+            {SEGMENTS.map(({ key, label, Icon, badge }) => {
+              const active = activeTab === key;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.floatSeg, active && styles.floatSegActive]}
+                  onPress={() => setActiveTab(key)}
+                  activeOpacity={0.85}
+                >
+                  <Icon size={14} color={active ? '#fff' : TEXT_SECONDARY} />
+                  <Text style={[styles.floatSegText, active && styles.floatSegTextActive]}>{label}</Text>
+                  {badge > 0 && (
+                    <View style={styles.segBadge}>
+                      <Text style={styles.segBadgeText}>{badge > 9 ? '9+' : badge}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
       )}
 
       {/* Modals */}
@@ -491,6 +568,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+
+  // Floating Feed/Chat toggle (docks above the nav bar on scroll-pause)
+  floatToggleWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 96,
+    alignItems: 'center',
+    zIndex: 90,
+  },
+  floatToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#EEEEF2',
+    borderRadius: 100,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#D8D8E4',
+    shadowColor: '#211832',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  floatSeg: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    borderRadius: 100,
+    backgroundColor: 'transparent',
+  },
+  floatSegActive: { backgroundColor: '#211832' },
+  floatSegText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
+  floatSegTextActive: { color: '#fff' },
 
   listContent: { paddingTop: 8, paddingBottom: 120 },
 

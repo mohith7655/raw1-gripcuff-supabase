@@ -22,6 +22,7 @@ import {
   Modal,
   Switch,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -81,6 +82,18 @@ const DEFAULT_PREFS: Record<ActivityCategory, boolean> = {
   workouts: true,
   messages: true,
 };
+
+// ── Filter tabs (below the header) ──────────────────────────────────────────
+// 'all' shows everything enabled in prefs; each other key narrows to a single
+// category. Labels are user-facing ("Chats" ↔ messages category).
+type FilterKey = 'all' | ActivityCategory;
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'all',        label: 'All' },
+  { key: 'messages',   label: 'Chats' },
+  { key: 'workouts',   label: 'Workouts' },
+  { key: 'challenges', label: 'Challenges' },
+  { key: 'requests',   label: 'Requests' },
+];
 
 // ── Unified item shape ──────────────────────────────────────────────────────
 interface ActivityItem {
@@ -156,6 +169,8 @@ export function SocialActivity() {
 
   const [prefs, setPrefs] = useState<Record<ActivityCategory, boolean>>(() => DEFAULT_PREFS);
   const [customizing, setCustomizing] = useState(false);
+  // Quick filter tabs below the header — narrows the list to one category.
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   const [challenges, setChallenges] = useState<PreviousChallenge[]>([]);
   const [reqProfiles, setReqProfiles] = useState<Record<string, { name: string; avatar: string | null }>>({});
@@ -322,6 +337,12 @@ export function SocialActivity() {
 
   const anyCategoryOn = CATEGORIES.some((c) => prefs[c.key]);
 
+  // Apply the active filter tab on top of the prefs-filtered feed.
+  const visibleItems = useMemo(
+    () => (filter === 'all' ? items : items.filter((i) => i.category === filter)),
+    [items, filter],
+  );
+
   // ── Item interactions ──
   const handlePress = useCallback((item: ActivityItem) => {
     switch (item.category) {
@@ -375,27 +396,55 @@ export function SocialActivity() {
         </TouchableOpacity>
       </View>
 
+      {/* Filter tabs — narrow the feed to one category */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.tabsScroll}
+        contentContainerStyle={s.tabs}
+      >
+        {FILTERS.map((f) => {
+          const active = filter === f.key;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              style={[s.tab, active && s.tabActive]}
+              onPress={() => setFilter(f.key)}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.tabText, active && s.tabTextActive]}>{f.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       {!anyCategoryOn ? (
         <TouchableOpacity style={s.emptyCard} onPress={() => setCustomizing(true)} activeOpacity={0.85}>
           <Settings size={24} color={MUTED} />
           <Text style={s.emptyTitle}>All categories hidden</Text>
           <Text style={s.emptySub}>Tap to choose what shows in your activity.</Text>
         </TouchableOpacity>
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <View style={s.emptyCard}>
           {loadingChallenges ? (
             <ActivityIndicator color={ORANGE} />
           ) : (
             <>
               <Bell size={24} color={MUTED} />
-              <Text style={s.emptyTitle}>Nothing here yet</Text>
-              <Text style={s.emptySub}>Challenges, invites and requests will show up here.</Text>
+              <Text style={s.emptyTitle}>
+                {filter === 'all' ? 'Nothing here yet' : 'Nothing in this filter'}
+              </Text>
+              <Text style={s.emptySub}>
+                {filter === 'all'
+                  ? 'Challenges, invites and requests will show up here.'
+                  : 'Try the “All” tab to see your other activity.'}
+              </Text>
             </>
           )}
         </View>
       ) : (
         <View style={s.list}>
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const Tag = ICON_FOR[item.category];
             const tagColor = COLOR_FOR[item.category];
             const isRequest = item.category === 'requests';
@@ -514,6 +563,17 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
   },
+
+  // Filter tabs
+  tabsScroll: { marginBottom: 12, flexGrow: 0 },
+  tabs: { flexDirection: 'row', gap: 8, paddingRight: 16 },
+  tab: {
+    paddingHorizontal: 16, paddingVertical: 7, borderRadius: 100,
+    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+  },
+  tabActive: { backgroundColor: TEXT, borderColor: TEXT },
+  tabText: { color: MUTED, fontSize: 13, fontWeight: '700' },
+  tabTextActive: { color: '#fff' },
 
   list: { gap: 8 },
   row: {

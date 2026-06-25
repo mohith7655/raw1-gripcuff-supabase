@@ -15,6 +15,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MuscleVisualizer from '../MuscleVisualizer';
 import { BodyCondition, GoalEntry } from '../../models/User';
+import { loadUnits, fmtHeight, fmtWeight, UnitSystem } from '../../utils/units';
 
 const HIT = { top: 8, bottom: 8, left: 8, right: 8 };
 
@@ -30,9 +31,7 @@ const C = {
 };
 
 const HEIGHT_MIN = 120, HEIGHT_MAX = 215;
-const KG_PER_LB = 0.45359237;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-const kgToLb = (kg: number) => Math.round(kg / KG_PER_LB);
 const girthFromBmi = (bmi: number) => clamp(1 + (bmi - 22) * 0.022, 0.86, 1.34);
 const bmiLabel = (bmi: number) => (bmi < 18.5 ? 'lean' : bmi < 25 ? 'normal' : bmi < 30 ? 'curvy' : 'heavy');
 
@@ -105,14 +104,14 @@ const GOAL_TYPE_LABEL: Record<string, string> = {
 
 // Flatten goals into one chip per target area (weight-loss stays a single chip);
 // the emoji conveys the goal type so chips pack tightly across the row.
-function goalChips(goals: GoalEntry[]): Chip[] {
+function goalChips(goals: GoalEntry[], units: UnitSystem): Chip[] {
   const out: Chip[] = [];
   goals.forEach((g, gi) => {
     const meta = GOAL_META[g.type];
     if (!meta) return;
     const num = gi + 1; // one number per goal, shared by its areas + the figure pin
     if (g.type === 'weight_loss') {
-      out.push({ key: `wl-${gi}`, num, emoji: meta.emoji, label: `Lose ${Math.round(g.kg ?? 0)} kg`, color: meta.color, soft: meta.soft });
+      out.push({ key: `wl-${gi}`, num, emoji: meta.emoji, label: `Lose ${fmtWeight(g.kg ?? 0, units)}`, color: meta.color, soft: meta.soft });
       return;
     }
     const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
@@ -141,6 +140,7 @@ export default function BodyGoalComparison({
   gender, heightCm, weightKg, goals, conditions, onPressNow, onPressGoal,
 }: Props) {
   const modelGender = gender === 'female' ? 'female' : 'male';
+  const units = loadUnits();
   const h = clamp(heightCm ?? 170, HEIGHT_MIN, HEIGHT_MAX);
   const w = weightKg ?? 70;
   const heightM = h / 100;
@@ -199,7 +199,7 @@ export default function BodyGoalComparison({
     return { condMarkers: markers, goalMarkers: gMarkers, targeted: Array.from(new Set(regions)), groupColors: colors };
   }, [JSON.stringify(condList), JSON.stringify(list)]);
 
-  const goalItems = goalChips(list);
+  const goalItems = goalChips(list, units);
   const condItems = condChips(condList);
 
   return (
@@ -253,7 +253,7 @@ export default function BodyGoalComparison({
           }
         />
       </TouchableOpacity>
-      <Text style={s.figCaption}>{`${Math.round(h)} cm · ${kgToLb(w)} lb`}</Text>
+      <Text style={s.figCaption}>{`${fmtHeight(h, units)} · ${fmtWeight(w, units)}`}</Text>
 
       {/* ── What you are / want — packed chip rows, minimal whitespace ─────── */}
       <View style={s.summary}>
@@ -261,8 +261,8 @@ export default function BodyGoalComparison({
           <Text style={s.summaryLabel}>YOU ARE NOW</Text>
         </View>
         <View style={s.chipRow}>
-          <View style={s.metricChip}><Text style={s.metricChipText}>📏 {Math.round(h)} cm</Text></View>
-          <View style={s.metricChip}><Text style={s.metricChipText}>⚖️ {kgToLb(w)} lb</Text></View>
+          <View style={s.metricChip}><Text style={s.metricChipText}>📏 {fmtHeight(h, units)}</Text></View>
+          <View style={s.metricChip}><Text style={s.metricChipText}>⚖️ {fmtWeight(w, units)}</Text></View>
           <View style={s.metricChip}><Text style={s.metricChipText}>📊 BMI {bmi.toFixed(1)} · {bmiLabel(bmi)}</Text></View>
         </View>
 

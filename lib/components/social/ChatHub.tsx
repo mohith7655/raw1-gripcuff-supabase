@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  NativeSyntheticEvent, NativeScrollEvent,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MessageCircle } from 'lucide-react-native';
 import { TierAvatar } from '../profile/TierAvatar';
@@ -13,7 +16,7 @@ const ORANGE = '#F25912';
 const MUTED = '#7A7C90';
 
 /** Conversation list for the Social → Chat tab. Friends ordered by recency. */
-export function ChatHub() {
+export function ChatHub({ onScroll }: { onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void }) {
     const navigation = useNavigation<any>();
     const { user } = useAuth();
     const { friends } = useFriend();
@@ -105,6 +108,8 @@ export function ChatHub() {
             renderItem={renderItem}
             contentContainerStyle={s.list}
             showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
         />
     );
 }

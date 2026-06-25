@@ -33,8 +33,8 @@ import { UserBadgeState } from '../services/badge.types';
 const C = {
   bg:     '#EEEEF2',
   card:   '#F8F8FC',
-  border: 'rgba(255,255,255,0.07)',
-  text:   '#ffffff',
+  border: 'rgba(33,24,50,0.10)',
+  text:   '#211832',
   muted:  '#7A7C90',
 };
 

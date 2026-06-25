@@ -11,6 +11,7 @@ import { ActivityIndicator, GestureResponderEvent, Image as RNImage, StyleSheet,
 import Svg, { Circle, G, Image as SvgImage, Line, Text as SvgText } from 'react-native-svg';
 import { GoalEntry, GoalType } from '../../models/User';
 import MuscleVisualizer from '../MuscleVisualizer';
+import { loadUnits, fmtWeight, isWeightLb, toFeetInches } from '../../utils/units';
 
 // ── 3D model hotspots — tappable body-part dots overlaid on the model. ─────────
 // x = horizontal offset from centre (0.5); y = fraction of viewer height.
@@ -150,10 +151,6 @@ const HIT_RADIUS = 42; // viewBox units — how close a tap must be to a landmar
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const round = (v: number, step: number) => Math.round(v / step) * step;
 const girthFromBmi = (bmi: number) => clamp(1 + (bmi - 22) * 0.022, 0.86, 1.34);
-function toFeetInches(cm: number): string {
-  const t = cm / 2.54; let ft = Math.floor(t / 12); let inch = Math.round(t - ft * 12);
-  if (inch === 12) { ft += 1; inch = 0; } return `${ft}'${inch}"`;
-}
 
 // ── Figure artwork ────────────────────────────────────────────────────────────
 const BOY_IMG = require('../../../assets/figures/boy.png');
@@ -225,6 +222,7 @@ export default function GoalVisualizer({
     { base: string; label: string; both: boolean; xf: number; y: number; side: InjurySide | null } | null
   >(null);
 
+  const units = loadUnits();
   const curWeight = weightKg ?? 70;
   const heightM = (heightCm ?? 170) / 100;
   const maxLose = Math.max(1, Math.round(curWeight - 35));
@@ -352,7 +350,7 @@ export default function GoalVisualizer({
 
   const summary = list.map(g => {
     const meta = TYPE_META[g.type];
-    if (g.type === 'weight_loss') return `${meta.emoji} Lose ${Math.round(g.kg ?? 0)} kg`;
+    if (g.type === 'weight_loss') return `${meta.emoji} Lose ${fmtWeight(g.kg ?? 0, units)}`;
     const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
     const labels = keys.map(k => keyLabel(lmList(g.type), k)).join(', ');
     return `${meta.emoji} ${meta.label}${labels ? `: ${labels}` : ''}`;
@@ -702,14 +700,14 @@ export default function GoalVisualizer({
                 {goal.type === 'weight_loss' && (
                   <View style={st.detail}>
                     <View style={st.compareRow}>
-                      <Compare label="Current" value={`${Math.round(curWeight)} kg`} />
+                      <Compare label="Current" value={fmtWeight(curWeight, units)} />
                       <Text style={st.arrow}>→</Text>
-                      <Compare label="Target" value={`${Math.round(Math.max(35, curWeight - (goal.kg ?? 0)))} kg`} accent />
-                      <View style={st.deltaPill}><Text style={st.deltaText}>−{Math.round(goal.kg ?? 0)} kg</Text></View>
+                      <Compare label="Target" value={fmtWeight(Math.max(35, curWeight - (goal.kg ?? 0)), units)} accent />
+                      <View style={st.deltaPill}><Text style={st.deltaText}>−{fmtWeight(goal.kg ?? 0, units)}</Text></View>
                     </View>
                     <View style={st.sliderHead}>
-                      <Text style={st.qLabel}>Kg to lose</Text>
-                      <Text style={st.sliderValue}>{Math.round(goal.kg ?? 0)} kg</Text>
+                      <Text style={st.qLabel}>{isWeightLb(units) ? 'Lb to lose' : 'Kg to lose'}</Text>
+                      <Text style={st.sliderValue}>{fmtWeight(goal.kg ?? 0, units)}</Text>
                     </View>
                     <Slider min={1} max={maxLose} step={1} value={goal.kg ?? 1} color={C.orange} onChange={v => update(i, { kg: v })} />
                   </View>

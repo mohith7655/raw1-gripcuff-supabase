@@ -16,6 +16,20 @@ export const DIFFICULTY_DISPLAY: Record<string, { label: string; emoji: string }
   Advanced:     { label: 'Complex', emoji: '🔴' },
 };
 
+// Solid colour matching each difficulty's dot (🟢/🟡/🔴) — used to render the
+// difficulty as a bare coloured dot next to a video title.
+export const DIFFICULTY_COLORS: Record<string, string> = {
+  Beginner:     '#22C55E', // green
+  Intermediate: '#EAB308', // amber
+  Advanced:     '#EF4444', // red
+};
+
+/** Difficulty → dot colour. Null when unknown/missing. */
+export function difficultyColor(value?: string | null): string | null {
+  if (!value) return null;
+  return DIFFICULTY_COLORS[normalize(value)] ?? null;
+}
+
 const normalize = (value: string) =>
   value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 

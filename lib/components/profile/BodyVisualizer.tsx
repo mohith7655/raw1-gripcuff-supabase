@@ -20,6 +20,10 @@ import { ActivityIndicator, GestureResponderEvent, StyleSheet, Text, TouchableOp
 import { Settings } from 'lucide-react-native';
 import MuscleVisualizer from '../MuscleVisualizer';
 import { BodyCondition, BodyConditionType } from '../../models/User';
+import {
+  UnitSystem, loadUnits, saveUnits, kgToLb, lbToKg, toFeetInches,
+  fmtWeight, fmtHeight, isWeightLb, PAIR_LABEL,
+} from '../../utils/units';
 
 // ── Theme ───────────────────────────────────────────────────────────────────
 const C = {
@@ -77,15 +81,6 @@ interface Props {
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const round = (v: number, step: number) => Math.round(v / step) * step;
 
-// ── cm → ft/in label ────────────────────────────────────────────────────────
-function toFeetInches(cm: number): string {
-  const totalIn = cm / 2.54;
-  let ft = Math.floor(totalIn / 12);
-  let inch = Math.round(totalIn - ft * 12);
-  if (inch === 12) { ft += 1; inch = 0; }
-  return `${ft}'${inch}"`;
-}
-
 // ── Body-figure scaling ───────────────────────────────────────────────────────
 // height → uniform scale of the whole 3D figure (taller = larger, fills more of
 // the canvas, with HEIGHT_MAX filling it). weight → BMI-driven horizontal girth
@@ -98,37 +93,11 @@ const girthScaleOf = (m: BodyMetrics) => {
   return clamp(1 + (bmi - 22) * 0.022, 0.86, 1.34);
 };
 
-// ── kg ⇄ lb (weight is shown in pounds; stored/computed in kg for BMI) ────────
-const KG_PER_LB = 0.45359237;
-const kgToLb = (kg: number) => kg / KG_PER_LB;
-const lbToKg = (lb: number) => lb * KG_PER_LB;
+// ── Weight-slider bounds in pounds (weight is stored/computed in kg) ──────────
 const WEIGHT_MIN_LB = Math.round(kgToLb(WEIGHT_MIN)); // ~77 lb
 const WEIGHT_MAX_LB = Math.round(kgToLb(WEIGHT_MAX)); // ~353 lb
-
-// ── Unit-system preference (imperial / metric) ────────────────────────────────
-// Body metrics are always stored/computed in metric (kg, cm); this only changes
-// how every metric is *displayed* + which units the sliders work in.
-//   • imperial → weight lb, height ft·in
-//   • metric   → weight kg, height cm
-// Persisted per-device (web-safe).
-export type UnitSystem = 'imperial' | 'metric';
-const UNITS_KEY = 'body_metrics_units';
-function loadUnits(): UnitSystem {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const v = localStorage.getItem(UNITS_KEY);
-      if (v === 'metric' || v === 'imperial') return v;
-    }
-  } catch {}
-  return 'imperial';
-}
-function saveUnits(u: UnitSystem) {
-  try { if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, u); } catch {}
-}
-const fmtWeight = (kg: number, sys: UnitSystem) =>
-  sys === 'metric' ? `${Math.round(kg)} kg` : `${Math.round(kgToLb(kg))} lb`;
-const fmtHeight = (cm: number, sys: UnitSystem) =>
-  sys === 'metric' ? `${Math.round(cm)} cm` : toFeetInches(cm);
+// Unit-system preference (cm·lb / ft·in·kg) lives in ../../utils/units — the
+// single source of truth so height & weight units always stay paired.
 
 // ── Body-condition picker ─────────────────────────────────────────────────────
 // Tappable body-part dots overlaid on the model. x = horizontal offset from
@@ -468,13 +437,13 @@ export default function BodyVisualizer({
       <View style={s.stageRow}>
         {editable && (
           <View style={s.vSliderCol}>
-            <Text style={s.vValue}>{units === 'metric' ? Math.round(m.heightCm) : toFeetInches(m.heightCm)}</Text>
+            <Text style={s.vValue}>{units === 'cm_lb' ? Math.round(m.heightCm) : toFeetInches(m.heightCm)}</Text>
             <VerticalSlider
               height={canvasHeight - 34}
               min={HEIGHT_MIN} max={HEIGHT_MAX} step={1} value={m.heightCm} color={C.indigo}
               onChange={v => set({ heightCm: v })} onCommit={() => commit({ heightCm: m.heightCm })}
             />
-            <Text style={s.vUnit}>{units === 'metric' ? 'CM' : 'HEIGHT'}</Text>
+            <Text style={s.vUnit}>{units === 'cm_lb' ? 'CM' : 'HEIGHT'}</Text>
           </View>
         )}
       {/* Wrapper keeps the picker popover visible even though the stage clips. */}
@@ -525,10 +494,8 @@ export default function BodyVisualizer({
       {unitMenuOpen && (
         <View style={s.unitMenu}>
           <Text style={s.unitMenuTitle}>Units</Text>
-          {([
-            { key: 'imperial' as UnitSystem, label: 'Imperial', sub: 'lb · ft/in' },
-            { key: 'metric' as UnitSystem,   label: 'Metric',   sub: 'kg · cm' },
-          ]).map(opt => {
+          {(['cm_lb', 'ftin_kg'] as UnitSystem[]).map(key => {
+            const opt = { key, ...PAIR_LABEL[key] };
             const active = units === opt.key;
             return (
               <TouchableOpacity
@@ -563,7 +530,7 @@ export default function BodyVisualizer({
             <Text style={s.ctrlLabel}>Weight</Text>
             <Text style={s.sliderValue}>{fmtWeight(m.weightKg, units)}</Text>
           </View>
-          {units === 'imperial' ? (
+          {isWeightLb(units) ? (
             <Slider
               min={WEIGHT_MIN_LB} max={WEIGHT_MAX_LB} step={1} value={Math.round(kgToLb(m.weightKg))} color={C.orange}
               onChange={v => set({ weightKg: clamp(lbToKg(v), WEIGHT_MIN, WEIGHT_MAX) })}
@@ -584,12 +551,12 @@ export default function BodyVisualizer({
         <Stat
           label="Height"
           value={fmtHeight(m.heightCm, units)}
-          sub={fmtHeight(m.heightCm, units === 'metric' ? 'imperial' : 'metric')}
+          sub={fmtHeight(m.heightCm, units === 'cm_lb' ? 'ftin_kg' : 'cm_lb')}
         />
         <Stat
           label="Weight"
           value={fmtWeight(m.weightKg, units)}
-          sub={fmtWeight(m.weightKg, units === 'metric' ? 'imperial' : 'metric')}
+          sub={fmtWeight(m.weightKg, units === 'cm_lb' ? 'ftin_kg' : 'cm_lb')}
         />
         <Stat label="BMI" value={bmi.toFixed(1)} sub={bmiLabel(bmi)} />
         <Stat label="Age" value={`${Math.round(m.age)}`} sub="yrs" />

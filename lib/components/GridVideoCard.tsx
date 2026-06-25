@@ -4,7 +4,7 @@ import { Play } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
-import { formatDifficulty } from '../core/difficulty';
+import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { useVideoViews, formatViews } from '../services/videoViews.service';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
@@ -66,23 +66,19 @@ export const GridVideoCard = ({
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{video.duration}</Text>
                 </View>
+                <ThumbnailCategory category={(video as any).category} />
             </View>
 
             <View style={styles.infoContainer}>
-                <Text style={styles.videoTitle} numberOfLines={2}>
-                    {video.title}
-                </Text>
-                <View style={styles.metaRow}>
-                    {!!formatDifficulty((video as any).difficulty) && (
-                        <Text style={styles.videoDifficulty}>{formatDifficulty((video as any).difficulty)}</Text>
-                    )}
-                    {!!views && (
-                        <Text style={styles.videoViews}>
-                            {!!formatDifficulty((video as any).difficulty) && '· '}
-                            {formatViews(views)} views
-                        </Text>
-                    )}
+                <View style={styles.titleRow}>
+                    <Text style={styles.videoTitle} numberOfLines={2}>
+                        {video.title}
+                    </Text>
+                    <DifficultyDot difficulty={(video as any).difficulty} style={styles.diffDot} />
                 </View>
+                {!!views && (
+                    <Text style={styles.videoViews}>{formatViews(views)} views</Text>
+                )}
             </View>
         </TouchableOpacity>
     );
@@ -122,30 +118,23 @@ const styles = StyleSheet.create({
     },
     titleRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
-        gap: 8,
+        gap: 6,
+        marginTop: 8,
     },
     videoTitle: {
         flex: 1,
         color: '#211832',
         fontSize: 12,
-        marginTop: 8,
+        lineHeight: 16,
     },
-    metaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        marginTop: 3,
-    },
-    videoDifficulty: {
-        color: '#7A7C90',
-        fontSize: 11,
-        fontWeight: '600',
+    diffDot: {
+        marginTop: 4,
     },
     videoViews: {
         color: '#7A7C90',
         fontSize: 11,
         fontWeight: '600',
+        marginTop: 3,
     },
 });

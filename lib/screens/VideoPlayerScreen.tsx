@@ -194,61 +194,70 @@ function EngagementBar({
     ];
 
     return (
-        <View style={engagementStyles.container}>
-            {/* Workout / Watch — pinned to the left */}
-            <ModeToggle modeType={modeType} onSwitchMode={onSwitchMode} />
+        <View style={engagementStyles.bar}>
+            {/* Horizontally scrollable so the pills can overflow (swipe right to reveal). */}
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={engagementStyles.container}
+            >
+                {/* Workout / Watch — pinned to the left */}
+                <ModeToggle modeType={modeType} onSwitchMode={onSwitchMode} />
 
-            {/* Invite Friend — sits between the mode toggle and the reaction pills */}
-            {allowInvite && !!onInviteFriend && (
-                <TouchableOpacity
-                    style={engagementStyles.inviteBtn}
-                    onPress={onInviteFriend}
-                    activeOpacity={0.85}
-                >
-                    <Ionicons name="person-add-outline" size={14} color="#fff" />
-                    <Text style={engagementStyles.inviteText}>Invite Friend</Text>
-                </TouchableOpacity>
-            )}
+                {/* Invite Friend — sits between the mode toggle and the reaction pills; hidden in workout mode */}
+                {modeType !== 'workout' && allowInvite && !!onInviteFriend && (
+                    <TouchableOpacity
+                        style={engagementStyles.inviteBtn}
+                        onPress={onInviteFriend}
+                        activeOpacity={0.85}
+                    >
+                        <Ionicons name="person-add-outline" size={14} color="#fff" />
+                        <Text style={engagementStyles.inviteText}>Invite Friend</Text>
+                    </TouchableOpacity>
+                )}
 
-            {/* Favorite / Try it / Dislike — hidden in workout mode to keep focus on the timer */}
-            {modeType !== 'workout' && (
-                <View style={engagementStyles.pillRow}>
-                    {buttons.map((btn) => (
-                        <TouchableOpacity
-                            key={btn.key}
-                            style={[engagementStyles.pill, btn.active && engagementStyles.pillActive]}
-                            onPress={btn.onPress}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons
-                                name={btn.active ? btn.iconActive : btn.icon}
-                                size={15}
-                                color={btn.active ? '#211832' : '#7A7C90'}
-                            />
-                            {/* Label only appears once active/pressed; otherwise icon-only */}
-                            {btn.active && (
-                                <Text numberOfLines={1} style={engagementStyles.pillLabel}>
-                                    {btn.label}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            )}
+                {/* Favorite / Try it / Dislike — hidden in workout mode to keep focus on the timer */}
+                {modeType !== 'workout' && (
+                    <View style={engagementStyles.pillRow}>
+                        {buttons.map((btn) => (
+                            <TouchableOpacity
+                                key={btn.key}
+                                style={[engagementStyles.pill, btn.active && engagementStyles.pillActive]}
+                                onPress={btn.onPress}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name={btn.active ? btn.iconActive : btn.icon}
+                                    size={15}
+                                    color={btn.active ? '#211832' : '#7A7C90'}
+                                />
+                                {/* Label only appears once active/pressed; otherwise icon-only */}
+                                {btn.active && (
+                                    <Text numberOfLines={1} style={engagementStyles.pillLabel}>
+                                        {btn.label}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+            </ScrollView>
         </View>
     );
 }
 
 const engagementStyles = StyleSheet.create({
+    bar: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(33,24,50,0.06)',
+    },
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 10,
         paddingVertical: 10,
         gap: 6,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(33,24,50,0.06)',
-        justifyContent: 'space-between',
     },
     pillRow: {
         flexDirection: 'row',
@@ -2013,6 +2022,21 @@ function VideoPlayerScreen({ route, navigation }: any) {
         );
     };
 
+    // Tiny auto-dismissing tooltip explaining a difficulty dot when it's tapped.
+    const DIFF_DESC: Record<string, string> = {
+        Beginner: '🟢 Simple — beginner-friendly, easy to follow.',
+        Intermediate: '🟡 Medium — some experience helps.',
+        Advanced: '🔴 Complex — built for advanced athletes.',
+    };
+    const [diffTip, setDiffTip] = useState<string | null>(null);
+    const diffTipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const showDiffTip = useCallback((lvl: string) => {
+        setDiffTip(lvl);
+        if (diffTipTimer.current) clearTimeout(diffTipTimer.current);
+        diffTipTimer.current = setTimeout(() => setDiffTip(null), 2200);
+    }, []);
+    useEffect(() => () => { if (diffTipTimer.current) clearTimeout(diffTipTimer.current); }, []);
+
     const renderRequirementsContent = () => (
         <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
             {/* Experience & Setup — always visible, combined */}
@@ -2034,14 +2058,35 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         // just their colored icon (🟢 / 🟡 / 🔴).
                         const label = active ? formatDifficulty(lvl) : difficultyEmoji(lvl);
                         return (
-                            <View key={lvl} style={{
-                                paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
-                                borderColor: active ? INDIGO : 'rgba(33,24,50,0.12)',
-                                backgroundColor: active ? INDIGO_SOFT : 'transparent',
-                            }}>
-                                <Text style={{ color: active ? INDIGO : '#7A7C90', fontSize: 12, fontWeight: '600' }}>
-                                    {label}
-                                </Text>
+                            <View key={lvl} style={{ position: 'relative' }}>
+                                {diffTip === lvl && (
+                                    <View
+                                        style={[
+                                            reqStyles.diffTip,
+                                            // Anchor so the bubble stays inside the panel: first dot
+                                            // opens rightward, last dot leftward, middle centered.
+                                            lvl === 'Beginner' ? { left: 0 }
+                                            : lvl === 'Advanced' ? { right: 0 }
+                                            : { left: '50%', marginLeft: -82 },
+                                        ]}
+                                        pointerEvents="none"
+                                    >
+                                        <Text style={reqStyles.diffTipText}>{DIFF_DESC[lvl]}</Text>
+                                    </View>
+                                )}
+                                <TouchableOpacity
+                                    onPress={() => showDiffTip(lvl)}
+                                    activeOpacity={0.75}
+                                    style={{
+                                        paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
+                                        borderColor: active ? INDIGO : 'rgba(33,24,50,0.12)',
+                                        backgroundColor: active ? INDIGO_SOFT : 'transparent',
+                                    }}
+                                >
+                                    <Text style={{ color: active ? INDIGO : '#7A7C90', fontSize: 12, fontWeight: '600' }}>
+                                        {label}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                         );
                     })}
@@ -2772,8 +2817,20 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     cameraPermissionDenied={cameraPermissionDenied}
                 />
             ) : (
-            <View
-                style={[panelStyles.panel, { flex: 1 }, modeType === 'workout' && { backgroundColor: PANEL_DARK }]}
+            <Animated.View
+                style={[
+                    panelStyles.panel,
+                    { flex: 1 },
+                    {
+                        // Fades to white as the video shrinks (scroll 0→120), and back
+                        // to the original panel colour as the video grows again.
+                        backgroundColor: smoothVideoScrollY.interpolate({
+                            inputRange: [0, 120],
+                            outputRange: [modeType === 'workout' ? PANEL_DARK : PANEL_BG, '#FFFFFF'],
+                            extrapolate: 'clamp',
+                        }),
+                    },
+                ]}
                 // A touch anywhere on the section brings the colour back to 100%.
                 onTouchStart={modeType === 'watch' ? revealPanel : undefined}
             >
@@ -3084,7 +3141,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
                         style={[StyleSheet.absoluteFillObject, { backgroundColor: panelScrimColor }]}
                     />
                 )}
-            </View>
+            </Animated.View>
             )}
             </Animated.View>
         </KeyboardAvoidingView>
@@ -3752,6 +3809,30 @@ const reqStyles = StyleSheet.create({
         marginBottom: 12,
         borderWidth: 1,
         borderColor: 'rgba(33,24,50,0.06)',
+    },
+    // Tiny tooltip that pops above a difficulty dot, then auto-dismisses.
+    diffTip: {
+        position: 'absolute',
+        bottom: '100%',
+        marginBottom: 7,
+        width: 164,
+        backgroundColor: '#211832',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        zIndex: 50,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
+    },
+    diffTipText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '600',
+        lineHeight: 15,
+        textAlign: 'center',
     },
     sectionRow: {
         flexDirection: 'row',

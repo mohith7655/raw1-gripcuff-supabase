@@ -852,7 +852,7 @@ export const ProfileScreen = () => {
           <ProfileCard isPrivate={isSectionPrivate('fitnessGoals')} onToggleVisibility={() => toggleSection('fitnessGoals')}>
             <View style={s.cardHeaderRow}>
               <Text style={s.cardTitle}>Fitness Goals</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'meet' })}>
+              <TouchableOpacity onPress={() => navigation.navigate('LookingToMeetEditScreen')}>
                 <Pencil size={16} color={C.muted} strokeWidth={2} />
               </TouchableOpacity>
             </View>

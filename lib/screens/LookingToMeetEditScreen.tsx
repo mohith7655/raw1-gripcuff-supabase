@@ -49,18 +49,18 @@ import {
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
   bg:           '#EEEEF2',
-  bgCard:       '#EEEEF2',
-  bgInput:      'rgba(255,255,255,0.05)',
+  bgCard:       '#F8F8FC',
+  bgInput:      '#F8F8FC',
   orange:       '#F25912',
   accentSoft:   'rgba(242,89,18,0.12)',
   accentBorder: 'rgba(242,89,18,0.28)',
   green:        '#22c55e',
   greenSoft:    'rgba(34,197,94,0.1)',
   greenBorder:  'rgba(34,197,94,0.28)',
-  text:         '#ffffff',
+  text:         '#211832',
   muted:        '#7A7C90',
   dim:          '#7A7C90',
-  border:       'rgba(255,255,255,0.08)',
+  border:       'rgba(33,24,50,0.10)',
 };
 
 const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
@@ -200,7 +200,7 @@ export function LookingToMeetEditScreen() {
           disabled={saving}
         >
           {saving
-            ? <ActivityIndicator size="small" color="#211832" />
+            ? <ActivityIndicator size="small" color="#fff" />
             : <Text style={s.saveBtnText}>Save</Text>
           }
         </TouchableOpacity>
@@ -342,7 +342,7 @@ export function LookingToMeetEditScreen() {
           activeOpacity={0.86}
         >
           {saving
-            ? <ActivityIndicator color="#211832" />
+            ? <ActivityIndicator color="#fff" />
             : <Text style={s.bottomSaveText}>Save</Text>
           }
         </TouchableOpacity>
@@ -372,7 +372,7 @@ const s = StyleSheet.create({
     backgroundColor: C.orange, borderRadius: 10,
     paddingVertical: 7, paddingHorizontal: 16,
   },
-  saveBtnText: { color: '#211832', fontWeight: '800', fontSize: 14 },
+  saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
 
   scroll: {
     paddingHorizontal: 16,
@@ -396,7 +396,7 @@ const s = StyleSheet.create({
   openToRow: { flexDirection: 'row', gap: 8 },
   openToCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.bgCard,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: C.border,
@@ -435,7 +435,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: C.bgCard,
     borderWidth: 1,
     borderColor: C.border,
   },
@@ -507,5 +507,5 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  bottomSaveText: { color: '#211832', fontSize: 16, fontWeight: '900' },
+  bottomSaveText: { color: '#fff', fontSize: 16, fontWeight: '900' },
 });
