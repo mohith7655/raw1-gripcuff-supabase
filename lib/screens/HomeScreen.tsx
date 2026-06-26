@@ -82,6 +82,7 @@ import { getAllPrograms } from '../data/preRecordedPrograms';
 import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 import { getUserRank } from '../services/leaderboard.service';
 import { SocialProfileService } from '../services/socialProfile.service';
+import { SocialWorkoutHeatmap } from '../components/social/SocialWorkoutHeatmap';
 import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META } from '../models/SocialProfile';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
@@ -302,6 +303,7 @@ const HomeScreenInner = () => {
     if (!supabaseUserId) return;
     SocialProfileService.get(supabaseUserId).then(setSocialProfile).catch(() => {});
   }, [supabaseUserId]);
+
 
   // Club memberships for notification sections
   const [myClubs, setMyClubs] = useState<Array<{ id: string; name: string; avatar_url: string | null; unread: number }>>([]);
@@ -1509,6 +1511,17 @@ const HomeScreenInner = () => {
             onPressNow={() => navigation.navigate('HowILookNow')}
             onPressGoal={() => navigation.navigate('Goals')}
           />
+
+          {/* ── Are you being social or working out? — my own heat map ──────── */}
+          {supabaseUserId && (
+            <View style={styles.heatCard}>
+              <Text style={styles.heatTitle}>Are you being social or working out?</Text>
+              <Text style={styles.heatSub}>Your recent workout vs social activity</Text>
+              <View style={{ marginTop: 14 }}>
+                <SocialWorkoutHeatmap uid={supabaseUserId} />
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -2056,6 +2069,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: AppTheme.background,
   },
+  heatCard: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#F8F8FC',
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.06)',
+  },
+  heatTitle: { color: '#211832', fontSize: 15, fontWeight: '800' },
+  heatSub: { color: '#7A7C90', fontSize: 12, marginTop: 2 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

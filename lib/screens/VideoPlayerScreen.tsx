@@ -19,7 +19,8 @@ import {
     Easing,
     PanResponder,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SetupTimeIcon, categoryIconName, categoryColor, categoryLabel } from '../components/VideoCardBits';
 import { VideoInviteModal } from '../components/VideoInviteModal';
 import { InviteTypeSelectorModal } from '../components/InviteTypeSelectorModal';
 import { ScheduleSessionModal } from '../components/ScheduleSessionModal';
@@ -1874,6 +1875,7 @@ function VideoPlayerScreen({ route, navigation }: any) {
         const uniqueProgramMuscles = Array.from(new Set(programMuscles));
 
         return {
+            category,
             equipment: v?.equipment || equipmentList.map((e: any) => e.equipment).join(', '),
             muscles: v?.muscles || (uniqueProgramMuscles.length > 0 ? uniqueProgramMuscles.join(', ') : 'Forearms, Grip Strength'),
             exerciseType: v?.exerciseType || 'General',
@@ -2092,17 +2094,43 @@ function VideoPlayerScreen({ route, navigation }: any) {
                     })}
                 </View>
 
-                {/* Setup time — how long to get the equipment ready before starting */}
+                {/* Setup time — how long to get the equipment ready before starting.
+                    The hourglass mirrors the quick/fast/slow icon on the cards. */}
                 <Text style={reqStyles.subLabel}>Setup time</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
                     <View style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 6,
                         paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
                         borderColor: INDIGO, backgroundColor: INDIGO_SOFT,
                     }}>
+                        <SetupTimeIcon category={reqData.category} difficulty={reqData.experienceLevel} size={15} />
                         <Text style={{ color: INDIGO, fontSize: 12, fontWeight: '700' }}>{reqData.setupTime}</Text>
                     </View>
                 </View>
                 <Text style={[reqStyles.metaValue, { marginTop: 8 }]}>{reqData.setupNote}</Text>
+
+                {/* Workout category — same pictogram shown on the video cards */}
+                {reqData.category ? (
+                    <>
+                        <Text style={reqStyles.subLabel}>Workout category</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                            <View style={{
+                                flexDirection: 'row', alignItems: 'center', gap: 6,
+                                paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
+                                borderColor: INDIGO, backgroundColor: INDIGO_SOFT,
+                            }}>
+                                <MaterialCommunityIcons
+                                    name={categoryIconName(reqData.category) as any}
+                                    color={categoryColor(reqData.category)}
+                                    size={16}
+                                />
+                                <Text style={{ color: INDIGO, fontSize: 12, fontWeight: '700' }}>
+                                    {categoryLabel(reqData.category)}
+                                </Text>
+                            </View>
+                        </View>
+                    </>
+                ) : null}
             </View>
 
             {/* More details toggle — reveals the rest of the sections */}

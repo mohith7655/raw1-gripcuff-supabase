@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, ViewModeIcon, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, Flame, Zap, HeartPulse, PersonStanding, PlusCircle, Users, ChevronRight, Search } from 'lucide-react-native';
+import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, PlusCircle, Users, ChevronRight, Search } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
@@ -27,7 +27,7 @@ import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Video, VideoType, SubTab } from '../models/Video';
 import { ExploreCoaches } from './ExploreCoaches';
 import { useFavorites } from '../hooks/useFavorites';
@@ -130,8 +130,8 @@ const FeaturedHero = ({ slides }: { slides: HeroSlide[] }) => {
 
 const WorkoutsTabContent = () => {
   const navigation = useNavigation<any>();
-  const CategoryRow = ({ title, subtitle, IconName, color, last, onPress }: {
-    title: string; subtitle: string; IconName: any; color: string; last?: boolean; onPress?: () => void;
+  const CategoryRow = ({ title, subtitle, iconName, color, last, onPress }: {
+    title: string; subtitle: string; iconName: any; color: string; last?: boolean; onPress?: () => void;
   }) => (
     <>
       <TouchableOpacity
@@ -140,7 +140,7 @@ const WorkoutsTabContent = () => {
         onPress={onPress}
       >
         <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${color}1A`, alignItems: 'center', justifyContent: 'center' }}>
-          <IconName color={color} size={20} />
+          <MaterialCommunityIcons name={iconName} color={color} size={24} />
         </View>
         <View style={{ flex: 1, marginLeft: 14 }}>
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#211832', marginBottom: 1 }}>{title}</Text>
@@ -167,10 +167,10 @@ const WorkoutsTabContent = () => {
 
         {/* Category rows */}
         <View style={{ marginHorizontal: SCREEN_PADDING, backgroundColor: '#F8F8FC', borderRadius: 14, borderWidth: 1, borderColor: '#D8D8E4', overflow: 'hidden', marginBottom: 16 }}>
-          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" IconName={Flame} color="#66BB6A" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
-          <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" IconName={PersonStanding} color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
-          <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" IconName={Zap} color="#D4A600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
-          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" IconName={HeartPulse} color="#f44336" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" iconName="arm-flex" color="#66BB6A" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
+          <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" iconName="yoga" color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
+          <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" iconName="run-fast" color="#D4A600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
+          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" iconName="human-cane" color="#f44336" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
         </View>
 
       </ScrollView>

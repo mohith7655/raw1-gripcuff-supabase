@@ -752,7 +752,9 @@ function MainApp() {
         },
         async (payload: any) => {
           const session = payload.new;
-          if (!session || session.status !== 'pending') return;
+          // Only instant invites pop the accept/decline alert. Scheduled
+          // challenges (scheduled_at set) surface in the Sessions tab instead.
+          if (!session || session.status !== 'pending' || session.scheduled_at) return;
           setPendingChallengeSession(session);
         }
       )

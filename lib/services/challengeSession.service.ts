@@ -12,6 +12,8 @@ export interface ChallengeSession {
     guestReady: boolean;
     startedAt?: string | null;
     endedAt?: string | null;
+    /** Set when this is a scheduled (future-time) challenge; null for instant. */
+    scheduledAt?: string | null;
     createdAt: string;
 }
 
@@ -59,8 +61,25 @@ function rowToSession(row: any): ChallengeSession {
         guestReady: row.guest_ready,
         startedAt: row.started_at ?? null,
         endedAt: row.ended_at ?? null,
+        scheduledAt: row.scheduled_at ?? null,
         createdAt: row.created_at,
     };
+}
+
+/** A scheduled (future-time) challenge with the opponent resolved. */
+export interface ScheduledChallenge {
+    id: string;
+    exerciseName: string;
+    durationSeconds: number;
+    channelName: string;
+    status: string;
+    scheduledAt: string;
+    createdAt: string;
+    isHost: boolean;
+    opponentUid: string;
+    opponentName: string;
+    opponentUsername: string | null;
+    opponentAvatar: string | null;
 }
 
 export const ChallengeSessionService = {
@@ -69,6 +88,8 @@ export const ChallengeSessionService = {
         guestId: string;
         exerciseName: string;
         durationSeconds: number;
+        /** When provided, the row is a scheduled challenge (future start time). */
+        scheduledAt?: Date | null;
     }): Promise<ChallengeSession> {
         const channelName = `challenge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const { data, error } = await supabase
@@ -79,11 +100,20 @@ export const ChallengeSessionService = {
                 exercise_name: params.exerciseName,
                 duration_seconds: params.durationSeconds,
                 channel_name: channelName,
+                scheduled_at: params.scheduledAt ? params.scheduledAt.toISOString() : null,
             })
             .select()
             .single();
         if (error) throw error;
         return rowToSession(data);
+    },
+
+    /** Guest accepts a scheduled challenge — both can then join at the chosen time. */
+    async accept(sessionId: string): Promise<void> {
+        await supabase
+            .from('challenge_sessions')
+            .update({ status: 'accepted', updated_at: new Date().toISOString() })
+            .eq('id', sessionId);
     },
 
     async get(id: string): Promise<ChallengeSession | null> {
@@ -253,6 +283,62 @@ export const ChallengeSessionService = {
                 { onConflict: 'session_id,user_id' },
             );
         if (error) throw error;
+    },
+
+    /**
+     * Load scheduled (future-time) challenges where the user is host or guest and
+     * the match is still upcoming (pending invite or accepted), with the opponent's
+     * profile resolved. Powers the "Upcoming Challenges" section of the Sessions tab.
+     */
+    async loadScheduledForUser(uid: string): Promise<ScheduledChallenge[]> {
+        const { data, error } = await supabase
+            .from('challenge_sessions')
+            .select('*')
+            .or(`host_id.eq.${uid},guest_id.eq.${uid}`)
+            .not('scheduled_at', 'is', null)
+            .in('status', ['pending', 'accepted'])
+            .order('scheduled_at', { ascending: true });
+        if (error || !data) return [];
+
+        const sessions = data.map(rowToSession);
+        const opponentIds = Array.from(
+            new Set(sessions.map(s => (s.hostId === uid ? s.guestId : s.hostId)).filter(Boolean)),
+        );
+
+        const nameMap: Record<string, { name: string; username: string | null; avatar: string | null }> = {};
+        if (opponentIds.length > 0) {
+            const { data: profs } = await supabase
+                .from('profiles')
+                .select('id, full_name, username, avatar_url')
+                .in('id', opponentIds);
+            (profs ?? []).forEach((p: any) => {
+                nameMap[p.id] = {
+                    name: p.full_name ?? p.username ?? 'Athlete',
+                    username: p.username ?? null,
+                    avatar: p.avatar_url ?? null,
+                };
+            });
+        }
+
+        return sessions.map((s) => {
+            const isHost = s.hostId === uid;
+            const opponentUid = isHost ? s.guestId : s.hostId;
+            const prof = nameMap[opponentUid];
+            return {
+                id: s.id,
+                exerciseName: s.exerciseName,
+                durationSeconds: s.durationSeconds,
+                channelName: s.channelName,
+                status: s.status,
+                scheduledAt: s.scheduledAt ?? s.createdAt,
+                createdAt: s.createdAt,
+                isHost,
+                opponentUid,
+                opponentName: prof?.name ?? 'Athlete',
+                opponentUsername: prof?.username ?? null,
+                opponentAvatar: prof?.avatar ?? null,
+            };
+        });
     },
 
     /** Load pending challenge invites where user is the guest */

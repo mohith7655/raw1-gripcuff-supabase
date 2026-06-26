@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,23 +10,17 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Rss, Users, ChevronRight, MessageCircle } from 'lucide-react-native';
+import { Rss, Users, ChevronRight } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
-import { ChatHub } from '../components/social/ChatHub';
 import { SocialActivity } from '../components/social/SocialActivity';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
-import { ChatService } from '../services/chat.service';
-import { ChatConversation } from '../models/Chat';
 import { useFeed } from '../hooks/useFeed';
 import { PostCard } from '../components/feed/PostCard';
 import { CreatePostModal } from '../components/feed/CreatePostModal';
@@ -110,63 +104,16 @@ function FriendCard({ onPress, avatarUri }: { onPress?: () => void; avatarUri?: 
   );
 }
 
-// Smooth collapse for the top toggle on Android (no-op on web).
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-type SocialTab = 'feed' | 'chat';
-
 export function FeedScreen() {
   const navigation = useNavigation<any>();
   const tabBar = useTabBarVisibility();
   const { supabaseUserId, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<SocialTab>('feed');
 
-  // ── Feed/Chat toggle behaviour (mirrors the Library Exercises/Workouts effect) ──
-  // The TOP toggle collapses away once you scroll down past the threshold and
-  // re-appears at the top; the FLOATING toggle docks above the nav bar once
-  // scrolling pauses while scrolled down (and hides while actively scrolling).
-  const [floatToggleVisible, setFloatToggleVisible] = useState(false);
-  const [topToggleShown, setTopToggleShown] = useState(true);
-  const topShownRef = useRef(true);
-  const floatScrollY = useRef(0);
-  const floatPauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const resetToggles = useCallback(() => {
-    if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current);
-    setFloatToggleVisible(false);
-    topShownRef.current = true;
-    setTopToggleShown(true);
-    floatScrollY.current = 0;
-  }, []);
-
-  // Reveal the bottom bar + reset toggles when switching sub-tabs / regaining focus.
-  useEffect(() => { tabBar?.show(); resetToggles(); }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Reveal the bottom bar when this screen regains focus.
   useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
 
-  const onFloatScroll = useCallback((e: any) => {
-    const y = e?.nativeEvent?.contentOffset?.y ?? 0;
-    floatScrollY.current = y;
-
-    // Collapse the top toggle once scrolled down; restore it near the top.
-    const showTop = y <= 120;
-    if (topShownRef.current !== showTop) {
-      topShownRef.current = showTop;
-      LayoutAnimation.configureNext(LayoutAnimation.create(180, 'easeInEaseOut', 'opacity'));
-      setTopToggleShown(showTop);
-    }
-
-    // Floating toggle: hidden while scrolling, docks after a pause when scrolled.
-    setFloatToggleVisible(false);
-    if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current);
-    floatPauseTimer.current = setTimeout(() => {
-      if (floatScrollY.current > 120) setFloatToggleVisible(true);
-    }, 350);
-  }, []);
-  useEffect(() => () => { if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current); }, []);
-  const handleScroll = useCallback((e: any) => { onFloatScroll(e); tabBar?.onScroll?.(e); }, [onFloatScroll, tabBar]);
-  const [unreadTotal, setUnreadTotal] = useState(0);
+  // Hide the bottom nav while scrolling the feed.
+  const handleScroll = useCallback((e: any) => { tabBar?.onScroll?.(e); }, [tabBar]);
   const [createVisible, setCreateVisible] = useState(false);
   const [tweetVisible, setTweetVisible] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
@@ -201,15 +148,6 @@ export function FeedScreen() {
   const handleActivationDismiss = useCallback(() => {
     setActivationVisible(false);
   }, []);
-
-  // Unread chat total — powers the Chat segment badge.
-  useEffect(() => {
-    if (!user?.uid) return;
-    const unsub = ChatService.subscribeToConversations(user.uid, (convos: ChatConversation[]) => {
-      setUnreadTotal(convos.reduce((sum, c) => sum + (c.unreadCount?.[user.uid] ?? 0), 0));
-    });
-    return unsub;
-  }, [user?.uid]);
 
   const handleSpeedDial = useCallback((action: SpeedDialAction) => {
     if (action === 'post')  setCreateVisible(true);
@@ -400,11 +338,6 @@ export function FeedScreen() {
     </>
   );
 
-  const SEGMENTS: { key: SocialTab; label: string; Icon: any; badge: number }[] = [
-    { key: 'feed', label: 'Feed', Icon: Rss, badge: 0 },
-    { key: 'chat', label: 'Chat', Icon: MessageCircle, badge: unreadTotal },
-  ];
-
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
@@ -414,77 +347,19 @@ export function FeedScreen() {
         <View style={{ width: 34 }} />
       </View>
 
-      {/* Segmented control — collapses away once scrolled (floating one takes over) */}
-      {topToggleShown && (
-        <View style={styles.segmentRow}>
-          {SEGMENTS.map(({ key, label, Icon, badge }) => {
-            const active = activeTab === key;
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.segment, active && styles.segmentActive]}
-                onPress={() => setActiveTab(key)}
-                activeOpacity={0.85}
-              >
-                <Icon size={15} color={active ? '#fff' : TEXT_SECONDARY} />
-                <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text>
-                {badge > 0 && (
-                  <View style={styles.segBadge}>
-                    <Text style={styles.segBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
-
-      {/* ── Active view ── */}
-      {activeTab === 'feed' ? (
-        <FlatList
-          data={[] as Post[]}
-          keyExtractor={keyExtractor}
-          renderItem={renderPost}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ORANGE} />}
-          ListHeaderComponent={ListHeader}
-          ListFooterComponent={ListFooter}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-        />
-      ) : (
-        <ChatHub onScroll={handleScroll} />
-      )}
-
-      {/* Floating Feed/Chat toggle — docks centered above the nav bar once the
-          user scrolls down and scrolling pauses (same effect as the Library). */}
-      {floatToggleVisible && (
-        <View style={styles.floatToggleWrap} pointerEvents="box-none">
-          <View style={styles.floatToggle}>
-            {SEGMENTS.map(({ key, label, Icon, badge }) => {
-              const active = activeTab === key;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.floatSeg, active && styles.floatSegActive]}
-                  onPress={() => setActiveTab(key)}
-                  activeOpacity={0.85}
-                >
-                  <Icon size={14} color={active ? '#fff' : TEXT_SECONDARY} />
-                  <Text style={[styles.floatSegText, active && styles.floatSegTextActive]}>{label}</Text>
-                  {badge > 0 && (
-                    <View style={styles.segBadge}>
-                      <Text style={styles.segBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+      <FlatList
+        data={[] as Post[]}
+        keyExtractor={keyExtractor}
+        renderItem={renderPost}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ORANGE} />}
+        ListHeaderComponent={ListHeader}
+        ListFooterComponent={ListFooter}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      />
 
       {/* Modals */}
       <CreatePostModal
@@ -530,80 +405,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(33,24,50,0.07)',
   },
   headerTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
-
-  // Segmented control — matches the Library Exercises/Workouts capsule toggle
-  segmentRow: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    backgroundColor: '#EEEEF2',
-    borderRadius: 100,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: '#D8D8E4',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  segment: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 6,
-    borderRadius: 100,
-    backgroundColor: 'transparent',
-  },
-  segmentActive: {
-    backgroundColor: '#211832',
-  },
-  segmentText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
-  segmentTextActive: { color: '#fff' },
-  segBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 5,
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-
-  // Floating Feed/Chat toggle (docks above the nav bar on scroll-pause)
-  floatToggleWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 96,
-    alignItems: 'center',
-    zIndex: 90,
-  },
-  floatToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#EEEEF2',
-    borderRadius: 100,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: '#D8D8E4',
-    shadowColor: '#211832',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  floatSeg: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 6,
-    borderRadius: 100,
-    backgroundColor: 'transparent',
-  },
-  floatSegActive: { backgroundColor: '#211832' },
-  floatSegText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
-  floatSegTextActive: { color: '#fff' },
 
   listContent: { paddingTop: 8, paddingBottom: 120 },
 

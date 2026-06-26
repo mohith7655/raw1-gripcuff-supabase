@@ -61,10 +61,10 @@ import { ProfileCard } from '../components/profile/ProfileCard';
 import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
 import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats } from '../utils/activityHeat';
 import { loadActivityMap } from '../services/activityMap.service';
-import { HeatPills } from '../components/social/HeatPills';
 import { ActivityMap } from '../components/profile/ActivityMap';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
+import { ScheduleChallengeModal } from '../components/ScheduleChallengeModal';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Design tokens (light theme, dark text — matches ProfileScreen) ─────────────
@@ -213,6 +213,8 @@ export function SocialProfileScreen() {
   const uid       = (route.params?.uid as string) ?? supabaseUserId ?? '';
   const isPreview = route.params?.previewAsOther === true && uid === supabaseUserId;
   const isOwn     = uid === supabaseUserId && !isPreview;
+  // Can schedule a challenge only against a real other person (never yourself / preview).
+  const canChallenge = !!uid && uid !== supabaseUserId;
 
   // Local copy of section visibility so preview toggles update instantly.
   const [localSectionVis, setLocalSectionVis] = useState<Record<string, boolean>>({});
@@ -224,6 +226,8 @@ export function SocialProfileScreen() {
 
   const [user,       setUser]       = useState<User | null>(null);
   const [social,     setSocial]     = useState<SocialProfile | null>(null);
+  // Exercise (human label) the viewer tapped to schedule a challenge on, or null.
+  const [challengeExercise, setChallengeExercise] = useState<string | null>(null);
   const [streakData, setStreakData] = useState<StreakData | null>(null);
   const [photos,     setPhotos]     = useState<ProfilePhoto[]>([]);
   const [relStatus,  setRelStatus]  = useState<RelationshipStatus>('none');
@@ -591,18 +595,38 @@ export function SocialProfileScreen() {
                       <Text style={[s.genderPillText, { color: genderMeta.color }]}>{genderMeta.icon}</Text>
                     </View>
                   )}
+                  {/* Connects — original indigo pill; the border colour reflects
+                      social heat (hot → orange … cold → grey), signalling how
+                      active they are with others. */}
                   <TouchableOpacity
-                    style={s.connectsPill}
+                    style={[s.connectsPill, heats && {
+                      borderWidth: 3,
+                      borderColor: heats.social.color,
+                    }]}
                     onPress={() => setConnectionsOpen(true)}
                     activeOpacity={0.75}
                     disabled={connections.length === 0}
                   >
                     <Text style={s.connectsCount}>{connections.length}</Text>
-                    <Text style={s.connectsLabel}>CONNECTS</Text>
+                    <Text style={s.connectsLabel}>
+                      CONNECTS{heats ? ` - ${heats.social.label}` : ''}
+                    </Text>
                   </TouchableOpacity>
-                  <View style={s.squatsPill}>
-                    <Text style={s.squatsPillText}>🏋️ {user?.totalSquats ?? 0} Squats</Text>
-                  </View>
+                  {/* Workout pill — dumbbell + "Workout" + hot/cold label, no count.
+                      Heat reflects recent time spent training in the app; the colour
+                      (hot → orange · warm → amber · cool → blue · cold → grey) and the
+                      label both signal how hot/cold their workout activity is. */}
+                  {heats && (
+                    <View style={[s.workoutPill, {
+                      backgroundColor: heats.workout.soft,
+                      borderColor: heats.workout.color + '55',
+                    }]}>
+                      <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
+                      <Text style={[s.workoutPillText, { color: heats.workout.color }]}>
+                        Workout {heats.workout.label}
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 {showSection('locationMap') && (displayCity || homeDistanceText) ? (
                   <View style={s.heroMetaRow}>
@@ -625,40 +649,52 @@ export function SocialProfileScreen() {
 
           </View>
 
-          {/* ── RECENT ACTIVITY — social (high-five) + workout (dumbbell) heat ── */}
-          {heats && (
-            <View style={s.heatStripe}>
-              <Text style={s.heatLabel}>Recent activity</Text>
-              <HeatPills social={heats.social} workout={heats.workout} size="sm" />
-            </View>
-          )}
-
           {/* ── OPEN TO CHALLENGE — directly above the time stats ────────────── */}
-          {(isOwn || (showSection('openToChallenge') && (social?.openToChallenge?.length ?? 0) > 0)) && (
-            <TouchableOpacity
-              style={s.challengeStripe}
-              activeOpacity={isOwn ? 0.7 : 1}
-              disabled={!isOwn}
-              onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'challenge' })}
-            >
-              <Swords size={14} color={C.orange} strokeWidth={2.2} />
-              <Text style={s.challengeLabel}>Open to Challenge</Text>
-              {(social?.openToChallenge?.length ?? 0) > 0 ? (
-                <View style={s.challengeChips}>
-                  {social!.openToChallenge!.map((ex, idx) => {
-                    const meta = CHALLENGE_EXERCISE_META[ex];
-                    return (
-                      <View key={`${ex}-${idx}`} style={s.challengeChip}>
-                        <Text style={s.challengeChipText}>{meta ? `${meta.emoji} ${meta.label}` : ex}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : (
-                <Text style={s.challengePrompt}>— add exercises</Text>
-              )}
-            </TouchableOpacity>
-          )}
+          {/* Own profile: tap the stripe to edit. Other profiles: tap a chip to
+              schedule a head-to-head challenge with this person on that exercise. */}
+          {(isOwn || (showSection('openToChallenge') && (social?.openToChallenge?.length ?? 0) > 0)) && (() => {
+            const inner = (
+              <>
+                <Swords size={14} color={C.orange} strokeWidth={2.2} />
+                <Text style={s.challengeLabel}>Open to Challenge</Text>
+                {(social?.openToChallenge?.length ?? 0) > 0 ? (
+                  <View style={s.challengeChips}>
+                    {social!.openToChallenge!.map((ex, idx) => {
+                      const meta = CHALLENGE_EXERCISE_META[ex];
+                      const label = meta ? `${meta.emoji} ${meta.label}` : ex;
+                      return canChallenge ? (
+                        <TouchableOpacity
+                          key={`${ex}-${idx}`}
+                          style={[s.challengeChip, s.challengeChipTappable]}
+                          activeOpacity={0.7}
+                          onPress={() => setChallengeExercise(meta ? meta.label : ex)}
+                        >
+                          <Text style={s.challengeChipText}>{label}</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View key={`${ex}-${idx}`} style={s.challengeChip}>
+                          <Text style={s.challengeChipText}>{label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <Text style={s.challengePrompt}>— add exercises</Text>
+                )}
+              </>
+            );
+            return isOwn ? (
+              <TouchableOpacity
+                style={s.challengeStripe}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'challenge' })}
+              >
+                {inner}
+              </TouchableOpacity>
+            ) : (
+              <View style={s.challengeStripe}>{inner}</View>
+            );
+          })()}
 
           {/* ── STANDALONE TIME STATS ────────────────────────────────────────── */}
           <View style={s.timeStatsRow}>
@@ -1218,6 +1254,18 @@ export function SocialProfileScreen() {
           });
         }}
       />
+
+      {/* ── Schedule a challenge with this person on a tapped exercise ────────── */}
+      {canChallenge && (
+        <ScheduleChallengeModal
+          visible={!!challengeExercise}
+          opponentUid={uid}
+          opponentName={displayName}
+          opponentAvatar={user?.profileImageUrl}
+          exerciseName={challengeExercise ?? ''}
+          onClose={() => setChallengeExercise(null)}
+        />
+      )}
     </View>
   );
 }
@@ -1326,15 +1374,16 @@ const s = StyleSheet.create({
   },
   connectsCount: { color: '#fff', fontSize: 13, fontWeight: '700' },
   connectsLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
-  squatsPill: {
-    backgroundColor: 'rgba(242,89,18,0.10)',
+  workoutPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(242,89,18,0.30)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
-  squatsPillText: { color: '#211832', fontSize: 12, fontWeight: '700' },
+  workoutPillText: { fontSize: 12, fontWeight: '700' },
   connOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   connSheet: {
     maxHeight: '75%',
@@ -1662,20 +1711,6 @@ const s = StyleSheet.create({
     color: C.muted,
   },
 
-  // Standalone time stats row (below hero, above cards)
-  heatStripe: {
-    paddingHorizontal: 16,
-    marginTop: 6,
-    marginBottom: 8,
-    gap: 8,
-  },
-  heatLabel: {
-    color: C.muted,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
   challengeStripe: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1703,6 +1738,11 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(242,89,18,0.28)',
     backgroundColor: 'rgba(242,89,18,0.10)',
+  },
+  // Stronger fill signals these chips are tappable (schedule a challenge).
+  challengeChipTappable: {
+    borderColor: 'rgba(242,89,18,0.5)',
+    backgroundColor: 'rgba(242,89,18,0.16)',
   },
   challengeChipText: {
     color: C.orange,

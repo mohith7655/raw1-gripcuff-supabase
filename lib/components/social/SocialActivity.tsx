@@ -42,7 +42,7 @@ import { useWorkoutSession } from '../../providers/WorkoutSessionContext';
 import { supabase } from '../../core/config/supabase';
 import { ChatService } from '../../services/chat.service';
 import { ChatConversation } from '../../models/Chat';
-import { ChallengeSessionService, PreviousChallenge } from '../../services/challengeSession.service';
+import { ChallengeSessionService, PreviousChallenge, ScheduledChallenge } from '../../services/challengeSession.service';
 
 const TEXT = '#211832';
 const MUTED = '#7A7C90';
@@ -106,6 +106,7 @@ interface ActivityItem {
   subtitle: string;
   timestamp: number;        // ms — for sorting
   unread?: boolean;
+  unreadCount?: number;     // messages — number of unread (shown as a count badge)
   // request-only
   requestId?: string;
   fromUid?: string;
@@ -164,15 +165,19 @@ function savePrefs(uid: string | null, prefs: Record<ActivityCategory, boolean>)
 export function SocialActivity() {
   const navigation = useNavigation<any>();
   const { supabaseUserId, user } = useAuth();
-  const { friends, incomingRequests, acceptRequest, declineRequest } = useFriend();
+  const { friends, incomingRequests, outgoingRequests, acceptRequest, declineRequest } = useFriend();
   const { completedSessions, pendingInvites, upcomingSessions } = useWorkoutSession();
 
   const [prefs, setPrefs] = useState<Record<ActivityCategory, boolean>>(() => DEFAULT_PREFS);
   const [customizing, setCustomizing] = useState(false);
   // Quick filter tabs below the header — narrows the list to one category.
   const [filter, setFilter] = useState<FilterKey>('all');
+  // Requests view sub-tab — incoming (sent to me) vs outgoing (I sent).
+  const [reqSubTab, setReqSubTab] = useState<'incoming' | 'outgoing'>('incoming');
 
   const [challenges, setChallenges] = useState<PreviousChallenge[]>([]);
+  // Scheduled / pending challenge invites — incoming ones surface as unread notifications.
+  const [scheduledChallenges, setScheduledChallenges] = useState<ScheduledChallenge[]>([]);
   const [reqProfiles, setReqProfiles] = useState<Record<string, { name: string; avatar: string | null }>>({});
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [loadingChallenges, setLoadingChallenges] = useState(false);
@@ -190,12 +195,19 @@ export function SocialActivity() {
       .then((rows) => { if (alive) setChallenges(rows); })
       .catch(() => { if (alive) setChallenges([]); })
       .finally(() => { if (alive) setLoadingChallenges(false); });
+    ChallengeSessionService.loadScheduledForUser(supabaseUserId)
+      .then((rows) => { if (alive) setScheduledChallenges(rows); })
+      .catch(() => { if (alive) setScheduledChallenges([]); });
     return () => { alive = false; };
   }, [supabaseUserId]);
 
-  // Resolve sender profiles for incoming friend requests (requests carry only uids).
+  // Resolve profiles for both incoming (sender) and outgoing (recipient) friend
+  // requests — requests carry only uids.
   useEffect(() => {
-    const uids = Array.from(new Set(incomingRequests.map((r) => r.fromUid))).filter(Boolean);
+    const uids = Array.from(new Set([
+      ...incomingRequests.map((r) => r.fromUid),
+      ...outgoingRequests.map((r) => r.toUid),
+    ])).filter(Boolean);
     if (uids.length === 0) { setReqProfiles({}); return; }
     let alive = true;
     supabase
@@ -211,7 +223,7 @@ export function SocialActivity() {
         setReqProfiles(map);
       });
     return () => { alive = false; };
-  }, [incomingRequests]);
+  }, [incomingRequests, outgoingRequests]);
 
   // Conversations — built from the messages table for the user's friends, so the
   // actual chats (last message + unread) are viewable and openable right here.
@@ -278,6 +290,26 @@ export function SocialActivity() {
           timestamp: new Date(c.createdAt).getTime(),
         });
       });
+
+      // Scheduled / pending challenge invites. An incoming pending invite (you're
+      // the guest, awaiting your accept) is a notification → flagged unread.
+      scheduledChallenges.forEach((c) => {
+        const incoming = !c.isHost && c.status === 'pending';
+        const when = c.scheduledAt ? new Date(c.scheduledAt).getTime() : new Date(c.createdAt).getTime();
+        out.push({
+          id: `schl_${c.id}`,
+          category: 'challenges',
+          uid: c.opponentUid,
+          name: c.opponentName,
+          avatar: c.opponentAvatar,
+          title: `Challenge vs ${c.opponentName}`,
+          subtitle: incoming
+            ? `${c.exerciseName} · Challenged you`
+            : `${c.exerciseName} · ${c.status === 'pending' ? 'Invite sent' : 'Scheduled'}`,
+          timestamp: when,
+          unread: incoming,
+        });
+      });
     }
 
     // Workouts with friends (invites + upcoming + completed). Skip solo sessions.
@@ -311,13 +343,18 @@ export function SocialActivity() {
       completedSessions.forEach((s) => pushSession(s, false));
     }
 
-    // Messages
+    // Messages — only recent ones. Conversations whose last message is older than
+    // 2 days drop out of the list (the Chats tab surfaces a friends carousel
+    // instead, so older threads are still one tap away).
     if (prefs.messages && me) {
+      const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
       conversations.forEach((c) => {
         const otherUid = c.participants.find((p) => p !== me);
         if (!otherUid) return;
         const friend = friends.find((f) => f.uid === otherUid);
         const at = c.lastMessageAt ? new Date(c.lastMessageAt as any).getTime() : 0;
+        if (at && Date.now() - at > TWO_DAYS) return;
+        const cnt = c.unreadCount?.[me] ?? 0;
         out.push({
           id: `msg_${c.id}`,
           category: 'messages',
@@ -327,13 +364,14 @@ export function SocialActivity() {
           title: friend?.fullName || friend?.username || 'Message',
           subtitle: c.lastMessage || 'Say hi 👋',
           timestamp: at,
-          unread: (c.unreadCount?.[me] ?? 0) > 0,
+          unread: cnt > 0,
+          unreadCount: cnt,
         });
       });
     }
 
     return out.sort((a, b) => b.timestamp - a.timestamp).slice(0, 40);
-  }, [prefs, incomingRequests, reqProfiles, challenges, pendingInvites, upcomingSessions, completedSessions, conversations, friends, supabaseUserId]);
+  }, [prefs, incomingRequests, reqProfiles, challenges, scheduledChallenges, pendingInvites, upcomingSessions, completedSessions, conversations, friends, supabaseUserId]);
 
   const anyCategoryOn = CATEGORIES.some((c) => prefs[c.key]);
 
@@ -342,6 +380,21 @@ export function SocialActivity() {
     () => (filter === 'all' ? items : items.filter((i) => i.category === filter)),
     [items, filter],
   );
+
+  // Notification counts per filter pill. Messages contribute their unread count;
+  // requests each count as one (a pending action); workouts/challenges count
+  // their unread items. 'all' is the grand total.
+  const counts = useMemo<Record<FilterKey, number>>(() => {
+    const c: Record<FilterKey, number> = { all: 0, messages: 0, workouts: 0, challenges: 0, requests: 0 };
+    items.forEach((it) => {
+      const n =
+        it.category === 'messages' ? (it.unreadCount ?? 0)
+        : it.category === 'requests' ? 1
+        : (it.unread ? 1 : 0);
+      if (n > 0) { c[it.category] += n; c.all += n; }
+    });
+    return c;
+  }, [items]);
 
   // ── Item interactions ──
   const handlePress = useCallback((item: ActivityItem) => {
@@ -381,6 +434,75 @@ export function SocialActivity() {
     finally { setBusyReq(null); }
   }, [declineRequest]);
 
+  // ── Requests sub-tab (incoming / outgoing) interactions ──
+  const acceptReq = useCallback(async (id: string, fromUid: string) => {
+    if (!supabaseUserId) return;
+    setBusyReq(id);
+    try { await acceptRequest(id, fromUid, supabaseUserId); }
+    catch {}
+    finally { setBusyReq(null); }
+  }, [acceptRequest, supabaseUserId]);
+
+  // Declining works for both rejecting an incoming request and cancelling one I sent.
+  const dismissReq = useCallback(async (id: string) => {
+    setBusyReq(id);
+    try { await declineRequest(id); }
+    catch {}
+    finally { setBusyReq(null); }
+  }, [declineRequest]);
+
+  const renderRequestRow = (id: string, otherUid: string, kind: 'incoming' | 'outgoing') => {
+    const prof = reqProfiles[otherUid];
+    const name = prof?.name ?? 'Athlete';
+    const avatar = prof?.avatar ?? null;
+    const busy = busyReq === id;
+    return (
+      <TouchableOpacity
+        key={id}
+        style={s.row}
+        activeOpacity={0.85}
+        onPress={() => otherUid && navigation.navigate('SocialProfileScreen', { uid: otherUid })}
+      >
+        <View style={s.avatarWrap}>
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={s.avatar} />
+          ) : (
+            <View style={[s.avatar, s.avatarFallback]}>
+              <Text style={s.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
+          <View style={[s.tag, { backgroundColor: C_REQUESTS }]}>
+            <UserPlus size={10} color="#fff" />
+          </View>
+        </View>
+
+        <View style={s.info}>
+          <Text style={s.name} numberOfLines={1}>{name}</Text>
+          <Text style={s.sub} numberOfLines={1}>
+            {kind === 'incoming' ? 'Wants to connect' : 'Request sent · pending'}
+          </Text>
+        </View>
+
+        {busy ? (
+          <ActivityIndicator color={ORANGE} size="small" />
+        ) : kind === 'incoming' ? (
+          <View style={s.reqActions}>
+            <TouchableOpacity style={[s.reqBtn, s.declineBtn]} onPress={() => dismissReq(id)} hitSlop={6} activeOpacity={0.8}>
+              <X size={16} color={MUTED} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.reqBtn, s.acceptBtn]} onPress={() => acceptReq(id, otherUid)} hitSlop={6} activeOpacity={0.8}>
+              <Check size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={s.cancelReqBtn} onPress={() => dismissReq(id)} activeOpacity={0.8}>
+            <Text style={s.cancelReqText}>Cancel</Text>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   // ── Render ──
   return (
     <View style={s.wrap}>
@@ -405,6 +527,7 @@ export function SocialActivity() {
       >
         {FILTERS.map((f) => {
           const active = filter === f.key;
+          const n = counts[f.key];
           return (
             <TouchableOpacity
               key={f.key}
@@ -413,12 +536,121 @@ export function SocialActivity() {
               activeOpacity={0.8}
             >
               <Text style={[s.tabText, active && s.tabTextActive]}>{f.label}</Text>
+              {n > 0 && (
+                <View style={s.tabBadge}>
+                  <Text style={s.tabBadgeText}>{n > 9 ? '9+' : n}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      {!anyCategoryOn ? (
+      {/* Chats tab — swipeable friends carousel for starting a conversation with
+          anyone (older threads no longer clutter the list, so this is the way in). */}
+      {filter === 'messages' && friends.length > 0 && (
+        <View style={s.friendsStrip}>
+          <Text style={s.friendsStripLabel}>Message a friend</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.friendsRow}
+          >
+            {friends.map((f) => (
+              <TouchableOpacity
+                key={f.uid}
+                style={s.friendChip}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('ChatRoom', {
+                  friendUid: f.uid,
+                  friendName: f.fullName || f.username,
+                  friendAvatar: f.profileImageUrl,
+                })}
+              >
+                {f.profileImageUrl ? (
+                  <Image source={{ uri: f.profileImageUrl }} style={s.friendAvatar} />
+                ) : (
+                  <View style={[s.friendAvatar, s.friendAvatarFallback]}>
+                    <Text style={s.friendAvatarLetter}>
+                      {(f.fullName || f.username || '?').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <Text style={s.friendName} numberOfLines={1}>
+                  {(f.fullName || f.username || 'Friend').split(' ')[0]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Workouts tab — start a co-workout with a friend. */}
+      {filter === 'workouts' && (
+        <TouchableOpacity
+          style={[s.ctaBtn, { backgroundColor: C_WORKOUTS }]}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('WorkoutWithFriendScreen')}
+        >
+          <Dumbbell size={18} color="#fff" />
+          <Text style={s.ctaBtnText}>Workout with a friend</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Challenges tab — invite a friend to a head-to-head challenge. */}
+      {filter === 'challenges' && (
+        <TouchableOpacity
+          style={[s.ctaBtn, { backgroundColor: C_CHALLENGES }]}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('ChallengeLobbyScreen')}
+        >
+          <Swords size={18} color="#fff" />
+          <Text style={s.ctaBtnText}>Invite a friend to challenge</Text>
+        </TouchableOpacity>
+      )}
+
+      {filter === 'requests' ? (
+        // Requests view — incoming (sent to me) / outgoing (I sent) sub-tabs.
+        <View>
+          <View style={s.subTabs}>
+            {(['incoming', 'outgoing'] as const).map((k) => {
+              const active = reqSubTab === k;
+              const n = k === 'incoming' ? incomingRequests.length : outgoingRequests.length;
+              return (
+                <TouchableOpacity
+                  key={k}
+                  style={[s.subTab, active && s.subTabActive]}
+                  onPress={() => setReqSubTab(k)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[s.subTabText, active && s.subTabTextActive]}>
+                    {k === 'incoming' ? 'Incoming' : 'Outgoing'}{n > 0 ? ` (${n})` : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {(reqSubTab === 'incoming' ? incomingRequests : outgoingRequests).length === 0 ? (
+            <View style={s.emptyCard}>
+              <UserPlus size={24} color={MUTED} />
+              <Text style={s.emptyTitle}>
+                {reqSubTab === 'incoming' ? 'No incoming requests' : 'No outgoing requests'}
+              </Text>
+              <Text style={s.emptySub}>
+                {reqSubTab === 'incoming'
+                  ? 'Connection requests from others will appear here.'
+                  : 'People you’ve asked to connect with appear here.'}
+              </Text>
+            </View>
+          ) : (
+            <View style={s.list}>
+              {reqSubTab === 'incoming'
+                ? incomingRequests.map((r) => renderRequestRow(r.id, r.fromUid, 'incoming'))
+                : outgoingRequests.map((r) => renderRequestRow(r.id, r.toUid, 'outgoing'))}
+            </View>
+          )}
+        </View>
+      ) : !anyCategoryOn ? (
         <TouchableOpacity style={s.emptyCard} onPress={() => setCustomizing(true)} activeOpacity={0.85}>
           <Settings size={24} color={MUTED} />
           <Text style={s.emptyTitle}>All categories hidden</Text>
@@ -432,11 +664,15 @@ export function SocialActivity() {
             <>
               <Bell size={24} color={MUTED} />
               <Text style={s.emptyTitle}>
-                {filter === 'all' ? 'Nothing here yet' : 'Nothing in this filter'}
+                {filter === 'all' ? 'Nothing here yet'
+                  : filter === 'messages' ? 'No recent chats'
+                  : 'Nothing in this filter'}
               </Text>
               <Text style={s.emptySub}>
                 {filter === 'all'
                   ? 'Challenges, invites and requests will show up here.'
+                  : filter === 'messages'
+                  ? 'Chats older than 2 days are tucked away — pick a friend above to start one.'
                   : 'Try the “All” tab to see your other activity.'}
               </Text>
             </>
@@ -505,7 +741,18 @@ export function SocialActivity() {
                     )}
                   </View>
                 ) : (
-                  <ChevronRight size={18} color={MUTED} />
+                  <View style={s.rightCol}>
+                    {item.unreadCount ? (
+                      <View style={[s.unreadBadge, { backgroundColor: tagColor }]}>
+                        <Text style={s.unreadBadgeText}>
+                          {item.unreadCount > 9 ? '9+' : item.unreadCount}
+                        </Text>
+                      </View>
+                    ) : item.unread ? (
+                      <View style={[s.unreadDot, { backgroundColor: tagColor }]} />
+                    ) : null}
+                    <ChevronRight size={18} color={MUTED} />
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -565,15 +812,61 @@ const s = StyleSheet.create({
   },
 
   // Filter tabs
-  tabsScroll: { marginBottom: 12, flexGrow: 0 },
-  tabs: { flexDirection: 'row', gap: 8, paddingRight: 16 },
+  // Capsule segmented toggle — matches the Home streak/weekly/challenge strip:
+  // one rounded grey container holding the segments, active = dark pill.
+  tabsScroll: { marginBottom: 12, flexGrow: 0, alignSelf: 'flex-start', maxWidth: '100%' },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: '#EEEEF2',
+    borderRadius: 100,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#D8D8E4',
+  },
   tab: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 16, paddingVertical: 7, borderRadius: 100,
+  },
+  tabActive: { backgroundColor: TEXT },
+  tabText: { color: MUTED, fontSize: 13, fontWeight: '600' },
+  tabTextActive: { color: '#fff', fontWeight: '700' },
+  tabBadge: {
+    minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5,
+    backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center',
+  },
+  tabBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+
+  // Workouts / Challenges tab action button
+  ctaBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 13, borderRadius: 14, marginBottom: 12,
+  },
+  ctaBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+
+  // Chats — swipeable friends carousel
+  friendsStrip: { marginBottom: 14 },
+  friendsStripLabel: { color: MUTED, fontSize: 12, fontWeight: '700', marginBottom: 8 },
+  friendsRow: { flexDirection: 'row', gap: 14, paddingRight: 16 },
+  friendChip: { alignItems: 'center', width: 60 },
+  friendAvatar: { width: 54, height: 54, borderRadius: 27 },
+  friendAvatarFallback: { backgroundColor: '#E2E2EC', alignItems: 'center', justifyContent: 'center' },
+  friendAvatarLetter: { color: INDIGO, fontSize: 20, fontWeight: '800' },
+  friendName: { color: TEXT, fontSize: 11, fontWeight: '600', marginTop: 5, maxWidth: 60, textAlign: 'center' },
+
+  // Requests — incoming / outgoing sub-tabs
+  subTabs: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  subTab: {
+    flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center',
     backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
   },
-  tabActive: { backgroundColor: TEXT, borderColor: TEXT },
-  tabText: { color: MUTED, fontSize: 13, fontWeight: '700' },
-  tabTextActive: { color: '#fff' },
+  subTabActive: { backgroundColor: TEXT, borderColor: TEXT },
+  subTabText: { color: MUTED, fontSize: 13, fontWeight: '700' },
+  subTabTextActive: { color: '#fff' },
+  cancelReqBtn: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+    backgroundColor: '#EEEEF2', borderWidth: 1, borderColor: BORDER,
+  },
+  cancelReqText: { color: MUTED, fontSize: 12, fontWeight: '700' },
 
   list: { gap: 8 },
   row: {
@@ -604,6 +897,14 @@ const s = StyleSheet.create({
   time: { color: MUTED, fontSize: 11, fontWeight: '500' },
   sub: { color: MUTED, fontSize: 12, marginTop: 2 },
   subUnread: { color: TEXT, fontWeight: '600' },
+
+  rightCol: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  unreadDot: { width: 9, height: 9, borderRadius: 5 },
+  unreadBadge: {
+    minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  unreadBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
 
   reqActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reqBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },

@@ -6,8 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Search, ChevronRight,
     User, PlusCircle, Sparkles, Users,
-    Flame, Zap, HeartPulse, PersonStanding,
 } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '../providers/UserContext';
 import { useNavigation } from '@react-navigation/native';
@@ -21,12 +21,12 @@ export const WorkoutsScreen = () => {
     const navigation = useNavigation<any>();
     const [activeTab, setActiveTab] = useState<'programs' | 'ai'>('programs');
 
-    const CategoryRow = ({ title, subtitle, IconName, color, onPress }: {
-        title: string; subtitle: string; IconName: any; color: string; onPress?: () => void;
+    const CategoryRow = ({ title, subtitle, iconName, color, onPress }: {
+        title: string; subtitle: string; iconName: any; color: string; onPress?: () => void;
     }) => (
         <TouchableOpacity style={styles.categoryRow} activeOpacity={0.7} onPress={onPress}>
             <View style={[styles.categoryIcon, { backgroundColor: `${color}20` }]}>
-                <IconName color={color} size={20} />
+                <MaterialCommunityIcons name={iconName} color={color} size={24} />
             </View>
             <View style={styles.categoryInfo}>
                 <Text style={styles.categoryTitle}>{title}</Text>
@@ -147,7 +147,7 @@ export const WorkoutsScreen = () => {
                                     <CategoryRow
                                         title="Muscle Growth"
                                         subtitle="Hypertrophy focused programs"
-                                        IconName={Flame}
+                                        iconName="arm-flex"
                                         color="#66BB6A"
                                         onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })}
                                     />
@@ -155,7 +155,7 @@ export const WorkoutsScreen = () => {
                                     <CategoryRow
                                         title="Stretching"
                                         subtitle="Improve flexibility & range of motion"
-                                        IconName={PersonStanding}
+                                        iconName="yoga"
                                         color="#4FC3F7"
                                         onPress={() => navigation.navigate('Stretching', { allowInvite: true })}
                                     />
@@ -163,7 +163,7 @@ export const WorkoutsScreen = () => {
                                     <CategoryRow
                                         title="Athletic Performance"
                                         subtitle="Speed, power & agility training"
-                                        IconName={Zap}
+                                        iconName="run-fast"
                                         color="#FFD600"
                                         onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })}
                                     />
@@ -171,7 +171,7 @@ export const WorkoutsScreen = () => {
                                     <CategoryRow
                                         title="Injury Rehab"
                                         subtitle="Safe recovery & rehabilitation"
-                                        IconName={HeartPulse}
+                                        iconName="human-cane"
                                         color="#f44336"
                                         onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })}
                                     />

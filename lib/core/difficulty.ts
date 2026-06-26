@@ -30,6 +30,20 @@ export function difficultyColor(value?: string | null): string | null {
   return DIFFICULTY_COLORS[normalize(value)] ?? null;
 }
 
+// Single-letter badge for each difficulty (Simple/Medium/Complex), rendered in
+// the difficulty's colour next to a video title.
+export const DIFFICULTY_LETTERS: Record<string, string> = {
+  Beginner:     'S',
+  Intermediate: 'M',
+  Advanced:     'C',
+};
+
+/** Difficulty → S / M / C. Empty string when unknown/missing. */
+export function difficultyLetter(value?: string | null): string {
+  if (!value) return '';
+  return DIFFICULTY_LETTERS[normalize(value)] ?? '';
+}
+
 const normalize = (value: string) =>
   value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 

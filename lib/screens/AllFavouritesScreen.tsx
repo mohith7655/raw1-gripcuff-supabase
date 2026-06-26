@@ -1,6 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
+    Dimensions,
+    LayoutAnimation,
     Platform,
     View,
     Text,
@@ -8,6 +10,7 @@ import {
     TouchableOpacity,
     ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Pin, Heart, Dumbbell, LayoutGrid, Play } from 'lucide-react-native';
@@ -15,7 +18,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { useLibrary } from '../providers/LibraryContext';
-import { GridVideoCard } from '../components/GridVideoCard';
+import {
+    ViewMode,
+    VIEW_MODE_OPTIONS,
+    VIEW_MODE_COLS,
+    ViewModeIcon,
+    MultiColVideoCard,
+    ListVideoCard,
+} from '../components/LibraryViewCards';
 import { AppTheme } from '../core/theme/app_theme';
 import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
 import { SCREEN_PADDING } from '../constants/theme';
@@ -115,6 +125,51 @@ function WorkoutCard({
     );
 }
 
+// Pin overlay shown on every favourite card across all view modes.
+function PinButton({ pinned, onPress }: { pinned: boolean; onPress: () => void }) {
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            style={[styles.pinBtn, pinned && styles.pinBtnActive]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+            <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
+        </TouchableOpacity>
+    );
+}
+
+// List-view row for a workout program — mirrors ListVideoCard's layout so the
+// Workouts tab matches the Exercises tab in list mode.
+function WorkoutListRow({
+    program,
+    index,
+    onPress,
+}: {
+    program: PreRecordedProgram;
+    index: number;
+    onPress: () => void;
+}) {
+    const bgColor = PROGRAM_COLORS[index % PROGRAM_COLORS.length];
+    return (
+        <TouchableOpacity style={styles.listRow} onPress={onPress} activeOpacity={0.82}>
+            <View style={[styles.listThumb, { backgroundColor: bgColor }]}>
+                <Play color="rgba(255,255,255,0.12)" size={22} fill="rgba(255,255,255,0.12)" />
+                <View style={styles.listThumbBadge}>
+                    <Text style={styles.durationText}>{program.videos.length} videos</Text>
+                </View>
+                <ThumbnailCategory category={getProgramCategoryKey(program.id)} />
+            </View>
+            <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                    <Text style={styles.listTitle} numberOfLines={2}>{program.title}</Text>
+                    <DifficultyDot difficulty={program.level} style={{ marginTop: 5 }} />
+                </View>
+                <Text style={styles.listSub}>{program.videos.length} videos</Text>
+            </View>
+        </TouchableOpacity>
+    );
+}
+
 type RouteParams = {
     type?: 'exercises' | 'workouts' | 'all';
 };
@@ -131,6 +186,27 @@ export function AllFavouritesScreen() {
     const [activeTab, setActiveTab] = useState<ActiveTab>(
         type === 'workouts' ? 'workouts' : type === 'exercises' ? 'exercises' : 'all'
     );
+
+    // Layout density toggle — same modes as the Library/Exercises screen,
+    // persisted so the user's choice sticks across visits.
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    useEffect(() => {
+        AsyncStorage.getItem('favouritesViewMode')
+            .then(m => { if (m) setViewMode(m as ViewMode); })
+            .catch(() => {});
+    }, []);
+    const handleViewModeChange = (mode: ViewMode) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setViewMode(mode);
+        AsyncStorage.setItem('favouritesViewMode', mode).catch(() => {});
+    };
+
+    // Column math shared by the exercise and workout grids.
+    const isList = viewMode === 'list';
+    const cols = VIEW_MODE_COLS[viewMode];
+    const colGap = cols >= 4 ? 6 : cols === 3 ? 8 : 12;
+    const screenW = Dimensions.get('window').width;
+    const cardWidth = (screenW - SCREEN_PADDING * 2 - colGap * (cols - 1)) / cols;
 
     // Supabase-backed favourites
     const { exerciseIds: favExerciseIds, workoutIds: favWorkoutIds } = useFavouritedVideos();
@@ -155,6 +231,104 @@ export function AllFavouritesScreen() {
     // Bucket favourites into category sections (e.g. "Muscle Growth Exercises").
     const exerciseGroups = groupByCategory(exerciseFavorites, (v: any) => v.category);
     const workoutGroups = groupByCategory(uniqueWorkoutFavorites, (p) => getProgramCategoryKey(p.id) ?? undefined);
+
+    const currentCount =
+        activeTab === 'workouts' ? totalWorkouts :
+        activeTab === 'exercises' ? totalExercises :
+        totalExercises + totalWorkouts;
+
+    const goToProgram = (program: PreRecordedProgram) => {
+        const firstVideo = program.videos?.[0];
+        navigation.navigate('VideoPlayer', {
+            videoId: firstVideo?.id,
+            title: program.title,
+            videoUrl: firstVideo?.videoUrl,
+            workoutTitle: program.title,
+            videoType: 'premade_workout',
+        });
+    };
+
+    // Render one category's exercise favourites honouring the active view mode.
+    const renderExerciseItems = (items: any[]) => {
+        if (isList) {
+            return (
+                <View>
+                    {items.map((video: any, index: number) => (
+                        <View key={video.id} style={styles.listItemWrap}>
+                            <ListVideoCard
+                                video={video}
+                                index={index}
+                                onPress={() => navigation.navigate('VideoPlayer', {
+                                    title: video.title,
+                                    videoId: video.id,
+                                    videoUrl: video.videoUrl,
+                                    videoType: 'exercise_library',
+                                })}
+                            />
+                            <PinButton pinned={isPinned(video.id)} onPress={() => pinFavorite(video.id)} />
+                        </View>
+                    ))}
+                </View>
+            );
+        }
+        return (
+            <View style={[styles.flexGrid, { gap: colGap }]}>
+                {items.map((video: any, index: number) => (
+                    <View key={video.id} style={{ width: cardWidth, position: 'relative' }}>
+                        <MultiColVideoCard
+                            video={video}
+                            index={index}
+                            cardWidth={cardWidth}
+                            onPress={() => navigation.navigate('VideoPlayer', {
+                                title: video.title,
+                                videoId: video.id,
+                                videoUrl: video.videoUrl,
+                                videoType: 'exercise_library',
+                            })}
+                        />
+                        <PinButton pinned={isPinned(video.id)} onPress={() => pinFavorite(video.id)} />
+                    </View>
+                ))}
+            </View>
+        );
+    };
+
+    // Render one category's workout favourites honouring the active view mode.
+    const renderWorkoutItems = (items: PreRecordedProgram[]) => {
+        if (isList) {
+            return (
+                <View>
+                    {items.map((program, index) => (
+                        <View key={program.id} style={styles.listItemWrap}>
+                            <WorkoutListRow program={program} index={index} onPress={() => goToProgram(program)} />
+                            <PinButton pinned={isPinned(program.id)} onPress={() => pinFavorite(program.id)} />
+                        </View>
+                    ))}
+                </View>
+            );
+        }
+        return (
+            <View style={[styles.flexGrid, { gap: colGap }]}>
+                {items.map((program, index) => {
+                    const isFavourited = favWorkoutIds.has(program.id) || program.videos.some(v => favWorkoutIds.has(v.id));
+                    return (
+                        <View key={program.id} style={{ width: cardWidth, position: 'relative' }}>
+                            <WorkoutCard
+                                program={program}
+                                index={index}
+                                onPress={() => goToProgram(program)}
+                                isFavourited={isFavourited}
+                                isPinned={isPinned(program.id)}
+                                onToggleFavourite={() => goToProgram(program)}
+                                onTogglePin={() => pinFavorite(program.id)}
+                            />
+                            <PinButton pinned={isPinned(program.id)} onPress={() => pinFavorite(program.id)} />
+                        </View>
+                    );
+                })}
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -201,6 +375,28 @@ export function AllFavouritesScreen() {
                 </TouchableOpacity>
             </View>
 
+            {/* View density toggle — same modes as the Exercises/Library screen */}
+            {currentCount > 0 && (
+                <View style={styles.viewToolbar}>
+                    <Text style={styles.viewToolbarCount}>{currentCount} items</Text>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {VIEW_MODE_OPTIONS.map(({ key }) => {
+                            const active = viewMode === key;
+                            return (
+                                <TouchableOpacity
+                                    key={key}
+                                    onPress={() => handleViewModeChange(key)}
+                                    activeOpacity={0.8}
+                                    style={[styles.viewModeBtn, active && styles.viewModeBtnActive]}
+                                >
+                                    <ViewModeIcon mode={key} color={active ? '#fff' : '#7A7C90'} size={15} />
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+            )}
+
             <View style={{ flex: 1 }}>
                 {((activeTab !== 'workouts' ? totalExercises : 0) + (activeTab !== 'exercises' ? totalWorkouts : 0)) === 0 ? (
                     <View style={styles.emptyState}>
@@ -216,33 +412,7 @@ export function AllFavouritesScreen() {
                                     <Text style={styles.sectionTitle}>{labelForCategory(cat)}</Text>
                                     <Text style={styles.sectionCount}>{items.length}</Text>
                                 </View>
-                                <View style={styles.grid}>
-                                    {items.map((video: any, index: number) => {
-                                        const pinned = isPinned(video.id);
-                                        const isLastOdd = items.length % 2 !== 0 && index === items.length - 1;
-                                        return (
-                                            <View key={video.id} style={[styles.gridItem, isLastOdd && styles.gridItemLastOdd]}>
-                                                <GridVideoCard
-                                                    video={video}
-                                                    index={index}
-                                                    onPress={() => navigation.navigate('VideoPlayer', {
-                                                        title: video.title,
-                                                        videoId: video.id,
-                                                        videoUrl: video.videoUrl,
-                                                        videoType: 'exercise_library',
-                                                    })}
-                                                />
-                                                <TouchableOpacity
-                                                    onPress={() => pinFavorite(video.id)}
-                                                    style={[styles.pinBtn, pinned && styles.pinBtnActive]}
-                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                                >
-                                                    <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
-                                                </TouchableOpacity>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
+                                {renderExerciseItems(items)}
                             </View>
                         ))}
                         {activeTab !== 'workouts' && totalExercises > 0 && (
@@ -262,49 +432,7 @@ export function AllFavouritesScreen() {
                                     <Text style={styles.sectionTitle}>{labelForCategory(cat)}</Text>
                                     <Text style={styles.sectionCount}>{items.length}</Text>
                                 </View>
-                                <View style={styles.grid}>
-                                    {items.map((program, index) => {
-                                        const firstVideo = program.videos?.[0];
-                                        const isLastOdd = items.length % 2 !== 0 && index === items.length - 1;
-                                        const pinned = isPinned(program.id);
-                                        // A program is favourited if any of its video IDs is in favWorkoutIds
-                                        const isFavourited = favWorkoutIds.has(program.id) || program.videos.some(v => favWorkoutIds.has(v.id));
-                                        return (
-                                            <View key={program.id} style={[styles.gridItem, isLastOdd && styles.gridItemLastOdd]}>
-                                                <WorkoutCard
-                                                    program={program}
-                                                    index={index}
-                                                    onPress={() => navigation.navigate('VideoPlayer', {
-                                                        videoId: firstVideo?.id,
-                                                        title: program.title,
-                                                        videoUrl: firstVideo?.videoUrl,
-                                                        workoutTitle: program.title,
-                                                        videoType: 'premade_workout',
-                                                    })}
-                                                    isFavourited={isFavourited}
-                                                    isPinned={pinned}
-                                                    onToggleFavourite={() => {
-                                                        navigation.navigate('VideoPlayer', {
-                                                            videoId: firstVideo?.id,
-                                                            title: program.title,
-                                                            videoUrl: firstVideo?.videoUrl,
-                                                            workoutTitle: program.title,
-                                                            videoType: 'premade_workout',
-                                                        });
-                                                    }}
-                                                    onTogglePin={() => pinFavorite(program.id)}
-                                                />
-                                                <TouchableOpacity
-                                                    onPress={() => pinFavorite(program.id)}
-                                                    style={[styles.pinBtn, pinned && styles.pinBtnActive]}
-                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                                >
-                                                    <Pin size={13} color={pinned ? '#fff' : AppTheme.primaryColor} fill={pinned ? AppTheme.primaryColor : 'transparent'} />
-                                                </TouchableOpacity>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
+                                {renderWorkoutItems(items)}
                             </View>
                         ))}
                         {activeTab !== 'exercises' && totalWorkouts > 0 && (
@@ -414,20 +542,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
     },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    gridItem: {
-        flex: 1,
-        minWidth: '45%',
-        position: 'relative',
-    },
-    gridItemLastOdd: {
-        maxWidth: '50%',
-        paddingRight: 6,
-    },
     pinBtn: {
         position: 'absolute',
         top: 6,
@@ -441,6 +555,75 @@ const styles = StyleSheet.create({
     },
     pinBtnActive: {
         backgroundColor: AppTheme.primaryColor,
+    },
+    viewToolbar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginHorizontal: 16,
+        marginBottom: 8,
+    },
+    viewToolbarCount: {
+        color: '#7A7C90',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    viewModeBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#EEEEF2',
+        borderWidth: 1,
+        borderColor: '#D8D8E4',
+    },
+    viewModeBtnActive: {
+        backgroundColor: '#211832',
+        borderColor: '#211832',
+    },
+    flexGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    listItemWrap: {
+        position: 'relative',
+    },
+    listRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 9,
+        gap: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F8F8FC',
+    },
+    listThumb: {
+        width: 78,
+        height: 54,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        flexShrink: 0,
+    },
+    listThumbBadge: {
+        position: 'absolute',
+        bottom: 4,
+        right: 4,
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+    },
+    listTitle: {
+        flex: 1,
+        color: '#211832',
+        fontSize: 13,
+        fontWeight: '600',
+        lineHeight: 18,
+    },
+    listSub: {
+        color: '#7A7C90',
+        fontSize: 11,
+        marginTop: 2,
     },
     allBtn: {
         marginTop: 20,

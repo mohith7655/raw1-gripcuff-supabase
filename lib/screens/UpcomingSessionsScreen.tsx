@@ -7,7 +7,8 @@ import { AppTheme } from '../core/theme/app_theme';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { useAuth } from '../providers/AuthContext';
 import { ScheduledSessionService } from '../services/scheduledSession.service';
-import { ChallengeSessionService, PreviousChallenge } from '../services/challengeSession.service';
+import { ChallengeSessionService, PreviousChallenge, ScheduledChallenge } from '../services/challengeSession.service';
+import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 import { useUser } from '../providers/UserContext';
 import { TierAvatar } from '../components/profile/TierAvatar';
 
@@ -75,6 +76,7 @@ export const UpcomingSessionsScreen = () => {
     const [startLoading, setStartLoading] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [previousChallenges, setPreviousChallenges] = useState<PreviousChallenge[]>([]);
+    const [scheduledChallenges, setScheduledChallenges] = useState<ScheduledChallenge[]>([]);
 
     const loadPreviousChallenges = React.useCallback(() => {
         if (!supabaseUserId) return;
@@ -83,17 +85,25 @@ export const UpcomingSessionsScreen = () => {
             .catch(() => {});
     }, [supabaseUserId]);
 
+    const loadScheduledChallenges = React.useCallback(() => {
+        if (!supabaseUserId) return;
+        ChallengeSessionService.loadScheduledForUser(supabaseUserId)
+            .then(setScheduledChallenges)
+            .catch(() => {});
+    }, [supabaseUserId]);
+
     // Refresh sessions every time the screen comes into focus
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             refreshSessions();
             loadPreviousChallenges();
+            loadScheduledChallenges();
         });
         return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [navigation, loadPreviousChallenges]);
+    }, [navigation, loadPreviousChallenges, loadScheduledChallenges]);
 
-    useEffect(() => { loadPreviousChallenges(); }, [loadPreviousChallenges]);
+    useEffect(() => { loadPreviousChallenges(); loadScheduledChallenges(); }, [loadPreviousChallenges, loadScheduledChallenges]);
 
     // Map context WorkoutSession[] → SelfScheduledEntry[] shape used by this screen.
     const selfScheduled: SelfScheduledEntry[] = selfSessions.map(s => ({
@@ -110,9 +120,60 @@ export const UpcomingSessionsScreen = () => {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        try { await refreshSessions(); loadPreviousChallenges(); }
+        try { await refreshSessions(); loadPreviousChallenges(); loadScheduledChallenges(); }
         catch (e) { console.error(e); }
         finally { setRefreshing(false); }
+    };
+
+    // ── Scheduled-challenge actions ────────────────────────────────────────────
+    const handleAcceptChallenge = async (id: string) => {
+        setActionLoading(id);
+        try { await ChallengeSessionService.accept(id); loadScheduledChallenges(); }
+        catch (e: any) { Alert.alert('Error', e.message ?? 'Could not accept the challenge.'); }
+        finally { setActionLoading(null); }
+    };
+
+    const handleCancelChallenge = (id: string, asHost: boolean) => {
+        Alert.alert(
+            asHost ? 'Cancel challenge' : 'Decline challenge',
+            asHost ? 'Remove this scheduled challenge?' : 'Decline this challenge invite?',
+            [
+                { text: 'Keep', style: 'cancel' },
+                {
+                    text: asHost ? 'Remove' : 'Decline',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setActionLoading(id);
+                        try { await ChallengeSessionService.cancel(id); loadScheduledChallenges(); }
+                        catch (e: any) { Alert.alert('Error', e.message ?? 'Could not update the challenge.'); }
+                        finally { setActionLoading(null); }
+                    },
+                },
+            ],
+        );
+    };
+
+    // Join the challenge room — fetches an Agora token then opens the VS arena.
+    const handleJoinChallenge = async (c: ScheduledChallenge) => {
+        setStartLoading(c.id);
+        try {
+            const token = await fetchAgoraToken(c.channelName, 0).catch(() => '');
+            navigation.navigate('ChallengeVideoRoom', {
+                channelName: c.channelName,
+                token,
+                challengeSessionId: c.id,
+                opponentName: c.opponentName,
+                opponentUid: c.opponentUid,
+                exerciseName: c.exerciseName,
+                workoutDurationSecs: c.durationSeconds,
+                isHost: c.isHost,
+                myUid: supabaseUserId,
+            });
+        } catch (e: any) {
+            Alert.alert('Error', e.message ?? 'Could not open the challenge.');
+        } finally {
+            setStartLoading(null);
+        }
     };
 
     const handleAccept = async (id: string) => {
@@ -471,6 +532,137 @@ export const UpcomingSessionsScreen = () => {
                                 </View>
                             </View>
                         ))}
+                    </>
+                )}
+
+                {/* ── Section 1b: Scheduled Challenges ── */}
+                {scheduledChallenges.length > 0 && (
+                    <>
+                        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Challenges</Text>
+                        {scheduledChallenges.map(c => {
+                            const when = formatDateTime(toDate(new Date(c.scheduledAt)));
+                            const mins = Math.round(c.durationSeconds / 60) || 1;
+                            const isIncoming = !c.isHost && c.status === 'pending';
+                            const isOutgoingPending = c.isHost && c.status === 'pending';
+                            const isAccepted = c.status === 'accepted';
+                            return (
+                                <View key={`sched_challenge_${c.id}`} style={styles.card}>
+                                    <Text style={styles.sessionTypeLabel}>Challenge</Text>
+                                    <View style={styles.cardHeader}>
+                                        <TierAvatar
+                                            uri={c.opponentAvatar}
+                                            size={44}
+                                            uid={c.opponentUid}
+                                            name={c.opponentName}
+                                            radius={10}
+                                            showBadge={false}
+                                            fallback={
+                                                <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(242,89,18,0.12)' }]}>
+                                                    <Zap color={AppTheme.primaryColor} size={20} />
+                                                </View>
+                                            }
+                                        />
+                                        <View style={styles.headerText}>
+                                            <Text style={styles.userName} numberOfLines={1}>You vs {c.opponentName}</Text>
+                                            <Text style={[styles.actionText, isAccepted && { color: AppTheme.primaryColor }]}>
+                                                {isIncoming ? 'challenged you' : isAccepted ? 'Accepted — join when ready' : 'Waiting for response'}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.detailsRow}>
+                                        <View style={styles.detailHarp}>
+                                            <Calendar color={AppTheme.textGrey} size={14} />
+                                            <Text style={styles.detailText}>{when.dateStr}</Text>
+                                        </View>
+                                        <View style={styles.detailHarp}>
+                                            <Clock color={AppTheme.textGrey} size={14} />
+                                            <Text style={styles.detailText}>{when.timeStr}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={[styles.detailHarp, { marginTop: 8 }]}>
+                                        <Zap color={AppTheme.primaryColor} size={14} />
+                                        <Text style={[styles.detailText, { color: AppTheme.textWhite, flex: 1 }]} numberOfLines={1}>
+                                            {c.exerciseName} · {mins} min
+                                        </Text>
+                                    </View>
+
+                                    {isIncoming && (
+                                        <View style={styles.actionsRow}>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, styles.declineBtn]}
+                                                onPress={() => handleCancelChallenge(c.id, false)}
+                                                disabled={actionLoading === c.id}
+                                            >
+                                                <X color={AppTheme.textWhite} size={18} />
+                                                <Text style={styles.btnText}>Decline</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, styles.acceptBtn]}
+                                                onPress={() => handleAcceptChallenge(c.id)}
+                                                disabled={actionLoading === c.id}
+                                            >
+                                                {actionLoading === c.id ? (
+                                                    <ActivityIndicator size="small" color="#211832" />
+                                                ) : (
+                                                    <>
+                                                        <Check color="#211832" size={18} />
+                                                        <Text style={styles.btnText}>Accept</Text>
+                                                    </>
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+
+                                    {isOutgoingPending && (
+                                        <View style={styles.actionsRow}>
+                                            <View style={styles.waitingBadge}>
+                                                <ActivityIndicator size="small" color={AppTheme.textGrey} style={{ marginRight: 6 }} />
+                                                <Text style={styles.waitingText}>Waiting for response</Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, styles.declineBtn, { flex: 0, paddingHorizontal: 16 }]}
+                                                onPress={() => handleCancelChallenge(c.id, true)}
+                                                disabled={actionLoading === c.id}
+                                            >
+                                                {actionLoading === c.id ? (
+                                                    <ActivityIndicator size="small" color="#211832" />
+                                                ) : (
+                                                    <Text style={styles.btnText}>Cancel</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+
+                                    {isAccepted && (
+                                        <View style={styles.joinRow}>
+                                            <TouchableOpacity
+                                                style={styles.joinNowButton}
+                                                onPress={() => handleJoinChallenge(c)}
+                                                disabled={startLoading === c.id}
+                                            >
+                                                {startLoading === c.id ? (
+                                                    <ActivityIndicator size="small" color="#211832" />
+                                                ) : (
+                                                    <>
+                                                        <Zap color="#211832" size={14} style={{ marginRight: 6 }} />
+                                                        <Text style={styles.joinNowText}>Join Challenge</Text>
+                                                    </>
+                                                )}
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.startEarlyBtn}
+                                                onPress={() => handleCancelChallenge(c.id, c.isHost)}
+                                                disabled={actionLoading === c.id}
+                                            >
+                                                <Text style={styles.startEarlyText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })}
                     </>
                 )}
 

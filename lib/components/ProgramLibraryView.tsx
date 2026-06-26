@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     ScrollView,
+    Animated,
+    PanResponder,
+    Dimensions,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Heart, BookOpen, Lock } from 'lucide-react-native';
+import { Heart, BookOpen, Lock, ArrowLeft } from 'lucide-react-native';
 import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
@@ -253,11 +257,48 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
         navigation.navigate('HomeTabs', { screen: 'LibraryTab' });
     };
 
+    const goBack = () => {
+        if (navigation.canGoBack?.()) navigation.goBack();
+        else navigation.navigate('HomeTabs', { screen: 'LibraryTab' });
+    };
+
+    // ── Swipe-down-to-go-back ─────────────────────────────────────────────────
+    // The page is a full-height ScrollView that swallows a parent swipe gesture,
+    // so handle the drag here and only claim it when the list is at the very top
+    // (otherwise a downward drag is a normal scroll-up and must pass through).
+    const dragY = useRef(new Animated.Value(0)).current;
+    const scrollY = useRef(0);
+    const useNative = Platform.OS !== 'web';
+    const pan = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponderCapture: (_, g) =>
+                scrollY.current <= 0 && g.dy > 8 && g.dy > Math.abs(g.dx) * 1.4,
+            onPanResponderMove: (_, g) => { if (g.dy > 0) dragY.setValue(g.dy); },
+            onPanResponderRelease: (_, g) => {
+                if (g.dy > 110 || g.vy > 0.7) {
+                    Animated.timing(dragY, { toValue: SCREEN_H, duration: 220, useNativeDriver: useNative }).start(goBack);
+                } else {
+                    Animated.spring(dragY, { toValue: 0, bounciness: 2, useNativeDriver: useNative }).start();
+                }
+            },
+            onPanResponderTerminate: () =>
+                Animated.spring(dragY, { toValue: 0, bounciness: 2, useNativeDriver: useNative }).start(),
+        }),
+    ).current;
+
+    const handleScroll = (e: any) => {
+        scrollY.current = e?.nativeEvent?.contentOffset?.y ?? 0;
+        onFloatScroll(e);
+    };
+
     return (
+        <Animated.View style={[styles.flex, { transform: [{ translateY: dragY }] }]} {...pan.panHandlers}>
         <SafeAreaView style={styles.safeArea}>
-            {/* No back button — swipe down from the top to go back (SwipeBackView). */}
+            {/* Back button, plus swipe-down-to-go-back when scrolled to the top. */}
             <View style={styles.header}>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity onPress={goBack} style={styles.backButton}>
+                    <ArrowLeft color={AppTheme.textWhite} size={24} />
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>{title}</Text>
                 <View style={{ width: 40 }} />
             </View>
@@ -265,7 +306,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
             <ScrollView
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
-                onScroll={onFloatScroll}
+                onScroll={handleScroll}
                 scrollEventThrottle={16}
             >
                 {programs.map(renderProgramSection)}
@@ -277,10 +318,14 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                 translateY={floatTranslateY}
             />
         </SafeAreaView>
+        </Animated.View>
     );
 }
 
+const SCREEN_H = Dimensions.get('window').height;
+
 const styles = StyleSheet.create({
+    flex: { flex: 1 },
     safeArea: {
         flex: 1,
         backgroundColor: AppTheme.background,
