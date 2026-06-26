@@ -18,6 +18,7 @@ import { Rss, Users, ChevronRight } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { SocialActivity } from '../components/social/SocialActivity';
+import { Raw1Logo } from '../raw1_logo';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
@@ -343,7 +344,7 @@ export function FeedScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={{ width: 34 }} />
-        <Text style={styles.headerTitle}>Social</Text>
+        <Raw1Logo fontSize={18} centerAlign />
         <View style={{ width: 34 }} />
       </View>
 
