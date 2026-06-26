@@ -28,6 +28,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useIsFocused, useFocusEffect } from '@react-navigation/native';
+import { useProfilePreview } from '../providers/ProfilePreviewProvider';
 import { ChevronRight, ChevronDown, CircleUserRound } from 'lucide-react-native';
 import { useUser } from '../providers/UserContext';
 import { useAuth } from '../providers/AuthContext';
@@ -220,6 +221,7 @@ export function ChallengeLobbyScreen({
   onSeeAllHistory,
 }: ChallengeLobbyScreenProps) {
   const navigation = useNavigation<any>();
+  const preview = useProfilePreview();
   const isFocused = useIsFocused();
   const { profile } = useUser();
   const { supabaseUserId } = useAuth();
@@ -298,7 +300,10 @@ export function ChallengeLobbyScreen({
 
   const handlePressMatch = (m: ChallengeMatch) => {
     if (onPressMatch) onPressMatch(m);
-    else if (m.opponentUid) navigation.navigate('SocialProfileScreen', { uid: m.opponentUid });
+    else if (m.opponentUid) {
+      if (preview) preview.open({ uid: m.opponentUid, avatarUrl: m.opponentAvatar });
+      else navigation.navigate('SocialProfileScreen', { uid: m.opponentUid });
+    }
   };
 
   const handleSeeAll = () => {

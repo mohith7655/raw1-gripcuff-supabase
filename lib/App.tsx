@@ -32,6 +32,7 @@ import { StrangerInviteProvider } from './providers/StrangerInviteProvider';
 import { FavoritesProvider } from './providers/FavoritesContext';
 import { NotificationProvider } from './providers/NotificationProvider';
 import { MiniPlayerProvider } from './providers/MiniPlayerContext';
+import { ProfilePreviewProvider } from './providers/ProfilePreviewProvider';
 import { MiniPlayer } from './components/MiniPlayer';
 import { AppTheme, CoachingTheme } from './core/theme/app_theme';
 
@@ -142,12 +143,14 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any
 
 const Stack = createNativeStackNavigator();
 
-// Drag-down-to-go-back, applied to every stacked screen via the `layout` prop.
-// Full-screen video / call rooms opt out with `passthroughLayout`.
+// Drag-down-to-go-back, applied to EVERY stacked screen via the group's
+// `screenLayout` prop (NOTE: `Stack.Group` uses `screenLayout`, not `layout` —
+// `layout` only works on an individual `Stack.Screen`). Covers the full-screen
+// video / call / chat screens too; the gesture only fires from a downward drag
+// when content is at the top, so it never fights scrolling or call controls.
 const swipeBackLayout = ({ children }: { children: React.ReactNode }) => (
   <SwipeBackView>{children}</SwipeBackView>
 );
-const passthroughLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 const Tab = createBottomTabNavigator();
 type PublicProfileParams = { uid?: string; username?: string; slug?: string } | null;
 
@@ -430,7 +433,7 @@ function AppStack({
       />
       {/* Modal screens for other flows */}
       <Stack.Group
-        layout={swipeBackLayout}
+        screenLayout={swipeBackLayout}
         screenOptions={{
           presentation: 'card',
           contentStyle: { backgroundColor: '#EEEEF2' }
@@ -446,9 +449,9 @@ function AppStack({
         <Stack.Screen name="EarnCreditsScreen" component={EarnCreditsScreen} />
         <Stack.Screen name="GripCuffTrainingScreen" component={GripCuffTrainingScreen} />
         <Stack.Screen name="GripCuffVideos" component={GripCuffVideosScreen} />
-        <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} layout={passthroughLayout} />
+        <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} />
         <Stack.Screen name="VideoDetail" component={VideoDetailScreen} />
-        <Stack.Screen name="SyncedVideoPlayer" component={SyncedVideoPlayerScreen} layout={passthroughLayout} />
+        <Stack.Screen name="SyncedVideoPlayer" component={SyncedVideoPlayerScreen} />
         <Stack.Screen name="CategoryVideos" component={CategoryVideosScreen} />
         <Stack.Screen name="MuscleGrowth" component={MuscleGrowthScreen} />
         <Stack.Screen name="Stretching" component={StretchingScreen} />
@@ -467,17 +470,15 @@ function AppStack({
         <Stack.Screen
           name="AgoraVideoRoom"
           component={AgoraVideoRoom}
-          layout={passthroughLayout}
           options={{ gestureEnabled: false }}
         />
         <Stack.Screen
           name="ChallengeVideoRoom"
           component={ChallengeVideoRoom}
-          layout={passthroughLayout}
           options={{ headerShown: false, gestureEnabled: false }}
         />
         <Stack.Screen name="ChatInbox" component={ChatInboxScreen} />
-        <Stack.Screen name="ChatRoom" component={ChatRoomScreen} layout={passthroughLayout} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="ChatRoom" component={ChatRoomScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="ChatFriendProfile" component={ChatFriendProfileScreen} />
         <Stack.Screen name="LeaderboardScreen" component={LeaderboardScreen} />
         {/* ── Social Profile System ── */}
@@ -1009,17 +1010,19 @@ function MainApp() {
           },
         }}
       >
-        {supabaseUserId ? (
-          <StrangerInviteProvider>
-            <AppStack
-              initialRoute={needsOnboarding ? 'Onboarding' : 'HomeTabs'}
-              initialPublicProfile={initialPublicProfile}
-            />
-            <WorkoutInviteModal />
-          </StrangerInviteProvider>
-        ) : (
-          <AuthStack initialPublicProfile={initialPublicProfile} />
-        )}
+        <ProfilePreviewProvider>
+          {supabaseUserId ? (
+            <StrangerInviteProvider>
+              <AppStack
+                initialRoute={needsOnboarding ? 'Onboarding' : 'HomeTabs'}
+                initialPublicProfile={initialPublicProfile}
+              />
+              <WorkoutInviteModal />
+            </StrangerInviteProvider>
+          ) : (
+            <AuthStack initialPublicProfile={initialPublicProfile} />
+          )}
+        </ProfilePreviewProvider>
       </NavigationContainer>
       {/* Floating mini-player — above the navigator, persists across screens */}
       {!!supabaseUserId && <MiniPlayer />}

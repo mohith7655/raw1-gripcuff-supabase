@@ -39,10 +39,13 @@ import {
   Flame,
   MapPin,
   MessageCircle,
+  Snowflake,
+  Sun,
   Swords,
   Trophy,
   UserCheck,
   UserPlus,
+  Users,
   X,
 } from 'lucide-react-native';
 import { useAuth } from '../providers/AuthContext';
@@ -59,7 +62,7 @@ import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, CHALLENGE_EXERCISE_MET
 import { RelationshipStatus } from '../models/Friend';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
-import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats } from '../utils/activityHeat';
+import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats, HeatLevel, isInactiveSince } from '../utils/activityHeat';
 import { loadActivityMap } from '../services/activityMap.service';
 import { ActivityMap } from '../components/profile/ActivityMap';
 import { LocationsMap } from '../components/profile/LocationsMap';
@@ -125,13 +128,17 @@ function FireGlowBadge({ color, children }: { color: string; children: React.Rea
 }
 
 // ── Avatar (rounded-square, matches ProfileScreen) ─────────────────────────────
-function Avatar({ uri, size }: { uri?: string | null; size: number }) {
+function Avatar({ uri, size, grayscale }: { uri?: string | null; size: number; grayscale?: boolean }) {
   const [err, setErr] = useState(false);
   if (uri && !err) {
     return (
       <Image
         source={{ uri }}
-        style={{ width: size, height: size, borderRadius: Math.round(size * 0.22) }}
+        style={[
+          { width: size, height: size, borderRadius: Math.round(size * 0.22) },
+          // Black & white for inactive users — web only (RN-web maps `filter`).
+          grayscale && Platform.OS === 'web' ? ({ filter: 'grayscale(1)' } as any) : null,
+        ]}
         onError={() => setErr(true)}
       />
     );
@@ -147,6 +154,13 @@ function Avatar({ uri, size }: { uri?: string | null; size: number }) {
       </Text>
     </View>
   );
+}
+
+// ── Heat icon — replaces the "Hot/Warm/Cool/Cold" word on heat pills ───────────
+// ❄️ cold/cool · ☀️ warm · 🔥 hot — colour comes from the heat level itself.
+function HeatIcon({ level, color, size = 13 }: { level: HeatLevel; color: string; size?: number }) {
+  const Icon = level === 'hot' ? Flame : level === 'warm' ? Sun : Snowflake;
+  return <Icon size={size} color={color} strokeWidth={2.4} />;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -242,6 +256,8 @@ export function SocialProfileScreen() {
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [connPreview, setConnPreview] = useState<PreviewUser | null>(null);
   const [heats, setHeats] = useState<ActivityHeats | null>(null);
+  // Per-connection social/workout heat, loaded lazily when the list opens.
+  const [connHeats, setConnHeats] = useState<Record<string, ActivityHeats>>({});
 
   // Hide bottom CTA bar while scrolling, reveal when idle
   const ctaAnim = useRef(new RNAnimated.Value(1)).current;
@@ -299,6 +315,20 @@ export function SocialProfileScreen() {
     if (!uid) { setConnections([]); return; }
     FriendService.getFriends(uid).then(setConnections).catch(() => {});
   }, [uid]);
+
+  // When the connections list opens, lazily compute each connection's hot/cold
+  // heat (activity-map derived) so every row shows its social + workout heat.
+  useEffect(() => {
+    if (!connectionsOpen || connections.length === 0) return;
+    let alive = true;
+    connections.forEach((c) => {
+      if (!c.uid || connHeats[c.uid]) return; // skip already-loaded
+      loadActivityMap(c.uid)
+        .then((d) => { if (alive) setConnHeats((p) => ({ ...p, [c.uid]: computeHeats(d) })); })
+        .catch(() => {});
+    });
+    return () => { alive = false; };
+  }, [connectionsOpen, connections]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recent (last 30d) social / workout heat — the hot↔cold pills.
   useEffect(() => {
@@ -415,6 +445,10 @@ export function SocialProfileScreen() {
   const streak   = streakData?.currentStreak ?? user?.currentStreak    ?? 0;
   const workouts = streakData?.totalWorkouts ?? user?.completedWorkouts ?? 0;
   const prs      = streakData?.bestStreak    ?? user?.bestStreak        ?? 0;
+  // Videos watched — every workout video play increments total_watch_sessions
+  // (WatchTrackingService.startSession), so this climbs with each watch, not once
+  // per day like completed workouts.
+  const videosWatched = user?.totalWatchSessions ?? 0;
 
   // Weekly · Lifetime time stats
   const weeklyMins = streakData
@@ -563,7 +597,7 @@ export function SocialProfileScreen() {
                   avatarRadius={20}
                 >
                   <View style={{ width: 90, height: 90, borderRadius: 20, overflow: 'hidden' }}>
-                    <Avatar uri={user?.profileImageUrl} size={90} />
+                    <Avatar uri={user?.profileImageUrl} size={90} grayscale={isInactiveSince(user?.lastActiveAt)} />
                     <LinearGradient
                       colors={['transparent', 'rgba(0,0,0,0.72)']}
                       style={{
@@ -608,23 +642,23 @@ export function SocialProfileScreen() {
                     disabled={connections.length === 0}
                   >
                     <Text style={s.connectsCount}>{connections.length}</Text>
-                    <Text style={s.connectsLabel}>
-                      CONNECTS{heats ? ` - ${heats.social.label}` : ''}
-                    </Text>
+                    <Text style={s.connectsLabel}>CONNECTS</Text>
+                    {heats && <HeatIcon level={heats.social.level} color={heats.social.color} size={12} />}
                   </TouchableOpacity>
-                  {/* Workout pill — dumbbell + "Workout" + hot/cold label, no count.
-                      Heat reflects recent time spent training in the app; the colour
-                      (hot → orange · warm → amber · cool → blue · cold → grey) and the
-                      label both signal how hot/cold their workout activity is. */}
+                  {/* Workout pill — dumbbell + total workout count + hot/cold label.
+                      The border colour reflects workout heat (hot → orange · warm →
+                      amber · cool → blue · cold → grey), mirroring the Connects pill so
+                      the count and the temperature both read at a glance. */}
                   {heats && (
                     <View style={[s.workoutPill, {
                       backgroundColor: heats.workout.soft,
-                      borderColor: heats.workout.color + '55',
+                      borderColor: heats.workout.color,
+                      borderWidth: 3,
                     }]}>
                       <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
-                      <Text style={[s.workoutPillText, { color: heats.workout.color }]}>
-                        Workout {heats.workout.label}
-                      </Text>
+                      <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
+                      <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
+                      <HeatIcon level={heats.workout.level} color={heats.workout.color} size={14} />
                     </View>
                   )}
                 </View>
@@ -1208,7 +1242,7 @@ export function SocialProfileScreen() {
                     });
                   }}
                 >
-                  <Avatar uri={c.profileImageUrl} size={44} />
+                  <Avatar uri={c.profileImageUrl} size={44} grayscale={isInactiveSince(c.lastActiveAt)} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={s.connNameRow}>
                       <Text style={s.connName} numberOfLines={1}>@{c.username}</Text>
@@ -1231,6 +1265,19 @@ export function SocialProfileScreen() {
                         </View>
                       );
                     })()}
+                    {/* Hot/cold heat — social + workout, loaded per connection */}
+                    {connHeats[c.uid] && (
+                      <View style={s.connHeatRow}>
+                        <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].social.soft, borderColor: connHeats[c.uid].social.color }]}>
+                          <Users size={11} color={connHeats[c.uid].social.color} strokeWidth={2.4} />
+                          <HeatIcon level={connHeats[c.uid].social.level} color={connHeats[c.uid].social.color} size={11} />
+                        </View>
+                        <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].workout.soft, borderColor: connHeats[c.uid].workout.color }]}>
+                          <Dumbbell size={11} color={connHeats[c.uid].workout.color} strokeWidth={2.4} />
+                          <HeatIcon level={connHeats[c.uid].workout.level} color={connHeats[c.uid].workout.color} size={11} />
+                        </View>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -1383,7 +1430,8 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
-  workoutPillText: { fontSize: 12, fontWeight: '700' },
+  workoutPillCount: { fontSize: 13, fontWeight: '800' },
+  workoutPillText: { fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
   connOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   connSheet: {
     maxHeight: '75%',
@@ -1423,6 +1471,12 @@ const s = StyleSheet.create({
   connActivityRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   connDot: { width: 7, height: 7, borderRadius: 3.5 },
   connActivityText: { fontSize: 11, fontWeight: '700' },
+  connHeatRow: { flexDirection: 'row', gap: 6, marginTop: 6 },
+  connHeatChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: 100, borderWidth: 1.5,
+  },
   openBadge: {
     flexDirection: 'row',
     alignItems: 'center',

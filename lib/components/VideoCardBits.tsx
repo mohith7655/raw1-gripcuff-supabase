@@ -95,25 +95,23 @@ export function SetupTimeIcon({
   return <MaterialCommunityIcons name={meta.icon as any} color={meta.color} size={size} />;
 }
 
-// Thumbnail overlays: category pictogram bottom-left, setup-time hourglass
-// top-right (top-left = logo, bottom-right = duration are already taken).
+// Thumbnail overlay: one bottom-left badge with the category pictogram and the
+// setup-time hourglass right next to it (top-left = logo, bottom-right =
+// duration are already taken).
 export function ThumbnailCategory({
   category, difficulty,
 }: { category?: string | null; difficulty?: string | null }) {
   const level = setupLevelFor(category, difficulty);
+  if (!category && !level) return null;
   return (
-    <>
+    <View style={s.badge} pointerEvents="none">
       {category ? (
-        <View style={s.badge} pointerEvents="none">
-          <MaterialCommunityIcons name={categoryIconName(category) as any} color={categoryColor(category)} size={14} />
-        </View>
+        <MaterialCommunityIcons name={categoryIconName(category) as any} color={categoryColor(category)} size={14} />
       ) : null}
       {level ? (
-        <View style={s.setupBadge} pointerEvents="none">
-          <MaterialCommunityIcons name={SETUP_DISPLAY[level].icon as any} color={SETUP_DISPLAY[level].color} size={14} />
-        </View>
+        <MaterialCommunityIcons name={SETUP_DISPLAY[level].icon as any} color={SETUP_DISPLAY[level].color} size={14} />
       ) : null}
-    </>
+    </View>
   );
 }
 
@@ -122,20 +120,12 @@ const s = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 8,
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  setupBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 8,
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
 });

@@ -105,9 +105,14 @@ export class NotificationService {
 
     console.log(`${TAG} inserted`, { id: data.id, type: payload.type });
 
-    // Send Expo push notification to recipient's device (best-effort, non-fatal)
+    // Fan out background push (best-effort, non-fatal):
+    //   • Native devices  → Expo push (exp.host)
+    //   • Web / PWA       → W3C Web Push via the send-web-push Netlify function
     NotificationService.sendExpoPush(payload).catch((e) =>
-      console.warn(`${TAG} push send failed:`, e),
+      console.warn(`${TAG} expo push send failed:`, e),
+    );
+    NotificationService.sendWebPush(payload).catch((e) =>
+      console.warn(`${TAG} web push send failed:`, e),
     );
 
     return data.id as string;
@@ -147,6 +152,34 @@ export class NotificationService {
 
     const json = await res.json().catch(() => null);
     console.log(`${TAG} push sent`, { status: res.status, ticket: json?.data?.status });
+  }
+
+  // ── Web push ────────────────────────────────────────────────────────────────
+  // Triggers the send-web-push Netlify function, which looks up the recipient's
+  // browser subscriptions (service-role) and delivers via the VAPID private key.
+  // Non-fatal — in-app realtime banners cover the foreground case regardless.
+
+  private static async sendWebPush(payload: NotificationInsertPayload): Promise<void> {
+    const base = (process.env.EXPO_PUBLIC_APP_WEB_URL || '').replace(/\/+$/, '');
+    const url = `${base}/.netlify/functions/send-web-push`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toUid: payload.toUid,
+        title: payload.title,
+        body: payload.body,
+        data: {
+          type: payload.type,
+          chatId: payload.chatId || undefined,
+          sessionId: payload.sessionId || undefined,
+        },
+      }),
+    });
+
+    const json = await res.json().catch(() => null);
+    console.log(`${TAG} web push sent`, { status: res.status, delivered: json?.delivered, removed: json?.removed });
   }
 
   // ── Mark single notification read ──────────────────────────────────────────

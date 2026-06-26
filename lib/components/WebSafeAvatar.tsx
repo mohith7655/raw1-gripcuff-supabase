@@ -8,6 +8,8 @@ interface WebSafeAvatarProps {
     style?: object;
     timeoutMs?: number;
     borderRadius?: number;
+    /** Render the picture in black & white (e.g. an inactive user). */
+    grayscale?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export function WebSafeAvatar({
     style,
     timeoutMs = 5000,
     borderRadius,
+    grayscale = false,
 }: WebSafeAvatarProps) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
@@ -71,6 +74,7 @@ export function WebSafeAvatar({
                         height: size,
                         borderRadius: radius,
                         objectFit: 'cover',
+                        filter: grayscale ? 'grayscale(1)' : undefined,
                         /* opacity/visibility instead of display:none so browsers
                            always attempt the fetch and reliably fire onLoad/onError */
                         opacity: loaded ? 1 : 0,

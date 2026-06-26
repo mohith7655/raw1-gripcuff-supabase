@@ -4,6 +4,7 @@ import {
     ActivityIndicator, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useProfilePreview } from '../../providers/ProfilePreviewProvider';
 import {
     Search, UserPlus, UserCheck, UserX, Clock, MessageCircle, Flame, Dumbbell,
 } from 'lucide-react-native';
@@ -33,6 +34,7 @@ type Suggestion = {
 /** Friends + Requests + Suggestions, all in one scroll for the Social → Friends tab. */
 export function FriendsHub() {
     const navigation = useNavigation<any>();
+    const preview = useProfilePreview();
     const { user, supabaseUserId } = useAuth();
     const {
         friends, incomingRequests, outgoingRequests,
@@ -118,7 +120,8 @@ export function FriendsHub() {
         finally { setActionReq(null); }
     };
 
-    const goProfile = (uid: string) => navigation.navigate('SocialProfileScreen', { uid });
+    const goProfile = (uid: string) =>
+        preview ? preview.open({ uid }) : navigation.navigate('SocialProfileScreen', { uid });
     const goChat = (f: User) => navigation.navigate('ChatRoom', {
         friendUid: f.uid, friendName: f.fullName || f.username, friendAvatar: f.profileImageUrl,
     });

@@ -471,18 +471,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
     const sharedPlayerRef = useRef<SharedVideoPlayerRef>(null);
 
     // ── Pre-start "Workout or Watch?" chooser ─────────────────────────────────
-    // Shown on entry for normal video launches. Skipped when the mode is already
-    // decided by the flow (auto-start workout, co-workout, or synced session).
-    const [showModeModal, setShowModeModal] = useState<boolean>(
-        () => !(
-            route?.params?.autoStartWorkout === true ||
-            !!route?.params?.coWorkoutChannel ||
-            !!route?.params?.sessionId ||
-            // initialMode is carried when navigating prev/next between videos —
-            // the user already chose a mode, so don't re-prompt.
-            !!route?.params?.initialMode
-        ),
-    );
+    // Disabled: videos open straight into watch mode (autoplay). Users switch to
+    // workout via the on-screen Watch/Workout toggle. Kept as state (always off)
+    // so the rest of the chooser wiring stays inert without further changes.
+    const [showModeModal, setShowModeModal] = useState<boolean>(false);
 
     // ── Realtime playback sync ────────────────────────────────────────────────
     // sessionId + hostUserId are passed from UpcomingSessionsScreen.
@@ -3065,6 +3057,10 @@ function VideoPlayerScreen({ route, navigation }: any) {
                             <Text style={panelStyles.countdownText}>{countdownPhase}</Text>
                         ) : (
                             <>
+                                {/* Earning-credits banner — sits right above the timer ring */}
+                                <Text style={panelStyles.earningBanner}>
+                                    You are now earning credits — counting towards activity
+                                </Text>
                                 {(() => {
                                     const RING_SIZE = 220;
                                     const STROKE = 8;
@@ -3488,6 +3484,15 @@ const panelStyles = StyleSheet.create({
         paddingTop: 16,
         paddingBottom: 32,
         gap: 12,
+    },
+    earningBanner: {
+        color: '#F25912',
+        fontSize: 12.5,
+        fontWeight: '800',
+        textAlign: 'center',
+        letterSpacing: 0.2,
+        paddingHorizontal: 12,
+        marginBottom: 4,
     },
     timerText: {
         color: '#F25912',

@@ -12,6 +12,10 @@
   [build.environment]
     NODE_VERSION = "20"
     EXPO_PUBLIC_APP_WEB_URL = "https://raw1-supabase.netlify.app"
+    # Web Push VAPID public key — safe to expose to the client. The matching
+    # VAPID_PRIVATE_KEY / VAPID_SUBJECT must be set as SECRET dashboard env vars
+    # (never commit the private key).
+    EXPO_PUBLIC_VAPID_PUBLIC_KEY = "BFET4aw9cBwjYGifItRErDui3BpKpTGo9vavNzJJpWliHX5Z9oQmB7Yn9oS4mF8SxmpInZV2_wIQ3ebzK5bFjxo"
 
 [functions]
   # Where serverless functions live
@@ -45,6 +49,13 @@
 
 [[headers]]
   for = "/firebase-messaging-sw.js"
+  [headers.values]
+    Content-Type          = "text/javascript; charset=utf-8"
+    Cache-Control         = "no-store"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/sw.js"
   [headers.values]
     Content-Type          = "text/javascript; charset=utf-8"
     Cache-Control         = "no-store"

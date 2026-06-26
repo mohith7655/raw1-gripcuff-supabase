@@ -39,6 +39,7 @@ import { User } from '../models/User';
 import { AppTheme } from '../core/theme/app_theme';
 import { TierAvatar } from '../components/profile/TierAvatar';
 import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
+import { useProfilePreview } from '../providers/ProfilePreviewProvider';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -64,15 +65,15 @@ type TabId = 'friends' | 'requests' | 'suggestions';
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 function Avatar({
-    uri, size = 48, online = false, uid, name,
-}: { uri?: string | null; size?: number; online?: boolean; uid?: string | null; name?: string | null }) {
+    uri, size = 48, online = false, uid, name, lastActiveAt,
+}: { uri?: string | null; size?: number; online?: boolean; uid?: string | null; name?: string | null; lastActiveAt?: string | null }) {
     // Mirror the ring padding so the presence dot sits on the avatar's corner.
     const STROKE = Math.max(2, Math.min(5, Math.round(size * 0.042)));
     const GAP    = Math.max(2, Math.min(6, Math.round(size * 0.052)));
     const pad    = GAP + STROKE;
     return (
         <View style={{ position: 'relative' }}>
-            <TierAvatar uri={uri} size={size} uid={uid} name={name} showBadge={false} />
+            <TierAvatar uri={uri} size={size} uid={uid} name={name} showBadge={false} lastActiveAt={lastActiveAt} />
             {online && (
                 <View style={{
                     position: 'absolute', bottom: pad - 1, right: pad - 1,
@@ -260,7 +261,7 @@ function FriendRow({ user, onProfile, onMessage, onRemove }: {
 
     return (
         <TouchableOpacity style={s.friendRow} onPress={onProfile} activeOpacity={0.8}>
-            <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} uid={user.uid} name={user.fullName} />
+            <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} uid={user.uid} name={user.fullName} lastActiveAt={user.lastActiveAt} />
             <View style={s.rowInfo}>
                 <Text style={s.rowName} numberOfLines={1}>@{user.username}</Text>
                 <Text style={s.rowSub} numberOfLines={1}>{user.fullName}</Text>
@@ -541,6 +542,7 @@ function RequestsTab() {
 
 function SuggestionsTab() {
     const navigation = useNavigation<any>();
+    const preview = useProfilePreview();
     const { supabaseUserId } = useAuth();
     const { friends, sendRequest } = useFriend();
 
@@ -602,7 +604,9 @@ function SuggestionsTab() {
                 return (
                     <TouchableOpacity
                         style={s.suggestionCard}
-                        onPress={() => navigation.navigate('SocialProfileScreen', { uid: item.uid })}
+                        onPress={() => preview
+                            ? preview.open({ uid: item.uid, fullName: item.fullName, username: item.username, avatarUrl: item.avatarUrl })
+                            : navigation.navigate('SocialProfileScreen', { uid: item.uid })}
                         activeOpacity={0.85}
                     >
                         <Avatar uri={item.avatarUrl} size={52} uid={item.uid} name={item.fullName} />

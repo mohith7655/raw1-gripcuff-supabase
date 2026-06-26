@@ -11,12 +11,31 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
-import { ChevronRight, MessageCircle } from 'lucide-react-native';
+import { ChevronRight, MessageCircle, Users, Dumbbell, Flame, Sun, Snowflake } from 'lucide-react-native';
 import { TierAvatar } from '../profile/TierAvatar';
-import { HeatPills } from './HeatPills';
 import { supabase } from '../../core/config/supabase';
 import { loadActivityMap } from '../../services/activityMap.service';
-import { computeHeats, genderMeta, lastActiveLabel, appActiveLabel, ActivityHeats } from '../../utils/activityHeat';
+import { FriendService } from '../../services/friend.service';
+import { computeHeats, genderMeta, lastActiveLabel, appActiveLabel, ActivityHeats, Heat, HeatLevel } from '../../utils/activityHeat';
+
+// ❄️ cold/cool · ☀️ warm · 🔥 hot — matches the full-profile heat pills.
+function HeatIcon({ level, color, size = 13 }: { level: HeatLevel; color: string; size?: number }) {
+  const Icon = level === 'hot' ? Flame : level === 'warm' ? Sun : Snowflake;
+  return <Icon size={size} color={color} strokeWidth={2.4} />;
+}
+
+// CONNECTS / WORKOUTS count pill — tinted + bordered by the heat level, same as
+// the full SocialProfileScreen header.
+function StatPill({ icon, count, label, heat }: { icon: React.ReactNode; count: number; label: string; heat: Heat }) {
+  return (
+    <View style={[s.statPill, { backgroundColor: heat.soft, borderColor: heat.color }]}>
+      {icon}
+      <Text style={[s.statCount, { color: heat.color }]}>{count}</Text>
+      <Text style={[s.statLabel, { color: heat.color }]}>{label}</Text>
+      <HeatIcon level={heat.level} color={heat.color} />
+    </View>
+  );
+}
 
 const TEXT = '#211832';
 const MUTED = '#7A7C90';
@@ -45,6 +64,12 @@ export function ProfilePreviewSheet({
   const [heats, setHeats] = useState<ActivityHeats | null>(null);
   const [gender, setGender] = useState<string | null>(null);
   const [lastActiveAt, setLastActiveAt] = useState<string | null>(null);
+  // Identity fetched by uid — fallback when the caller only had a user id
+  // (e.g. a tapped avatar) and not the name / handle / picture.
+  const [identity, setIdentity] = useState<{ fullName?: string | null; username?: string | null; avatarUrl?: string | null }>({});
+  // CONNECTS / WORKOUTS counts for the heat pills.
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [workoutsCount, setWorkoutsCount] = useState(0);
 
   useEffect(() => {
     if (!visible || !user?.uid) return;
@@ -53,16 +78,23 @@ export function ProfilePreviewSheet({
     setHeats(null);
     setGender(user.gender ?? null);
     setLastActiveAt(null);
+    setIdentity({});
+    setConnectionsCount(0);
+    setWorkoutsCount(0);
 
     Promise.all([
       loadActivityMap(user.uid).catch(() => null),
-      supabase.from('users').select('gender, last_active_at').eq('id', user.uid).maybeSingle(),
+      supabase.from('users').select('full_name, username, avatar_url, gender, last_active_at, total_watch_sessions').eq('id', user.uid).maybeSingle(),
+      FriendService.getFriends(user.uid).catch(() => [] as any[]),
     ])
-      .then(([map, { data } = { data: null } as any]) => {
+      .then(([map, { data } = { data: null } as any, friends = []]) => {
         if (!alive) return;
         if (map) setHeats(computeHeats(map));
         if (data?.gender) setGender(data.gender);
         setLastActiveAt(data?.last_active_at ?? null);
+        setIdentity({ fullName: data?.full_name, username: data?.username, avatarUrl: data?.avatar_url });
+        setWorkoutsCount(Number(data?.total_watch_sessions ?? 0));
+        setConnectionsCount(Array.isArray(friends) ? friends.length : 0);
       })
       .finally(() => { if (alive) setLoading(false); });
 
@@ -73,7 +105,9 @@ export function ProfilePreviewSheet({
 
   const gm = genderMeta(gender);
   const active = appActiveLabel(lastActiveAt);
-  const name = user.fullName || user.username || 'Athlete';
+  const name = user.fullName || identity.fullName || user.username || identity.username || 'Athlete';
+  const username = user.username || identity.username || '';
+  const avatarUrl = user.avatarUrl || identity.avatarUrl || null;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -83,7 +117,7 @@ export function ProfilePreviewSheet({
 
           {/* Identity */}
           <View style={s.identity}>
-            <TierAvatar uri={user.avatarUrl} size={72} uid={user.uid} name={name} showBadge />
+            <TierAvatar uri={avatarUrl} size={72} uid={user.uid} name={name} showBadge disableProfileLink lastActiveAt={lastActiveAt} />
             <View style={s.idText}>
               <View style={s.nameRow}>
                 <Text style={s.name} numberOfLines={1}>{name}</Text>
@@ -93,7 +127,7 @@ export function ProfilePreviewSheet({
                   </View>
                 )}
               </View>
-              {!!user.username && <Text style={s.handleText} numberOfLines={1}>@{user.username}</Text>}
+              {!!username && <Text style={s.handleText} numberOfLines={1}>@{username}</Text>}
               <View style={s.activityRow}>
                 <View style={[s.dot, { backgroundColor: active.color }]} />
                 <Text style={[s.activityText, { color: active.color }]}>{active.text}</Text>
@@ -101,12 +135,25 @@ export function ProfilePreviewSheet({
             </View>
           </View>
 
-          {/* Heat */}
+          {/* Heat — CONNECTS / WORKOUTS count pills tinted by heat level */}
           <Text style={s.sectionLabel}>Recent activity</Text>
           {loading ? (
             <View style={s.loader}><ActivityIndicator color={ACCENT} /></View>
           ) : heats ? (
-            <HeatPills social={heats.social} workout={heats.workout} />
+            <View style={s.statsRow}>
+              <StatPill
+                icon={<Users size={14} color={heats.social.color} strokeWidth={2.4} />}
+                count={connectionsCount}
+                label="CONNECTS"
+                heat={heats.social}
+              />
+              <StatPill
+                icon={<Dumbbell size={14} color={heats.workout.color} strokeWidth={2.4} />}
+                count={workoutsCount}
+                label="WORKOUTS"
+                heat={heats.workout}
+              />
+            </View>
           ) : (
             <Text style={s.muted}>No recent activity</Text>
           )}
@@ -167,6 +214,15 @@ const s = StyleSheet.create({
   loader: { paddingVertical: 8, alignItems: 'flex-start' },
   muted: { color: MUTED, fontSize: 13 },
   subtle: { color: MUTED, fontSize: 12, marginTop: 8 },
+
+  statsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  statPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 11, paddingVertical: 7,
+    borderRadius: 100, borderWidth: 2,
+  },
+  statCount: { fontSize: 13, fontWeight: '800' },
+  statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
 
   actions: { flexDirection: 'row', gap: 10, marginTop: 22 },
   msgBtn: {

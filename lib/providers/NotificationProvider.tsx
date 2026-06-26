@@ -6,6 +6,7 @@ import { NotificationService } from '../services/notification.service';
 import { getChatId } from '../services/chat.service';
 import { navigationRef } from '../core/navigation';
 import { PushTokenService } from '../services/pushToken.service';
+import { WebPushService } from '../services/webPush.service';
 
 type NotificationContextType = {
   current: AppNotification | null;
@@ -37,9 +38,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const seenRef = useRef<Set<string>>(new Set());
 
   // ── Push token registration on login ─────────────────────────────────────
+  // Native → Expo push token; web → W3C Web Push subscription (Netlify-hosted PWA).
   useEffect(() => {
     if (!supabaseUserId) return;
     PushTokenService.registerAndSave(supabaseUserId);
+    WebPushService.registerAndSave(supabaseUserId);
   }, [supabaseUserId]);
 
   // ── Supabase realtime notification subscription ───────────────────────────

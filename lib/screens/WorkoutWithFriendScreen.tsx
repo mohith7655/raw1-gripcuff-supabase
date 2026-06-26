@@ -29,6 +29,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useProfilePreview } from '../providers/ProfilePreviewProvider';
 import { ChevronRight, ChevronDown, CircleUserRound, Users } from 'lucide-react-native';
 import { useUser } from '../providers/UserContext';
 import { useAuth } from '../providers/AuthContext';
@@ -192,6 +193,7 @@ export function WorkoutWithFriendScreen({
   onSeeAllSessions,
 }: WorkoutWithFriendScreenProps) {
   const navigation = useNavigation<any>();
+  const preview = useProfilePreview();
   const [howOpen, setHowOpen] = useState(false);
   const { profile } = useUser();
   const { supabaseUserId } = useAuth();
@@ -254,7 +256,10 @@ export function WorkoutWithFriendScreen({
 
   const handlePressSession = (sess: FriendSession) => {
     if (onPressSession) onPressSession(sess);
-    else if (sess.partnerUid) navigation.navigate('SocialProfileScreen', { uid: sess.partnerUid });
+    else if (sess.partnerUid) {
+      if (preview) preview.open({ uid: sess.partnerUid, avatarUrl: sess.partnerAvatar });
+      else navigation.navigate('SocialProfileScreen', { uid: sess.partnerUid });
+    }
   };
 
   const handleSeeAll = () => {

@@ -25,6 +25,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useProfilePreview } from '../../providers/ProfilePreviewProvider';
 import {
   Settings,
   UserPlus,
@@ -164,6 +165,7 @@ function savePrefs(uid: string | null, prefs: Record<ActivityCategory, boolean>)
 
 export function SocialActivity() {
   const navigation = useNavigation<any>();
+  const preview = useProfilePreview();
   const { supabaseUserId, user } = useAuth();
   const { friends, incomingRequests, outgoingRequests, acceptRequest, declineRequest } = useFriend();
   const { completedSessions, pendingInvites, upcomingSessions } = useWorkoutSession();
@@ -172,8 +174,8 @@ export function SocialActivity() {
   const [customizing, setCustomizing] = useState(false);
   // Quick filter tabs below the header — narrows the list to one category.
   const [filter, setFilter] = useState<FilterKey>('all');
-  // Requests view sub-tab — incoming (sent to me) vs outgoing (I sent).
-  const [reqSubTab, setReqSubTab] = useState<'incoming' | 'outgoing'>('incoming');
+  // Requests view sub-tab — your friends, incoming (sent to me) vs outgoing (I sent).
+  const [reqSubTab, setReqSubTab] = useState<'friends' | 'incoming' | 'outgoing'>('friends');
 
   const [challenges, setChallenges] = useState<PreviousChallenge[]>([]);
   // Scheduled / pending challenge invites — incoming ones surface as unread notifications.
@@ -400,10 +402,10 @@ export function SocialActivity() {
   const handlePress = useCallback((item: ActivityItem) => {
     switch (item.category) {
       case 'requests':
-        if (item.uid) navigation.navigate('SocialProfileScreen', { uid: item.uid });
+        if (item.uid) preview?.open({ uid: item.uid, fullName: item.name, avatarUrl: item.avatar });
         break;
       case 'challenges':
-        if (item.uid) navigation.navigate('SocialProfileScreen', { uid: item.uid });
+        if (item.uid) preview?.open({ uid: item.uid, fullName: item.name, avatarUrl: item.avatar });
         break;
       case 'workouts':
         navigation.navigate('UpcomingSessionsScreen');
@@ -416,7 +418,7 @@ export function SocialActivity() {
         });
         break;
     }
-  }, [navigation]);
+  }, [navigation, preview]);
 
   const handleAccept = useCallback(async (item: ActivityItem) => {
     if (!item.requestId || !item.fromUid || !supabaseUserId) return;
@@ -461,7 +463,7 @@ export function SocialActivity() {
         key={id}
         style={s.row}
         activeOpacity={0.85}
-        onPress={() => otherUid && navigation.navigate('SocialProfileScreen', { uid: otherUid })}
+        onPress={() => otherUid && preview?.open({ uid: otherUid, fullName: name, avatarUrl: avatar })}
       >
         <View style={s.avatarWrap}>
           {avatar ? (
@@ -499,6 +501,53 @@ export function SocialActivity() {
             <Text style={s.cancelReqText}>Cancel</Text>
           </TouchableOpacity>
         )}
+      </TouchableOpacity>
+    );
+  };
+
+  // Friend row for the Friends sub-tab — tap opens profile, message icon opens chat.
+  const renderFriendRow = (f: typeof friends[number]) => {
+    const name = f.fullName || f.username || 'Friend';
+    const avatar = f.profileImageUrl ?? null;
+    return (
+      <TouchableOpacity
+        key={f.uid}
+        style={s.row}
+        activeOpacity={0.85}
+        onPress={() => preview?.open({ uid: f.uid, fullName: name, avatarUrl: avatar })}
+      >
+        <View style={s.avatarWrap}>
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={s.avatar} />
+          ) : (
+            <View style={[s.avatar, s.avatarFallback]}>
+              <Text style={s.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
+          <View style={[s.tag, { backgroundColor: C_MESSAGES }]}>
+            <MessageCircle size={10} color="#fff" />
+          </View>
+        </View>
+
+        <View style={s.info}>
+          <Text style={s.name} numberOfLines={1}>{name}</Text>
+          {f.username ? (
+            <Text style={s.sub} numberOfLines={1}>@{f.username}</Text>
+          ) : null}
+        </View>
+
+        <TouchableOpacity
+          style={[s.reqBtn, { backgroundColor: C_MESSAGES }]}
+          onPress={() => navigation.navigate('ChatRoom', {
+            friendUid: f.uid,
+            friendName: name,
+            friendAvatar: avatar,
+          })}
+          hitSlop={6}
+          activeOpacity={0.8}
+        >
+          <MessageCircle size={16} color="#fff" />
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -588,7 +637,7 @@ export function SocialActivity() {
       {/* Workouts tab — start a co-workout with a friend. */}
       {filter === 'workouts' && (
         <TouchableOpacity
-          style={[s.ctaBtn, { backgroundColor: C_WORKOUTS }]}
+          style={[s.ctaBtn, { backgroundColor: ORANGE }]}
           activeOpacity={0.85}
           onPress={() => navigation.navigate('WorkoutWithFriendScreen')}
         >
@@ -600,7 +649,7 @@ export function SocialActivity() {
       {/* Challenges tab — invite a friend to a head-to-head challenge. */}
       {filter === 'challenges' && (
         <TouchableOpacity
-          style={[s.ctaBtn, { backgroundColor: C_CHALLENGES }]}
+          style={[s.ctaBtn, { backgroundColor: ORANGE }]}
           activeOpacity={0.85}
           onPress={() => navigation.navigate('ChallengeLobbyScreen')}
         >
@@ -613,9 +662,12 @@ export function SocialActivity() {
         // Requests view — incoming (sent to me) / outgoing (I sent) sub-tabs.
         <View>
           <View style={s.subTabs}>
-            {(['incoming', 'outgoing'] as const).map((k) => {
+            {(['friends', 'incoming', 'outgoing'] as const).map((k) => {
               const active = reqSubTab === k;
-              const n = k === 'incoming' ? incomingRequests.length : outgoingRequests.length;
+              const n = k === 'friends' ? friends.length
+                : k === 'incoming' ? incomingRequests.length
+                : outgoingRequests.length;
+              const label = k === 'friends' ? 'Friends' : k === 'incoming' ? 'Incoming' : 'Outgoing';
               return (
                 <TouchableOpacity
                   key={k}
@@ -624,13 +676,25 @@ export function SocialActivity() {
                   activeOpacity={0.85}
                 >
                   <Text style={[s.subTabText, active && s.subTabTextActive]}>
-                    {k === 'incoming' ? 'Incoming' : 'Outgoing'}{n > 0 ? ` (${n})` : ''}
+                    {label}{n > 0 ? ` (${n})` : ''}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          {(reqSubTab === 'incoming' ? incomingRequests : outgoingRequests).length === 0 ? (
+          {reqSubTab === 'friends' ? (
+            friends.length === 0 ? (
+              <View style={s.emptyCard}>
+                <UserPlus size={24} color={MUTED} />
+                <Text style={s.emptyTitle}>No friends yet</Text>
+                <Text style={s.emptySub}>Accept a request or connect with people to build your list.</Text>
+              </View>
+            ) : (
+              <View style={s.list}>
+                {friends.map((f) => renderFriendRow(f))}
+              </View>
+            )
+          ) : (reqSubTab === 'incoming' ? incomingRequests : outgoingRequests).length === 0 ? (
             <View style={s.emptyCard}>
               <UserPlus size={24} color={MUTED} />
               <Text style={s.emptyTitle}>

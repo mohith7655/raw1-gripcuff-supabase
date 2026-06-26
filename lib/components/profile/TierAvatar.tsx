@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { NavigationContext } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebSafeAvatar } from '../WebSafeAvatar';
 import { TierAvatarRing } from './TierAvatarRing';
 import { useTier } from '../../providers/TierContext';
+import { useProfilePreview } from '../../providers/ProfilePreviewProvider';
+import { isInactiveSince } from '../../utils/activityHeat';
 
 interface Props {
     uri?: string | null;
@@ -30,6 +32,8 @@ interface Props {
     /** Show a black gradient + first name overlaid at the bottom of the picture.
      *  Defaults to true for size >= 40. Pass true/false to force on/off. */
     showNameOverlay?: boolean;
+    /** Last app-open timestamp; if 14+ days ago the picture renders black & white. */
+    lastActiveAt?: string | null;
 }
 
 function initialsOf(name?: string | null): string {
@@ -45,9 +49,13 @@ function initialsOf(name?: string | null): string {
  * on the segments the user has activated (via accessType).
  */
 export function TierAvatar({
-    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink, bare, showNameOverlay,
+    uri, size, accessType, uid, name, fallback, radius, showBadge, badgeBorderColor, disableProfileLink, bare, showNameOverlay, lastActiveAt,
 }: Props) {
-    const navigation = useNavigation<any>();
+    const inactive = isInactiveSince(lastActiveAt);
+    // NavigationContext (not useNavigation) so the avatar also renders outside a
+    // navigator — e.g. inside the global preview sheet — without throwing.
+    const navigation = React.useContext(NavigationContext) as any;
+    const preview = useProfilePreview();
     const r = radius ?? Math.round(size * 0.22);
 
     // Explicit accessType wins; otherwise resolve by uid via the batched cache.
@@ -75,7 +83,7 @@ export function TierAvatar({
 
     const avatar = showOverlay ? (
         <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden' }}>
-            <WebSafeAvatar uri={uri} size={size} borderRadius={r} fallback={fallback ?? defaultFallback} />
+            <WebSafeAvatar uri={uri} size={size} borderRadius={r} fallback={fallback ?? defaultFallback} grayscale={inactive} />
             <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.72)']}
                 style={{
@@ -98,6 +106,7 @@ export function TierAvatar({
             size={size}
             borderRadius={r}
             fallback={fallback ?? defaultFallback}
+            grayscale={inactive}
         />
     );
 
@@ -118,7 +127,12 @@ export function TierAvatar({
         return (
             <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('SocialProfileScreen', { uid })}
+                onPress={() => {
+                    // Prefer the lightweight preview sheet; fall back to the full
+                    // profile if the provider isn't mounted in this tree.
+                    if (preview) preview.open({ uid, fullName: name ?? null, avatarUrl: uri ?? null });
+                    else navigation?.navigate('SocialProfileScreen', { uid });
+                }}
                 // Web: stop the click from also triggering the parent row's handler
                 // (so tapping the avatar opens the profile, not the row's action).
                 {...(Platform.OS === 'web'

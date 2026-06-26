@@ -5,17 +5,19 @@ self.addEventListener('activate', e => e.waitUntil(clients.claim()));
 
 // Handle incoming Web Push messages
 self.addEventListener('push', e => {
-    const data = e.data?.json?.() ?? {};
-    const title = data.title || 'Reminder to Move 💪';
+    let data = {};
+    try { data = e.data?.json?.() ?? {}; } catch (_) { data = {}; }
+    const title = data.title || 'RAW1';
     const options = {
-        body: data.body || 'Time to move — stay active!',
+        body: data.body || 'You have a new notification.',
         icon: '/assets/icon.png',
         badge: '/favicon.ico',
         vibrate: [200, 100, 200, 100, 200],
-        tag: 'move-reminder',
+        // Per-notification tag (e.g. chat:<id>) so unrelated pushes don't collapse.
+        tag: data.tag || 'raw1',
         renotify: true,
         requireInteraction: false,
-        data: { url: data.url || '/' },
+        data: { url: data.url || '/', type: data.type, chatId: data.chatId },
     };
     e.waitUntil(self.registration.showNotification(title, options));
 });

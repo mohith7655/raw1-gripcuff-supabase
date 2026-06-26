@@ -23,7 +23,9 @@ export interface Heat {
 }
 
 const HEAT: Record<HeatLevel, { color: string; soft: string; label: string }> = {
-  hot:  { color: '#F25912', soft: 'rgba(242,89,18,0.14)',  label: 'Hot' },
+  // "Hot" uses a fiery red rather than the CTA orange (#F25912) so heat pills
+  // never read like tappable action buttons.
+  hot:  { color: '#EF4444', soft: 'rgba(239,68,68,0.14)',  label: 'Hot' },
   warm: { color: '#F59E0B', soft: 'rgba(245,158,11,0.16)', label: 'Warm' },
   cool: { color: '#3B82F6', soft: 'rgba(59,130,246,0.14)', label: 'Cool' },
   cold: { color: '#94A3B8', soft: 'rgba(148,163,184,0.18)', label: 'Cold' },
@@ -113,6 +115,16 @@ export function appActiveLabel(lastActiveAt?: string | null): { text: string; co
   const days = hrs / 24;
   if (days < 7)  return { text: `Active ${Math.round(days)}d ago`, color: '#d4a600' };
   return { text: `Online ${new Date(t).toLocaleDateString()}`, color: '#7A7C90' };
+}
+
+// True when the user hasn't opened the app for `days`+ days (default 14) — used
+// to grey-scale their profile picture as an "inactive" signal. Unknown / missing
+// last-active is treated as active (not greyed) to avoid false negatives.
+export function isInactiveSince(lastActiveAt?: string | null, days = 14): boolean {
+  if (!lastActiveAt) return false;
+  const t = new Date(lastActiveAt).getTime();
+  if (!Number.isFinite(t)) return false;
+  return Date.now() - t > days * 86_400_000;
 }
 
 // "Active N days/weeks ago" from a last-active day key (heatmap-derived).
