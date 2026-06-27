@@ -33,6 +33,7 @@ import { ExploreCoaches } from './ExploreCoaches';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { GridVideoCard } from '../components/GridVideoCard';
+import { VideoViewsLabel } from '../components/VideoViewsLabel';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
 
@@ -1165,6 +1166,7 @@ const VideoTile = ({
           </Text>
           <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 4 }} />
         </View>
+        <VideoViewsLabel videoId={video.id} />
       </View>
     </TouchableOpacity>
   );

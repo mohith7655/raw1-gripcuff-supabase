@@ -6,6 +6,7 @@ import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme } from '../core/theme/app_theme';
 import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
+import { VideoViewsLabel } from './VideoViewsLabel';
 import { useFavorites } from '../hooks/useFavorites';
 import { Video } from '../models/Video';
 import { getProgramByVideoId } from '../data/preRecordedPrograms';
@@ -146,6 +147,9 @@ export function MultiColVideoCard({
                 </Text>
                 <DifficultyDot difficulty={video.difficulty} size={8} style={{ marginTop: 3 }} />
             </View>
+            <View style={{ paddingHorizontal: 1, marginTop: 2 }}>
+                <VideoViewsLabel videoId={video.id} size={10} />
+            </View>
         </TouchableOpacity>
     );
 }
@@ -207,6 +211,7 @@ export function ListVideoCard({
                     <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 5 }} />
                 </View>
                 <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>{durationLabel}</Text>
+                <VideoViewsLabel videoId={video.id} />
             </View>
 
         </TouchableOpacity>

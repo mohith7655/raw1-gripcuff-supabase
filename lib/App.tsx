@@ -23,7 +23,7 @@ import { AppState } from 'react-native';
 import { CastManager } from './services/cast/castManager';
 import { AuthProvider, useAuth } from './providers/AuthContext';
 import { UserProvider, useUser } from './providers/UserContext';
-import { FriendProvider } from './providers/FriendContext';
+import { FriendProvider, useFriend } from './providers/FriendContext';
 import { UserService } from './services/user.service';
 import { LibraryProvider } from './providers/LibraryContext';
 import { WorkoutProvider } from './providers/WorkoutContext';
@@ -288,7 +288,7 @@ function AuthStack({ initialPublicProfile }: { initialPublicProfile?: PublicProf
 }
 
 // Bottom tab bar — floating pill bar (Samsung dialer style)
-function PillTabBar({ state, descriptors, navigation, appMode }: any) {
+function PillTabBar({ state, descriptors, navigation, appMode, socialBadge = 0 }: any) {
   const isCoaching    = appMode === 'coaching';
   const activeColor   = isCoaching ? CoachingTheme.tabActive : '#4C4E78';
   const inactiveColor = isCoaching ? CoachingTheme.textMuted : '#9A9CB0';
@@ -340,6 +340,8 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
             if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
           };
 
+          const badgeCount = route.name === 'SocialTab' ? socialBadge : 0;
+
           return (
             <TouchableOpacity
               key={route.key}
@@ -347,7 +349,29 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
               activeOpacity={0.7}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}
             >
-              {options.tabBarIcon?.({ color, size: 22, focused: isFocused })}
+              <View>
+                {options.tabBarIcon?.({ color, size: 22, focused: isFocused })}
+                {badgeCount > 0 && (
+                  <View style={{
+                    position: 'absolute',
+                    top: -5,
+                    right: -10,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: '#F25912',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                    borderWidth: 1.5,
+                    borderColor: barBg,
+                  }}>
+                    <Text style={{ color: '#fff', fontSize: 9.5, fontWeight: '800' }}>
+                      {badgeCount > 9 ? '9+' : badgeCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={{
                 color,
                 fontSize: 11,
@@ -368,12 +392,15 @@ function PillTabBar({ state, descriptors, navigation, appMode }: any) {
 function HomeTabs() {
   const { appMode } = useUser();
   const { unreadInvitesCount } = useWorkoutSession();
+  const { incomingRequests } = useFriend();
+  // Social tab badge — incoming friend requests + unread workout invites.
+  const socialBadge = (incomingRequests?.length ?? 0) + (unreadInvitesCount ?? 0);
 
   return (
     <TabBarVisibilityProvider>
       <Tab.Navigator
         backBehavior="history"
-        tabBar={(props) => <PillTabBar {...props} appMode={appMode} />}
+        tabBar={(props) => <PillTabBar {...props} appMode={appMode} socialBadge={socialBadge} />}
         screenOptions={{ headerShown: false }}
       >
         <Tab.Screen
