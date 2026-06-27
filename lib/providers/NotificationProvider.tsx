@@ -65,8 +65,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const uid = supabaseUserId;
 
-    // Seed the unread badge count from the table.
-    NotificationService.getUnreadCount(uid).then(setUnreadCount).catch(() => {});
+    // Refresh the deduped unread count from the table (badge source of truth).
+    const refreshUnread = () => NotificationService.getUnreadCount(uid).then(setUnreadCount).catch(() => {});
+    refreshUnread();
 
     const unsub = NotificationService.subscribeToNewNotifications(
       uid,
@@ -85,7 +86,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           return;
         }
 
-        setUnreadCount((c) => c + 1);
+        refreshUnread();
         if (notification.type === 'workout_invite') {
           setWorkoutInviteQueue((prev) => [...prev, notification]);
           return;
@@ -101,7 +102,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const genuinelyNew = notifications.filter((n) => !seenRef.current.has(n.id));
         if (genuinelyNew.length === 0) return;
 
-        setUnreadCount((c) => c + genuinelyNew.length);
+        refreshUnread();
         genuinelyNew.forEach((n) => {
           seenRef.current.add(n.id);
           if (n.type === 'chat_message' && isCurrentlyInChat(n.chatId, uid)) return;

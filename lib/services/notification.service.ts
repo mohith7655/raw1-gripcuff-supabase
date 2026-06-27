@@ -221,17 +221,27 @@ export class NotificationService {
 
   // ── Unread count + mark-all-read (drives the Social tab badge) ─────────────
 
+  // Distinct unread "items" — collapses multiple messages from the same chat (and
+  // multiple requests from the same person) into one, so the badge matches what
+  // the user sees in the Activity list rather than counting every row.
   static async getUnreadCount(uid: string): Promise<number> {
-    const { count, error } = await supabase
+    const { data, error } = await supabase
       .from('notifications')
-      .select('id', { count: 'exact', head: true })
+      .select('id, type, chat_id, from_uid')
       .eq('to_uid', uid)
-      .eq('read', false);
+      .eq('read', false)
+      .limit(200);
     if (error) {
       console.warn(`${TAG} getUnreadCount failed:`, error.message);
       return 0;
     }
-    return count ?? 0;
+    const keys = new Set<string>();
+    for (const n of data ?? []) {
+      if (n.type === 'chat_message') keys.add(`chat:${n.chat_id ?? n.from_uid}`);
+      else if (n.type === 'friend_request') keys.add(`fr:${n.from_uid}`);
+      else keys.add(n.id); // sessions / system etc. each count once
+    }
+    return keys.size;
   }
 
   static async markAllRead(uid: string): Promise<void> {
