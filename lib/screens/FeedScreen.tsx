@@ -19,6 +19,7 @@ import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { SocialActivity } from '../components/social/SocialActivity';
 import { Raw1Logo } from '../raw1_logo';
+import { useNotificationCenter } from '../providers/NotificationProvider';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
@@ -109,9 +110,13 @@ export function FeedScreen() {
   const navigation = useNavigation<any>();
   const tabBar = useTabBarVisibility();
   const { supabaseUserId, user } = useAuth();
+  const { markAllRead } = useNotificationCenter();
 
   // Reveal the bottom bar when this screen regains focus.
   useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
+
+  // Opening the Social tab clears the unread-notification badge.
+  useFocusEffect(useCallback(() => { markAllRead(); }, [markAllRead]));
 
   // Hide the bottom nav while scrolling the feed.
   const handleScroll = useCallback((e: any) => { tabBar?.onScroll?.(e); }, [tabBar]);

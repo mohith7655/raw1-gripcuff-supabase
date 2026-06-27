@@ -219,6 +219,30 @@ export class NotificationService {
     else console.log(`${TAG} markReadBySessionAll`, { sessionId });
   }
 
+  // ── Unread count + mark-all-read (drives the Social tab badge) ─────────────
+
+  static async getUnreadCount(uid: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('to_uid', uid)
+      .eq('read', false);
+    if (error) {
+      console.warn(`${TAG} getUnreadCount failed:`, error.message);
+      return 0;
+    }
+    return count ?? 0;
+  }
+
+  static async markAllRead(uid: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('to_uid', uid)
+      .eq('read', false);
+    if (error) console.warn(`${TAG} markAllRead failed:`, error.message);
+  }
+
   // ── Realtime subscription ─────────────────────────────────────────────────
   //
   // Three-phase:

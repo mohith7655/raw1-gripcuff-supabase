@@ -23,14 +23,14 @@ import { AppState } from 'react-native';
 import { CastManager } from './services/cast/castManager';
 import { AuthProvider, useAuth } from './providers/AuthContext';
 import { UserProvider, useUser } from './providers/UserContext';
-import { FriendProvider, useFriend } from './providers/FriendContext';
+import { FriendProvider } from './providers/FriendContext';
 import { UserService } from './services/user.service';
 import { LibraryProvider } from './providers/LibraryContext';
 import { WorkoutProvider } from './providers/WorkoutContext';
-import { WorkoutSessionProvider, useWorkoutSession } from './providers/WorkoutSessionContext';
+import { WorkoutSessionProvider } from './providers/WorkoutSessionContext';
 import { StrangerInviteProvider } from './providers/StrangerInviteProvider';
 import { FavoritesProvider } from './providers/FavoritesContext';
-import { NotificationProvider } from './providers/NotificationProvider';
+import { NotificationProvider, useNotificationCenter } from './providers/NotificationProvider';
 import { MiniPlayerProvider } from './providers/MiniPlayerContext';
 import { ProfilePreviewProvider } from './providers/ProfilePreviewProvider';
 import { MiniPlayer } from './components/MiniPlayer';
@@ -391,10 +391,9 @@ function PillTabBar({ state, descriptors, navigation, appMode, socialBadge = 0 }
 // Home Tab Navigator
 function HomeTabs() {
   const { appMode } = useUser();
-  const { unreadInvitesCount } = useWorkoutSession();
-  const { incomingRequests } = useFriend();
-  // Social tab badge — incoming friend requests + unread workout invites.
-  const socialBadge = (incomingRequests?.length ?? 0) + (unreadInvitesCount ?? 0);
+  const { unreadCount } = useNotificationCenter();
+  // Social tab badge — unread notifications (messages, friend requests, invites …).
+  const socialBadge = unreadCount;
 
   return (
     <TabBarVisibilityProvider>

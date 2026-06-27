@@ -13,6 +13,10 @@ type NotificationContextType = {
   queueSize: number;
   currentWorkoutInvite: AppNotification | null;
   dismissWorkoutInvite: () => void;
+  /** Unread notification count — drives the bottom Social tab badge. */
+  unreadCount: number;
+  /** Mark every notification read (called when the Social tab is opened). */
+  markAllRead: () => void;
 };
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -34,6 +38,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [current, setCurrent] = useState<AppNotification | null>(null);
   const [workoutInviteQueue, setWorkoutInviteQueue] = useState<AppNotification[]>([]);
   const [currentWorkoutInvite, setCurrentWorkoutInvite] = useState<AppNotification | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const bootstrappedRef = useRef(false);
   const seenRef = useRef<Set<string>>(new Set());
 
@@ -52,12 +57,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setCurrent(null);
       setWorkoutInviteQueue([]);
       setCurrentWorkoutInvite(null);
+      setUnreadCount(0);
       bootstrappedRef.current = false;
       seenRef.current.clear();
       return;
     }
 
     const uid = supabaseUserId;
+
+    // Seed the unread badge count from the table.
+    NotificationService.getUnreadCount(uid).then(setUnreadCount).catch(() => {});
 
     const unsub = NotificationService.subscribeToNewNotifications(
       uid,
@@ -76,6 +85,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           return;
         }
 
+        setUnreadCount((c) => c + 1);
         if (notification.type === 'workout_invite') {
           setWorkoutInviteQueue((prev) => [...prev, notification]);
           return;
@@ -91,6 +101,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const genuinelyNew = notifications.filter((n) => !seenRef.current.has(n.id));
         if (genuinelyNew.length === 0) return;
 
+        setUnreadCount((c) => c + genuinelyNew.length);
         genuinelyNew.forEach((n) => {
           seenRef.current.add(n.id);
           if (n.type === 'chat_message' && isCurrentlyInChat(n.chatId, uid)) return;
@@ -126,6 +137,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const dismissWorkoutInvite = useCallback(() => setCurrentWorkoutInvite(null), []);
 
+  // Clear the unread badge — called when the Social tab is opened.
+  const markAllRead = useCallback(() => {
+    setUnreadCount(0);
+    if (supabaseUserId) NotificationService.markAllRead(supabaseUserId).catch(() => {});
+  }, [supabaseUserId]);
+
   // ── Banner tap navigation ─────────────────────────────────────────────────
 
   const handleBannerPress = useCallback((notification: AppNotification) => {
@@ -144,7 +161,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     queueSize: queue.length,
     currentWorkoutInvite,
     dismissWorkoutInvite,
-  }), [current, queue.length, currentWorkoutInvite, dismissWorkoutInvite]);
+    unreadCount,
+    markAllRead,
+  }), [current, queue.length, currentWorkoutInvite, dismissWorkoutInvite, unreadCount, markAllRead]);
 
   return (
     <NotificationContext.Provider value={ctx}>
