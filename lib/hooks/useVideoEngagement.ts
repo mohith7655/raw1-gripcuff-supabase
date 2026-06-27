@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { updateGlobalEngagement } from '../services/videoEngagement.service';
+import { setVideoTrying } from '../services/videoEngagementCounts.service';
 
 export interface EngagementState {
     liked: boolean;
@@ -57,6 +58,8 @@ export function useVideoEngagement(
         if (!uid || !videoId) return;
         const newVal = !state.tryIntent;
         setState(s => ({ ...s, tryIntent: newVal }));
+        // Persist global membership + adjust the shared "trying" count.
+        setVideoTrying(uid, videoId, newVal).catch(() => {});
     }, [uid, videoId, state]);
 
     return { state, toggleLike, toggleDislike, toggleTryIntent };

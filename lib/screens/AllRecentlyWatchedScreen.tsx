@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 import { useLibrary } from '../providers/LibraryContext';
 import { getAllPrograms } from '../data/preRecordedPrograms';
-import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
+import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from '../components/VideoCardBits';
 import { VideoViewsLabel } from '../components/VideoViewsLabel';
 import { Raw1Logo } from '../raw1_logo';
 
@@ -69,14 +69,15 @@ export function AllRecentlyWatchedScreen() {
                                     <Raw1Logo fontSize={12} transparent />
                                 </View>
                                 <Play color="rgba(255,255,255,0.12)" size={30} fill="rgba(255,255,255,0.12)" />
-                                <ThumbnailCategory category={(localVideo as any)?.category} />
                             </LinearGradient>
                             <View style={s.info}>
                                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
                                     <Text numberOfLines={2} style={[s.cardTitle, { flex: 1 }]}>{title}</Text>
                                     <DifficultyDot difficulty={difficulty} size={8} style={{ marginTop: 3 }} />
                                 </View>
+                                <ThumbnailCategory category={(localVideo as any)?.category} difficulty={difficulty} />
                                 <VideoViewsLabel videoId={item.videoId} />
+                                <VideoEngagementIcons videoId={item.videoId} />
                             </View>
                         </TouchableOpacity>
                     );

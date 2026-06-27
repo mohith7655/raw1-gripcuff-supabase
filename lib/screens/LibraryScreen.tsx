@@ -34,6 +34,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { GridVideoCard } from '../components/GridVideoCard';
 import { VideoViewsLabel } from '../components/VideoViewsLabel';
+import { VideoEngagementIcons } from '../components/VideoCardBits';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
 
@@ -168,7 +169,7 @@ const WorkoutsTabContent = () => {
 
         {/* Category rows */}
         <View style={{ marginHorizontal: SCREEN_PADDING, backgroundColor: '#F8F8FC', borderRadius: 14, borderWidth: 1, borderColor: '#D8D8E4', overflow: 'hidden', marginBottom: 16 }}>
-          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" iconName="arm-flex" color="#66BB6A" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
+          <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" iconName="weight-lifter" color="#66BB6A" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
           <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" iconName="yoga" color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
           <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" iconName="run-fast" color="#D4A600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
           <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" iconName="human-cane" color="#f44336" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
@@ -634,7 +635,7 @@ const QUIZ_QUESTIONS: { id: number; question: string; options: { label: string; 
     id: 1,
     question: 'What is your fitness goal?',
     options: [
-      { label: 'Muscle Growth', emoji: '💪', keywords: ['Hypertrophy', 'Bicep', 'Chest', 'Mass', 'Back'] },
+      { label: 'Muscle Growth', emoji: '🏋️', keywords: ['Hypertrophy', 'Bicep', 'Chest', 'Mass', 'Back'] },
       { label: 'Stretching', emoji: '🧘', keywords: ['Stretch', 'Mobility', 'Flexibility', 'Flow', 'Recovery'] },
       { label: 'Athletic Performance', emoji: '🏆', keywords: ['Performance', 'Circuit', 'Endurance', 'Stamina', 'HIIT', 'Cardio'] },
       { label: 'Injury Rehab', emoji: '🩹', keywords: ['Rehab', 'Recovery', 'Mobility', 'Low', 'Spine', 'Hip'] },
@@ -651,7 +652,7 @@ const QUIZ_QUESTIONS: { id: number; question: string; options: { label: string; 
 // Dynamic Q2 options based on Q1 answer
 const BODY_PART_OPTIONS: Record<string, { label: string; emoji: string }[]> = {
   'Muscle Growth': [
-    { label: 'Upper Body', emoji: '💪' },
+    { label: 'Upper Body', emoji: '🏋️' },
     { label: 'Lower Body', emoji: '🦵' },
     { label: 'Full Body', emoji: '🏋️' },
     { label: 'Core & Abs', emoji: '🎯' },
@@ -659,7 +660,7 @@ const BODY_PART_OPTIONS: Record<string, { label: string; emoji: string }[]> = {
   'Stretching': [
     { label: 'Spine & Back', emoji: '🦴' },
     { label: 'Hips & Legs', emoji: '🦵' },
-    { label: 'Shoulders & Neck', emoji: '💪' },
+    { label: 'Shoulders & Neck', emoji: '🏋️' },
     { label: 'Full Body Stretch', emoji: '�' },
   ],
   'Athletic Performance': [
@@ -671,7 +672,7 @@ const BODY_PART_OPTIONS: Record<string, { label: string; emoji: string }[]> = {
   'Injury Rehab': [
     { label: 'Lower Back', emoji: '🦴' },
     { label: 'Knee & Hip', emoji: '🦵' },
-    { label: 'Shoulder & Rotator', emoji: '💪' },
+    { label: 'Shoulder & Rotator', emoji: '🏋️' },
     { label: 'Ankle & Foot', emoji: '🦶' },
   ],
 };
@@ -1148,7 +1149,6 @@ const VideoTile = ({
             <Lock color="#211832" size={28} />
           </View>
         )}
-        <ThumbnailCategory category={video.category} />
       </LinearGradient>
 
       {/* Text Info */}
@@ -1166,7 +1166,9 @@ const VideoTile = ({
           </Text>
           <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 4 }} />
         </View>
+        <ThumbnailCategory category={video.category} difficulty={video.difficulty} />
         <VideoViewsLabel videoId={video.id} />
+        <VideoEngagementIcons videoId={video.id} />
       </View>
     </TouchableOpacity>
   );

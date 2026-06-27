@@ -4,7 +4,7 @@ import { Play } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
-import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
+import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { useVideoViews, formatViews } from '../services/videoViews.service';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
@@ -66,7 +66,6 @@ export const GridVideoCard = ({
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{video.duration}</Text>
                 </View>
-                <ThumbnailCategory category={(video as any).category} />
             </View>
 
             <View style={styles.infoContainer}>
@@ -76,9 +75,11 @@ export const GridVideoCard = ({
                     </Text>
                     <DifficultyDot difficulty={(video as any).difficulty} style={styles.diffDot} />
                 </View>
+                <ThumbnailCategory category={(video as any).category} difficulty={(video as any).difficulty} />
                 {!!views && (
                     <Text style={styles.videoViews}>{formatViews(views)} views</Text>
                 )}
+                <VideoEngagementIcons videoId={video.id != null ? String(video.id) : null} />
             </View>
         </TouchableOpacity>
     );

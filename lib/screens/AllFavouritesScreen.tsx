@@ -102,7 +102,6 @@ function WorkoutCard({
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{program.videos.length} videos</Text>
                 </View>
-                <ThumbnailCategory category={getProgramCategoryKey(program.id)} />
             </View>
             <View style={{ paddingHorizontal: 4 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
@@ -120,6 +119,7 @@ function WorkoutCard({
                         </Animated.View>
                     </TouchableOpacity>
                 </View>
+                <ThumbnailCategory category={getProgramCategoryKey(program.id)} difficulty={program.level} />
             </View>
         </TouchableOpacity>
     );
@@ -157,13 +157,13 @@ function WorkoutListRow({
                 <View style={styles.listThumbBadge}>
                     <Text style={styles.durationText}>{program.videos.length} videos</Text>
                 </View>
-                <ThumbnailCategory category={getProgramCategoryKey(program.id)} />
             </View>
             <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
                     <Text style={styles.listTitle} numberOfLines={2}>{program.title}</Text>
                     <DifficultyDot difficulty={program.level} style={{ marginTop: 5 }} />
                 </View>
+                <ThumbnailCategory category={getProgramCategoryKey(program.id)} difficulty={program.level} />
                 <Text style={styles.listSub}>{program.videos.length} videos</Text>
             </View>
         </TouchableOpacity>

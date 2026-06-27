@@ -619,8 +619,8 @@ export function SocialProfileScreen() {
 
               <View style={s.heroInfoCol}>
                 <View style={s.nameLine}>
-                  {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                   <Text style={s.name} numberOfLines={1}>{displayName}</Text>
+                  {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                 </View>
                 {/* Gender · Connects · Squats — same row */}
                 <View style={s.connectsRow}>
@@ -633,10 +633,7 @@ export function SocialProfileScreen() {
                       social heat (hot → orange … cold → grey), signalling how
                       active they are with others. */}
                   <TouchableOpacity
-                    style={[s.connectsPill, heats && {
-                      borderWidth: 3,
-                      borderColor: heats.social.color,
-                    }]}
+                    style={s.connectsPill}
                     onPress={() => setConnectionsOpen(true)}
                     activeOpacity={0.75}
                     disabled={connections.length === 0}
@@ -650,11 +647,7 @@ export function SocialProfileScreen() {
                       amber · cool → blue · cold → grey), mirroring the Connects pill so
                       the count and the temperature both read at a glance. */}
                   {heats && (
-                    <View style={[s.workoutPill, {
-                      backgroundColor: heats.workout.soft,
-                      borderColor: heats.workout.color,
-                      borderWidth: 3,
-                    }]}>
+                    <View style={[s.workoutPill, { backgroundColor: heats.workout.soft }]}>
                       <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
                       <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
                       <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
@@ -1233,19 +1226,13 @@ export function SocialProfileScreen() {
                   activeOpacity={0.8}
                   onPress={() => {
                     setConnectionsOpen(false);
-                    setConnPreview({
-                      uid: c.uid,
-                      fullName: c.fullName,
-                      username: c.username,
-                      avatarUrl: c.profileImageUrl,
-                      gender: c.gender,
-                    });
+                    (navigation as any).push('SocialProfileScreen', { uid: c.uid });
                   }}
                 >
                   <Avatar uri={c.profileImageUrl} size={44} grayscale={isInactiveSince(c.lastActiveAt)} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={s.connNameRow}>
-                      <Text style={s.connName} numberOfLines={1}>@{c.username}</Text>
+                      <Text style={s.connName} numberOfLines={1}>{c.fullName || c.username || 'Athlete'}</Text>
                       {(() => {
                         const gm = genderMetaOf(c.gender);
                         return gm ? (
@@ -1255,7 +1242,7 @@ export function SocialProfileScreen() {
                         ) : null;
                       })()}
                     </View>
-                    <Text style={s.connSub} numberOfLines={1}>{c.fullName}</Text>
+                    {c.username ? <Text style={s.connSub} numberOfLines={1}>@{c.username}</Text> : null}
                     {(() => {
                       const a = appActiveLabel(c.lastActiveAt);
                       return (
@@ -1268,11 +1255,11 @@ export function SocialProfileScreen() {
                     {/* Hot/cold heat — social + workout, loaded per connection */}
                     {connHeats[c.uid] && (
                       <View style={s.connHeatRow}>
-                        <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].social.soft, borderColor: connHeats[c.uid].social.color }]}>
+                        <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].social.soft }]}>
                           <Users size={11} color={connHeats[c.uid].social.color} strokeWidth={2.4} />
                           <HeatIcon level={connHeats[c.uid].social.level} color={connHeats[c.uid].social.color} size={11} />
                         </View>
-                        <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].workout.soft, borderColor: connHeats[c.uid].workout.color }]}>
+                        <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].workout.soft }]}>
                           <Dumbbell size={11} color={connHeats[c.uid].workout.color} strokeWidth={2.4} />
                           <HeatIcon level={connHeats[c.uid].workout.level} color={connHeats[c.uid].workout.color} size={11} />
                         </View>
@@ -1385,14 +1372,14 @@ const s = StyleSheet.create({
     gap: 1,
   },
   name: {
-    color: C.muted,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  handle: {
     color: C.text,
     fontSize: 22,
     fontWeight: '800',
+  },
+  handle: {
+    color: C.muted,
+    fontSize: 15,
+    fontWeight: '600',
   },
   connectsRow: {
     flexDirection: 'row',
@@ -1425,7 +1412,6 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1475,7 +1461,7 @@ const s = StyleSheet.create({
   connHeatChip: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: 7, paddingVertical: 3,
-    borderRadius: 100, borderWidth: 1.5,
+    borderRadius: 100,
   },
   openBadge: {
     flexDirection: 'row',

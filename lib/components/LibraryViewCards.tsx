@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme } from '../core/theme/app_theme';
-import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
+import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
 import { VideoViewsLabel } from './VideoViewsLabel';
 import { useFavorites } from '../hooks/useFavorites';
 import { Video } from '../models/Video';
@@ -138,7 +138,6 @@ export function MultiColVideoCard({
                 <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
                     <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
-                <ThumbnailCategory category={video.category} />
             </LinearGradient>
 
             <View style={{ paddingTop: 4, paddingHorizontal: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
@@ -147,9 +146,11 @@ export function MultiColVideoCard({
                 </Text>
                 <DifficultyDot difficulty={video.difficulty} size={8} style={{ marginTop: 3 }} />
             </View>
+            <ThumbnailCategory category={video.category} difficulty={video.difficulty} style={{ paddingHorizontal: 1 }} />
             <View style={{ paddingHorizontal: 1, marginTop: 2 }}>
                 <VideoViewsLabel videoId={video.id} size={10} />
             </View>
+            <VideoEngagementIcons videoId={video.id} size={11} style={{ paddingHorizontal: 1 }} />
         </TouchableOpacity>
     );
 }
@@ -200,7 +201,6 @@ export function ListVideoCard({
                 <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
                     <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
-                <ThumbnailCategory category={video.category} />
             </LinearGradient>
 
             <View style={{ flex: 1 }}>
@@ -210,8 +210,10 @@ export function ListVideoCard({
                     </Text>
                     <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 5 }} />
                 </View>
+                <ThumbnailCategory category={video.category} difficulty={video.difficulty} />
                 <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>{durationLabel}</Text>
                 <VideoViewsLabel videoId={video.id} />
+                <VideoEngagementIcons videoId={video.id} />
             </View>
 
         </TouchableOpacity>

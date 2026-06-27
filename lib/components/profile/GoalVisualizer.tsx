@@ -87,7 +87,7 @@ const C = {
 };
 
 const TYPE_META: Record<GoalType, { label: string; emoji: string; color: string; soft: string; noun: string }> = {
-  muscle_growth: { label: 'Muscle Growth', emoji: '💪', color: C.green,  soft: 'rgba(22,163,74,0.12)',  noun: 'muscles' },
+  muscle_growth: { label: 'Muscle Growth', emoji: '🏋️', color: C.green,  soft: 'rgba(22,163,74,0.12)',  noun: 'muscles' },
   weight_loss:   { label: 'Weight Loss',   emoji: '🔥', color: C.yellow, soft: 'rgba(212,166,0,0.14)',  noun: '' },
   injury_rehab:  { label: 'Injury Rehab',  emoji: '🩹', color: C.red,    soft: 'rgba(220,38,38,0.12)',  noun: 'body parts' },
   stretching:    { label: 'Stretching',    emoji: '🧘', color: C.blue,   soft: 'rgba(37,99,235,0.12)',  noun: 'body parts' },

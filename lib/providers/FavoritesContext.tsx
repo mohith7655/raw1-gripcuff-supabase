@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+import { setVideoFavorite } from '../services/videoEngagementCounts.service';
 
 export type FavoriteVideo = {
     id: string;
@@ -96,6 +97,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
             }
 
             const alreadyFav = favoriteIds.has(video.id);
+
+            // Persist global membership + adjust the shared "favorites" count.
+            setVideoFavorite(supabaseUserId, video.id, !alreadyFav).catch(() => {});
 
             if (alreadyFav) {
                 setFavorites(prev => prev.filter(v => v.id !== video.id));

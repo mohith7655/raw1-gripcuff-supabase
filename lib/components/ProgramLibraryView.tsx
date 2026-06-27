@@ -27,7 +27,7 @@ import {
     ProgramVideo,
 } from '../data/preRecordedPrograms';
 import { useFloatingToggle, FloatingTabToggle } from './FloatingTabToggle';
-import { DifficultyDot, ThumbnailCategory } from './VideoCardBits';
+import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
 import { SubTab } from '../models/Video';
 
 const THUMBNAIL_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
@@ -199,7 +199,6 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                     <View style={{ position: 'absolute', top: 6, left: 6 }}>
                         <Raw1Logo fontSize={12} transparent />
                     </View>
-                    <ThumbnailCategory category={categoryKey} />
                 </LinearGradient>
 
                 <View style={styles.videoInfo}>
@@ -209,7 +208,9 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                         </Text>
                         <DifficultyDot difficulty={(video as any).difficulty ?? program.level} size={8} />
                     </View>
+                    <ThumbnailCategory category={categoryKey} difficulty={(video as any).difficulty ?? program.level} />
                     <VideoViewsLabel videoId={video.id} />
+                    <VideoEngagementIcons videoId={video.id} />
                 </View>
             </View>
         );

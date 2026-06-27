@@ -147,7 +147,7 @@ export const WorkoutsScreen = () => {
                                     <CategoryRow
                                         title="Muscle Growth"
                                         subtitle="Hypertrophy focused programs"
-                                        iconName="arm-flex"
+                                        iconName="weight-lifter"
                                         color="#66BB6A"
                                         onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })}
                                     />

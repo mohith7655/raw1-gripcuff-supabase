@@ -11,6 +11,32 @@ import { View, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-n
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { difficultyColor, difficultyLetter } from '../core/difficulty';
 import { setupLevelFor, SETUP_DISPLAY } from '../core/setupTime';
+import { useVideoEngagementCounts, formatEngagement } from '../services/videoEngagementCounts.service';
+
+const META_GREY = '#7A7C90';
+
+/**
+ * "X trying · Y favorites" — how many people added the video to Trying / Favorites,
+ * shown in grey under a card after the views. Hidden until there's at least one.
+ */
+export function VideoEngagementIcons({
+  videoId, size = 11, style,
+}: { videoId?: string | null; size?: number; style?: StyleProp<ViewStyle> }) {
+  const counts = useVideoEngagementCounts(videoId ?? null);
+  if (!counts || (!counts.tries && !counts.favorites)) return null;
+  const parts: string[] = [];
+  if (counts.tries) parts.push(`${formatEngagement(counts.tries)} trying`);
+  if (counts.favorites) parts.push(`${formatEngagement(counts.favorites)} favorites`);
+  return (
+    <Text style={[engStyles.text, { fontSize: size }, style as StyleProp<TextStyle>]}>
+      {parts.join(' · ')}
+    </Text>
+  );
+}
+
+const engStyles = StyleSheet.create({
+  text: { color: META_GREY, fontWeight: '600', marginTop: 3 },
+});
 
 /**
  * Category → body-pictogram glyph (MaterialCommunityIcons). Keys cover both the
@@ -18,7 +44,7 @@ import { setupLevelFor, SETUP_DISPLAY } from '../core/setupTime';
  * unknown categories fall back to a generic dumbbell.
  */
 const CATEGORY_ICON: Record<string, string> = {
-  MuscleGrowth: 'arm-flex',
+  MuscleGrowth: 'weight-lifter',
   Strength: 'weight-lifter',
   AthleticPerformance: 'run-fast',
   Stretching: 'yoga',
@@ -95,16 +121,16 @@ export function SetupTimeIcon({
   return <MaterialCommunityIcons name={meta.icon as any} color={meta.color} size={size} />;
 }
 
-// Thumbnail overlay: one bottom-left badge with the category pictogram and the
-// setup-time hourglass right next to it (top-left = logo, bottom-right =
-// duration are already taken).
+// Category pictogram + setup-time hourglass, shown inline right below a video
+// card's title (no longer overlaid on the thumbnail). `style` lets callers tweak
+// spacing for their card layout.
 export function ThumbnailCategory({
-  category, difficulty,
-}: { category?: string | null; difficulty?: string | null }) {
+  category, difficulty, style,
+}: { category?: string | null; difficulty?: string | null; style?: StyleProp<ViewStyle> }) {
   const level = setupLevelFor(category, difficulty);
   if (!category && !level) return null;
   return (
-    <View style={s.badge} pointerEvents="none">
+    <View style={[s.metaRow, style]}>
       {category ? (
         <MaterialCommunityIcons name={categoryIconName(category) as any} color={categoryColor(category)} size={14} />
       ) : null}
@@ -116,16 +142,10 @@ export function ThumbnailCategory({
 }
 
 const s = StyleSheet.create({
-  badge: {
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    marginTop: 3,
   },
 });

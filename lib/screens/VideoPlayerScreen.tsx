@@ -206,15 +206,16 @@ function EngagementBar({
                 {/* Workout / Watch — pinned to the left */}
                 <ModeToggle modeType={modeType} onSwitchMode={onSwitchMode} />
 
-                {/* Invite Friend — sits between the mode toggle and the reaction pills; hidden in workout mode */}
-                {modeType !== 'workout' && allowInvite && !!onInviteFriend && (
+                {/* Invite Friend — sits right after the mode toggle, in both watch and workout modes */}
+                {allowInvite && !!onInviteFriend && (
                     <TouchableOpacity
                         style={engagementStyles.inviteBtn}
                         onPress={onInviteFriend}
                         activeOpacity={0.85}
                     >
                         <Ionicons name="person-add-outline" size={14} color="#fff" />
-                        <Text style={engagementStyles.inviteText}>Invite Friend</Text>
+                        {/* Icon-only in workout mode to keep the bar compact next to the toggle */}
+                        {modeType !== 'workout' && <Text style={engagementStyles.inviteText}>Invite Friend</Text>}
                     </TouchableOpacity>
                 )}
 

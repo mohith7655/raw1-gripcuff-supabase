@@ -43,7 +43,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { formatDifficulty } from '../core/difficulty';
-import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
+import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from '../components/VideoCardBits';
 import { VideoViewsLabel } from '../components/VideoViewsLabel';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { AppTheme, CoachingTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
@@ -1061,14 +1061,15 @@ const HomeScreenInner = () => {
                                   <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                                     <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
                                   </View>
-                                  <ThumbnailCategory category={(localVideo as any)?.category ?? (program ? getProgramCategoryKey(program.id) : undefined)} />
                                 </LinearGradient>
                                 <View style={{ padding: 8 }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
                                     <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
                                     <DifficultyDot difficulty={difficulty} size={8} style={{ marginTop: 3 }} />
                                   </View>
+                                  <ThumbnailCategory category={(localVideo as any)?.category ?? (program ? getProgramCategoryKey(program.id) : undefined)} difficulty={difficulty} />
                                   <VideoViewsLabel videoId={item.videoId} size={10} />
+                                  <VideoEngagementIcons videoId={item.videoId} size={11} />
                                 </View>
                               </TouchableOpacity>
                             );
@@ -1115,14 +1116,15 @@ const HomeScreenInner = () => {
                                     </View>
                                   </LinearGradient>
                                 )}
-                                <ThumbnailCategory category={(item as any).category ?? getProgramCategoryKey(getProgramByVideoId(item.id)?.id ?? '')} />
                               </View>
                               <View style={{ padding: 8 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
                                   <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
                                   <DifficultyDot difficulty={item.difficulty} size={8} style={{ marginTop: 3 }} />
                                 </View>
+                                <ThumbnailCategory category={(item as any).category ?? getProgramCategoryKey(getProgramByVideoId(item.id)?.id ?? '')} difficulty={item.difficulty} />
                                 <VideoViewsLabel videoId={item.id} size={10} />
+                                <VideoEngagementIcons videoId={item.id} size={11} />
                               </View>
                             </TouchableOpacity>
                           ))}

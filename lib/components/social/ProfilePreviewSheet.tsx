@@ -28,7 +28,7 @@ function HeatIcon({ level, color, size = 13 }: { level: HeatLevel; color: string
 // the full SocialProfileScreen header.
 function StatPill({ icon, count, label, heat }: { icon: React.ReactNode; count: number; label: string; heat: Heat }) {
   return (
-    <View style={[s.statPill, { backgroundColor: heat.soft, borderColor: heat.color }]}>
+    <View style={[s.statPill, { backgroundColor: heat.soft }]}>
       {icon}
       <Text style={[s.statCount, { color: heat.color }]}>{count}</Text>
       <Text style={[s.statLabel, { color: heat.color }]}>{label}</Text>
@@ -219,7 +219,7 @@ const s = StyleSheet.create({
   statPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 11, paddingVertical: 7,
-    borderRadius: 100, borderWidth: 2,
+    borderRadius: 100,
   },
   statCount: { fontSize: 13, fontWeight: '800' },
   statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },

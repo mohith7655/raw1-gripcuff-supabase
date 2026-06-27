@@ -263,8 +263,8 @@ function FriendRow({ user, onProfile, onMessage, onRemove }: {
         <TouchableOpacity style={s.friendRow} onPress={onProfile} activeOpacity={0.8}>
             <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} uid={user.uid} name={user.fullName} lastActiveAt={user.lastActiveAt} />
             <View style={s.rowInfo}>
-                <Text style={s.rowName} numberOfLines={1}>@{user.username}</Text>
-                <Text style={s.rowSub} numberOfLines={1}>{user.fullName}</Text>
+                <Text style={s.rowName} numberOfLines={1}>{user.fullName || user.username || 'Athlete'}</Text>
+                {user.username ? <Text style={s.rowSub} numberOfLines={1}>@{user.username}</Text> : null}
                 <View style={s.rowMeta}>
                     {(user.currentStreak ?? 0) > 0 && (
                         <View style={s.metaChip}>
@@ -435,8 +435,8 @@ function RequestsTab() {
                         <View key={item.uid} style={s.searchRow}>
                             <Avatar uri={item.profileImageUrl} size={40} uid={item.uid} name={item.fullName} />
                             <View style={s.rowInfo}>
-                                <Text style={s.rowName}>@{item.username}</Text>
-                                <Text style={s.rowSub}>{item.fullName}</Text>
+                                <Text style={s.rowName}>{item.fullName || item.username || 'Athlete'}</Text>
+                                {item.username ? <Text style={s.rowSub}>@{item.username}</Text> : null}
                             </View>
                             {busy ? (
                                 <ActivityIndicator color={C.accent} size="small" />
@@ -483,8 +483,8 @@ function RequestsTab() {
                         <View key={req.id} style={s.requestRow}>
                             <Avatar uri={sender?.profileImageUrl} size={44} uid={sender?.uid} name={sender?.fullName} />
                             <View style={s.rowInfo}>
-                                <Text style={s.rowName}>@{sender?.username ?? req.fromUid.slice(0, 8)}</Text>
-                                <Text style={s.rowSub}>{sender?.fullName ?? '...'}</Text>
+                                <Text style={s.rowName}>{sender?.fullName ?? sender?.username ?? '...'}</Text>
+                                <Text style={s.rowSub}>@{sender?.username ?? req.fromUid.slice(0, 8)}</Text>
                             </View>
                             {busy ? (
                                 <ActivityIndicator color={C.accent} size="small" />
@@ -522,8 +522,8 @@ function RequestsTab() {
                             <View key={req.id} style={s.requestRow}>
                                 <Avatar uri={recipient?.profileImageUrl} size={44} uid={recipient?.uid} name={recipient?.fullName} />
                                 <View style={s.rowInfo}>
-                                    <Text style={s.rowName}>@{recipient?.username ?? req.toUid.slice(0, 8)}</Text>
-                                    <Text style={s.rowSub}>{recipient?.fullName ?? '...'}</Text>
+                                    <Text style={s.rowName}>{recipient?.fullName ?? recipient?.username ?? '...'}</Text>
+                                    <Text style={s.rowSub}>@{recipient?.username ?? req.toUid.slice(0, 8)}</Text>
                                 </View>
                                 <View style={s.badgePending}>
                                     <Clock size={12} color={C.accent} />
@@ -611,8 +611,8 @@ function SuggestionsTab() {
                     >
                         <Avatar uri={item.avatarUrl} size={52} uid={item.uid} name={item.fullName} />
                         <View style={s.rowInfo}>
-                            <Text style={s.rowName} numberOfLines={1}>@{item.username}</Text>
-                            <Text style={s.rowSub}>{item.fullName}</Text>
+                            <Text style={s.rowName} numberOfLines={1}>{item.fullName || item.username || 'Athlete'}</Text>
+                            {item.username ? <Text style={s.rowSub}>@{item.username}</Text> : null}
                             {item.whatIDo ? (
                                 <Text style={s.suggestionWhat} numberOfLines={1}>{item.whatIDo}</Text>
                             ) : null}

@@ -24,7 +24,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useProfilePreview } from '../../providers/ProfilePreviewProvider';
 import {
   Settings,
@@ -229,18 +229,19 @@ export function SocialActivity() {
 
   // Conversations — built from the messages table for the user's friends, so the
   // actual chats (last message + unread) are viewable and openable right here.
-  useEffect(() => {
+  const loadConversations = useCallback(() => {
     const me = user?.uid;
     if (!me) { setConversations([]); return; }
-    let alive = true;
-    const load = () => {
-      ChatService.loadConversations(me, friends.map((f) => f.uid))
-        .then((c) => { if (alive) setConversations(c); })
-        .catch(() => { if (alive) setConversations([]); });
-    };
-    load();
-    return () => { alive = false; };
+    ChatService.loadConversations(me, friends.map((f) => f.uid))
+      .then(setConversations)
+      .catch(() => setConversations([]));
   }, [user?.uid, friends]);
+
+  useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  // Reload whenever this tab regains focus (e.g. returning from a chat room) so
+  // messages just read there clear their unread state here.
+  useFocusEffect(useCallback(() => { loadConversations(); }, [loadConversations]));
 
   const togglePref = useCallback((key: ActivityCategory) => {
     setPrefs((prev) => {

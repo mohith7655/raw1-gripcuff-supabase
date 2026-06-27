@@ -88,7 +88,7 @@ function condChips(conds: BodyCondition[]): Chip[] {
 }
 
 const GOAL_META: Record<string, { emoji: string; verb: string; color: string; soft: string }> = {
-  muscle_growth: { emoji: '💪', verb: 'Build',   color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
+  muscle_growth: { emoji: '🏋️', verb: 'Build',   color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
   weight_loss:   { emoji: '🔥', verb: 'Lose',    color: '#F25912', soft: 'rgba(242,89,18,0.12)' },
   injury_rehab:  { emoji: '🩹', verb: 'Rehab',   color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
   stretching:    { emoji: '🧘', verb: 'Stretch', color: '#4C4E78', soft: 'rgba(76,78,120,0.12)' },
