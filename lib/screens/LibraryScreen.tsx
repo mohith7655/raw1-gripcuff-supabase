@@ -141,7 +141,7 @@ const WorkoutsTabContent = () => {
         activeOpacity={0.7}
         onPress={onPress}
       >
-        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${color}1A`, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
           <MaterialCommunityIcons name={iconName} color={color} size={24} />
         </View>
         <View style={{ flex: 1, marginLeft: 14 }}>
@@ -285,7 +285,7 @@ export const LibraryScreen = () => {
         <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
           <Search color="#211832" size={22} />
         </TouchableOpacity>
-        <Raw1Logo fontSize={20} />
+        <Raw1Logo fontSize={22} />
         <TouchableOpacity onPress={() => setShowCustomizeModal(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
           <Settings color="#211832" size={22} />
         </TouchableOpacity>

@@ -61,6 +61,8 @@ function heatFrom(lastDay: string | null, activeDays: number, windowDays: number
 export interface ActivityHeats {
   workout: Heat;
   social: Heat;
+  /** Head-to-head challenge heat — how recently / often they've competed. */
+  challenge: Heat;
   /** Most recent active day (any kind), YYYY-MM-DD, for "active N days ago". */
   lastActiveDay: string | null;
 }
@@ -72,8 +74,10 @@ export interface ActivityHeats {
 export function computeHeats(map: ActivityMapData, windowDays = 30): ActivityHeats {
   let workoutDays = 0;
   let socialDays = 0;
+  let challengeDays = 0;
   let lastWorkout: string | null = null;
   let lastSocial: string | null = null;
+  let lastChallenge: string | null = null;
 
   for (const [key, day] of Object.entries(map.byDay)) {
     if (!day.active) continue;
@@ -84,11 +88,16 @@ export function computeHeats(map: ActivityMapData, windowDays = 30): ActivityHea
       socialDays += 1;
       if (!lastSocial || key > lastSocial) lastSocial = key;
     }
+    if (day.kinds.has('challenge')) {
+      challengeDays += 1;
+      if (!lastChallenge || key > lastChallenge) lastChallenge = key;
+    }
   }
 
   return {
     workout: heatFrom(lastWorkout, workoutDays, windowDays),
     social: heatFrom(lastSocial, socialDays, windowDays),
+    challenge: heatFrom(lastChallenge, challengeDays, windowDays),
     lastActiveDay: map.lastActiveDate,
   };
 }

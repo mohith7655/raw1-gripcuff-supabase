@@ -785,7 +785,7 @@ const HomeScreenInner = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Raw1Logo fontSize={24} />
+            <Raw1Logo fontSize={22} />
           </View>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <AccessBadge />

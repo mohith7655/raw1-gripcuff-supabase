@@ -39,8 +39,6 @@ import {
   Flame,
   MapPin,
   MessageCircle,
-  Snowflake,
-  Sun,
   Swords,
   Trophy,
   UserCheck,
@@ -62,11 +60,12 @@ import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, CHALLENGE_EXERCISE_MET
 import { RelationshipStatus } from '../models/Friend';
 import { ProfileCard } from '../components/profile/ProfileCard';
 import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
-import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats, HeatLevel, isInactiveSince } from '../utils/activityHeat';
+import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats, isInactiveSince } from '../utils/activityHeat';
 import { loadActivityMap } from '../services/activityMap.service';
 import { ActivityMap } from '../components/profile/ActivityMap';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
+import { ThermometerHeat } from '../components/profile/ThermometerHeat';
 import { ScheduleChallengeModal } from '../components/ScheduleChallengeModal';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -154,13 +153,6 @@ function Avatar({ uri, size, grayscale }: { uri?: string | null; size: number; g
       </Text>
     </View>
   );
-}
-
-// ── Heat icon — replaces the "Hot/Warm/Cool/Cold" word on heat pills ───────────
-// ❄️ cold/cool · ☀️ warm · 🔥 hot — colour comes from the heat level itself.
-function HeatIcon({ level, color, size = 13 }: { level: HeatLevel; color: string; size?: number }) {
-  const Icon = level === 'hot' ? Flame : level === 'warm' ? Sun : Snowflake;
-  return <Icon size={size} color={color} strokeWidth={2.4} />;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -258,6 +250,8 @@ export function SocialProfileScreen() {
   const [heats, setHeats] = useState<ActivityHeats | null>(null);
   // Per-connection social/workout heat, loaded lazily when the list opens.
   const [connHeats, setConnHeats] = useState<Record<string, ActivityHeats>>({});
+  // Per-connection connects count (their friend count), loaded with the list.
+  const [connConnects, setConnConnects] = useState<Record<string, number>>({});
 
   // Hide bottom CTA bar while scrolling, reveal when idle
   const ctaAnim = useRef(new RNAnimated.Value(1)).current;
@@ -322,10 +316,17 @@ export function SocialProfileScreen() {
     if (!connectionsOpen || connections.length === 0) return;
     let alive = true;
     connections.forEach((c) => {
-      if (!c.uid || connHeats[c.uid]) return; // skip already-loaded
-      loadActivityMap(c.uid)
-        .then((d) => { if (alive) setConnHeats((p) => ({ ...p, [c.uid]: computeHeats(d) })); })
-        .catch(() => {});
+      if (!c.uid) return;
+      if (!connHeats[c.uid]) {
+        loadActivityMap(c.uid)
+          .then((d) => { if (alive) setConnHeats((p) => ({ ...p, [c.uid]: computeHeats(d) })); })
+          .catch(() => {});
+      }
+      if (connConnects[c.uid] === undefined) {
+        FriendService.getFriendUids(c.uid)
+          .then((uids) => { if (alive) setConnConnects((p) => ({ ...p, [c.uid]: uids.length })); })
+          .catch(() => {});
+      }
     });
     return () => { alive = false; };
   }, [connectionsOpen, connections]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -425,6 +426,8 @@ export function SocialProfileScreen() {
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const displayName = user?.fullName || 'Athlete';
+  // Profiles show only the first name (full name still used for challenge/share labels).
+  const firstName   = displayName.split(' ')[0] || displayName;
   const username    = user?.username || '';
   const bio         = social?.bio?.trim() || '';
 
@@ -619,7 +622,7 @@ export function SocialProfileScreen() {
 
               <View style={s.heroInfoCol}>
                 <View style={s.nameLine}>
-                  <Text style={s.name} numberOfLines={1}>{displayName}</Text>
+                  <Text style={s.name} numberOfLines={1}>{firstName}</Text>
                   {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                 </View>
                 {/* Gender · Connects · Squats — same row */}
@@ -640,20 +643,19 @@ export function SocialProfileScreen() {
                   >
                     <Text style={s.connectsCount}>{connections.length}</Text>
                     <Text style={s.connectsLabel}>CONNECTS</Text>
-                    {heats && <HeatIcon level={heats.social.level} color={heats.social.color} size={12} />}
                   </TouchableOpacity>
-                  {/* Workout pill — dumbbell + total workout count + hot/cold label.
-                      The border colour reflects workout heat (hot → orange · warm →
-                      amber · cool → blue · cold → grey), mirroring the Connects pill so
-                      the count and the temperature both read at a glance. */}
+                  {/* Connects temperature — kettlebell gauge sits OUTSIDE the pill. */}
+                  {heats && <ThermometerHeat heat={heats.social} size={18} />}
+                  {/* Workout pill — dumbbell + total workout count. */}
                   {heats && (
                     <View style={[s.workoutPill, { backgroundColor: heats.workout.soft }]}>
                       <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
                       <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
                       <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
-                      <HeatIcon level={heats.workout.level} color={heats.workout.color} size={14} />
                     </View>
                   )}
+                  {/* Workout temperature — kettlebell gauge sits OUTSIDE the pill. */}
+                  {heats && <ThermometerHeat heat={heats.workout} size={18} />}
                 </View>
                 {showSection('locationMap') && (displayCity || homeDistanceText) ? (
                   <View style={s.heroMetaRow}>
@@ -684,6 +686,7 @@ export function SocialProfileScreen() {
               <>
                 <Swords size={14} color={C.orange} strokeWidth={2.2} />
                 <Text style={s.challengeLabel}>Open to Challenge</Text>
+                {heats && <ThermometerHeat heat={heats.challenge} size={18} />}
                 {(social?.openToChallenge?.length ?? 0) > 0 ? (
                   <View style={s.challengeChips}>
                     {social!.openToChallenge!.map((ex, idx) => {
@@ -1257,11 +1260,13 @@ export function SocialProfileScreen() {
                       <View style={s.connHeatRow}>
                         <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].social.soft }]}>
                           <Users size={11} color={connHeats[c.uid].social.color} strokeWidth={2.4} />
-                          <HeatIcon level={connHeats[c.uid].social.level} color={connHeats[c.uid].social.color} size={11} />
+                          <Text style={[s.connHeatCount, { color: connHeats[c.uid].social.color }]}>{connConnects[c.uid] ?? 0}</Text>
+                          <ThermometerHeat heat={connHeats[c.uid].social} size={13} />
                         </View>
                         <View style={[s.connHeatChip, { backgroundColor: connHeats[c.uid].workout.soft }]}>
                           <Dumbbell size={11} color={connHeats[c.uid].workout.color} strokeWidth={2.4} />
-                          <HeatIcon level={connHeats[c.uid].workout.level} color={connHeats[c.uid].workout.color} size={11} />
+                          <Text style={[s.connHeatCount, { color: connHeats[c.uid].workout.color }]}>{c.totalWatchSessions ?? 0}</Text>
+                          <ThermometerHeat heat={connHeats[c.uid].workout} size={13} />
                         </View>
                       </View>
                     )}
@@ -1463,6 +1468,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 7, paddingVertical: 3,
     borderRadius: 100,
   },
+  connHeatCount: { fontSize: 11, fontWeight: '800' },
   openBadge: {
     flexDirection: 'row',
     alignItems: 'center',

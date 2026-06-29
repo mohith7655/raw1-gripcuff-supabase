@@ -44,6 +44,7 @@ import { supabase } from '../../core/config/supabase';
 import { ChatService } from '../../services/chat.service';
 import { ChatConversation } from '../../models/Chat';
 import { ChallengeSessionService, PreviousChallenge, ScheduledChallenge } from '../../services/challengeSession.service';
+import { NotificationCenter } from '../NotificationCenter';
 
 const TEXT = '#211832';
 const MUTED = '#7A7C90';
@@ -87,13 +88,14 @@ const DEFAULT_PREFS: Record<ActivityCategory, boolean> = {
 // ── Filter tabs (below the header) ──────────────────────────────────────────
 // 'all' shows everything enabled in prefs; each other key narrows to a single
 // category. Labels are user-facing ("Chats" ↔ messages category).
-type FilterKey = 'all' | ActivityCategory;
+type FilterKey = 'all' | 'notifications' | ActivityCategory;
 const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all',        label: 'All' },
-  { key: 'messages',   label: 'Chats' },
-  { key: 'workouts',   label: 'Workouts' },
-  { key: 'challenges', label: 'Challenges' },
-  { key: 'requests',   label: 'Requests' },
+  { key: 'all',           label: 'All' },
+  { key: 'notifications', label: 'Notifications' },
+  { key: 'messages',      label: 'Chats' },
+  { key: 'workouts',      label: 'Workouts' },
+  { key: 'challenges',    label: 'Challenges' },
+  { key: 'requests',      label: 'Requests' },
 ];
 
 // ── Unified item shape ──────────────────────────────────────────────────────
@@ -388,7 +390,7 @@ export function SocialActivity() {
   // requests each count as one (a pending action); workouts/challenges count
   // their unread items. 'all' is the grand total.
   const counts = useMemo<Record<FilterKey, number>>(() => {
-    const c: Record<FilterKey, number> = { all: 0, messages: 0, workouts: 0, challenges: 0, requests: 0 };
+    const c: Record<FilterKey, number> = { all: 0, notifications: 0, messages: 0, workouts: 0, challenges: 0, requests: 0 };
     items.forEach((it) => {
       const n =
         it.category === 'messages' ? (it.unreadCount ?? 0)
@@ -659,7 +661,11 @@ export function SocialActivity() {
         </TouchableOpacity>
       )}
 
-      {filter === 'requests' ? (
+      {filter === 'notifications' ? (
+        // Notifications view — the full notification center (chat inbox, invites,
+        // club activity, challenges, move reminders), embedded as a tab.
+        <NotificationCenter embedded />
+      ) : filter === 'requests' ? (
         // Requests view — incoming (sent to me) / outgoing (I sent) sub-tabs.
         <View>
           <View style={s.subTabs}>

@@ -38,6 +38,8 @@ export const ChatFriendProfileScreen = () => {
         userData?.username ||
         friendName ||
         'Friend';
+    // Profiles show only the first name (full name still feeds avatar initials).
+    const firstName = displayName.split(' ')[0] || displayName;
     const displayUsername = userData?.username ? `@${userData.username}` : '-';
     const displayEmail = userData?.email || '-';
     const displayPhone = userData?.phone || '-';
@@ -81,7 +83,7 @@ export const ChatFriendProfileScreen = () => {
                             <TierAvatar uri={avatar} size={92} uid={friendUid} name={displayName} radius={20} />
                         </View>
                         <Text style={styles.username}>{displayUsername}</Text>
-                        <Text style={styles.name}>{displayName}</Text>
+                        <Text style={styles.name}>{firstName}</Text>
                     </View>
 
                     <View style={styles.card}>

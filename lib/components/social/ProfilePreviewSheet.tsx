@@ -11,28 +11,23 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
-import { ChevronRight, MessageCircle, Users, Dumbbell, Flame, Sun, Snowflake } from 'lucide-react-native';
+import { ChevronRight, MessageCircle, Users, Dumbbell } from 'lucide-react-native';
 import { TierAvatar } from '../profile/TierAvatar';
+import { ThermometerHeat } from '../profile/ThermometerHeat';
 import { supabase } from '../../core/config/supabase';
 import { loadActivityMap } from '../../services/activityMap.service';
 import { FriendService } from '../../services/friend.service';
-import { computeHeats, genderMeta, lastActiveLabel, appActiveLabel, ActivityHeats, Heat, HeatLevel } from '../../utils/activityHeat';
+import { computeHeats, genderMeta, lastActiveLabel, appActiveLabel, ActivityHeats, Heat } from '../../utils/activityHeat';
 
-// ❄️ cold/cool · ☀️ warm · 🔥 hot — matches the full-profile heat pills.
-function HeatIcon({ level, color, size = 13 }: { level: HeatLevel; color: string; size?: number }) {
-  const Icon = level === 'hot' ? Flame : level === 'warm' ? Sun : Snowflake;
-  return <Icon size={size} color={color} strokeWidth={2.4} />;
-}
-
-// CONNECTS / WORKOUTS count pill — tinted + bordered by the heat level, same as
-// the full SocialProfileScreen header.
+// CONNECTS / WORKOUTS count pill — tinted by the heat level, with the kettlebell
+// "temperature viewer" filling by warmth. Matches the full SocialProfileScreen.
 function StatPill({ icon, count, label, heat }: { icon: React.ReactNode; count: number; label: string; heat: Heat }) {
   return (
     <View style={[s.statPill, { backgroundColor: heat.soft }]}>
       {icon}
       <Text style={[s.statCount, { color: heat.color }]}>{count}</Text>
       <Text style={[s.statLabel, { color: heat.color }]}>{label}</Text>
-      <HeatIcon level={heat.level} color={heat.color} />
+      <ThermometerHeat heat={heat} size={15} />
     </View>
   );
 }
@@ -108,6 +103,8 @@ export function ProfilePreviewSheet({
   const name = user.fullName || identity.fullName || user.username || identity.username || 'Athlete';
   const username = user.username || identity.username || '';
   const avatarUrl = user.avatarUrl || identity.avatarUrl || null;
+  // Show only the first name on the profile (full name still feeds avatar initials).
+  const firstName = (name.split(' ')[0] || name);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -120,7 +117,7 @@ export function ProfilePreviewSheet({
             <TierAvatar uri={avatarUrl} size={72} uid={user.uid} name={name} showBadge disableProfileLink lastActiveAt={lastActiveAt} />
             <View style={s.idText}>
               <View style={s.nameRow}>
-                <Text style={s.name} numberOfLines={1}>{name}</Text>
+                <Text style={s.name} numberOfLines={1}>{firstName}</Text>
                 {gm && (
                   <View style={[s.genderPill, { backgroundColor: gm.bg, borderColor: gm.border }]}>
                     <Text style={[s.genderIcon, { color: gm.color }]}>{gm.icon}</Text>

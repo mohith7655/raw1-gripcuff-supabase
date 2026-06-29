@@ -313,6 +313,8 @@ export function ScannedProfileScreen() {
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const displayName   = user?.fullName || 'Athlete';
+  // Profiles show only the first name (full name still feeds avatar initials / labels).
+  const firstName     = displayName.split(' ')[0] || displayName;
   const username      = user?.username  || '';
   const bio           = social?.bio?.trim() || '';
   const whatIDo       = social?.whatIDo?.trim() || '';
@@ -399,7 +401,7 @@ export function ScannedProfileScreen() {
           <TierAvatar uri={user?.profileImageUrl} size={100} accessType={user?.accessType} name={displayName} />
           <View style={{ height: 12 }} />
           {!!username && <Text style={s.handle}>@{username}</Text>}
-          <Text style={s.name}>{displayName}</Text>
+          <Text style={s.name}>{firstName}</Text>
           <View style={s.connectPill}>
             <Text style={s.connectPillText}>
               {openToConnect ? 'Open to connect' : 'Connections by Request'}

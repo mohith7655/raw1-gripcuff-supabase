@@ -349,7 +349,7 @@ export function FeedScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={{ width: 34 }} />
-        <Raw1Logo fontSize={18} centerAlign />
+        <Raw1Logo fontSize={22} centerAlign />
         <View style={{ width: 34 }} />
       </View>
 
