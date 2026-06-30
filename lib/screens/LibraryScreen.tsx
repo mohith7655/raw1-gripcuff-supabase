@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, ViewModeIcon, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AmbientBackground } from '../components/theme';
 import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, PlusCircle, Users, ChevronRight, Search } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
@@ -266,6 +267,7 @@ export const LibraryScreen = () => {
   }
 
   return (
+    <AmbientBackground>
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -597,6 +599,7 @@ export const LibraryScreen = () => {
         </View>
       )}
     </SafeAreaView >
+    </AmbientBackground>
   );
 };
 
@@ -1177,7 +1180,7 @@ const VideoTile = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppTheme.background,
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: SCREEN_PADDING,

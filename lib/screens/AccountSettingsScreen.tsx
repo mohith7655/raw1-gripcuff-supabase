@@ -501,7 +501,7 @@ const ACCENT = '#F25912';
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: AppTheme.background,
+        backgroundColor: 'transparent',
     },
     header: {
         flexDirection: 'row',

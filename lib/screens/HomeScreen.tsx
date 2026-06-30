@@ -16,6 +16,7 @@ import {
 import * as Linking from 'expo-linking';
 import { BookingBottomSheet, Toast } from '../features/booking/BookingBottomSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AmbientBackground, GlassSheen } from '../components/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   PlusCircle,
@@ -84,6 +85,9 @@ import { useRecentlyWatched } from '../hooks/useRecentlyWatched';
 import { getUserRank } from '../services/leaderboard.service';
 import { SocialProfileService } from '../services/socialProfile.service';
 import { SocialWorkoutHeatmap } from '../components/social/SocialWorkoutHeatmap';
+import { ThermometerHeat } from '../components/profile/ThermometerHeat';
+import { computeHeats, ActivityHeats } from '../utils/activityHeat';
+import { loadActivityMap } from '../services/activityMap.service';
 import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META } from '../models/SocialProfile';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
@@ -141,7 +145,7 @@ function RecommendationSection({
   navigation: any;
 }) {
   return (
-    <View style={{ marginTop: 8, marginBottom: 8, backgroundColor: '#F8F8FC', borderRadius: 12, paddingVertical: 14 }}>
+    <View style={{ marginTop: 8, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.62)', borderRadius: 12, paddingVertical: 14 }}>
       <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700', paddingHorizontal: 16, marginBottom: 12 }}>
         {title}
       </Text>
@@ -166,9 +170,9 @@ function RecommendationSection({
               width: 155,
               borderRadius: 12,
               overflow: 'hidden',
-              backgroundColor: AppTheme.cardColor,
+              backgroundColor: 'rgba(255,255,255,0.62)',
               borderWidth: 1,
-              borderColor: '#D8D8E4',
+              borderColor: 'rgba(255,255,255,0.55)',
             }}
             activeOpacity={0.85}
           >
@@ -303,6 +307,18 @@ const HomeScreenInner = () => {
   useEffect(() => {
     if (!supabaseUserId) return;
     SocialProfileService.get(supabaseUserId).then(setSocialProfile).catch(() => {});
+  }, [supabaseUserId]);
+
+  // Recent social / workout heat — drives the thermometers in the connects /
+  // workout pills (same gauge as the profile screen).
+  const [homeHeats, setHomeHeats] = useState<ActivityHeats | null>(null);
+  useEffect(() => {
+    if (!supabaseUserId) { setHomeHeats(null); return; }
+    let alive = true;
+    loadActivityMap(supabaseUserId)
+      .then((d) => { if (alive) setHomeHeats(computeHeats(d)); })
+      .catch(() => { if (alive) setHomeHeats(null); });
+    return () => { alive = false; };
   }, [supabaseUserId]);
 
 
@@ -700,6 +716,14 @@ const HomeScreenInner = () => {
   const isCoaching = appMode === 'coaching';
 
   const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
+  // Gender icon shown right after the name (matches the profile screens).
+  const homeGenderKey = (profile?.gender || '').toLowerCase();
+  const homeGenderMeta =
+    homeGenderKey === 'male'
+      ? { icon: '♂', color: '#2563eb', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.30)' }
+    : homeGenderKey === 'female'
+      ? { icon: '♀', color: '#db2777', bg: 'rgba(219,39,119,0.12)', border: 'rgba(219,39,119,0.30)' }
+    : null;
 
   // ── Sectioned profile summary (Header / Identity / Social Proof) ─────────
   const locationText = socialProfile?.city
@@ -775,7 +799,8 @@ const HomeScreenInner = () => {
 
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+    <AmbientBackground>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: 'transparent' }]} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -817,7 +842,7 @@ const HomeScreenInner = () => {
             backgroundColor: CoachingTheme.cardColor,
             borderWidth: 1,
             borderColor: CoachingTheme.primaryGlow
-          } : { backgroundColor: AppTheme.cardColor }
+          } : { backgroundColor: 'rgba(255,255,255,0.62)' }
         ]}>
           <Animated.View
             style={[
@@ -875,6 +900,7 @@ const HomeScreenInner = () => {
             <>
               {/* Quick Stats — Profile | Credits | Favourites (stacked vertically, centered) */}
               <View style={styles.compactStatsCard}>
+                <GlassSheen radius={20} />
                 {/* Profile row — opens the public "as others see it" view by default */}
                 <TouchableOpacity
                   style={[styles.compactStatRow, { flexDirection: 'row', paddingVertical: 18, alignItems: 'center', gap: 16 }]}
@@ -898,20 +924,35 @@ const HomeScreenInner = () => {
                     {!!profile?.username && (
                       <Text style={{ color: AppTheme.textWhite, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>@{profile.username}</Text>
                     )}
-                    <Text style={[styles.compactStatRowLabel, { fontSize: 13, color: '#7A7C90', fontWeight: '500' }]} numberOfLines={1}>{displayName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                      <Text style={[styles.compactStatRowLabel, { fontSize: 13, color: '#7A7C90', fontWeight: '500' }]} numberOfLines={1}>{displayName}</Text>
+                      {homeGenderMeta && (
+                        <View style={{ width: 20, height: 20, borderRadius: 6, alignItems: 'center', justifyContent: 'center', borderWidth: 1, backgroundColor: homeGenderMeta.bg, borderColor: homeGenderMeta.border }}>
+                          <Text style={{ fontSize: 12, fontWeight: '900', lineHeight: 15, color: homeGenderMeta.color }}>{homeGenderMeta.icon}</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                  {/* Connects + Squats — same row */}
+                  {/* Connects + Workouts — same row */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                     <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
-                      <View style={{ backgroundColor: '#4C4E78', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                      <View style={{ paddingHorizontal: 4, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Text style={{ color: '#211832', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                        {/* Connects temperature — gauge sits INSIDE the pill. */}
+                        {homeHeats && <ThermometerHeat heat={homeHeats.social} size={18} />}
                       </View>
                     </TouchableOpacity>
-                    {/* Squats — global running total, shows even at 0 */}
-                    <View style={styles.profileStatPill}>
-                      <Text style={styles.profileStatPillText}>🏋️ {profile?.totalSquats ?? 0} Squats</Text>
-                    </View>
+                    {/* Workout pill — dumbbell + total workouts + temperature. */}
+                    {homeHeats && (
+                      <View style={{ backgroundColor: homeHeats.workout.soft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Dumbbell size={13} color={homeHeats.workout.color} strokeWidth={2.4} />
+                        <Text style={{ color: homeHeats.workout.color, fontSize: 13, fontWeight: '800' }}>{profile?.totalWatchSessions ?? 0}</Text>
+                        <Text style={{ color: homeHeats.workout.color, fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>WORKOUTS</Text>
+                        {/* Workout temperature — gauge sits INSIDE the pill. */}
+                        <ThermometerHeat heat={homeHeats.workout} size={18} />
+                      </View>
+                    )}
                   </View>
                   {/* Earned badges (streak removed); no "no badges" placeholder */}
                   {earnedBadges.filter(b => b.label !== 'Streak').length > 0 && (
@@ -988,155 +1029,9 @@ const HomeScreenInner = () => {
 
               </View>
 
-              {/* Unified streak + leaderboard */}
-              <UnifiedProgressLeaderboard
-                streakData={streakData}
-                currentUserId={supabaseUserId ?? undefined}
-                onViewAll={() => navigation.navigate('LeaderboardScreen')}
-              />
-
-              {/* Daily Reminder Scheduler */}
-              <DailyReminderCard userId={supabaseUserId ?? undefined} />
-
-              {/* ── Recently Watched + Favourites (stacked) ── */}
-              {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
-                const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
-                const allProgs = getAllPrograms();
-                const COLORS = [
-                  ['#8B7355', '#6B5B45'],
-                  ['#4A5568', '#2D3748'],
-                  ['#2A2A3E', '#1A1A2E'],
-                  ['#0D2137', '#1A3A5C'],
-                  ['#6B4226', '#4A2E1A'],
-                  ['#7A8A8A', '#5A6A6A'],
-                  ['#3B1F0B', '#5C3319'],
-                  ['#C4B8A8', '#A09488'],
-                ];
-                const favItems = [
-                  ...allVids.filter(v => favExerciseIds.has(v.id)).map(v => ({ id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnail: (v as any).thumbnail })),
-                  ...allProgs
-                    .filter(p => favWorkoutIds.has(p.id) || p.videos.some(v => favWorkoutIds.has(v.id)))
-                    .map(p => ({ id: p.videos.find(v => favWorkoutIds.has(v.id))?.id ?? p.id, title: p.title, videoUrl: p.videos?.[0]?.videoUrl, thumbnail: (p as any).thumbnail })),
-                ];
-                return (
-                  <View style={{ marginBottom: 16, backgroundColor: '#F8F8FC', borderRadius: 12, paddingVertical: 14 }}>
-                    {recentlyWatched.length > 0 && (
-                      <>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
-                          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700' }}>Recently Watched</Text>
-                          <TouchableOpacity onPress={() => navigation.navigate('AllRecentlyWatched')} activeOpacity={0.75}>
-                            <Text style={{ color: '#F25912', fontSize: 12, fontWeight: '600' }}>View all →</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-                          {[...new Map(recentlyWatched.map(item => [item.videoId, item])).values()]
-                            .slice(0, 10)
-                            .map((item, idx) => {
-                            const localVideo = allVids.find(v => v.id === item.videoId);
-                            const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
-                            const title = localVideo?.title ?? program?.title ?? item.videoId;
-                            const difficulty = (localVideo as any)?.difficulty ?? (program as any)?.level;
-                            const gradPair = COLORS[idx % COLORS.length];
-                            return (
-                              <TouchableOpacity
-                                key={`rw-${item.videoId}`}
-                                style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
-                                activeOpacity={0.85}
-                                onPress={() => navigation.navigate('VideoPlayer', {
-                                  videoId: item.videoId,
-                                  title,
-                                  videoUrl: localVideo?.videoUrl ?? program?.videos?.[0]?.videoUrl,
-                                  videoType: item.videoType,
-                                })}
-                              >
-                                <LinearGradient
-                                  colors={[gradPair[0], gradPair[1]]}
-                                  start={{ x: 0, y: 0 }}
-                                  end={{ x: 1, y: 1 }}
-                                  style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
-                                >
-                                  <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                                    <Raw1Logo fontSize={12} transparent />
-                                  </View>
-                                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
-                                  </View>
-                                </LinearGradient>
-                                <View style={{ padding: 8 }}>
-                                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
-                                    <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
-                                    <DifficultyDot difficulty={difficulty} size={8} style={{ marginTop: 3 }} />
-                                  </View>
-                                  <ThumbnailCategory category={(localVideo as any)?.category ?? (program ? getProgramCategoryKey(program.id) : undefined)} difficulty={difficulty} />
-                                  <VideoViewsLabel videoId={item.videoId} size={10} />
-                                  <VideoEngagementIcons videoId={item.videoId} size={11} />
-                                </View>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </ScrollView>
-                      </>
-                    )}
-
-                    {favItems.length > 0 && (
-                      <>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: recentlyWatched.length > 0 ? 16 : 0, marginBottom: 12 }}>
-                          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700' }}>Favorites</Text>
-                          <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'all' })} activeOpacity={0.75}>
-                            <Text style={{ color: '#F25912', fontSize: 12, fontWeight: '600' }}>View all →</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-                          {favItems.slice(0, 10).map((item, idx) => (
-                            <TouchableOpacity
-                              key={item.id}
-                              style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: AppTheme.cardColor }}
-                              activeOpacity={0.85}
-                              onPress={() => navigation.navigate('VideoPlayer', {
-                                videoId: item.id,
-                                title: item.title,
-                                videoUrl: item.videoUrl,
-                              })}
-                            >
-                              <View style={{ width: '100%', height: 80 }}>
-                                {item.thumbnail ? (
-                                  <Image source={{ uri: item.thumbnail }} style={{ width: '100%', height: 80 }} resizeMode="cover" />
-                                ) : (
-                                  <LinearGradient
-                                    colors={[COLORS[idx % COLORS.length][0], COLORS[idx % COLORS.length][1]]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
-                                  >
-                                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                                      <Raw1Logo fontSize={12} transparent />
-                                    </View>
-                                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                      <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
-                                    </View>
-                                  </LinearGradient>
-                                )}
-                              </View>
-                              <View style={{ padding: 8 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
-                                  <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
-                                  <DifficultyDot difficulty={item.difficulty} size={8} style={{ marginTop: 3 }} />
-                                </View>
-                                <ThumbnailCategory category={(item as any).category ?? getProgramCategoryKey(getProgramByVideoId(item.id)?.id ?? '')} difficulty={item.difficulty} />
-                                <VideoViewsLabel videoId={item.id} size={10} />
-                                <VideoEngagementIcons videoId={item.id} size={11} />
-                              </View>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </>
-                    )}
-                  </View>
-                );
-              })()}
-
-              {/* Gripcuff Training Progress Card */}
+              {/* Gripcuff Training Progress Card — directly below the profile */}
               <View style={styles.gripCuffCard}>
+                <GlassSheen radius={20} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   {/* Left: title + badge + buttons */}
                   <View style={{ flex: 1 }}>
@@ -1192,6 +1087,153 @@ const HomeScreenInner = () => {
                   </View>
                 </View>
               </View>
+
+              {/* Unified streak + leaderboard */}
+              <UnifiedProgressLeaderboard
+                streakData={streakData}
+                currentUserId={supabaseUserId ?? undefined}
+                onViewAll={() => navigation.navigate('LeaderboardScreen')}
+              />
+
+              {/* Daily Reminder Scheduler */}
+              <DailyReminderCard userId={supabaseUserId ?? undefined} />
+
+              {/* ── Recently Watched + Favourites (stacked) ── */}
+              {(recentlyWatched.length > 0 || totalFavouritesCount > 0) && (() => {
+                const allVids = [...allVideos, ...gripCuffVideos, ...trainerVideos, ...bodyPartVideos];
+                const allProgs = getAllPrograms();
+                const COLORS = [
+                  ['#8B7355', '#6B5B45'],
+                  ['#4A5568', '#2D3748'],
+                  ['#2A2A3E', '#1A1A2E'],
+                  ['#0D2137', '#1A3A5C'],
+                  ['#6B4226', '#4A2E1A'],
+                  ['#7A8A8A', '#5A6A6A'],
+                  ['#3B1F0B', '#5C3319'],
+                  ['#C4B8A8', '#A09488'],
+                ];
+                const favItems = [
+                  ...allVids.filter(v => favExerciseIds.has(v.id)).map(v => ({ id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnail: (v as any).thumbnail })),
+                  ...allProgs
+                    .filter(p => favWorkoutIds.has(p.id) || p.videos.some(v => favWorkoutIds.has(v.id)))
+                    .map(p => ({ id: p.videos.find(v => favWorkoutIds.has(v.id))?.id ?? p.id, title: p.title, videoUrl: p.videos?.[0]?.videoUrl, thumbnail: (p as any).thumbnail })),
+                ];
+                return (
+                  <View style={{ marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.62)', borderRadius: 12, paddingVertical: 14 }}>
+                    {recentlyWatched.length > 0 && (
+                      <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
+                          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700' }}>Recently Watched</Text>
+                          <TouchableOpacity onPress={() => navigation.navigate('AllRecentlyWatched')} activeOpacity={0.75}>
+                            <Text style={{ color: '#F25912', fontSize: 12, fontWeight: '600' }}>View all →</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+                          {[...new Map(recentlyWatched.map(item => [item.videoId, item])).values()]
+                            .slice(0, 10)
+                            .map((item, idx) => {
+                            const localVideo = allVids.find(v => v.id === item.videoId);
+                            const program = allProgs.find(p => p.id === item.videoId || p.videos.some(v => v.id === item.videoId));
+                            const title = localVideo?.title ?? program?.title ?? item.videoId;
+                            const difficulty = (localVideo as any)?.difficulty ?? (program as any)?.level;
+                            const gradPair = COLORS[idx % COLORS.length];
+                            return (
+                              <TouchableOpacity
+                                key={`rw-${item.videoId}`}
+                                style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.62)' }}
+                                activeOpacity={0.85}
+                                onPress={() => navigation.navigate('VideoPlayer', {
+                                  videoId: item.videoId,
+                                  title,
+                                  videoUrl: localVideo?.videoUrl ?? program?.videos?.[0]?.videoUrl,
+                                  videoType: item.videoType,
+                                })}
+                              >
+                                <LinearGradient
+                                  colors={[gradPair[0], gradPair[1]]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                  style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
+                                >
+                                  <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                                    <Raw1Logo fontSize={12} transparent />
+                                  </View>
+                                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
+                                  </View>
+                                </LinearGradient>
+                                <View style={{ padding: 8 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+                                    <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{title}</Text>
+                                    <DifficultyDot difficulty={difficulty} size={8} style={{ marginTop: 3 }} />
+                                  </View>
+                                  <ThumbnailCategory category={(localVideo as any)?.category ?? (program ? getProgramCategoryKey(program.id) : undefined)} difficulty={difficulty} />
+                                  <VideoViewsLabel videoId={item.videoId} size={10} />
+                                  <VideoEngagementIcons videoId={item.videoId} size={11} />
+                                </View>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </ScrollView>
+                      </>
+                    )}
+
+                    {favItems.length > 0 && (
+                      <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: recentlyWatched.length > 0 ? 16 : 0, marginBottom: 12 }}>
+                          <Text style={{ color: '#211832', fontSize: 15, fontWeight: '700' }}>Favorites</Text>
+                          <TouchableOpacity onPress={() => navigation.navigate('AllFavourites', { type: 'all' })} activeOpacity={0.75}>
+                            <Text style={{ color: '#F25912', fontSize: 12, fontWeight: '600' }}>View all →</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+                          {favItems.slice(0, 10).map((item, idx) => (
+                            <TouchableOpacity
+                              key={item.id}
+                              style={{ width: 130, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.62)' }}
+                              activeOpacity={0.85}
+                              onPress={() => navigation.navigate('VideoPlayer', {
+                                videoId: item.id,
+                                title: item.title,
+                                videoUrl: item.videoUrl,
+                              })}
+                            >
+                              <View style={{ width: '100%', height: 80 }}>
+                                {item.thumbnail ? (
+                                  <Image source={{ uri: item.thumbnail }} style={{ width: '100%', height: 80 }} resizeMode="cover" />
+                                ) : (
+                                  <LinearGradient
+                                    colors={[COLORS[idx % COLORS.length][0], COLORS[idx % COLORS.length][1]]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{ width: '100%', height: 80, justifyContent: 'center', alignItems: 'center' }}
+                                  >
+                                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                                      <Raw1Logo fontSize={12} transparent />
+                                    </View>
+                                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                      <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
+                                    </View>
+                                  </LinearGradient>
+                                )}
+                              </View>
+                              <View style={{ padding: 8 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
+                                  <Text numberOfLines={2} style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }}>{item.title}</Text>
+                                  <DifficultyDot difficulty={item.difficulty} size={8} style={{ marginTop: 3 }} />
+                                </View>
+                                <ThumbnailCategory category={(item as any).category ?? getProgramCategoryKey(getProgramByVideoId(item.id)?.id ?? '')} difficulty={item.difficulty} />
+                                <VideoViewsLabel videoId={item.id} size={10} />
+                                <VideoEngagementIcons videoId={item.id} size={11} />
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </>
+                    )}
+                  </View>
+                );
+              })()}
 
               {/* ── Recommendation Sections ── */}
               {recSections?.hasData && (
@@ -1253,7 +1295,7 @@ const HomeScreenInner = () => {
                         <View
                           key={session.id}
                           style={{
-                            backgroundColor: AppTheme.cardColor,
+                            backgroundColor: 'rgba(255,255,255,0.62)',
                             borderRadius: 14,
                             padding: 14,
                             marginBottom: 10,
@@ -1356,7 +1398,7 @@ const HomeScreenInner = () => {
                         <TouchableOpacity
                           key={session.id}
                           style={{
-                            backgroundColor: AppTheme.cardColor,
+                            backgroundColor: 'rgba(255,255,255,0.62)',
                             borderRadius: 14,
                             padding: 14,
                             marginBottom: 10,
@@ -1416,6 +1458,7 @@ const HomeScreenInner = () => {
 
               {/* Coaching Stats */}
               <View style={styles.compactStatsCard}>
+                <GlassSheen radius={20} />
                 <TouchableOpacity
                   style={styles.compactStatCell}
                   onPress={() => navigation.navigate('CreditsScreen')}
@@ -1524,8 +1567,9 @@ const HomeScreenInner = () => {
           {/* ── Are you being social or working out? — my own heat map ──────── */}
           {supabaseUserId && (
             <View style={styles.heatCard}>
+              <GlassSheen radius={20} />
               <Text style={styles.heatTitle}>Are you being social or working out?</Text>
-              <Text style={styles.heatSub}>Your recent workout vs social activity</Text>
+              <Text style={styles.heatSub}>Your recent workout, social & challenge activity</Text>
               <View style={{ marginTop: 14 }}>
                 <SocialWorkoutHeatmap uid={supabaseUserId} />
               </View>
@@ -1974,7 +2018,7 @@ const HomeScreenInner = () => {
               ].map((tier, idx) => (
                 <View key={tier.name} style={{
                   width: 260,
-                  backgroundColor: '#F8F8FC',
+                  backgroundColor: 'rgba(255,255,255,0.62)',
                   borderRadius: 18,
                   borderWidth: 1,
                   borderColor: tier.color + '44',
@@ -2068,23 +2112,34 @@ const HomeScreenInner = () => {
         onClose={() => setBuyCreditsVisible(false)}
       />
     </SafeAreaView>
+    </AmbientBackground>
   );
 };
 
 export const HomeScreen = React.memo(HomeScreenInner);
 
+// Soft, diffuse floating-panel shadow (Glass UI) — lifts cards off the mesh.
+const CARD_SHADOW = {
+  shadowColor: '#2A2342',
+  shadowOpacity: 0.12,
+  shadowRadius: 34,
+  shadowOffset: { width: 0, height: 16 },
+  elevation: 7,
+} as const;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppTheme.background,
+    backgroundColor: 'transparent',
   },
   heatCard: {
+    ...CARD_SHADOW,
     marginTop: 16,
     padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#F8F8FC',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderWidth: 1,
-    borderColor: 'rgba(33,24,50,0.06)',
+    borderColor: 'rgba(255,255,255,0.55)',
   },
   heatTitle: { color: '#211832', fontSize: 15, fontWeight: '800' },
   heatSub: { color: '#7A7C90', fontSize: 12, marginTop: 2 },
@@ -2153,7 +2208,7 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: 'row',
     marginBottom: 28,
-    backgroundColor: AppTheme.cardColor,
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 14,
     padding: 4,
     position: 'relative',
@@ -2222,7 +2277,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#F8F8FC',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2237,7 +2292,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#F8F8FC',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2254,20 +2309,21 @@ const styles = StyleSheet.create({
   },
   compactStatsCard: {
     flexDirection: 'column',
-    backgroundColor: '#F8F8FC',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D8D8E4',
+    borderColor: 'rgba(255,255,255,0.55)',
     marginBottom: 24,
     overflow: 'hidden',
   },
 
   // ── Sectioned profile summary card ──
   profileCard: {
-    backgroundColor: '#F8F8FC',
-    borderRadius: 16,
+    ...CARD_SHADOW,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#D8D8E4',
+    borderColor: 'rgba(255,255,255,0.55)',
     padding: 18,
     marginBottom: 24,
   },
@@ -2353,11 +2409,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   bottomPreviewCard: {
+    ...CARD_SHADOW,
     marginTop: 12,
-    backgroundColor: '#F8F8FC',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(33,24,50,0.06)',
+    borderColor: 'rgba(255,255,255,0.55)',
     padding: 14,
   },
   bottomPreviewHeader: {
@@ -2436,8 +2493,9 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
   },
   gripCuffCard: {
-    backgroundColor: '#F8F8FC',
-    borderRadius: 12,
+    ...CARD_SHADOW,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: CARD_GAP,
@@ -2485,7 +2543,7 @@ const styles = StyleSheet.create({
   },
   gripCuffProgressBarBg: {
     height: 6,
-    backgroundColor: '#F8F8FC',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 3,
     width: '85%',
   },
@@ -2495,14 +2553,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   exerciseCard: {
+    ...CARD_SHADOW,
     flexDirection: 'row',
-    backgroundColor: AppTheme.cardColor,
-    borderRadius: CARD_BORDER_RADIUS,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 18,
     paddingVertical: 18,
     paddingHorizontal: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D8D8E4',
+    borderColor: 'rgba(255,255,255,0.55)',
   },
   exerciseIconContainer: {
     backgroundColor: 'rgba(242,89,18, 0.2)',
@@ -2533,8 +2592,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   userInfoCard: {
-    backgroundColor: AppTheme.cardColor,
-    borderRadius: 16,
+    ...CARD_SHADOW,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
     borderColor: 'rgba(242,89,18, 0.3)',
@@ -2610,7 +2670,7 @@ const styles = StyleSheet.create({
   notificationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AppTheme.cardColor,
+    backgroundColor: 'rgba(255,255,255,0.62)',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -2620,7 +2680,7 @@ const styles = StyleSheet.create({
   actionableNotificationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AppTheme.cardColor,
+    backgroundColor: 'rgba(255,255,255,0.62)',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -2779,7 +2839,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tierCard: {
-    backgroundColor: '#F8F8FC',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,

@@ -1095,7 +1095,7 @@ export const UpcomingSessionsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: AppTheme.background },
+    safeArea: { flex: 1, backgroundColor: 'transparent' },
     centered: { flex: 1, backgroundColor: AppTheme.background, alignItems: 'center', justifyContent: 'center' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(33,24,50,0.05)' },
     backButton: { width: 40, height: 40, justifyContent: 'center' },

@@ -362,7 +362,7 @@ export const GripCuffVideosScreen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: AppTheme.background,
+        backgroundColor: 'transparent',
     },
     scrollContent: {
         paddingBottom: 40,

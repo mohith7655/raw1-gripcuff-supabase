@@ -29,6 +29,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AmbientBackground } from '../components/theme';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import {
   ArrowLeft,
@@ -76,8 +77,9 @@ const C = {
   greenSoft:    'rgba(34,197,94,0.12)',
   greenBorder:  'rgba(34,197,94,0.28)',
   bg:           '#EEEEF2',
-  cardBg:       '#F8F8FC',
-  cardBorder:   'rgba(33,24,50,0.06)',
+  // Glass UI — translucent card fill + luminous white border over <AmbientBackground>.
+  cardBg:       'rgba(255,255,255,0.62)',
+  cardBorder:   'rgba(255,255,255,0.55)',
   text:         '#211832',
   muted:        '#7A7C90',
   accentSoft:   'rgba(242,89,18,0.12)',
@@ -404,7 +406,7 @@ export function SocialProfileScreen() {
 
   if (loading) {
     return (
-      <View style={s.root}>
+      <AmbientBackground style={s.root}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.skeletonShell}>
             {[140, 22, 16, 40, 88, 92, 80, 80, 80].map((h, i) => (
@@ -420,7 +422,7 @@ export function SocialProfileScreen() {
             ))}
           </View>
         </SafeAreaView>
-      </View>
+      </AmbientBackground>
     );
   }
 
@@ -552,7 +554,7 @@ export function SocialProfileScreen() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <View style={s.root}>
+    <AmbientBackground style={s.root}>
       <SafeAreaView style={s.safe} edges={['top']}>
 
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
@@ -564,6 +566,26 @@ export function SocialProfileScreen() {
           >
             <ArrowLeft size={24} color={C.text} strokeWidth={2} />
           </TouchableOpacity>
+          {/* Own profile: Edit (+ preview) live in the top-right. */}
+          {isOwn && (
+            <View style={s.topBarActions}>
+              <TouchableOpacity
+                style={s.editProfileBtn}
+                onPress={() => navigation.navigate('ProfileScreen')}
+                activeOpacity={0.85}
+              >
+                <Edit2 size={15} color={C.text} />
+                <Text style={s.editProfileBtnText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.previewIconBtn}
+                onPress={() => (navigation as any).push('SocialProfileScreen', { uid: supabaseUserId, previewAsOther: true })}
+                activeOpacity={0.85}
+              >
+                <Eye size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {isPreview && (
@@ -622,17 +644,19 @@ export function SocialProfileScreen() {
 
               <View style={s.heroInfoCol}>
                 <View style={s.nameLine}>
-                  <Text style={s.name} numberOfLines={1}>{firstName}</Text>
+                  <View style={s.nameRow}>
+                    <Text style={s.name} numberOfLines={1}>{firstName}</Text>
+                    {genderMeta && (
+                      <View style={[s.genderPill, { backgroundColor: genderMeta.bg, borderColor: genderMeta.border }]}>
+                        <Text style={[s.genderPillText, { color: genderMeta.color }]}>{genderMeta.icon}</Text>
+                      </View>
+                    )}
+                  </View>
                   {username ? <Text style={s.handle} numberOfLines={1}>@{username}</Text> : null}
                 </View>
-                {/* Gender · Connects · Squats — same row */}
+                {/* Connects · Workouts — same row */}
                 <View style={s.connectsRow}>
-                  {genderMeta && (
-                    <View style={[s.genderPill, { backgroundColor: genderMeta.bg, borderColor: genderMeta.border }]}>
-                      <Text style={[s.genderPillText, { color: genderMeta.color }]}>{genderMeta.icon}</Text>
-                    </View>
-                  )}
-                  {/* Connects — original indigo pill; the border colour reflects
+                  {/* Connects — text-only (no pill background); the colour reflects
                       social heat (hot → orange … cold → grey), signalling how
                       active they are with others. */}
                   <TouchableOpacity
@@ -643,19 +667,19 @@ export function SocialProfileScreen() {
                   >
                     <Text style={s.connectsCount}>{connections.length}</Text>
                     <Text style={s.connectsLabel}>CONNECTS</Text>
+                    {/* Connects temperature — gauge sits INSIDE the pill. */}
+                    {heats && <ThermometerHeat heat={heats.social} size={18} />}
                   </TouchableOpacity>
-                  {/* Connects temperature — kettlebell gauge sits OUTSIDE the pill. */}
-                  {heats && <ThermometerHeat heat={heats.social} size={18} />}
-                  {/* Workout pill — dumbbell + total workout count. */}
+                  {/* Workout pill — dumbbell + total workout count + temperature. */}
                   {heats && (
                     <View style={[s.workoutPill, { backgroundColor: heats.workout.soft }]}>
                       <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
                       <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
                       <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
+                      {/* Workout temperature — gauge sits INSIDE the pill. */}
+                      <ThermometerHeat heat={heats.workout} size={18} />
                     </View>
                   )}
-                  {/* Workout temperature — kettlebell gauge sits OUTSIDE the pill. */}
-                  {heats && <ThermometerHeat heat={heats.workout} size={18} />}
                 </View>
                 {showSection('locationMap') && (displayCity || homeDistanceText) ? (
                   <View style={s.heroMetaRow}>
@@ -686,12 +710,16 @@ export function SocialProfileScreen() {
               <>
                 <Swords size={14} color={C.orange} strokeWidth={2.2} />
                 <Text style={s.challengeLabel}>Open to Challenge</Text>
-                {heats && <ThermometerHeat heat={heats.challenge} size={18} />}
                 {(social?.openToChallenge?.length ?? 0) > 0 ? (
                   <View style={s.challengeChips}>
                     {social!.openToChallenge!.map((ex, idx) => {
                       const meta = CHALLENGE_EXERCISE_META[ex];
-                      const label = meta ? `${meta.emoji} ${meta.label}` : ex;
+                      // Personal best rep count shown right before the exercise
+                      // name. Only squats has a source today (total_squats);
+                      // other exercises omit the number until data exists.
+                      const best = ex === 'squats' ? (user?.totalSquats ?? 0) : null;
+                      const name = meta ? meta.label : ex;
+                      const label = `${meta ? meta.emoji + ' ' : ''}${best != null ? best + ' ' : ''}${name}`;
                       return canChallenge ? (
                         <TouchableOpacity
                           key={`${ex}-${idx}`}
@@ -789,27 +817,6 @@ export function SocialProfileScreen() {
             <ProfileCard>
               <ActivityMap uid={uid} lastWorkoutDate={streakData?.lastWorkoutDate} />
             </ProfileCard>
-          )}
-
-          {/* ── EDIT PROFILE (own profile only) ──────────────────────────────── */}
-          {isOwn && (
-            <View style={s.ownActionRow}>
-              <TouchableOpacity
-                style={s.editProfileBtn}
-                onPress={() => navigation.navigate('ProfileScreen')}
-                activeOpacity={0.85}
-              >
-                <Edit2 size={15} color={C.text} />
-                <Text style={s.editProfileBtnText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.previewIconBtn}
-                onPress={() => (navigation as any).push('SocialProfileScreen', { uid: supabaseUserId, previewAsOther: true })}
-                activeOpacity={0.85}
-              >
-                <Eye size={16} color={C.text} />
-              </TouchableOpacity>
-            </View>
           )}
 
           {/* ── PHOTOS ───────────────────────────────────────────────────────── */}
@@ -1305,13 +1312,13 @@ export function SocialProfileScreen() {
           onClose={() => setChallengeExercise(null)}
         />
       )}
-    </View>
+    </AmbientBackground>
   );
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
   safe: { flex: 1 },
 
   // Header
@@ -1319,7 +1326,13 @@ const s = StyleSheet.create({
     height: 52,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   navBtn: {
     width: 40, height: 40, borderRadius: 20,
@@ -1376,6 +1389,11 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   name: {
     color: C.text,
     fontSize: 22,
@@ -1406,13 +1424,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#4C4E78',
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     paddingVertical: 4,
-    borderRadius: 6,
   },
-  connectsCount: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  connectsLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
+  connectsCount: { color: C.text, fontSize: 13, fontWeight: '700' },
+  connectsLabel: { color: C.muted, fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
   workoutPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1849,19 +1865,13 @@ const s = StyleSheet.create({
   },
   activityDot: { width: 7, height: 7, borderRadius: 4 },
   activityHintText: { color: C.text, fontSize: 12, fontWeight: '600' },
-  ownActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
-    marginTop: 4,
-  },
   editProfileBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 40,
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 14,
     borderRadius: 12,
     backgroundColor: C.cardBg,
     borderWidth: 1,
@@ -1873,8 +1883,8 @@ const s = StyleSheet.create({
     fontWeight: '800',
   },
   previewIconBtn: {
-    width: 46,
-    height: 40,
+    width: 40,
+    height: 36,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',

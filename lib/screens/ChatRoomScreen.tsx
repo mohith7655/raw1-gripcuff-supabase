@@ -268,7 +268,7 @@ export const ChatRoomScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: AppTheme.background },
+    safeArea: { flex: 1, backgroundColor: 'transparent' },
     flex: { flex: 1 },
 
     grabber: {

@@ -49,10 +49,15 @@ import { NotificationCenter } from '../NotificationCenter';
 const TEXT = '#211832';
 const MUTED = '#7A7C90';
 const CARD = '#F8F8FC';
-const BORDER = 'rgba(33,24,50,0.06)';
+const BORDER = 'rgba(33,24,50,0.06)'; // hairline divider (kept faint)
 const ORANGE = '#F25912';
 const INDIGO = '#4C4E78';
 const GREEN = '#16a34a';
+
+// Glass UI — translucent surface + luminous white border for cards/rows/controls
+// (One UI 8.5). These read as frosted glass over the <AmbientBackground> mesh.
+const GLASS_FILL = 'rgba(255,255,255,0.62)';
+const GLASS_BORDER = 'rgba(255,255,255,0.55)';
 
 // Per-category accent colors — each activity type gets its own hue so the feed
 // is scannable at a glance (orange = requests, rose = challenges, green =
@@ -91,11 +96,11 @@ const DEFAULT_PREFS: Record<ActivityCategory, boolean> = {
 type FilterKey = 'all' | 'notifications' | ActivityCategory;
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all',           label: 'All' },
-  { key: 'notifications', label: 'Notifications' },
   { key: 'messages',      label: 'Chats' },
   { key: 'workouts',      label: 'Workouts' },
   { key: 'challenges',    label: 'Challenges' },
   { key: 'requests',      label: 'Requests' },
+  { key: 'notifications', label: 'Notifications' },
 ];
 
 // ── Unified item shape ──────────────────────────────────────────────────────
@@ -879,7 +884,7 @@ const s = StyleSheet.create({
   gearBtn: {
     width: 34, height: 34, borderRadius: 17,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: GLASS_FILL, borderWidth: 1, borderColor: GLASS_BORDER,
   },
 
   // Filter tabs
@@ -888,11 +893,11 @@ const s = StyleSheet.create({
   tabsScroll: { marginBottom: 12, flexGrow: 0, alignSelf: 'flex-start', maxWidth: '100%' },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#EEEEF2',
+    backgroundColor: GLASS_FILL,
     borderRadius: 100,
     padding: 2,
     borderWidth: 1,
-    borderColor: '#D8D8E4',
+    borderColor: GLASS_BORDER,
   },
   tab: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -928,14 +933,14 @@ const s = StyleSheet.create({
   subTabs: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   subTab: {
     flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center',
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: GLASS_FILL, borderWidth: 1, borderColor: GLASS_BORDER,
   },
   subTabActive: { backgroundColor: TEXT, borderColor: TEXT },
   subTabText: { color: MUTED, fontSize: 13, fontWeight: '700' },
   subTabTextActive: { color: '#fff' },
   cancelReqBtn: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-    backgroundColor: '#EEEEF2', borderWidth: 1, borderColor: BORDER,
+    backgroundColor: GLASS_FILL, borderWidth: 1, borderColor: GLASS_BORDER,
   },
   cancelReqText: { color: MUTED, fontSize: 12, fontWeight: '700' },
 
@@ -944,11 +949,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: CARD,
+    backgroundColor: GLASS_FILL,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: GLASS_BORDER,
   },
   avatarWrap: { width: 44, height: 44 },
   avatar: { width: 44, height: 44, borderRadius: 12 },
@@ -980,17 +985,17 @@ const s = StyleSheet.create({
   reqActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reqBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   acceptBtn: { backgroundColor: GREEN },
-  declineBtn: { backgroundColor: '#EEEEF2', borderWidth: 1, borderColor: BORDER },
+  declineBtn: { backgroundColor: GLASS_FILL, borderWidth: 1, borderColor: GLASS_BORDER },
 
   emptyCard: {
     alignItems: 'center',
     gap: 8,
     paddingVertical: 26,
     paddingHorizontal: 24,
-    backgroundColor: CARD,
+    backgroundColor: GLASS_FILL,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: GLASS_BORDER,
   },
   emptyTitle: { color: TEXT, fontSize: 15, fontWeight: '800' },
   emptySub: { color: MUTED, fontSize: 12.5, textAlign: 'center', lineHeight: 18 },

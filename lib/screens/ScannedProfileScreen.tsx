@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AmbientBackground } from '../components/theme';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   ArrowLeft,
@@ -60,8 +61,9 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
   bg:           '#EEEEF2',
-  bgCard:       '#F8F8FC',
-  border:       'rgba(33,24,50,0.10)',
+  // Glass UI — translucent card fill + luminous white border over <AmbientBackground>.
+  bgCard:       'rgba(255,255,255,0.62)',
+  border:       'rgba(255,255,255,0.55)',
   orange:       '#F25912',
   accentSoft:   'rgba(242,89,18,0.12)',
   accentBorder: 'rgba(242,89,18,0.28)',
@@ -287,6 +289,7 @@ export function ScannedProfileScreen() {
   // ── Loading skeleton ───────────────────────────────────────────────────────
   if (loading) {
     return (
+      <AmbientBackground>
       <SafeAreaView style={s.safe} edges={['top']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
@@ -308,6 +311,7 @@ export function ScannedProfileScreen() {
           <Bone width="100%" height={100} radius={16} />
         </ScrollView>
       </SafeAreaView>
+      </AmbientBackground>
     );
   }
 
@@ -316,6 +320,14 @@ export function ScannedProfileScreen() {
   // Profiles show only the first name (full name still feeds avatar initials / labels).
   const firstName     = displayName.split(' ')[0] || displayName;
   const username      = user?.username  || '';
+  // Gender icon shown right after the first name.
+  const genderKey = (user?.gender || '').toLowerCase();
+  const genderMeta =
+    genderKey === 'male'
+      ? { icon: '♂', color: '#2563eb', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.30)' }
+    : genderKey === 'female'
+      ? { icon: '♀', color: '#db2777', bg: 'rgba(219,39,119,0.12)', border: 'rgba(219,39,119,0.30)' }
+    : null;
   const bio           = social?.bio?.trim() || '';
   const whatIDo       = social?.whatIDo?.trim() || '';
   const openToConnect = social?.openToConnect !== false;
@@ -350,6 +362,7 @@ export function ScannedProfileScreen() {
   // ── Not found ──────────────────────────────────────────────────────────────
   if (uidResolved && !targetUid) {
     return (
+      <AmbientBackground>
       <SafeAreaView style={s.safe} edges={['top']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
@@ -367,11 +380,13 @@ export function ScannedProfileScreen() {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+      </AmbientBackground>
     );
   }
 
   // ── Full profile render ────────────────────────────────────────────────────
   return (
+    <AmbientBackground>
     <SafeAreaView style={s.safe} edges={['top']}>
 
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
@@ -401,7 +416,14 @@ export function ScannedProfileScreen() {
           <TierAvatar uri={user?.profileImageUrl} size={100} accessType={user?.accessType} name={displayName} />
           <View style={{ height: 12 }} />
           {!!username && <Text style={s.handle}>@{username}</Text>}
-          <Text style={s.name}>{firstName}</Text>
+          <View style={s.nameRow}>
+            <Text style={s.name}>{firstName}</Text>
+            {genderMeta && (
+              <View style={[s.genderPill, { backgroundColor: genderMeta.bg, borderColor: genderMeta.border }]}>
+                <Text style={[s.genderPillText, { color: genderMeta.color }]}>{genderMeta.icon}</Text>
+              </View>
+            )}
+          </View>
           <View style={s.connectPill}>
             <Text style={s.connectPillText}>
               {openToConnect ? 'Open to connect' : 'Connections by Request'}
@@ -653,12 +675,13 @@ export function ScannedProfileScreen() {
         </View>
       )}
     </SafeAreaView>
+    </AmbientBackground>
   );
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
+  safe: { flex: 1, backgroundColor: 'transparent' },
 
   header: {
     flexDirection: 'row',
@@ -680,7 +703,13 @@ const s = StyleSheet.create({
     borderWidth: 3, borderColor: C.orange,
     alignItems: 'center', justifyContent: 'center',
   },
-  name:   { color: C.muted, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  name:   { color: C.muted, fontSize: 14, fontWeight: '600' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 2 },
+  genderPill: {
+    width: 22, height: 22, borderRadius: 6,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+  },
+  genderPillText: { fontSize: 13, fontWeight: '900', lineHeight: 16 },
   handle: { color: C.text, fontSize: 22, fontWeight: '800', marginTop: 12 },
   connectPill: {
     marginTop: 10, backgroundColor: C.orange,

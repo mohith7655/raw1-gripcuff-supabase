@@ -16,6 +16,48 @@ export const accentAlpha = (a: number) => `rgba(242,89,18,${a})`;
 // Translucent indigo for soft brand backgrounds / borders.
 export const indigoAlpha = (a: number) => `rgba(76,78,120,${a})`;
 
+// ── Glass / Ambient material (One UI 8.5 "Glass UI") ─────────────────────
+// Tokens for the frosted-glass surface system. Consumed by <AmbientBackground>
+// and <GlassCard>/<GlassSurface>/<GlassPill> in lib/components/theme. The flat
+// canvas (#EEEEF2) becomes a soft ambient mesh; solid cards (#F8F8FC + #D8D8E4)
+// become translucent blurred surfaces that refract that mesh.
+export const Glass = {
+  // Surface — bright luminous panel that floats on the ambient mesh. Kept light
+  // so cards read as soft white glass, not flat grey.
+  fill: 'rgba(255,255,255,0.62)',
+  // More opaque fill for controls/rows/nav that need stronger legibility.
+  fillStrong: 'rgba(255,255,255,0.78)',
+  // Solid fallback fill used when blur is unsupported / disabled (low-end
+  // devices). More opaque so #211832 / #7A7C90 text keeps contrast without blur.
+  solidFallback: 'rgba(251,250,253,0.96)',
+  // Hairline luminous border — barely-there (cards are defined by shadow, not edge).
+  border: 'rgba(255,255,255,0.55)',
+  // Bright top specular highlight (fakes CSS `inset 0 1px 0 rgba(255,255,255,.9)`).
+  highlight: 'rgba(255,255,255,0.9)',
+  // Soft, large, diffuse depth shadow so panels float like cushions (warm-tinted).
+  shadowColor: '#2A2342',
+  shadowOpacity: 0.12,
+  shadowRadius: 34,
+  shadowOffset: { width: 0, height: 16 },
+  androidElevation: 7,
+  // Hairline divider — faint deep-indigo line.
+  divider: 'rgba(33,24,50,0.06)',
+  // Default BlurView intensity / tint.
+  blurIntensity: 24,
+  blurTint: 'light' as const,
+  radius: 22,
+  // Ambient mesh — base diagonal gradient (~165°). Warm cream top-left → soft
+  // lilac → cool light, so the canvas reads warm + airy (not cold grey). The
+  // warmth lives in this gradient (renders reliably on web) with the SVG glows
+  // adding focal accents on top.
+  ambientBase: ['#F9F5F1', '#F1EEF6', '#E9EAF4'] as const,
+  ambientFallback: '#F1EEF5',
+  // Radial glow colors for the mesh — warmer + more present than before.
+  glowOrange: 'rgba(243,150,95,0.22)',  // warm peach, top-left
+  glowIndigo: 'rgba(108,108,168,0.18)', // indigo, top-right
+  glowIndigoSoft: 'rgba(108,108,168,0.13)', // indigo, bottom-center
+};
+
 // Theme colors and styles — Ash & Midnight (light)
 export const AppTheme = {
   // Colors

@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AmbientBackground } from '../components/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Rss, Users, ChevronRight } from 'lucide-react-native';
+import { Rss, Users, ChevronRight, Swords } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { SocialActivity } from '../components/social/SocialActivity';
@@ -123,6 +124,8 @@ export function FeedScreen() {
   const [createVisible, setCreateVisible] = useState(false);
   const [tweetVisible, setTweetVisible] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
+  // Top action card — show ONE of Challenge Lobby / Workout with Friend, toggled.
+  const [topCard, setTopCard] = useState<'challenge' | 'friend'>('challenge');
   const [commentPost, setCommentPost] = useState<Post | null>(null);
   const [myClubs, setMyClubs] = useState<Club[]>([]);
 
@@ -238,10 +241,35 @@ export function FeedScreen() {
   // ── Challenge Lobby entry + Daily Feed section header ──
   const ListHeader = (
     <View>
-      {/* Gamified Social header — two side-by-side animated action cards */}
+      {/* Gamified Social header — ONE action card at a time, switched via the
+          segmented toggle (Challenge Lobby ↔ Workout with Friend). */}
+      <View style={styles.topToggleWrap}>
+        <View style={styles.topToggle}>
+          {/* Active segment shows the word; inactive shows just its icon. */}
+          <Pressable
+            onPress={() => setTopCard('challenge')}
+            style={[styles.topToggleBtn, topCard === 'challenge' && styles.topToggleBtnActive]}
+          >
+            {topCard === 'challenge'
+              ? <Text style={styles.topToggleTextActive}>Challenge</Text>
+              : <Swords size={16} color="#7A7C90" />}
+          </Pressable>
+          <Pressable
+            onPress={() => setTopCard('friend')}
+            style={[styles.topToggleBtn, topCard === 'friend' && styles.topToggleBtnActive]}
+          >
+            {topCard === 'friend'
+              ? <Text style={styles.topToggleTextActive}>Friend</Text>
+              : <Users size={16} color="#7A7C90" />}
+          </Pressable>
+        </View>
+      </View>
       <View style={styles.cardRow}>
-        <ChallengeCard onPress={() => navigation.navigate('ChallengeLobbyScreen')} avatarUri={user?.profileImageUrl} />
-        <FriendCard onPress={() => navigation.navigate('WorkoutWithFriendScreen')} avatarUri={user?.profileImageUrl} />
+        {topCard === 'challenge' ? (
+          <ChallengeCard onPress={() => navigation.navigate('ChallengeLobbyScreen')} avatarUri={user?.profileImageUrl} />
+        ) : (
+          <FriendCard onPress={() => navigation.navigate('WorkoutWithFriendScreen')} avatarUri={user?.profileImageUrl} />
+        )}
       </View>
 
       {/* Unified activity feed (friend requests, challenges, workouts, messages)
@@ -345,6 +373,7 @@ export function FeedScreen() {
   );
 
   return (
+    <AmbientBackground>
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
@@ -395,11 +424,12 @@ export function FeedScreen() {
         onDismiss={handleActivationDismiss}
       />
     </SafeAreaView>
+    </AmbientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: AppTheme.background },
+  safe: { flex: 1, backgroundColor: 'transparent' },
 
   header: {
     flexDirection: 'row',
@@ -432,8 +462,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: CARD_GAP,
     marginHorizontal: SECTION_PAD,
-    marginTop: 12,
+    marginTop: 10,
   },
+  // Challenge ↔ Friend segmented toggle — matches the Activity filter tabs
+  // (glass track, dark #211832 active pill).
+  topToggleWrap: { alignItems: 'center', marginTop: 12 },
+  topToggle: {
+    flexDirection: 'row',
+    padding: 2,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  topToggleBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topToggleBtnActive: { backgroundColor: '#211832' },
+  topToggleTextActive: { color: '#fff', fontSize: 13, fontWeight: '700' },
   cardShadow: {
     flex: 1,
     borderRadius: 20,
@@ -484,11 +534,11 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
   handEmoji: { fontSize: 22 },
-  labelBlock: { position: 'absolute', left: 12, bottom: 12, right: 12 },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  labelBlock: { position: 'absolute', left: 12, bottom: 12, right: 12, alignItems: 'center' },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   labelEmoji: { fontSize: 14 },
-  cardTitle: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  cardSub: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '500', marginTop: 2 },
+  cardTitle: { color: '#fff', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  cardSub: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '500', marginTop: 2, textAlign: 'center' },
 
   feedStatus: {
     alignItems: 'center',

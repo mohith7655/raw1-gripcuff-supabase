@@ -13,6 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, CircleUserRound } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { TierAvatar } from '../components/profile/TierAvatar';
+import { AmbientBackground, GlassCard } from '../components/theme';
 
 type RouteParams = {
     friendUid: string;
@@ -44,6 +45,14 @@ export const ChatFriendProfileScreen = () => {
     const displayEmail = userData?.email || '-';
     const displayPhone = userData?.phone || '-';
     const displayGender = userData?.gender || '-';
+    // Gender icon shown right after the first name.
+    const genderKey = (userData?.gender || '').toLowerCase();
+    const genderMeta =
+        genderKey === 'male'
+            ? { icon: '♂', color: '#2563eb', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.30)' }
+        : genderKey === 'female'
+            ? { icon: '♀', color: '#db2777', bg: 'rgba(219,39,119,0.12)', border: 'rgba(219,39,119,0.30)' }
+        : null;
     const displayDob =
         userData?.dateOfBirth ||
         (userData?.dob?.month && userData?.dob?.year
@@ -63,6 +72,7 @@ export const ChatFriendProfileScreen = () => {
     );
 
     return (
+        <AmbientBackground>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -83,24 +93,32 @@ export const ChatFriendProfileScreen = () => {
                             <TierAvatar uri={avatar} size={92} uid={friendUid} name={displayName} radius={20} />
                         </View>
                         <Text style={styles.username}>{displayUsername}</Text>
-                        <Text style={styles.name}>{firstName}</Text>
+                        <View style={styles.nameRow}>
+                            <Text style={styles.name}>{firstName}</Text>
+                            {genderMeta && (
+                                <View style={[styles.genderPill, { backgroundColor: genderMeta.bg, borderColor: genderMeta.border }]}>
+                                    <Text style={[styles.genderPillText, { color: genderMeta.color }]}>{genderMeta.icon}</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
 
-                    <View style={styles.card}>
+                    <GlassCard padding={0} radius={14}>
                         {field('Email', displayEmail)}
                         {field('Phone', displayPhone)}
                         {field('Location', displayLocation)}
                         {field('Gender', displayGender)}
                         {field('Date of Birth', displayDob)}
-                    </View>
+                    </GlassCard>
                 </ScrollView>
             )}
         </SafeAreaView>
+        </AmbientBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: AppTheme.background },
+    safeArea: { flex: 1, backgroundColor: 'transparent' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -126,15 +144,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    name: { color: AppTheme.textGrey, fontSize: FontSizes.body, fontWeight: '600' as any, marginTop: 2 },
-    username: { color: '#211832', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
-    card: {
-        backgroundColor: AppTheme.cardColor,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: 'rgba(33,24,50,0.07)',
-        overflow: 'hidden',
+    name: { color: AppTheme.textGrey, fontSize: FontSizes.body, fontWeight: '600' as any },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 2 },
+    genderPill: {
+        width: 22, height: 22, borderRadius: 6,
+        alignItems: 'center', justifyContent: 'center', borderWidth: 1,
     },
+    genderPillText: { fontSize: 13, fontWeight: '900' as any, lineHeight: 16 },
+    username: { color: '#211832', fontSize: FontSizes.h3, fontWeight: FontWeights.bold as any },
     fieldRow: {
         paddingHorizontal: 14,
         paddingVertical: 12,

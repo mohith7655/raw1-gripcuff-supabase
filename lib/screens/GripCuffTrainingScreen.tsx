@@ -212,7 +212,7 @@ export const GripCuffTrainingScreen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#EEEEF2',
+        backgroundColor: 'transparent',
     },
     header: {
         flexDirection: 'row',

@@ -270,6 +270,7 @@ export class SocialProfileService {
         fullName: string;
         username: string;
         avatarUrl: string | null;
+        gender?: string;
         currentStreak: number;
         completedWorkouts: number;
     }>> {
@@ -282,6 +283,7 @@ export class SocialProfileService {
                 'full_name',
                 'username',
                 'avatar_url',
+                'gender',
                 'bio',
                 'what_i_do',
                 'open_to_connect',
@@ -311,6 +313,7 @@ export class SocialProfileService {
                 fullName: row.full_name || 'User',
                 username: row.username || '',
                 avatarUrl: row.avatar_url ?? null,
+                gender: row.gender ?? undefined,
                 currentStreak: 0,
                 completedWorkouts: 0,
             }));

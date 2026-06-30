@@ -149,7 +149,7 @@ export const ChatInboxScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: AppTheme.background },
+    safeArea: { flex: 1, backgroundColor: 'transparent' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',

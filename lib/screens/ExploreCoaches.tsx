@@ -428,7 +428,7 @@ const CoachHorizontalCard = ({ coach, isSelected, onPress }: { coach: Coach; isS
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: CoachingTheme.background,
+        backgroundColor: 'transparent',
     },
     header: {
         paddingHorizontal: SCREEN_PADDING,

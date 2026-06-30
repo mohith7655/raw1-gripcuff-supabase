@@ -990,7 +990,7 @@ export const WorkoutWithFriendFlow = ({ route }: any) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: AppTheme.background },
+    safeArea: { flex: 1, backgroundColor: 'transparent' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
     stepsIndicator: { flexDirection: 'row', gap: 8 },

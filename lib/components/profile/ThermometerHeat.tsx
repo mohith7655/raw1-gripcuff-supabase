@@ -14,6 +14,7 @@ const THERMO_PATH = 'M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z';
 
 const ORANGE = '#F25912';
 const EMPTY = 'rgba(33,24,50,0.10)';
+const OUTLINE = '#211832'; // near-black — the icon outline
 
 let _thermoId = 0;
 
@@ -21,10 +22,12 @@ export function ThermometerHeat({
   heat,
   size = 16,
   color,
+  outline = OUTLINE,
 }: {
   heat: Heat;
   size?: number;
   color?: string;
+  outline?: string;
 }) {
   // Stable, unique clip id per instance (avoids collisions on web).
   const idRef = React.useRef<string>();
@@ -54,7 +57,7 @@ export function ThermometerHeat({
         <Rect x={0} y={0} width={24} height={24} fill={EMPTY} />
         <Rect x={0} y={fillTop} width={24} height={24 - fillTop} fill={tint} />
       </G>
-      <Path d={THERMO_PATH} fill="none" stroke={tint} strokeWidth={1.6} />
+      <Path d={THERMO_PATH} fill="none" stroke={outline} strokeWidth={1.6} />
     </Svg>
   );
 }

@@ -162,7 +162,7 @@ const cardWidth = (width - padding * 2 - gap) / 2;
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: AppTheme.background,
+        backgroundColor: 'transparent',
     },
     breadcrumbRow: {
         flexDirection: 'row',

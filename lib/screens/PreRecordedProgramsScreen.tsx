@@ -151,7 +151,7 @@ export default function PreRecordedProgramsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1, backgroundColor: 'transparent' },
     header: { padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
     title: { fontSize: 20, fontWeight: '700' },
     categoriesRow: { paddingVertical: 12 },

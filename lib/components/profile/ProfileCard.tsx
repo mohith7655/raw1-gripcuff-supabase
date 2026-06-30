@@ -8,6 +8,7 @@
 import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle, Text, TouchableOpacity } from 'react-native';
 import { Globe, Lock } from 'lucide-react-native';
+import { GlassSheen } from '../theme';
 
 const MUTED = '#7A7C90';
 
@@ -24,6 +25,7 @@ interface Props {
 export function ProfileCard({ children, style, padding = 16, isPrivate, onToggleVisibility }: Props) {
   return (
     <View style={[styles.card, { padding }, style]}>
+      <GlassSheen radius={20} />
       {children}
       {onToggleVisibility && (
         <View style={styles.visFooter}>
@@ -54,10 +56,16 @@ export function ProfileCard({ children, style, padding = 16, isPrivate, onToggle
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F8F8FC',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(33,24,50,0.06)',
+    borderColor: 'rgba(255,255,255,0.55)',
+    // Soft, diffuse floating shadow (Glass UI).
+    shadowColor: '#2A2342',
+    shadowOpacity: 0.12,
+    shadowRadius: 34,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 7,
   },
   visFooter: {
     flexDirection: 'row',
@@ -76,9 +84,9 @@ const styles = StyleSheet.create({
     gap: 2,
     padding: 2,
     borderRadius: 100,
-    backgroundColor: '#EEEEF2',
+    backgroundColor: 'rgba(255,255,255,0.5)',
     borderWidth: 1,
-    borderColor: '#D8D8E4',
+    borderColor: 'rgba(255,255,255,0.55)',
   },
   segOpt: {
     flexDirection: 'row',

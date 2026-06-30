@@ -17,6 +17,7 @@ import {
 import { ChevronRight, Zap, Clock } from 'lucide-react-native';
 import { TimeArrowPicker } from './TimeArrowPicker';
 import { TierAvatar } from './profile/TierAvatar';
+import { GlassSheen } from './theme';
 import { useNavigation } from '@react-navigation/native';
 import { useInvite } from '../hooks/useInvite';
 import { BADGE_FAMILIES, TIER_COLORS, computeTier } from '../services/badge.types';
@@ -26,9 +27,10 @@ import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.se
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
 
 const ACCENT = '#F25912';
-const CARD_BG = '#F8F8FC';
-const STRIP_BG = '#EEEEF2';
-const BORDER = '#D8D8E4';
+// Glass UI — translucent luminous panel + soft border over the ambient mesh.
+const CARD_BG = 'rgba(255,255,255,0.62)';
+const STRIP_BG = 'rgba(255,255,255,0.5)';
+const BORDER = 'rgba(255,255,255,0.55)';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -658,6 +660,7 @@ export function UnifiedProgressLeaderboard({ streakData, currentUserId, onViewAl
 
   return (
     <View style={s.card}>
+      <GlassSheen radius={20} />
       {/* Tab strip */}
       <View style={s.tabStrip}>
         {TABS.map(tab => (
@@ -702,7 +705,7 @@ export function UnifiedProgressLeaderboard({ streakData, currentUserId, onViewAl
 const s = StyleSheet.create({
   card: {
     backgroundColor: CARD_BG,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: BORDER,
     marginHorizontal: 4,
@@ -710,6 +713,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 12,
     paddingBottom: 14,
+    shadowColor: '#2A2342',
+    shadowOpacity: 0.12,
+    shadowRadius: 34,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 7,
   },
 
   // Tab strip
@@ -717,11 +725,11 @@ const s = StyleSheet.create({
   tabStrip: {
     flexDirection: 'row',
     alignSelf: 'center',
-    backgroundColor: '#EEEEF2',
+    backgroundColor: STRIP_BG,
     borderRadius: 100,
     padding: 2,
     borderWidth: 1,
-    borderColor: '#D8D8E4',
+    borderColor: 'rgba(255,255,255,0.55)',
     marginBottom: 14,
   },
   tabBtn: {

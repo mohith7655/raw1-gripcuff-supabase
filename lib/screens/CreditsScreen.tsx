@@ -340,7 +340,7 @@ export const CreditsScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AppTheme.background,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: SCREEN_PADDING,

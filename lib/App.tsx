@@ -34,7 +34,8 @@ import { NotificationProvider, useNotificationCenter } from './providers/Notific
 import { MiniPlayerProvider } from './providers/MiniPlayerContext';
 import { ProfilePreviewProvider } from './providers/ProfilePreviewProvider';
 import { MiniPlayer } from './components/MiniPlayer';
-import { AppTheme, CoachingTheme } from './core/theme/app_theme';
+import { AppTheme, CoachingTheme, Glass } from './core/theme/app_theme';
+import { GlassPill } from './components/theme';
 
 // Screens
 import { SplashScreen } from './screens/SplashScreen';
@@ -313,22 +314,25 @@ function PillTabBar({ state, descriptors, navigation, appMode, socialBadge = 0 }
         backgroundColor: 'transparent',
       }}
     >
+      {/* Floating glass pill nav (One UI 8.5) — frosted, fully-rounded ends,
+          floating above content. */}
       <Animated.View style={{
-        flexDirection: 'row',
         alignSelf: 'center',
         width: '72%',
-        backgroundColor: barBg,
-        borderRadius: 30,
-        paddingHorizontal: 8,
-        paddingVertical: 12,
-        gap: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-        elevation: 8,
         transform: translateY ? [{ translateY }] : undefined,
       }}>
+        <GlassPill
+          radius={30}
+          intensity={28}
+          fill={Glass.fillStrong}
+          style={{ width: '100%' }}
+          contentStyle={{
+            flexDirection: 'row',
+            paddingHorizontal: 8,
+            paddingVertical: 12,
+            gap: 2,
+          }}
+        >
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -383,6 +387,7 @@ function PillTabBar({ state, descriptors, navigation, appMode, socialBadge = 0 }
             </TouchableOpacity>
           );
         })}
+        </GlassPill>
       </Animated.View>
     </View>
   );
@@ -400,6 +405,9 @@ function HomeTabs() {
       <Tab.Navigator
         backBehavior="history"
         tabBar={(props) => <PillTabBar {...props} appMode={appMode} socialBadge={socialBadge} />}
+        // Opaque warm scene container so inactive tabs never bleed through the
+        // active one (they stay mounted in the tab navigator).
+        sceneContainerStyle={{ backgroundColor: Glass.ambientFallback }}
         screenOptions={{ headerShown: false }}
       >
         <Tab.Screen
@@ -448,7 +456,9 @@ function AppStack({
       initialRouteName={initialPublicProfile ? 'ScannedProfileScreen' : (initialRoute ?? 'HomeTabs')}
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#EEEEF2' }
+        // Opaque warm scene (screens paint their own ambient on top). Must stay
+        // opaque so pushed screens don't bleed through to the screen behind.
+        contentStyle: { backgroundColor: Glass.ambientFallback }
       }}
     >
       <Stack.Screen name="HomeTabs" component={HomeTabs} />
@@ -462,7 +472,7 @@ function AppStack({
         screenLayout={swipeBackLayout}
         screenOptions={{
           presentation: 'card',
-          contentStyle: { backgroundColor: '#EEEEF2' }
+          contentStyle: { backgroundColor: Glass.ambientFallback }
         }}
       >
         <Stack.Screen name="WorkoutStep1" component={WorkoutStep1Screen} />
@@ -1019,7 +1029,7 @@ function MainApp() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: Glass.ambientFallback }}>
       <NavigationContainer
         ref={navigationRef}
         linking={linking as any}
@@ -1027,7 +1037,11 @@ function MainApp() {
           ...DefaultTheme,
           colors: {
             ...DefaultTheme.colors,
-            background: '#EEEEF2',
+            // Opaque WARM base (not cold #EEEEF2). Each screen paints its own
+            // <AmbientBackground> mesh on top; this is the seamless fallback for
+            // insets / transitions / not-yet-migrated screens. Must stay opaque —
+            // transparent scenes let stacked navigator screens bleed through.
+            background: Glass.ambientFallback,
             card: '#F8F8FC',
             text: '#211832',
             border: '#D8D8E4',

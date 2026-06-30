@@ -158,7 +158,7 @@ export const FacePullDetailsPage = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F8F8FC',
+        backgroundColor: 'transparent',
     },
     header: {
         flexDirection: 'row',

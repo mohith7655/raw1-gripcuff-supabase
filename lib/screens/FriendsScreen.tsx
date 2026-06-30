@@ -23,6 +23,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AmbientBackground } from '../components/theme';
 import { useNavigation } from '@react-navigation/native';
 import {
     ArrowLeft,
@@ -38,15 +39,20 @@ import { RelationshipStatus } from '../models/Friend';
 import { User } from '../models/User';
 import { AppTheme } from '../core/theme/app_theme';
 import { TierAvatar } from '../components/profile/TierAvatar';
+import { ThermometerHeat } from '../components/profile/ThermometerHeat';
 import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
 import { useProfilePreview } from '../providers/ProfilePreviewProvider';
+import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats } from '../utils/activityHeat';
+import { loadActivityMap } from '../services/activityMap.service';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const C = {
     bg:          '#EEEEF2',
-    bgCard:      '#FFFFFF',
-    bgInput:     '#FFFFFF',
+    // Glass UI — translucent card/input fills + luminous white border that read as
+    // frosted glass over the <AmbientBackground> mesh.
+    bgCard:      'rgba(255,255,255,0.62)',
+    bgInput:     'rgba(255,255,255,0.62)',
     accent:      '#4C4E78',
     accentSoft:  'rgba(76,78,120,0.08)',
     accentBorder:'rgba(76,78,120,0.18)',
@@ -55,7 +61,7 @@ const C = {
     text:        '#211832',
     textMuted:   '#7A7C90',
     textDim:     '#B8B9CC',
-    border:      'rgba(33,24,50,0.08)',
+    border:      'rgba(255,255,255,0.55)',
     danger:      '#EF4444',
     dangerSoft:  'rgba(239,68,68,0.1)',
 };
@@ -247,6 +253,62 @@ function FriendsTab() {
     );
 }
 
+// ─── Gender pill + activity status + heat chips (shared row content) ────────────
+// Mirrors the Connections sheet on the profile screen.
+
+function GenderPill({ gender }: { gender?: string | null }) {
+    const gm = genderMetaOf(gender);
+    if (!gm) return null;
+    return (
+        <View style={[s.genderPill, { backgroundColor: gm.bg, borderColor: gm.border }]}>
+            <Text style={[s.genderIcon, { color: gm.color }]}>{gm.icon}</Text>
+        </View>
+    );
+}
+
+function ActivityStatus({ lastActiveAt }: { lastActiveAt?: string | null }) {
+    const a = appActiveLabel(lastActiveAt);
+    return (
+        <View style={s.activityRow}>
+            <View style={[s.activityDot, { backgroundColor: a.color }]} />
+            <Text style={[s.activityText, { color: a.color }]}>{a.text}</Text>
+        </View>
+    );
+}
+
+// Hot/cold heat chips — social (connects) + workout, loaded lazily per user.
+function HeatChips({ uid, workoutSessions }: { uid: string; workoutSessions?: number }) {
+    const [heats, setHeats]       = useState<ActivityHeats | null>(null);
+    const [connects, setConnects] = useState<number | null>(null);
+
+    useEffect(() => {
+        let alive = true;
+        loadActivityMap(uid)
+            .then(d => { if (alive) setHeats(computeHeats(d)); })
+            .catch(() => {});
+        FriendService.getFriendUids(uid)
+            .then(uids => { if (alive) setConnects(uids.length); })
+            .catch(() => {});
+        return () => { alive = false; };
+    }, [uid]);
+
+    if (!heats) return null;
+    return (
+        <View style={s.heatRow}>
+            <View style={[s.heatChip, { backgroundColor: heats.social.soft }]}>
+                <Users size={11} color={heats.social.color} strokeWidth={2.4} />
+                <Text style={[s.heatCount, { color: heats.social.color }]}>{connects ?? 0}</Text>
+                <ThermometerHeat heat={heats.social} size={13} />
+            </View>
+            <View style={[s.heatChip, { backgroundColor: heats.workout.soft }]}>
+                <Dumbbell size={11} color={heats.workout.color} strokeWidth={2.4} />
+                <Text style={[s.heatCount, { color: heats.workout.color }]}>{workoutSessions ?? 0}</Text>
+                <ThermometerHeat heat={heats.workout} size={13} />
+            </View>
+        </View>
+    );
+}
+
 // ─── Friend row ───────────────────────────────────────────────────────────────
 
 function FriendRow({ user, onProfile, onMessage, onRemove }: {
@@ -263,20 +325,13 @@ function FriendRow({ user, onProfile, onMessage, onRemove }: {
         <TouchableOpacity style={s.friendRow} onPress={onProfile} activeOpacity={0.8}>
             <Avatar uri={user.profileImageUrl} size={48} online={!!isOnline} uid={user.uid} name={user.fullName} lastActiveAt={user.lastActiveAt} />
             <View style={s.rowInfo}>
-                <Text style={s.rowName} numberOfLines={1}>{user.fullName || user.username || 'Athlete'}</Text>
-                {user.username ? <Text style={s.rowSub} numberOfLines={1}>@{user.username}</Text> : null}
-                <View style={s.rowMeta}>
-                    {(user.currentStreak ?? 0) > 0 && (
-                        <View style={s.metaChip}>
-                            <Text style={s.metaChipText}>🔥 {user.currentStreak}d streak</Text>
-                        </View>
-                    )}
-                    {(user.completedWorkouts ?? 0) > 0 && (
-                        <View style={s.metaChip}>
-                            <Text style={s.metaChipText}>💪 {user.completedWorkouts}</Text>
-                        </View>
-                    )}
+                <View style={s.nameRow}>
+                    <Text style={s.rowName} numberOfLines={1}>{user.fullName || user.username || 'Athlete'}</Text>
+                    <GenderPill gender={user.gender} />
                 </View>
+                {user.username ? <Text style={s.rowSub} numberOfLines={1}>@{user.username}</Text> : null}
+                <ActivityStatus lastActiveAt={user.lastActiveAt} />
+                <HeatChips uid={user.uid} workoutSessions={user.totalWatchSessions} />
             </View>
             <View style={s.rowActions}>
                 <TouchableOpacity style={s.actionMsg} onPress={onMessage} activeOpacity={0.75}>
@@ -609,24 +664,15 @@ function SuggestionsTab() {
                             : navigation.navigate('SocialProfileScreen', { uid: item.uid })}
                         activeOpacity={0.85}
                     >
-                        <Avatar uri={item.avatarUrl} size={52} uid={item.uid} name={item.fullName} />
+                        <Avatar uri={item.avatarUrl} size={52} uid={item.uid} name={item.fullName} lastActiveAt={item.lastActiveAt} />
                         <View style={s.rowInfo}>
-                            <Text style={s.rowName} numberOfLines={1}>{item.fullName || item.username || 'Athlete'}</Text>
-                            {item.username ? <Text style={s.rowSub}>@{item.username}</Text> : null}
-                            {item.whatIDo ? (
-                                <Text style={s.suggestionWhat} numberOfLines={1}>{item.whatIDo}</Text>
-                            ) : null}
-                            {item.gymArea ? (
-                                <Text style={s.suggestionGym} numberOfLines={1}>📍 {item.gymArea}</Text>
-                            ) : null}
-                            <View style={s.suggestionStats}>
-                                {item.currentStreak > 0 && (
-                                    <Text style={s.suggestionStat}>🔥 {item.currentStreak}d</Text>
-                                )}
-                                {item.completedWorkouts > 0 && (
-                                    <Text style={s.suggestionStat}>💪 {item.completedWorkouts}</Text>
-                                )}
+                            <View style={s.nameRow}>
+                                <Text style={s.rowName} numberOfLines={1}>{item.fullName || item.username || 'Athlete'}</Text>
+                                <GenderPill gender={item.gender} />
                             </View>
+                            {item.username ? <Text style={s.rowSub}>@{item.username}</Text> : null}
+                            <ActivityStatus lastActiveAt={item.lastActiveAt} />
+                            <HeatChips uid={item.uid} workoutSessions={item.totalWatchSessions} />
                         </View>
                         <View style={s.suggestionActions}>
                             {sent ? (
@@ -662,6 +708,7 @@ export function FriendsScreen() {
     const [activeTab, setActiveTab] = useState<TabId>('friends');
 
     return (
+        <AmbientBackground>
         <SafeAreaView style={s.safe} edges={['top']}>
             {/* Header */}
             <View style={s.header}>
@@ -691,6 +738,7 @@ export function FriendsScreen() {
                 {activeTab === 'suggestions' && <SuggestionsTab />}
             </View>
         </SafeAreaView>
+        </AmbientBackground>
     );
 }
 
@@ -699,7 +747,7 @@ export function FriendsScreen() {
 const s = StyleSheet.create({
     safe: {
         flex: 1,
-        backgroundColor: C.bg,
+        backgroundColor: 'transparent',
     },
     header: {
         flexDirection: 'row',
@@ -802,6 +850,41 @@ const s = StyleSheet.create({
         gap: 6,
         marginTop: 4,
     },
+    // Name + gender pill (matches profile / connections layout)
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+    },
+    genderPill: {
+        width: 20, height: 20, borderRadius: 6,
+        alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+    },
+    genderIcon: { fontSize: 12, fontWeight: '900', lineHeight: 15 },
+    // Activity status line (Active now · Active 2d ago · Activity hidden)
+    activityRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginTop: 3,
+    },
+    activityDot: { width: 7, height: 7, borderRadius: 4 },
+    activityText: { fontSize: 11, fontWeight: '700' },
+    // Hot/cold heat chips
+    heatRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 6,
+    },
+    heatChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+    heatCount: { fontSize: 12, fontWeight: '800' },
     metaChip: {
         backgroundColor: 'rgba(33,24,50,0.06)',
         borderRadius: 8,

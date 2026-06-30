@@ -88,7 +88,7 @@ export function AllRecentlyWatchedScreen() {
 }
 
 const s = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#EEEEF2' },
+    safe: { flex: 1, backgroundColor: 'transparent' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
