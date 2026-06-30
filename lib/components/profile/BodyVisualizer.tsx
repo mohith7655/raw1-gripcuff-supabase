@@ -76,6 +76,10 @@ interface Props {
   editable?: boolean;
   /** Height of the figure canvas in px (full-screen uses a taller canvas). */
   canvasHeight?: number;
+  /** Extra bone-groups to paint on the figure (e.g. goal targets) — display only. */
+  extraMuscles?: string[];
+  /** Colours for the extra bone-groups (group token → colour). */
+  extraGroupColors?: Record<string, string>;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -232,7 +236,7 @@ function VerticalSlider({
 // ── Component ───────────────────────────────────────────────────────────────
 export default function BodyVisualizer({
   name, gender, heightCm, weightKg, age, conditions, onCommit, onSave, saving = false,
-  editable = true, canvasHeight = 300,
+  editable = true, canvasHeight = 300, extraMuscles, extraGroupColors,
 }: Props) {
   const [m, setM] = useState<BodyMetrics>({
     gender: gender === 'female' ? 'female' : 'male',
@@ -458,8 +462,8 @@ export default function BodyVisualizer({
           height={canvasHeight}
           heightScale={heightScale}
           girthScale={girthScale}
-          targetedMuscles={highlightMuscles}
-          groupColors={groupColors}
+          targetedMuscles={[...(extraMuscles ?? []), ...highlightMuscles]}
+          groupColors={{ ...(extraGroupColors ?? {}), ...groupColors }}
           overlay={
             <>
               {editable && (

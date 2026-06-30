@@ -24,6 +24,7 @@ import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
+import { useBodyInsights } from '../hooks/useBodyInsights';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
@@ -255,7 +256,38 @@ export const LibraryScreen = () => {
     toggleVideoCompletion,
     clearError,
   } = useLibrary();
-  const { appMode } = useUser();
+  const { appMode, profile } = useUser();
+
+  // AI recommendations based on the user's body metrics, injuries & goals.
+  const { insights: bodyInsights } = useBodyInsights({
+    gender: profile?.gender,
+    age: profile?.age,
+    heightCm: profile?.heightCm,
+    weightKg: profile?.weightKg,
+    conditions: profile?.bodyConditions,
+    goals: profile?.goals,
+  });
+  const aiRecos = bodyInsights?.recommendations ?? [];
+  // Recommendations open EXERCISE videos (CategoryVideos = EXERCISE_DATA), never
+  // workout programs. gripcuff has its own exercise library.
+  const RECO_CAT: Record<string, { key: string; label: string }> = {
+    muscle_growth: { key: 'MuscleGrowth', label: 'Muscle Growth' },
+    stretching: { key: 'Stretching', label: 'Stretching' },
+    injury_rehab: { key: 'InjuryRehab', label: 'Injury Rehab' },
+    athletic: { key: 'AthleticPerformance', label: 'Athletic Performance' },
+  };
+  const openReco = (category: string) => {
+    if (category === 'gripcuff') { navigation.navigate('GripCuffVideos'); return; }
+    const c = RECO_CAT[category] ?? RECO_CAT.muscle_growth;
+    navigation.navigate('CategoryVideos', { categoryKey: c.key, categoryLabel: c.label });
+  };
+  const RECO_META: Record<string, { color: string; emoji: string }> = {
+    muscle_growth: { color: '#66BB6A', emoji: '💪' },
+    stretching:    { color: '#4FC3F7', emoji: '🧘' },
+    injury_rehab:  { color: '#f44336', emoji: '🩹' },
+    athletic:      { color: '#D4A600', emoji: '⚡' },
+    gripcuff:      { color: '#F25912', emoji: '🤜' },
+  };
 
   const handleTabChange = (tab: VideoType) => {
     setTab(tab);
@@ -410,6 +442,52 @@ export const LibraryScreen = () => {
               </TouchableOpacity>
             </View>
           )}
+        </View>
+      )}
+
+      {/* ── AI "Recommended for you" — exercises based on goals, injuries & body
+            data. Exercises tab only (not Workouts). ── */}
+      {subTab === 'all' && aiRecos.length > 0 && (
+        <View style={{ marginBottom: 18 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 16, marginBottom: 4 }}>
+            <Sparkles size={16} color="#F25912" />
+            <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>Recommended for you</Text>
+          </View>
+          <Text style={{ color: '#7A7C90', fontSize: 12.5, fontWeight: '500', paddingHorizontal: 16, marginBottom: 12 }}>
+            Picked by AI from your goals, injuries & body
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+            {aiRecos.map((r, i) => {
+              const meta = RECO_META[r.category] ?? RECO_META.muscle_growth;
+              return (
+                <TouchableOpacity
+                  key={`${r.category}-${i}`}
+                  activeOpacity={0.85}
+                  onPress={() => openReco(r.category)}
+                  style={{
+                    width: 220,
+                    backgroundColor: 'rgba(255,255,255,0.62)',
+                    borderRadius: 18,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.9)',
+                    padding: 14,
+                    shadowColor: '#2A2342', shadowOpacity: 0.1, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 5,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${meta.color}22` }}>
+                      <Text style={{ fontSize: 17 }}>{meta.emoji}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: '#211832', fontSize: 14, fontWeight: '800' }} numberOfLines={2}>{r.title}</Text>
+                    </View>
+                  </View>
+                  <Text style={{ color: '#7A7C90', fontSize: 12.5, lineHeight: 17, fontWeight: '500' }} numberOfLines={3}>{r.reason}</Text>
+                  <Text style={{ color: meta.color, fontSize: 12, fontWeight: '700', marginTop: 10 }}>Explore ›</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       )}
 

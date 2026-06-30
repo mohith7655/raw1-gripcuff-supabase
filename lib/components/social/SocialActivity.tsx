@@ -57,7 +57,7 @@ const GREEN = '#16a34a';
 // Glass UI — translucent surface + luminous white border for cards/rows/controls
 // (One UI 8.5). These read as frosted glass over the <AmbientBackground> mesh.
 const GLASS_FILL = 'rgba(255,255,255,0.62)';
-const GLASS_BORDER = 'rgba(255,255,255,0.55)';
+const GLASS_BORDER = 'rgba(255,255,255,0.9)';
 
 // Per-category accent colors — each activity type gets its own hue so the feed
 // is scannable at a glance (orange = requests, rose = challenges, green =

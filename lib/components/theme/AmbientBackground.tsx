@@ -1,25 +1,19 @@
 /**
- * AmbientBackground — soft "ambient mesh" screen backdrop for the Glass UI.
+ * AmbientBackground — frosted "Liquid Glass" ambient backdrop (One UI 8.5).
  *
- * Replaces a screen's flat #EEEEF2 canvas fill so the frosted-glass surfaces
- * (<GlassCard> etc.) have something to refract. It layers expo-linear-gradient
- * views (chosen over react-native-svg radial gradients because SVG radials do
- * not render reliably on react-native-web — they left the top-right corner a
- * bare near-white patch):
- *   1. a base diagonal gradient, warm cream top-left → soft lilac → cool
- *   2. a warm peach glow fading in from the top-left
- *   3. an indigo glow fading in from the top-right (so that corner is never
- *      bare white)
- *   4. a faint indigo glow rising from the bottom-center
+ * Wraps a screen so the glass surfaces have colour to refract:
+ *   1. a base diagonal LinearGradient (~165°): #EEEDF6 → #E2E3F0 → #E8EAF6.
+ *   2. four corner glows, anchored at the spec positions and fading to
+ *      transparent at the spec falloff. These use expo-linear-gradient (which
+ *      renders reliably on web — react-native-svg RadialGradient does NOT, and
+ *      left the top-right corner bare-white):
+ *        • orange  top-left   14%/4%   → transparent ~38%   (0.20)
+ *        • indigo  top-right  92%/16%  → transparent ~44%   (0.26)
+ *        • orange  left        8%/60%  → transparent ~40%   (0.10)
+ *        • indigo  bottom-ctr 50%/110% → transparent ~52%   (0.20)
  *
- * Usage — wrap a screen body (it fills its parent, so give it flex:1). It is
- * OPAQUE, so stacked navigator screens never bleed through it:
- *
- *   <AmbientBackground>
- *     <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>…</SafeAreaView>
- *   </AmbientBackground>
- *
- * Children should use transparent backgrounds so the mesh shows through.
+ * It is OPAQUE, so stacked navigator screens never bleed through. Wrap a screen
+ * body and give children transparent backgrounds so the mesh shows through.
  */
 import React from 'react';
 import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
@@ -33,39 +27,54 @@ interface AmbientBackgroundProps {
   glows?: boolean;
 }
 
+const T_ORANGE = 'rgba(242,89,18,0)';
+const T_INDIGO = 'rgba(76,78,120,0)';
+
 export function AmbientBackground({ children, style, glows = true }: AmbientBackgroundProps) {
   return (
     <View style={[styles.root, style]}>
-      {/* Base diagonal gradient — warm cream (top-left) → soft lilac → cool. */}
+      {/* Base diagonal gradient (~165°). */}
       <LinearGradient
-        colors={['#F6EFE9', '#EEEBF4', '#E7E9F3']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={Glass.ambientBase as unknown as string[]}
+        start={{ x: 0.35, y: 0 }}
+        end={{ x: 0.65, y: 1 }}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
       {glows && (
         <>
-          {/* Warm peach glow fading in from the top-left. */}
+          {/* Orange glow — anchored top-left (14%/4%), fading toward centre. */}
           <LinearGradient
-            colors={[Glass.glowOrange, 'rgba(243,150,95,0)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.85, y: 0.7 }}
+            colors={[Glass.glowOrangeTL, T_ORANGE]}
+            locations={[0, 0.45]}
+            start={{ x: 0.14, y: 0.04 }}
+            end={{ x: 0.7, y: 0.6 }}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-          {/* Indigo glow fading in from the top-right (kills the bare-white corner). */}
+          {/* Indigo glow — anchored top-right (92%/16%); kills the bare-white corner. */}
           <LinearGradient
-            colors={[Glass.glowIndigo, 'rgba(108,108,168,0)']}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0.1, y: 0.7 }}
+            colors={[Glass.glowIndigoTR, T_INDIGO]}
+            locations={[0, 0.5]}
+            start={{ x: 0.92, y: 0.1 }}
+            end={{ x: 0.3, y: 0.62 }}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-          {/* Faint indigo rising from the bottom-center. */}
+          {/* Soft orange — left edge (8%/60%). */}
           <LinearGradient
-            colors={['rgba(108,108,168,0)', Glass.glowIndigoSoft]}
+            colors={[Glass.glowOrangeL, T_ORANGE]}
+            locations={[0, 0.42]}
+            start={{ x: 0.04, y: 0.6 }}
+            end={{ x: 0.6, y: 0.62 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          {/* Indigo glow — rising from bottom-centre (50%/110%). */}
+          <LinearGradient
+            colors={[T_INDIGO, Glass.glowIndigoBC]}
+            locations={[0.48, 1]}
             start={{ x: 0.5, y: 0.45 }}
             end={{ x: 0.5, y: 1 }}
             style={StyleSheet.absoluteFill}

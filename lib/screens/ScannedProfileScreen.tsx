@@ -63,7 +63,7 @@ const C = {
   bg:           '#EEEEF2',
   // Glass UI — translucent card fill + luminous white border over <AmbientBackground>.
   bgCard:       'rgba(255,255,255,0.62)',
-  border:       'rgba(255,255,255,0.55)',
+  border:       'rgba(255,255,255,0.9)',
   orange:       '#F25912',
   accentSoft:   'rgba(242,89,18,0.12)',
   accentBorder: 'rgba(242,89,18,0.28)',

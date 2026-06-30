@@ -172,7 +172,7 @@ function RecommendationSection({
               overflow: 'hidden',
               backgroundColor: 'rgba(255,255,255,0.62)',
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.55)',
+              borderColor: 'rgba(255,255,255,0.9)',
             }}
             activeOpacity={0.85}
           >
@@ -936,7 +936,7 @@ const HomeScreenInner = () => {
                   {/* Connects + Workouts — same row */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                     <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
-                      <View style={{ paddingHorizontal: 4, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', borderWidth: 1.5, borderColor: 'rgba(76,78,120,0.55)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <Text style={{ color: '#211832', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
                         <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
                         {/* Connects temperature — gauge sits INSIDE the pill. */}
@@ -945,7 +945,7 @@ const HomeScreenInner = () => {
                     </TouchableOpacity>
                     {/* Workout pill — dumbbell + total workouts + temperature. */}
                     {homeHeats && (
-                      <View style={{ backgroundColor: homeHeats.workout.soft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View style={{ backgroundColor: 'rgba(242,89,18,0.1)', borderWidth: 1.5, borderColor: 'rgba(242,89,18,0.55)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Dumbbell size={13} color={homeHeats.workout.color} strokeWidth={2.4} />
                         <Text style={{ color: homeHeats.workout.color, fontSize: 13, fontWeight: '800' }}>{profile?.totalWatchSessions ?? 0}</Text>
                         <Text style={{ color: homeHeats.workout.color, fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>WORKOUTS</Text>
@@ -1560,8 +1560,8 @@ const HomeScreenInner = () => {
             age={profile?.age}
             goals={profile?.goals}
             conditions={profile?.bodyConditions}
-            onPressNow={() => navigation.navigate('HowILookNow')}
-            onPressGoal={() => navigation.navigate('Goals')}
+            onPressNow={() => navigation.navigate('BodyDetails')}
+            onPressGoal={() => navigation.navigate('BodyDetails')}
           />
 
           {/* ── Are you being social or working out? — my own heat map ──────── */}
@@ -2118,13 +2118,13 @@ const HomeScreenInner = () => {
 
 export const HomeScreen = React.memo(HomeScreenInner);
 
-// Soft, diffuse floating-panel shadow (Glass UI) — lifts cards off the mesh.
+// Liquid Glass depth shadow (spec): #211832, .12, r34, offset {0,10}, elev 6.
 const CARD_SHADOW = {
-  shadowColor: '#2A2342',
+  shadowColor: '#211832',
   shadowOpacity: 0.12,
   shadowRadius: 34,
-  shadowOffset: { width: 0, height: 16 },
-  elevation: 7,
+  shadowOffset: { width: 0, height: 10 },
+  elevation: 6,
 } as const;
 
 const styles = StyleSheet.create({
@@ -2137,9 +2137,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 16,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   heatTitle: { color: '#211832', fontSize: 15, fontWeight: '800' },
   heatSub: { color: '#7A7C90', fontSize: 12, marginTop: 2 },
@@ -2308,11 +2308,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   compactStatsCard: {
+    ...CARD_SHADOW,
     flexDirection: 'column',
-    backgroundColor: 'rgba(255,255,255,0.62)',
-    borderRadius: 12,
+    backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
     marginBottom: 24,
     overflow: 'hidden',
   },
@@ -2323,7 +2324,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
     padding: 18,
     marginBottom: 24,
   },
@@ -2414,7 +2415,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
     padding: 14,
   },
   bottomPreviewHeader: {
@@ -2494,7 +2495,7 @@ const styles = StyleSheet.create({
   },
   gripCuffCard: {
     ...CARD_SHADOW,
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
     borderRadius: 20,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -2561,7 +2562,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   exerciseIconContainer: {
     backgroundColor: 'rgba(242,89,18, 0.2)',

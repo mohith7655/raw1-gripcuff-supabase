@@ -79,7 +79,7 @@ const C = {
   bg:           '#EEEEF2',
   // Glass UI — translucent card fill + luminous white border over <AmbientBackground>.
   cardBg:       'rgba(255,255,255,0.62)',
-  cardBorder:   'rgba(255,255,255,0.55)',
+  cardBorder:   'rgba(255,255,255,0.9)',
   text:         '#211832',
   muted:        '#7A7C90',
   accentSoft:   'rgba(242,89,18,0.12)',
@@ -672,7 +672,7 @@ export function SocialProfileScreen() {
                   </TouchableOpacity>
                   {/* Workout pill — dumbbell + total workout count + temperature. */}
                   {heats && (
-                    <View style={[s.workoutPill, { backgroundColor: heats.workout.soft }]}>
+                    <View style={[s.workoutPill, { backgroundColor: 'rgba(242,89,18,0.1)' }]}>
                       <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
                       <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
                       <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
@@ -709,7 +709,7 @@ export function SocialProfileScreen() {
             const inner = (
               <>
                 <Swords size={14} color={C.orange} strokeWidth={2.2} />
-                <Text style={s.challengeLabel}>Open to Challenge</Text>
+                <Text style={s.challengeLabel}>Challenge me</Text>
                 {(social?.openToChallenge?.length ?? 0) > 0 ? (
                   <View style={s.challengeChips}>
                     {social!.openToChallenge!.map((ex, idx) => {
@@ -1424,8 +1424,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 4,
+    paddingHorizontal: 10,
     paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(76,78,120,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(76,78,120,0.55)',
   },
   connectsCount: { color: C.text, fontSize: 13, fontWeight: '700' },
   connectsLabel: { color: C.muted, fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
@@ -1435,7 +1439,9 @@ const s = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(242,89,18,0.55)',
   },
   workoutPillCount: { fontSize: 13, fontWeight: '800' },
   workoutPillText: { fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },

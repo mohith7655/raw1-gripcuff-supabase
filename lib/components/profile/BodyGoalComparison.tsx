@@ -12,10 +12,12 @@
  * The figure and each summary block deep-link to their editors.
  */
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Sparkles } from 'lucide-react-native';
 import MuscleVisualizer from '../MuscleVisualizer';
 import { BodyCondition, GoalEntry } from '../../models/User';
 import { loadUnits, fmtHeight, fmtWeight, UnitSystem } from '../../utils/units';
+import { useBodyInsights } from '../../hooks/useBodyInsights';
 
 const HIT = { top: 8, bottom: 8, left: 8, right: 8 };
 
@@ -132,12 +134,14 @@ interface Props {
   conditions?: BodyCondition[] | null;
   onPressNow?: () => void;
   onPressGoal?: () => void;
+  /** Opens the fields-based "view all & edit" editor (no 3D). */
+  onViewAll?: () => void;
 }
 
 const FIG_H = 300;
 
 export default function BodyGoalComparison({
-  gender, heightCm, weightKg, goals, conditions, onPressNow, onPressGoal,
+  gender, heightCm, weightKg, age, goals, conditions, onPressNow, onPressGoal, onViewAll,
 }: Props) {
   const modelGender = gender === 'female' ? 'female' : 'male';
   const units = loadUnits();
@@ -148,6 +152,11 @@ export default function BodyGoalComparison({
 
   const list = goals ?? [];
   const condList = conditions ?? [];
+
+  // AI read on the body (cached; only re-calls when metrics/injuries/goals change).
+  const { insights, loading: aiLoading } = useBodyInsights({
+    gender, age, heightCm, weightKg, conditions: condList, goals: list,
+  });
 
   // Figure girth from current BMI.
   const nowGirth = girthFromBmi(bmi);
@@ -270,7 +279,6 @@ export default function BodyGoalComparison({
           <TouchableOpacity style={s.summaryBlock} activeOpacity={0.7} onPress={onPressNow}>
             <View style={s.summaryHead}>
               <Text style={s.summaryLabel}>HELP WITH</Text>
-              <Text style={[s.summaryEdit, { color: C.orange }]}>Edit ›</Text>
             </View>
             <View style={s.chipRow}>
               {condItems.map((c) => (
@@ -285,7 +293,6 @@ export default function BodyGoalComparison({
         <TouchableOpacity style={s.summaryBlock} activeOpacity={0.7} onPress={onPressGoal}>
           <View style={s.summaryHead}>
             <Text style={s.summaryLabel}>YOU WANT TO ACHIEVE</Text>
-            <Text style={s.summaryEdit}>Edit ›</Text>
           </View>
           {goalItems.length === 0 ? (
             <Text style={[s.summaryText, { color: C.muted }]}>Tap to set what you want to achieve</Text>
@@ -304,6 +311,31 @@ export default function BodyGoalComparison({
             </View>
           )}
         </TouchableOpacity>
+
+        {/* ── AI body read — "what's going on with your body" ──────────────── */}
+        {(aiLoading || insights?.insight) && (
+          <View style={s.aiBlock}>
+            <View style={s.aiHeadRow}>
+              <View style={s.aiHead}>
+                <Sparkles size={14} color={C.orange} />
+                <Text style={s.aiLabel}>WHAT'S GOING ON WITH YOUR BODY</Text>
+              </View>
+              {onViewAll && (
+                <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} hitSlop={HIT}>
+                  <Text style={s.aiViewAll}>View all ›</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {aiLoading && !insights ? (
+              <View style={s.aiLoadingRow}>
+                <ActivityIndicator size="small" color={C.orange} />
+                <Text style={s.aiLoadingText}>Reading your body data…</Text>
+              </View>
+            ) : (
+              <Text style={s.aiInsight}>{insights?.insight}</Text>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -365,6 +397,21 @@ const s = StyleSheet.create({
   summaryLabel: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
   summaryEdit: { color: C.green, fontSize: 12, fontWeight: '700' },
   summaryText: { color: C.text, fontSize: 13, fontWeight: '600', lineHeight: 19 },
+
+  // AI body read
+  aiBlock: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(33,24,50,0.06)',
+  },
+  aiHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  aiHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  aiLabel: { color: C.orange, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  aiViewAll: { color: C.orange, fontSize: 12, fontWeight: '700' },
+  aiInsight: { color: C.text, fontSize: 13, fontWeight: '500', lineHeight: 19 },
+  aiLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aiLoadingText: { color: C.muted, fontSize: 12.5, fontWeight: '500' },
 
   // Packed, wrapping chip rows (replaces stacked single-item lines)
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

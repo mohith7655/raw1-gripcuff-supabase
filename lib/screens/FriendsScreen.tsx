@@ -61,7 +61,7 @@ const C = {
     text:        '#211832',
     textMuted:   '#7A7C90',
     textDim:     '#B8B9CC',
-    border:      'rgba(255,255,255,0.55)',
+    border:      'rgba(255,255,255,0.9)',
     danger:      '#EF4444',
     dangerSoft:  'rgba(239,68,68,0.1)',
 };

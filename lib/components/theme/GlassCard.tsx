@@ -33,6 +33,36 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Glass } from '../../core/theme/app_theme';
 import { isBlurEnabled } from './blurSupport';
 
+/**
+ * Frosted blur layer — the actual glass refraction.
+ *  • web    → real CSS `backdrop-filter: blur(34px) saturate(1.9)` (what the
+ *             reference uses; expo-blur's web path renders only a flat tint).
+ *  • native → expo-blur BlurView.
+ *  • blur off (low-end) → opaque solid fallback for legibility.
+ */
+function GlassBlurLayer({ intensity, enabled }: { intensity: number; enabled: boolean }) {
+  if (!enabled) {
+    return (
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: Glass.solidFallback }]}
+        pointerEvents="none"
+      />
+    );
+  }
+  if (Platform.OS === 'web') {
+    const css = `blur(${intensity}px) saturate(1.9)`;
+    return (
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backdropFilter: css, WebkitBackdropFilter: css } as any]}
+      />
+    );
+  }
+  return (
+    <BlurView intensity={intensity} tint={Glass.blurTint} style={StyleSheet.absoluteFill} pointerEvents="none" />
+  );
+}
+
 export interface GlassSurfaceProps {
   children?: React.ReactNode;
   /** Outer style — margins, width, etc. (shadow + radius live here). */
@@ -64,7 +94,7 @@ export function GlassSurface({
   radius = Glass.radius,
   padding,
   intensity = Glass.blurIntensity,
-  fill = Glass.fill,
+  fill = 'transparent',
   border = true,
   highlight = true,
   shadow = true,
@@ -72,8 +102,9 @@ export function GlassSurface({
   pointerEvents,
 }: GlassSurfaceProps) {
   const useBlur = !solid && isBlurEnabled();
-  // Without blur, lean on a more opaque fill so text contrast survives.
-  const fillColor = useBlur ? fill : Glass.solidFallback;
+  // Optional extra tint over the material (e.g. fillStrong for the floating nav
+  // so it stays legible over busy content). Default is none.
+  const tint = fill && fill !== 'transparent' ? fill : null;
 
   const shadowStyle: ViewStyle | undefined = shadow
     ? {
@@ -99,36 +130,33 @@ export function GlassSurface({
           },
         ]}
       >
-        {useBlur && (
-          <BlurView
-            intensity={intensity}
-            tint={Glass.blurTint}
-            style={StyleSheet.absoluteFill}
+        <GlassBlurLayer intensity={intensity} enabled={useBlur} />
+        {/* Optional opacity tint (nav bar etc.). */}
+        {tint && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} pointerEvents="none" />
+        )}
+        {/* Diagonal (150°) translucent sheen — the glass material. */}
+        <LinearGradient
+          colors={Glass.sheen as unknown as string[]}
+          locations={Glass.sheenLocations as unknown as number[]}
+          start={{ x: 0.15, y: 0 }}
+          end={{ x: 0.85, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        {/* Faint inner rim — the second glass edge, inset 1px. */}
+        {highlight && (
+          <View
+            style={[styles.innerRim, { borderRadius: Math.max(0, radius - 1) }]}
             pointerEvents="none"
           />
         )}
-        {/* Translucent fill over the blur. */}
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: fillColor }]}
-          pointerEvents="none"
-        />
-        {/* Glossy sheen — light catches the upper third and fades out (the key
-            "glass" cue), plus a bright specular line on the very top edge. */}
+        {/* Bright 1.5px top specular highlight. */}
         {highlight && (
-          <>
-            <LinearGradient
-              colors={['rgba(255,255,255,0.5)', 'rgba(255,255,255,0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              locations={[0, 0.55]}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-            <View
-              style={[styles.highlight, { borderTopLeftRadius: radius, borderTopRightRadius: radius }]}
-              pointerEvents="none"
-            />
-          </>
+          <View
+            style={[styles.highlight, { borderTopLeftRadius: radius, borderTopRightRadius: radius }]}
+            pointerEvents="none"
+          />
         )}
         <View style={[padding != null ? { padding } : null, contentStyle]}>{children}</View>
       </View>
@@ -147,36 +175,42 @@ export function GlassPill({ radius = 999, ...rest }: GlassSurfaceProps) {
 }
 
 /**
- * GlassSheen — drop-in glossy overlay for an existing card View. Add it as the
- * FIRST child of any card that already has a translucent fill + soft shadow +
- * matching borderRadius, and it paints the glass sheen (top-third light catch)
- * + a bright specular line on the top edge. Content rendered after it stays
- * crisp on top. No layout impact (absolutely positioned, non-interactive).
+ * GlassSheen — drop-in FULL glass material for an existing card View. Add it as
+ * the FIRST child of a card whose `backgroundColor` is 'transparent' (so the
+ * blur can refract the AmbientBackground behind it) and that has a luminous
+ * border + soft shadow + matching borderRadius. It paints: BlurView (or a solid
+ * fallback when blur is off) → diagonal sheen → inner rim → top specular line.
+ * Content rendered after it stays crisp on top. No layout impact.
  *
- *   <View style={styles.card}>
+ *   <View style={styles.card}>        // styles.card.backgroundColor = 'transparent'
  *     <GlassSheen radius={20} />
  *     …card content…
  *   </View>
  */
 export function GlassSheen({
   radius = 20,
+  intensity = Glass.blurIntensity,
   style,
 }: {
   radius?: number;
+  intensity?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const useBlur = isBlurEnabled();
   return (
     <View
       pointerEvents="none"
       style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }, style]}
     >
+      <GlassBlurLayer intensity={intensity} enabled={useBlur} />
       <LinearGradient
-        colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        locations={[0, 0.5]}
+        colors={Glass.sheen as unknown as string[]}
+        locations={Glass.sheenLocations as unknown as number[]}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
+      <View style={[styles.innerRim, { borderRadius: Math.max(0, radius - 1) }]} />
       <View style={styles.highlight} />
     </View>
   );
@@ -188,12 +222,21 @@ const styles = StyleSheet.create({
     // iOS needs a backing layer for the clip; the fill view supplies color.
     backgroundColor: Platform.OS === 'android' ? 'transparent' : undefined,
   },
+  innerRim: {
+    position: 'absolute',
+    top: 1,
+    left: 1,
+    right: 1,
+    bottom: 1,
+    borderWidth: 1,
+    borderColor: Glass.innerRim,
+  },
   highlight: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 1,
+    height: 1.5,
     backgroundColor: Glass.highlight,
   },
 });

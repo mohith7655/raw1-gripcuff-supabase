@@ -56,16 +56,16 @@ export function ProfileCard({ children, style, padding = 16, isPrivate, onToggle
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
     // Soft, diffuse floating shadow (Glass UI).
-    shadowColor: '#2A2342',
+    shadowColor: '#211832',
     shadowOpacity: 0.12,
     shadowRadius: 34,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 7,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   visFooter: {
     flexDirection: 'row',
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     backgroundColor: 'rgba(255,255,255,0.5)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   segOpt: {
     flexDirection: 'row',

@@ -27,10 +27,10 @@ import { LeaderboardEntry, LeaderboardService } from '../services/leaderboard.se
 import { getDateKey, buildWeekDates } from '../utils/streakDate';
 
 const ACCENT = '#F25912';
-// Glass UI — translucent luminous panel + soft border over the ambient mesh.
-const CARD_BG = 'rgba(255,255,255,0.62)';
+// Glass UI — transparent card; GlassSheen (blur) supplies the frosted surface.
+const CARD_BG = 'transparent';
 const STRIP_BG = 'rgba(255,255,255,0.5)';
-const BORDER = 'rgba(255,255,255,0.55)';
+const BORDER = 'rgba(255,255,255,0.9)';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -713,11 +713,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 12,
     paddingBottom: 14,
-    shadowColor: '#2A2342',
+    shadowColor: '#211832',
     shadowOpacity: 0.12,
     shadowRadius: 34,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 7,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
 
   // Tab strip
@@ -729,7 +729,7 @@ const s = StyleSheet.create({
     borderRadius: 100,
     padding: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
     marginBottom: 14,
   },
   tabBtn: {

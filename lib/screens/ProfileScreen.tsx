@@ -747,7 +747,7 @@ export const ProfileScreen = () => {
                   onPress={() => navigation.navigate('EditSocialProfileScreen', { section: 'challenge' })}
                 >
                   <Swords size={13} color={C.orange} strokeWidth={2.2} />
-                  <Text style={s.heroChallengeLabel}>Open to Challenge</Text>
+                  <Text style={s.heroChallengeLabel}>Challenge me</Text>
                   {(social?.openToChallenge?.length ?? 0) > 0 ? (
                     <View style={s.heroChallengeChips}>
                       {social!.openToChallenge!.slice(0, 4).map((ex, idx) => {

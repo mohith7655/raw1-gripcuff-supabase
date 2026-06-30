@@ -86,8 +86,7 @@ import { ChatRoomScreen } from './screens/ChatRoomScreen';
 import { ChatFriendProfileScreen } from './screens/ChatFriendProfileScreen';
 import { SocialProfileScreen } from './screens/SocialProfileScreen';
 import { EditSocialProfileScreen } from './screens/EditSocialProfileScreen';
-import { HowILookNowScreen } from './screens/HowILookNowScreen';
-import { GoalsScreen } from './screens/GoalsScreen';
+import { BodyDetailsScreen } from './screens/BodyDetailsScreen';
 import { CommunityScreen } from './screens/CommunityScreen';
 import { BadgesScreen } from './screens/BadgesScreen';
 import { QRCodeScreen } from './screens/QRCodeScreen';
@@ -323,8 +322,10 @@ function PillTabBar({ state, descriptors, navigation, appMode, socialBadge = 0 }
       }}>
         <GlassPill
           radius={30}
-          intensity={28}
-          fill={Glass.fillStrong}
+          intensity={36}
+          border={false}
+          highlight={false}
+          /* no opaque tint / white edges — just blurred content showing through */
           style={{ width: '100%' }}
           contentStyle={{
             flexDirection: 'row',
@@ -520,8 +521,12 @@ function AppStack({
         {/* ── Social Profile System ── */}
         <Stack.Screen name="SocialProfileScreen" component={SocialProfileScreen} />
         <Stack.Screen name="EditSocialProfileScreen" component={EditSocialProfileScreen} />
-        <Stack.Screen name="HowILookNow" component={HowILookNowScreen} />
-        <Stack.Screen name="Goals" component={GoalsScreen} />
+        {/* Single fields-based editor for injuries & goals (no 3D). All legacy
+            routes funnel here so there's ONE editor type everywhere. */}
+        <Stack.Screen name="BodyDetails" component={BodyDetailsScreen} />
+        <Stack.Screen name="BodyGoals" component={BodyDetailsScreen} />
+        <Stack.Screen name="HowILookNow" component={BodyDetailsScreen} />
+        <Stack.Screen name="Goals" component={BodyDetailsScreen} />
         <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} />
         <Stack.Screen name="QRProfileScreen" component={QRProfileScreen} />
         <Stack.Screen name="LookingToMeetEditScreen" component={LookingToMeetEditScreen} />

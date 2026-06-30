@@ -6,7 +6,7 @@
  * (nearest landmark to the tap), with an ✕ on each marker to remove it. Add more
  * goals with "+ Add another goal".
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, Image as RNImage, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, G, Image as SvgImage, Line, Text as SvgText } from 'react-native-svg';
 import { GoalEntry, GoalType } from '../../models/User';
@@ -141,6 +141,32 @@ const lmList = (_type: GoalType): Landmark[] => MASTER_AREAS;
 // Goal types offered in the part-first picker (weight loss isn't body-part based).
 const PART_TYPES: GoalType[] = ['muscle_growth', 'injury_rehab', 'stretching'];
 
+// Landmarks offered in the list picker (hideModel mode), per goal type.
+const partsForType = (type: GoalType): Landmark[] =>
+  type === 'muscle_growth' ? MUSCLES : INJURY_AREAS;
+
+// Goal selections → highlighted MuscleVisualizer bone-groups, coloured by goal
+// type. Exported so the shared body model (BodyVisualizer) can paint goals too.
+export function goalHighlights(goals: GoalEntry[] | null | undefined): {
+  muscles: string[];
+  colors: Record<string, string>;
+} {
+  const colors: Record<string, string> = {};
+  const groups: string[] = [];
+  for (const g of goals ?? []) {
+    if (g.type === 'weight_loss') continue;
+    const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
+    const col = TYPE_META[g.type].color;
+    for (const k of keys) {
+      const grp = HL_MAP[parseKey(k).base];
+      if (!grp) continue;
+      groups.push(grp);
+      colors[grp] = col;
+    }
+  }
+  return { muscles: groups, colors };
+}
+
 // ── Canvas geometry ───────────────────────────────────────────────────────────
 const VB_W = 300, VB_H = 360, GROUND = 338, TOP_PAD = 16, HEIGHT_MAX = 215;
 const PX_PER_CM = (GROUND - TOP_PAD) / HEIGHT_MAX;
@@ -198,6 +224,11 @@ interface Props {
   editable?: boolean;
   /** Read-only mode: show the goal summary lines beneath the figure. */
   showSummary?: boolean;
+  /** Hide the built-in 3D figure (a shared body model paints goals instead) and
+   *  pick body parts from a list rather than tapping the figure. */
+  hideModel?: boolean;
+  /** Fires with the current goal list whenever it changes (for the shared model). */
+  onChange?: (goals: GoalEntry[]) => void;
 }
 
 const newGoal = (type: GoalType): GoalEntry =>
@@ -208,11 +239,13 @@ const newGoal = (type: GoalType): GoalEntry =>
 // ── Component ───────────────────────────────────────────────────────────────
 export default function GoalVisualizer({
   name, gender, heightCm, weightKg, goals, onSave, saving = false, canvasHeight = 320, editable = true,
-  showSummary = true,
+  showSummary = true, hideModel = false, onChange,
 }: Props) {
   const [list, setList] = useState<GoalEntry[]>(
     goals && goals.length ? goals : [newGoal('muscle_growth')],
   );
+  // Mirror the working list up to the parent so a shared body model can paint it.
+  useEffect(() => { onChange?.(list); }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
   const [activeIndex, setActiveIndex] = useState(0);
   const [stageW, setStageW] = useState(0);
   // 3D model view (editable mode): front/back lets hotspots align with the body.
@@ -237,6 +270,18 @@ export default function GoalVisualizer({
   const removeGoal = (i: number) => {
     setList(prev => prev.filter((_, idx) => idx !== i));
     setActiveIndex(a => clamp(a > i ? a - 1 : a, 0, Math.max(0, list.length - 2)));
+  };
+  // List-picker toggle (hideModel mode) — add/remove a body part on goal i.
+  const togglePart = (i: number, key: string) => {
+    const g = list[i];
+    if (!g || g.type === 'weight_loss') return;
+    const muscle = g.type === 'muscle_growth';
+    const cur = (muscle ? g.muscles : g.areas) ?? [];
+    const has = cur.includes(key);
+    const next = has ? cur.filter(x => x !== key)
+      : muscle && cur.length >= MAX_MUSCLES ? cur
+      : [...cur, key];
+    update(i, muscle ? { muscles: next } : { areas: next });
   };
 
   const female = gender === 'female';
@@ -545,8 +590,9 @@ export default function GoalVisualizer({
 
   return (
     <View>
-      {/* ── 3D model + tappable hotspots (editable) ────────────────────── */}
-      {editable && (
+      {/* ── 3D model + tappable hotspots (editable; hidden when a shared model
+            paints goals instead) ──────────────────────────────────────── */}
+      {editable && !hideModel && (
         <>
           {/* Front / Back toggle — outside the model */}
           <View style={st.viewToggle}>
@@ -717,32 +763,62 @@ export default function GoalVisualizer({
                   <View style={st.detail}>
                     <View style={st.tapRow}>
                       <Text style={st.qLabel}>
-                        {goal.type === 'muscle_growth'
-                          ? `Tap the 3D model to pick muscles (top ${MAX_MUSCLES})`
-                          : 'Tap the 3D model to pick body parts'}
+                        {hideModel
+                          ? (goal.type === 'muscle_growth'
+                              ? `Pick muscles (top ${MAX_MUSCLES})`
+                              : 'Pick body parts')
+                          : (goal.type === 'muscle_growth'
+                              ? `Tap the 3D model to pick muscles (top ${MAX_MUSCLES})`
+                              : 'Tap the 3D model to pick body parts')}
                       </Text>
                       <Text style={st.sliderValue}>
                         {(goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? [])).length}
                         {goal.type === 'muscle_growth' ? `/${MAX_MUSCLES}` : ''}
                       </Text>
                     </View>
-                    {!active && (
-                      <TouchableOpacity onPress={() => setActiveIndex(i)} activeOpacity={0.8}>
-                        <Text style={[st.tapHint, { color: meta.color }]}>Tap here to edit this goal on the model ↑</Text>
-                      </TouchableOpacity>
-                    )}
-                    {active && <Text style={st.tapHint}>Use Front / Back, then tap a dot on the model · tap again to remove</Text>}
 
-                    {/* selected as removable tags (also removable here) */}
-                    <View style={st.tagRow}>
-                      {(goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? [])).map(key => (
-                        <TouchableOpacity key={key} style={[st.tag, { borderColor: meta.color, backgroundColor: meta.soft }]}
-                          onPress={() => removeKey(i, key, goal.type)} activeOpacity={0.8}>
-                          <Text style={[st.tagText, { color: meta.color }]}>{keyLabel(lmList(goal.type), key)}</Text>
-                          <Text style={[st.tagX, { color: meta.color }]}> ✕</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+                    {hideModel ? (
+                      /* List picker — tap chips to add/remove (no figure needed). */
+                      <View style={st.tagRow}>
+                        {partsForType(goal.type).map(lm => {
+                          const cur = goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? []);
+                          const on = cur.includes(lm.key);
+                          return (
+                            <TouchableOpacity
+                              key={lm.key}
+                              style={[st.tag, on
+                                ? { borderColor: meta.color, backgroundColor: meta.soft }
+                                : { borderColor: 'rgba(33,24,50,0.12)' }]}
+                              onPress={() => togglePart(i, lm.key)}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[st.tagText, { color: on ? meta.color : C.muted }]}>{lm.label}</Text>
+                              {on && <Text style={[st.tagX, { color: meta.color }]}> ✓</Text>}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <>
+                        {!active && (
+                          <TouchableOpacity onPress={() => setActiveIndex(i)} activeOpacity={0.8}>
+                            <Text style={[st.tapHint, { color: meta.color }]}>Tap here to edit this goal on the model ↑</Text>
+                          </TouchableOpacity>
+                        )}
+                        {active && <Text style={st.tapHint}>Use Front / Back, then tap a dot on the model · tap again to remove</Text>}
+
+                        {/* selected as removable tags (also removable here) */}
+                        <View style={st.tagRow}>
+                          {(goal.type === 'muscle_growth' ? (goal.muscles ?? []) : (goal.areas ?? [])).map(key => (
+                            <TouchableOpacity key={key} style={[st.tag, { borderColor: meta.color, backgroundColor: meta.soft }]}
+                              onPress={() => removeKey(i, key, goal.type)} activeOpacity={0.8}>
+                              <Text style={[st.tagText, { color: meta.color }]}>{keyLabel(lmList(goal.type), key)}</Text>
+                              <Text style={[st.tagX, { color: meta.color }]}> ✕</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </>
+                    )}
                   </View>
                 )}
               </View>

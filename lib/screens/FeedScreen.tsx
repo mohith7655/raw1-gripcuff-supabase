@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AmbientBackground } from '../components/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Rss, Users, ChevronRight, Swords } from 'lucide-react-native';
+import { Rss, Users, ChevronRight, Swords, ChevronDown } from 'lucide-react-native';
 import { AppTheme } from '../core/theme/app_theme';
 import { SocialActivationModal } from '../components/SocialActivationModal';
 import { SocialActivity } from '../components/social/SocialActivity';
@@ -43,6 +43,20 @@ const TEXT_SECONDARY = '#7A7C90';
 const { width: SCREEN_W } = Dimensions.get('window');
 const SECTION_PAD = 16;
 const CARD_GAP = 12;
+
+// "How it works" steps — mirror the Challenge Lobby / Workout-with-Friend screens.
+const HOW_STEPS: Record<'challenge' | 'friend', { n: number; label: string; tail: string }[]> = {
+  challenge: [
+    { n: 1, label: 'Enter the lobby', tail: 'see who’s live.' },
+    { n: 2, label: 'Challenge anyone', tail: 'pick a workout, go head-to-head.' },
+    { n: 3, label: 'Win the match', tail: 'beat their reps or time.' },
+  ],
+  friend: [
+    { n: 1, label: 'Invite a friend', tail: 'a partner keeps you both showing up.' },
+    { n: 2, label: 'Pick a workout', tail: 'sync up and start in perfect rhythm.' },
+    { n: 3, label: 'Train side by side', tail: 'cheer each other through every rep.' },
+  ],
+};
 const CARD_H = 168;
 
 // ~155° diagonal expressed as expo-linear-gradient start/end points.
@@ -126,6 +140,8 @@ export function FeedScreen() {
   const [videoVisible, setVideoVisible] = useState(false);
   // Top action card — show ONE of Challenge Lobby / Workout with Friend, toggled.
   const [topCard, setTopCard] = useState<'challenge' | 'friend'>('challenge');
+  // "How it works" collapsible (steps for the selected card).
+  const [howOpen, setHowOpen] = useState(false);
   const [commentPost, setCommentPost] = useState<Post | null>(null);
   const [myClubs, setMyClubs] = useState<Club[]>([]);
 
@@ -245,22 +261,20 @@ export function FeedScreen() {
           segmented toggle (Challenge Lobby ↔ Workout with Friend). */}
       <View style={styles.topToggleWrap}>
         <View style={styles.topToggle}>
-          {/* Active segment shows the word; inactive shows just its icon. */}
+          {/* Icon always shows; the active segment adds the word beside it. */}
           <Pressable
             onPress={() => setTopCard('challenge')}
             style={[styles.topToggleBtn, topCard === 'challenge' && styles.topToggleBtnActive]}
           >
-            {topCard === 'challenge'
-              ? <Text style={styles.topToggleTextActive}>Challenge</Text>
-              : <Swords size={16} color="#7A7C90" />}
+            <Swords size={15} color={topCard === 'challenge' ? '#fff' : '#7A7C90'} />
+            {topCard === 'challenge' && <Text style={styles.topToggleTextActive}>Challenge</Text>}
           </Pressable>
           <Pressable
             onPress={() => setTopCard('friend')}
             style={[styles.topToggleBtn, topCard === 'friend' && styles.topToggleBtnActive]}
           >
-            {topCard === 'friend'
-              ? <Text style={styles.topToggleTextActive}>Friend</Text>
-              : <Users size={16} color="#7A7C90" />}
+            <Users size={15} color={topCard === 'friend' ? '#fff' : '#7A7C90'} />
+            {topCard === 'friend' && <Text style={styles.topToggleTextActive}>Friend</Text>}
           </Pressable>
         </View>
       </View>
@@ -271,6 +285,25 @@ export function FeedScreen() {
           <FriendCard onPress={() => navigation.navigate('WorkoutWithFriendScreen')} avatarUri={user?.profileImageUrl} />
         )}
       </View>
+
+      {/* How it works — collapsible, steps for the selected card */}
+      <Pressable style={styles.howHeader} onPress={() => setHowOpen((o) => !o)} hitSlop={6}>
+        <Text style={styles.howHeaderText}>How it works</Text>
+        <ChevronDown size={16} color={TEXT_SECONDARY} style={howOpen ? { transform: [{ rotate: '180deg' }] } : undefined} />
+      </Pressable>
+      {howOpen && (
+        <View style={styles.howCard}>
+          {HOW_STEPS[topCard].map((step, i) => (
+            <View key={step.n} style={[styles.howRow, i > 0 && styles.howRowDivider]}>
+              <View style={styles.howNum}><Text style={styles.howNumText}>{step.n}</Text></View>
+              <Text style={styles.howText}>
+                <Text style={styles.howLabel}>{step.label}</Text>
+                <Text style={styles.howTail}> — {step.tail}</Text>
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Unified activity feed (friend requests, challenges, workouts, messages)
           — replaces the old "Your Friends" list. Customizable via its gear. */}
@@ -473,9 +506,11 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     backgroundColor: 'rgba(255,255,255,0.62)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   topToggleBtn: {
+    flexDirection: 'row',
+    gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: 100,
@@ -484,6 +519,25 @@ const styles = StyleSheet.create({
   },
   topToggleBtnActive: { backgroundColor: '#211832' },
   topToggleTextActive: { color: '#fff', fontSize: 13, fontWeight: '700' },
+
+  // How it works (collapsible)
+  howHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginHorizontal: SECTION_PAD, marginTop: 14, paddingVertical: 4,
+  },
+  howHeaderText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
+  howCard: {
+    marginHorizontal: SECTION_PAD, marginTop: 10,
+    backgroundColor: 'rgba(255,255,255,0.62)', borderRadius: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', paddingVertical: 2,
+  },
+  howRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  howRowDivider: { borderTopWidth: 1, borderTopColor: 'rgba(33,24,50,0.06)' },
+  howNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(242,89,18,0.12)', alignItems: 'center', justifyContent: 'center' },
+  howNumText: { color: '#F25912', fontSize: 12, fontWeight: '800' },
+  howText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  howLabel: { color: '#211832', fontWeight: '700' },
+  howTail: { color: TEXT_SECONDARY },
   cardShadow: {
     flex: 1,
     borderRadius: 20,
