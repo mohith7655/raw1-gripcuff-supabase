@@ -30,7 +30,7 @@ const ACCENT = '#F25912';
 // Glass UI — transparent card; GlassSheen (blur) supplies the frosted surface.
 const CARD_BG = 'transparent';
 const STRIP_BG = 'rgba(255,255,255,0.5)';
-const BORDER = 'rgba(255,255,255,0.9)';
+const BORDER = 'transparent';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -729,7 +729,7 @@ const s = StyleSheet.create({
     borderRadius: 100,
     padding: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
     marginBottom: 14,
   },
   tabBtn: {

@@ -172,7 +172,7 @@ function RecommendationSection({
               overflow: 'hidden',
               backgroundColor: 'rgba(255,255,255,0.62)',
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.9)',
+              borderColor: 'transparent',
             }}
             activeOpacity={0.85}
           >
@@ -1119,7 +1119,8 @@ const HomeScreenInner = () => {
                     .map(p => ({ id: p.videos.find(v => favWorkoutIds.has(v.id))?.id ?? p.id, title: p.title, videoUrl: p.videos?.[0]?.videoUrl, thumbnail: (p as any).thumbnail })),
                 ];
                 return (
-                  <View style={{ marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.62)', borderRadius: 12, paddingVertical: 14 }}>
+                  <View style={{ marginBottom: 16, backgroundColor: 'transparent', borderRadius: 20, paddingVertical: 14, ...CARD_SHADOW }}>
+                    <GlassSheen radius={20} />
                     {recentlyWatched.length > 0 && (
                       <>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
@@ -2139,7 +2140,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
   },
   heatTitle: { color: '#211832', fontSize: 15, fontWeight: '800' },
   heatSub: { color: '#7A7C90', fontSize: 12, marginTop: 2 },
@@ -2313,7 +2314,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
     marginBottom: 24,
     overflow: 'hidden',
   },
@@ -2324,7 +2325,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
     padding: 18,
     marginBottom: 24,
   },
@@ -2415,7 +2416,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.62)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
     padding: 14,
   },
   bottomPreviewHeader: {
@@ -2562,7 +2563,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
   },
   exerciseIconContainer: {
     backgroundColor: 'rgba(242,89,18, 0.2)',

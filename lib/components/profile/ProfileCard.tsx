@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
     // Soft, diffuse floating shadow (Glass UI).
     shadowColor: '#211832',
     shadowOpacity: 0.12,
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     backgroundColor: 'rgba(255,255,255,0.5)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
   },
   segOpt: {
     flexDirection: 'row',

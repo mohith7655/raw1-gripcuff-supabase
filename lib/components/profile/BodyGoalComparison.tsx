@@ -18,6 +18,7 @@ import MuscleVisualizer from '../MuscleVisualizer';
 import { BodyCondition, GoalEntry } from '../../models/User';
 import { loadUnits, fmtHeight, fmtWeight, UnitSystem } from '../../utils/units';
 import { useBodyInsights } from '../../hooks/useBodyInsights';
+import { GlassSheen } from '../theme';
 
 const HIT = { top: 8, bottom: 8, left: 8, right: 8 };
 
@@ -213,6 +214,7 @@ export default function BodyGoalComparison({
 
   return (
     <View style={s.card}>
+      <GlassSheen radius={20} />
       <View style={s.headerRow}>
         <Text style={s.cardTitle}>My Body</Text>
         <TouchableOpacity onPress={onPressNow} activeOpacity={0.7} hitSlop={HIT}>
@@ -343,12 +345,15 @@ export default function BodyGoalComparison({
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: C.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: C.border,
+    backgroundColor: 'transparent', // GlassSheen (blur) supplies the surface
+    borderRadius: 20,
     padding: 14,
     marginTop: 16,
+    shadowColor: '#211832',
+    shadowOpacity: 0.12,
+    shadowRadius: 34,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   cardTitle: { color: C.text, fontSize: 16, fontWeight: '800' },

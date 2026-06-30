@@ -190,10 +190,13 @@ export function GlassPill({ radius = 999, ...rest }: GlassSurfaceProps) {
 export function GlassSheen({
   radius = 20,
   intensity = Glass.blurIntensity,
+  edge = false,
   style,
 }: {
   radius?: number;
   intensity?: number;
+  /** Paint the luminous inner rim + top specular line (off by default). */
+  edge?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const useBlur = isBlurEnabled();
@@ -210,8 +213,8 @@ export function GlassSheen({
         end={{ x: 0.85, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={[styles.innerRim, { borderRadius: Math.max(0, radius - 1) }]} />
-      <View style={styles.highlight} />
+      {edge && <View style={[styles.innerRim, { borderRadius: Math.max(0, radius - 1) }]} />}
+      {edge && <View style={styles.highlight} />}
     </View>
   );
 }

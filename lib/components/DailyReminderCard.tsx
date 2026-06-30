@@ -5,9 +5,10 @@ import { useNavigation } from '@react-navigation/native';
 import { MoveReminder, MoveReminderService, formatMoveTime12h } from '../services/moveReminder.service';
 import { useFocusEffect } from '@react-navigation/native';
 import { reminderWatcherService } from '../services/reminderWatcher.service';
+import { GlassSheen } from './theme';
 
 const ACCENT = '#F25912';
-const CARD_BG = '#F8F8FC';
+const CARD_BG = 'transparent'; // GlassSheen (blur) supplies the surface
 const BORDER_ON  = 'rgba(34,197,94,0.18)';
 const BORDER_OFF = 'rgba(239,68,68,0.18)';
 
@@ -59,6 +60,7 @@ export function DailyReminderCard({ userId }: Props) {
 
     return (
         <View style={[s.card, { borderColor: enabled ? BORDER_ON : BORDER_OFF }]}>
+                <GlassSheen radius={16} />
                 <View style={s.left}>
                     <View style={[s.iconWrap, enabled && s.iconWrapOn]}>
                         <Bell color={enabled ? '#22c55e' : '#7A7C90'} size={18} />
@@ -109,7 +111,7 @@ export function DailyReminderCard({ userId }: Props) {
 const s = StyleSheet.create({
     card: {
         backgroundColor: CARD_BG,
-        borderRadius: 14,
+        borderRadius: 16,
         borderWidth: 1,
         marginHorizontal: 4,
         marginBottom: 12,
@@ -118,6 +120,11 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        shadowColor: '#211832',
+        shadowOpacity: 0.12,
+        shadowRadius: 34,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 6,
     },
     left: {
         flexDirection: 'row',
