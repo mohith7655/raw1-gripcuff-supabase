@@ -42,7 +42,7 @@ const CARD = '#F8F8FC';
 const TEXT = '#211832';
 const MUTED = '#7A7C90';
 const BORDER = '#D8D8E4';
-const CTA = '#F25912';
+const CTA = '#E11D48';
 const INDIGO = '#4C4E78';
 
 const WON_FG = '#16a34a';
@@ -166,7 +166,7 @@ function VsArena({
     <View style={s.heroShadow}>
       <View style={s.hero}>
         <LinearGradient
-          colors={['#F25912', '#C7400A', '#7A2604']}
+          colors={['#E11D48', '#B21236', '#5E0A1D']}
           start={{ x: 0.15, y: 0.05 }}
           end={{ x: 0.85, y: 0.95 }}
           style={StyleSheet.absoluteFill}
@@ -338,7 +338,7 @@ export function ChallengeLobbyScreen({
         >
           <View style={s.cta}>
             <LinearGradient
-              colors={['#F25912', '#C7400A', '#8F2D05']}
+              colors={['#E11D48', '#B21236', '#7E0C26']}
               start={{ x: 0.1, y: 0 }}
               end={{ x: 0.9, y: 1 }}
               style={StyleSheet.absoluteFill}
@@ -483,7 +483,7 @@ const s = StyleSheet.create({
     height: HERO_H,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#7A2604',
+    backgroundColor: '#5E0A1D',
   },
   livePill: {
     position: 'absolute',
@@ -555,7 +555,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C7400A',
+    backgroundColor: '#B21236',
   },
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 

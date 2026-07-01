@@ -7,7 +7,14 @@ import { WorkoutSession, WorkoutInviteNotification } from '../models/WorkoutSess
 import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
 import { InviteAcceptedModal } from '../components/InviteAcceptedModal';
+import { InviteWaitingModal, IncomingInviteModal } from '../components/InstantWorkoutModals';
 import { navigationRef } from '../core/navigation';
+
+// How long an instant invite stays live before it auto-expires / auto-declines.
+const INSTANT_TTL_MS = 30_000;
+// Only invites created within this window are treated as a live "instant" ping
+// worth popping the receiver modal for (avoids popping stale/scheduled rows).
+const INSTANT_FRESH_MS = 45_000;
 
 export interface CreateSessionExtras {
     inviteType?: 'instant' | 'scheduled';
@@ -27,6 +34,9 @@ interface WorkoutSessionContextType {
     loading: boolean;
     error: string | null;
     createSession: (guestUid: string, guestName: string, guestAvatarUrl: string | undefined, videoId: string, videoTitle: string, scheduledAt: Date, betCredits: number, extras?: CreateSessionExtras) => Promise<string>;
+    /** Fire an INSTANT co-workout invite (video pre-picked) and open the sender's
+     *  30s waiting screen; auto-navigates both users into the session on accept. */
+    sendInstantWorkout: (guestUid: string, guestName: string, guestAvatarUrl: string | undefined, videoId: string, videoTitle: string) => Promise<void>;
     createSelfSession: (videoId: string, videoTitle: string, scheduledAt: Date, extras?: { category?: string; programName?: string; thumbnail?: string }) => Promise<string>;
     acceptSession: (sessionId: string) => Promise<void>;
     declineSession: (sessionId: string) => Promise<void>;
@@ -62,6 +72,35 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     const prevOutgoingIdsRef = useRef<Set<string>>(new Set());
     // Prevents the modal from refiring for the same session on subsequent reloads.
     const announcedAcceptedIdsRef = useRef<Set<string>>(new Set());
+
+    // ── Instant "workout with a friend" flow (Phase 1) ────────────────────────
+    type InstantOutgoing = { sessionId: string; friendName: string; friendAvatar?: string | null; videoTitle: string; videoId: string; expiresAt: number };
+    type InstantIncoming = { sessionId: string; hostName: string; hostAvatar?: string | null; videoTitle: string; videoId: string; expiresAt: number };
+    const [instantOutgoing, setInstantOutgoing] = useState<InstantOutgoing | null>(null);
+    const [instantIncoming, setInstantIncoming] = useState<InstantIncoming | null>(null);
+    const [instantBusy, setInstantBusy] = useState(false);
+    const [, setCountTick] = useState(0); // drives the 1s countdown re-render
+    // Refs so loadAll (a []-dep callback) can read current instant state.
+    const instantOutgoingRef = useRef<InstantOutgoing | null>(null);
+    instantOutgoingRef.current = instantOutgoing;
+    const instantIncomingRef = useRef<InstantIncoming | null>(null);
+    instantIncomingRef.current = instantIncoming;
+    // Guest-side: invite IDs already seen, so we only pop the modal for genuinely
+    // NEW instant invites (not the ones already sitting in the list on first load).
+    const seenInviteIdsRef = useRef<Set<string>>(new Set());
+    const invitesInitialisedRef = useRef(false);
+
+    // Route both participants into the synced co-workout session.
+    const navigateToCoWorkout = (session: WorkoutSession, iAmHost: boolean) => {
+        if (!navigationRef.isReady()) return;
+        const friendName = iAmHost ? session.guestName : session.hostName;
+        (navigationRef as any).navigate('SyncedVideoPlayer', {
+            sessionId: session.id,
+            videoId: session.videoId,
+            videoTitle: session.videoTitle,
+            friendName,
+        });
+    };
 
     const loadAll = useCallback(async (uid: string) => {
         try {
@@ -112,12 +151,48 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
             if (justAccepted) {
                 console.log('[Sessions] host detected acceptance', justAccepted.id);
                 announcedAcceptedIdsRef.current.add(justAccepted.id);
-                setAcceptancePopup({
-                    guestName: justAccepted.guestName,
-                    videoTitle: justAccepted.videoTitle,
-                    sessionId: justAccepted.id,
-                    videoId: justAccepted.videoId,
-                });
+                // Instant invite we're actively waiting on → skip the "Join Now"
+                // modal and drop the host straight into the session.
+                if (instantOutgoingRef.current?.sessionId === justAccepted.id) {
+                    setInstantOutgoing(null);
+                    navigateToCoWorkout(justAccepted, true);
+                } else {
+                    setAcceptancePopup({
+                        guestName: justAccepted.guestName,
+                        videoTitle: justAccepted.videoTitle,
+                        sessionId: justAccepted.id,
+                        videoId: justAccepted.videoId,
+                    });
+                }
+            }
+
+            // Guest-side: pop the incoming-invite countdown for a genuinely NEW,
+            // freshly-created pending invite (an instant ping). On first load we
+            // just seed the "seen" set so pre-existing invites never pop.
+            const nowMs = Date.now();
+            if (!invitesInitialisedRef.current) {
+                invites.forEach(s => seenInviteIdsRef.current.add(s.id));
+                invitesInitialisedRef.current = true;
+            } else if (!instantIncomingRef.current) {
+                const fresh = invites.find(s =>
+                    !seenInviteIdsRef.current.has(s.id)
+                    && s.createdAt instanceof Date
+                    && nowMs - s.createdAt.getTime() < INSTANT_FRESH_MS
+                    && (s.createdAt.getTime() + INSTANT_TTL_MS) - nowMs > 3000, // enough time left to act
+                );
+                invites.forEach(s => seenInviteIdsRef.current.add(s.id));
+                if (fresh) {
+                    setInstantIncoming({
+                        sessionId: fresh.id,
+                        hostName: fresh.hostName,
+                        hostAvatar: fresh.hostAvatarUrl ?? null,
+                        videoTitle: fresh.videoTitle,
+                        videoId: fresh.videoId,
+                        expiresAt: fresh.createdAt.getTime() + INSTANT_TTL_MS,
+                    });
+                }
+            } else {
+                invites.forEach(s => seenInviteIdsRef.current.add(s.id));
             }
 
             // Update the outgoing-pending snapshot for the next diff
@@ -330,6 +405,95 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         }
     };
 
+    // ── Instant-invite timers ────────────────────────────────────────────────
+    // 1s ticker to re-render the live countdown while either modal is open.
+    useEffect(() => {
+        if (!instantOutgoing && !instantIncoming) return;
+        const iv = setInterval(() => setCountTick(t => t + 1), 1000);
+        return () => clearInterval(iv);
+    }, [!!instantOutgoing, !!instantIncoming]);
+
+    // Sender: auto-expire (cancel) the invite if unaccepted within the TTL.
+    useEffect(() => {
+        if (!instantOutgoing) return;
+        const to = setTimeout(() => {
+            const o = instantOutgoingRef.current;
+            if (o) {
+                cancelSession(o.sessionId).catch(() => {});
+                setInstantOutgoing(null);
+            }
+        }, Math.max(0, instantOutgoing.expiresAt - Date.now()));
+        return () => clearTimeout(to);
+    }, [instantOutgoing?.sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Receiver: auto-decline if not acted on within the TTL.
+    useEffect(() => {
+        if (!instantIncoming) return;
+        const to = setTimeout(() => {
+            const i = instantIncomingRef.current;
+            if (i) {
+                declineSession(i.sessionId).catch(() => {});
+                setInstantIncoming(null);
+            }
+        }, Math.max(0, instantIncoming.expiresAt - Date.now()));
+        return () => clearTimeout(to);
+    }, [instantIncoming?.sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const sendInstantWorkout = async (
+        guestUid: string,
+        guestName: string,
+        guestAvatarUrl: string | undefined,
+        videoId: string,
+        videoTitle: string,
+    ) => {
+        if (!supabaseUserId) throw new Error('Please log in again. Not authenticated');
+        const uid = supabaseUserId;
+        const hostNameFinal = profile?.fullName || profile?.username || email?.split('@')[0] || 'User';
+        const friendNameFinal = guestName || 'Friend';
+        setError(null);
+        const sessionId = await WorkoutSessionService.createSession(
+            uid, hostNameFinal, profile?.profileImageUrl,
+            guestUid, friendNameFinal, guestAvatarUrl,
+            videoId, videoTitle, new Date(), 0, { inviteType: 'instant' },
+        );
+        // Refresh so this session is in the outgoing snapshot before the guest
+        // can accept (the acceptance diff relies on it).
+        await loadAll(uid);
+        setInstantOutgoing({
+            sessionId,
+            friendName: friendNameFinal,
+            friendAvatar: guestAvatarUrl ?? null,
+            videoTitle,
+            videoId,
+            expiresAt: Date.now() + INSTANT_TTL_MS,
+        });
+    };
+
+    const acceptInstant = async () => {
+        const inc = instantIncomingRef.current;
+        if (!inc || !supabaseUserId) return;
+        setInstantBusy(true);
+        try {
+            await acceptSession(inc.sessionId);
+            setInstantIncoming(null);
+            navigateToCoWorkout(
+                { id: inc.sessionId, videoId: inc.videoId, videoTitle: inc.videoTitle, hostName: inc.hostName } as WorkoutSession,
+                false,
+            );
+        } catch (err) {
+            console.warn('[WorkoutSessionContext] acceptInstant failed', err);
+        } finally {
+            setInstantBusy(false);
+        }
+    };
+
+    const declineInstant = async () => {
+        const inc = instantIncomingRef.current;
+        if (!inc) return;
+        setInstantIncoming(null);
+        declineSession(inc.sessionId).catch(() => {});
+    };
+
     const refreshSessions = async () => {
         if (supabaseUserId) await loadAll(supabaseUserId);
     };
@@ -346,6 +510,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                 loading,
                 error,
                 createSession,
+                sendInstantWorkout,
                 createSelfSession,
                 acceptSession,
                 declineSession,
@@ -368,7 +533,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                             // Route host to VideoPlayerScreen — the same path used by the
                             // "Join Session" button in UpcomingSessionsScreen (navigateToSession).
                             // hostUserId = supabaseUserId because this popup only fires for the host.
-                            navigationRef.navigate('VideoPlayer' as never, {
+                            (navigationRef as any).navigate('VideoPlayer', {
                                 videoId:          popup.videoId,
                                 title:            popup.videoTitle,
                                 allowInvite:      false,
@@ -381,6 +546,32 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
                     }}
                 />
             )}
+
+            {/* Instant "workout with a friend" — sender waiting screen */}
+            <InviteWaitingModal
+                visible={!!instantOutgoing}
+                friendName={instantOutgoing?.friendName ?? ''}
+                friendAvatar={instantOutgoing?.friendAvatar}
+                videoTitle={instantOutgoing?.videoTitle ?? ''}
+                seconds={instantOutgoing ? Math.max(0, Math.ceil((instantOutgoing.expiresAt - Date.now()) / 1000)) : 0}
+                onCancel={() => {
+                    const o = instantOutgoingRef.current;
+                    if (o) cancelSession(o.sessionId).catch(() => {});
+                    setInstantOutgoing(null);
+                }}
+            />
+
+            {/* Instant "workout with a friend" — receiver popup */}
+            <IncomingInviteModal
+                visible={!!instantIncoming}
+                hostName={instantIncoming?.hostName ?? ''}
+                hostAvatar={instantIncoming?.hostAvatar}
+                videoTitle={instantIncoming?.videoTitle ?? ''}
+                seconds={instantIncoming ? Math.max(0, Math.ceil((instantIncoming.expiresAt - Date.now()) / 1000)) : 0}
+                busy={instantBusy}
+                onAccept={acceptInstant}
+                onDecline={declineInstant}
+            />
         </WorkoutSessionContext.Provider>
     );
 }

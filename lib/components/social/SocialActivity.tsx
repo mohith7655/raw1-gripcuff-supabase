@@ -45,6 +45,7 @@ import { ChatService } from '../../services/chat.service';
 import { ChatConversation } from '../../models/Chat';
 import { ChallengeSessionService, PreviousChallenge, ScheduledChallenge } from '../../services/challengeSession.service';
 import { NotificationCenter } from '../NotificationCenter';
+import { getProgramsByCategory } from '../../data/preRecordedPrograms';
 
 const TEXT = '#211832';
 const MUTED = '#7A7C90';
@@ -133,6 +134,15 @@ const COLOR_FOR: Record<ActivityCategory, string> = {
   messages: C_MESSAGES,
 };
 
+// Quick-pick workouts for the instant "tap a friend to train now" flow — one
+// featured video per category (video is picked before the invite is sent).
+const QUICK_WORKOUTS: { videoId: string; title: string; label: string }[] =
+  (['MuscleGrowth', 'Stretching', 'AthleticPerformance', 'InjuryRehab'] as const).flatMap((cat) => {
+    const p = getProgramsByCategory(cat)[0];
+    const v = p?.videos?.[0];
+    return v ? [{ videoId: v.id, title: `${p.title} - ${v.title}`, label: p.title }] : [];
+  });
+
 function timeAgo(ms: number): string {
   if (!ms) return '';
   const diff = Date.now() - ms;
@@ -175,7 +185,7 @@ export function SocialActivity() {
   const preview = useProfilePreview();
   const { supabaseUserId, user } = useAuth();
   const { friends, incomingRequests, outgoingRequests, acceptRequest, declineRequest } = useFriend();
-  const { completedSessions, pendingInvites, upcomingSessions } = useWorkoutSession();
+  const { completedSessions, pendingInvites, upcomingSessions, sendInstantWorkout } = useWorkoutSession();
 
   const [prefs, setPrefs] = useState<Record<ActivityCategory, boolean>>(() => DEFAULT_PREFS);
   const [customizing, setCustomizing] = useState(false);
@@ -191,6 +201,10 @@ export function SocialActivity() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [loadingChallenges, setLoadingChallenges] = useState(false);
   const [busyReq, setBusyReq] = useState<string | null>(null);
+  // Instant workout quick-send: the friend tapped in the carousel (opens the
+  // pre-send video picker), plus an in-flight flag while the invite is created.
+  const [quickFriend, setQuickFriend] = useState<typeof friends[number] | null>(null);
+  const [sendingInstant, setSendingInstant] = useState(false);
 
   // Load prefs once we know the user.
   useEffect(() => { setPrefs(loadPrefs(supabaseUserId)); }, [supabaseUserId]);
@@ -461,6 +475,27 @@ export function SocialActivity() {
     finally { setBusyReq(null); }
   }, [declineRequest]);
 
+  // Fire the instant invite for the tapped friend + chosen quick workout. The
+  // sender's 30s waiting screen is owned by WorkoutSessionContext.
+  const startInstant = useCallback(async (w: { videoId: string; title: string }) => {
+    if (!quickFriend) return;
+    setSendingInstant(true);
+    try {
+      await sendInstantWorkout(
+        quickFriend.uid,
+        quickFriend.fullName || quickFriend.username || 'Friend',
+        quickFriend.profileImageUrl,
+        w.videoId,
+        w.title,
+      );
+      setQuickFriend(null);
+    } catch {
+      // error is surfaced via context state; keep the picker open to retry
+    } finally {
+      setSendingInstant(false);
+    }
+  }, [quickFriend, sendInstantWorkout]);
+
   const renderRequestRow = (id: string, otherUid: string, kind: 'incoming' | 'outgoing') => {
     const prof = reqProfiles[otherUid];
     const name = prof?.name ?? 'Athlete';
@@ -642,16 +677,55 @@ export function SocialActivity() {
         </View>
       )}
 
-      {/* Workouts tab — start a co-workout with a friend. */}
+      {/* Workouts tab — tap a friend to send an INSTANT co-workout invite. */}
       {filter === 'workouts' && (
-        <TouchableOpacity
-          style={[s.ctaBtn, { backgroundColor: ORANGE }]}
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('WorkoutWithFriendScreen')}
-        >
-          <Dumbbell size={18} color="#fff" />
-          <Text style={s.ctaBtnText}>Workout with a friend</Text>
-        </TouchableOpacity>
+        <>
+          {friends.length > 0 && (
+            <View style={s.friendsStrip}>
+              <Text style={s.friendsStripLabel}>Train now — tap a friend</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.friendsRow}
+              >
+                {friends.map((f) => (
+                  <TouchableOpacity
+                    key={f.uid}
+                    style={s.friendChip}
+                    activeOpacity={0.8}
+                    onPress={() => setQuickFriend(f)}
+                  >
+                    <View>
+                      {f.profileImageUrl ? (
+                        <Image source={{ uri: f.profileImageUrl }} style={s.friendAvatar} />
+                      ) : (
+                        <View style={[s.friendAvatar, s.friendAvatarFallback]}>
+                          <Text style={s.friendAvatarLetter}>
+                            {(f.fullName || f.username || '?').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={s.friendChipBadge}>
+                        <Dumbbell size={10} color="#fff" />
+                      </View>
+                    </View>
+                    <Text style={s.friendName} numberOfLines={1}>
+                      {(f.fullName || f.username || 'Friend').split(' ')[0]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+          <TouchableOpacity
+            style={[s.ctaBtn, { backgroundColor: ORANGE }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('WorkoutWithFriendScreen')}
+          >
+            <Dumbbell size={18} color="#fff" />
+            <Text style={s.ctaBtnText}>Schedule a workout</Text>
+          </TouchableOpacity>
+        </>
       )}
 
       {/* Challenges tab — invite a friend to a head-to-head challenge. */}
@@ -836,6 +910,54 @@ export function SocialActivity() {
         </View>
       )}
 
+      {/* Instant workout — pick a workout to send to the tapped friend */}
+      <Modal
+        visible={!!quickFriend}
+        transparent
+        animationType="slide"
+        onRequestClose={() => !sendingInstant && setQuickFriend(null)}
+      >
+        <TouchableOpacity
+          style={s.backdrop}
+          activeOpacity={1}
+          onPress={() => !sendingInstant && setQuickFriend(null)}
+        >
+          <TouchableOpacity activeOpacity={1} style={s.sheet} onPress={() => {}}>
+            <View style={s.sheetHandle} />
+            <Text style={s.sheetTitle}>
+              Instant workout with {quickFriend?.fullName?.split(' ')[0] || quickFriend?.username || 'friend'}
+            </Text>
+            <Text style={s.sheetSub}>Pick a workout — they’ll get a live invite to join now.</Text>
+
+            {QUICK_WORKOUTS.map((w) => (
+              <TouchableOpacity
+                key={w.videoId}
+                style={s.quickRow}
+                activeOpacity={0.85}
+                disabled={sendingInstant}
+                onPress={() => startInstant(w)}
+              >
+                <View style={[s.prefIcon, { backgroundColor: `${C_WORKOUTS}1A` }]}>
+                  <Dumbbell size={18} color={C_WORKOUTS} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.quickLabel} numberOfLines={1}>{w.label}</Text>
+                  <Text style={s.quickTitle} numberOfLines={1}>{w.title}</Text>
+                </View>
+                <ChevronRight size={18} color={MUTED} />
+              </TouchableOpacity>
+            ))}
+
+            {sendingInstant && (
+              <View style={s.sendingRow}>
+                <ActivityIndicator color={ORANGE} />
+                <Text style={s.sendingText}>Sending invite…</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Customize sheet */}
       <Modal
         visible={customizing}
@@ -928,6 +1050,21 @@ const s = StyleSheet.create({
   friendAvatarFallback: { backgroundColor: '#E2E2EC', alignItems: 'center', justifyContent: 'center' },
   friendAvatarLetter: { color: INDIGO, fontSize: 20, fontWeight: '800' },
   friendName: { color: TEXT, fontSize: 11, fontWeight: '600', marginTop: 5, maxWidth: 60, textAlign: 'center' },
+  friendChipBadge: {
+    position: 'absolute', right: -2, bottom: -2,
+    width: 20, height: 20, borderRadius: 10, backgroundColor: C_WORKOUTS,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#EEEEF2',
+  },
+
+  // Instant-workout picker sheet
+  quickRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 12, borderTopWidth: 1, borderTopColor: BORDER,
+  },
+  quickLabel: { color: TEXT, fontSize: 14, fontWeight: '700' },
+  quickTitle: { color: MUTED, fontSize: 12, marginTop: 1 },
+  sendingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingTop: 16 },
+  sendingText: { color: MUTED, fontSize: 13, fontWeight: '600' },
 
   // Requests — incoming / outgoing sub-tabs
   subTabs: { flexDirection: 'row', gap: 8, marginBottom: 12 },

@@ -19,7 +19,7 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Settings } from 'lucide-react-native';
 import MuscleVisualizer from '../MuscleVisualizer';
-import { BodyCondition, BodyConditionType } from '../../models/User';
+import { BodyCondition, BodyConditionType, GoalEntry, GoalType } from '../../models/User';
 import {
   UnitSystem, loadUnits, saveUnits, kgToLb, lbToKg, toFeetInches,
   fmtWeight, fmtHeight, isWeightLb, PAIR_LABEL,
@@ -80,6 +80,10 @@ interface Props {
   extraMuscles?: string[];
   /** Colours for the extra bone-groups (group token → colour). */
   extraGroupColors?: Record<string, string>;
+  /** Current body-part goals — enables the "Add goal" section in the tap popup. */
+  goals?: GoalEntry[] | null;
+  /** Fired when a goal is added from the model popup (parent owns goal state). */
+  onGoalsChange?: (goals: GoalEntry[]) => void;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -153,6 +157,35 @@ const COND_META: Record<BodyConditionType, { label: string; emoji: string; color
   injury:    { label: 'Injury',    emoji: '🩹', color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
 };
 const COND_ORDER: BodyConditionType[] = ['tightness', 'pain', 'injury'];
+
+// ── Goals from the same tap popup ─────────────────────────────────────────────
+// Body-part goals the popup can add (weight-loss isn't part-based). Colours /
+// keys mirror GoalVisualizer so the two editors stay consistent.
+type PartGoalType = 'muscle_growth' | 'injury_rehab' | 'stretching';
+const GOAL_META: Record<PartGoalType, { label: string; emoji: string; color: string; soft: string }> = {
+  muscle_growth: { label: 'Muscle Growth', emoji: '🏋️', color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
+  injury_rehab:  { label: 'Injury Rehab',  emoji: '🩹', color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
+  stretching:    { label: 'Stretching',    emoji: '🧘', color: '#2563eb', soft: 'rgba(37,99,235,0.12)' },
+};
+const GOAL_ORDER: PartGoalType[] = ['muscle_growth', 'injury_rehab', 'stretching'];
+const MAX_GOAL_MUSCLES = 3;
+// Tapped hotspot key → goal landmark key (must match GoalVisualizer's MUSCLES /
+// INJURY_AREAS lists). Muscle-growth only accepts muscle groups; rehab /
+// stretching accept joint / region areas.
+const GOAL_MUSCLE_KEY: Record<string, string> = {
+  shoulders: 'shoulders', chest: 'chest', abs: 'abs', quads: 'quads',
+  calves: 'calves', glutes: 'glutes', upper_back: 'back', lower_back: 'back',
+};
+const GOAL_AREA_KEY: Record<string, string> = {
+  neck: 'neck', shoulders: 'shoulder', elbow: 'elbow', wrist: 'wrist',
+  upper_back: 'upper_back', lower_back: 'lower_back', hip: 'hip', knee: 'knee', ankle: 'ankle',
+};
+const goalKeyFor = (type: PartGoalType, base: string): string | undefined =>
+  type === 'muscle_growth' ? GOAL_MUSCLE_KEY[base] : GOAL_AREA_KEY[base];
+// Side-aware goal keys ('base' single, or 'base::left' / 'base::right').
+const GOAL_SIDE_SEP = '::';
+const goalSideKey = (base: string, side: 'left' | 'right' | 'single') =>
+  side === 'single' ? base : `${base}${GOAL_SIDE_SEP}${side}`;
 
 type Side = 'left' | 'right' | 'both';
 const SIDES: { key: Side; label: string }[] = [
@@ -236,7 +269,7 @@ function VerticalSlider({
 // ── Component ───────────────────────────────────────────────────────────────
 export default function BodyVisualizer({
   name, gender, heightCm, weightKg, age, conditions, onCommit, onSave, saving = false,
-  editable = true, canvasHeight = 300, extraMuscles, extraGroupColors,
+  editable = true, canvasHeight = 300, extraMuscles, extraGroupColors, goals, onGoalsChange,
 }: Props) {
   const [m, setM] = useState<BodyMetrics>({
     gender: gender === 'female' ? 'female' : 'male',
@@ -305,6 +338,37 @@ export default function BodyVisualizer({
   // Remove every condition on this base part (any side).
   const removeCondition = (base: string) => {
     commit({ conditions: m.conditions.filter(c => c.part !== base) });
+    setPicker(null);
+  };
+
+  // Add a body-part goal straight from the tap popup. Appends the tapped part
+  // (with side) to the goal of the chosen type, creating that goal if needed —
+  // mirrors GoalVisualizer.commitPart so both editors produce identical data.
+  const goalList: GoalEntry[] = Array.isArray(goals) ? goals : [];
+  const commitGoal = (type: PartGoalType) => {
+    if (!picker || !onGoalsChange) return;
+    const gk = goalKeyFor(type, picker.base);
+    if (!gk) { setPicker(null); return; }
+    const side: Side = !picker.both ? 'both' : (picker.side ?? 'both');
+    const tokens: ('left' | 'right' | 'single')[] =
+      !picker.both ? ['single'] : side === 'both' ? ['left', 'right'] : [side];
+    const newKeys = tokens.map(sd => goalSideKey(gk, sd));
+
+    const next = [...goalList];
+    let idx = next.findIndex(g => g.type === type);
+    if (idx === -1) {
+      next.push(type === 'muscle_growth' ? { type, muscles: [] } : { type, areas: [], side: 'both' });
+      idx = next.length - 1;
+    }
+    const g = next[idx];
+    if (type === 'muscle_growth') {
+      const merged = Array.from(new Set([...(g.muscles ?? []), ...newKeys])).slice(0, MAX_GOAL_MUSCLES);
+      next[idx] = { ...g, muscles: merged };
+    } else {
+      const merged = Array.from(new Set([...(g.areas ?? []), ...newKeys]));
+      next[idx] = { ...g, areas: merged };
+    }
+    onGoalsChange(next);
     setPicker(null);
   };
 
@@ -386,6 +450,7 @@ export default function BodyVisualizer({
           </View>
         ) : (
           <>
+            <Text style={s.popSectionLabel}>Injury / tightness</Text>
             {COND_ORDER.map(t => {
               const tm = COND_META[t];
               return (
@@ -400,6 +465,26 @@ export default function BodyVisualizer({
                 </TouchableOpacity>
               );
             })}
+            {onGoalsChange && GOAL_ORDER.some(t => !!goalKeyFor(t, picker.base)) && (
+              <>
+                <View style={s.popDivider} />
+                <Text style={s.popSectionLabel}>Add goal</Text>
+                {GOAL_ORDER.filter(t => !!goalKeyFor(t, picker.base)).map(t => {
+                  const gm = GOAL_META[t];
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      style={[s.popType, { borderColor: gm.color, backgroundColor: gm.soft }]}
+                      activeOpacity={0.85}
+                      onPress={() => commitGoal(t)}
+                    >
+                      <Text style={s.popTypeEmoji}>{gm.emoji}</Text>
+                      <Text style={s.popTypeText} numberOfLines={1}>{gm.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
             {picker.both && (
               <TouchableOpacity onPress={() => setPicker(p => (p ? { ...p, side: null } : p))} activeOpacity={0.8}>
                 <Text style={s.popBack}>← side</Text>
@@ -805,6 +890,8 @@ const s = StyleSheet.create({
   popRow: { flexDirection: 'row', gap: 4 },
   popChip: { flex: 1, paddingVertical: 6, borderRadius: 7, backgroundColor: C.canvas, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
   popChipText: { color: C.text, fontSize: 12, fontWeight: '800' },
+  popSectionLabel: { color: C.muted, fontSize: 9, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 2, marginBottom: 1, paddingHorizontal: 2 },
+  popDivider: { height: 1, backgroundColor: C.border, marginTop: 7, marginBottom: 1 },
   popType: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 7, borderRadius: 8, borderWidth: 1, marginTop: 4 },
   popTypeEmoji: { fontSize: 13 },
   popTypeText: { flex: 1, color: C.text, fontSize: 11, fontWeight: '700' },

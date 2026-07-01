@@ -1,19 +1,15 @@
 /**
- * ProfilePreviewProvider — one app-level "short profile" sheet for the whole app.
+ * ProfilePreviewProvider — app-level helper for opening another user's profile.
  *
  * Tapping a user anywhere (avatars, feed rows, friend hub, challenge / workout
- * partners …) should open the compact ProfilePreviewSheet — which shows the
- * hot/cold heat stats + online status — instead of jumping straight to the full
- * profile. Rather than wiring a sheet + state into every screen, components call
- * `useProfilePreview()?.open({ uid })` and this provider renders the single
- * shared sheet. The sheet self-fetches name / handle / picture from the uid, so
- * callers can pass just `{ uid }`.
- *
- * Navigation (View full profile / Message) goes through the global navigationRef
- * so the sheet doesn't need to live inside a navigator.
+ * partners …) opens their FULL profile directly. Components call
+ * `useProfilePreview()?.open({ uid })` and this provider navigates to
+ * SocialProfileScreen via the global navigationRef, so no screen needs to wire
+ * navigation itself. (Previously this showed a compact preview sheet; that
+ * intermediate "medium" view has been removed in favour of going straight in.)
  */
-import React, { createContext, useCallback, useContext, useState } from 'react';
-import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
+import React, { createContext, useCallback, useContext } from 'react';
+import { PreviewUser } from '../components/social/ProfilePreviewSheet';
 import { navigationRef } from '../core/navigation';
 
 type ProfilePreviewContextValue = {
@@ -29,33 +25,16 @@ export function useProfilePreview(): ProfilePreviewContextValue | null {
 }
 
 export function ProfilePreviewProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<PreviewUser | null>(null);
-
-  const open = useCallback((u: PreviewUser) => { if (u?.uid) setUser(u); }, []);
-  const close = useCallback(() => setUser(null), []);
+  const open = useCallback((u: PreviewUser) => {
+    if (u?.uid && navigationRef.isReady()) {
+      (navigationRef as any).navigate('SocialProfileScreen', { uid: u.uid });
+    }
+  }, []);
+  const close = useCallback(() => {}, []);
 
   return (
     <ProfilePreviewContext.Provider value={{ open, close }}>
       {children}
-      <ProfilePreviewSheet
-        user={user}
-        visible={!!user}
-        onClose={close}
-        onViewProfile={(uid) => {
-          close();
-          if (navigationRef.isReady()) (navigationRef as any).navigate('SocialProfileScreen', { uid });
-        }}
-        onMessage={(u) => {
-          close();
-          if (navigationRef.isReady()) {
-            (navigationRef as any).navigate('ChatRoom', {
-              friendUid: u.uid,
-              friendName: u.fullName || u.username,
-              friendAvatar: u.avatarUrl,
-            });
-          }
-        }}
-      />
     </ProfilePreviewContext.Provider>
   );
 }

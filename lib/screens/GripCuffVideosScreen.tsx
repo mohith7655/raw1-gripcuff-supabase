@@ -66,12 +66,9 @@ const CARD_GAP = 10;
 const CARD_WIDTH = (width - (SCREEN_PADDING * 2) - CARD_GAP) / 2;
 
 // Ordered array of specific gradient colors
-const BG_COLORS = [
-    ['#F25912', '#F25912'], // Orange
-    ['#8B5CF6', '#7C3AED'], // Purple
-    ['#3B82F6', '#2563EB'], // Blue
-    ['#10B981', '#059669'], // Green
-] as const;
+// Uniform light thumbnail surface — every gripcuff video reads as the same white
+// card (locked ones are darkened by the overlay), instead of cycling colours.
+const WHITE_THUMB: [string, string] = ['#FFFFFF', '#FFFFFF'];
 
 const VIDEOS = [
     { id: 1, level: "Level 1", title: "Introduction to Gripcuff", desc: "What is Gripcuff and how it works", duration: "15:00", credits: 0, locked: false },
@@ -169,8 +166,7 @@ export const GripCuffVideosScreen = () => {
 
     const renderVideoCard = ({ item, index }: { item: typeof VIDEOS[0]; index: number }) => {
         const isUnlocked = unlockedVideos.includes(item.id);
-        const colorIndex = index % BG_COLORS.length;
-        const gradientColors = BG_COLORS[colorIndex];
+        const gradientColors = WHITE_THUMB;
 
         // Format duration as MM:SS
         const [mins, secs] = item.duration.split(':').map(Number);
@@ -191,7 +187,7 @@ export const GripCuffVideosScreen = () => {
                     >
                         {isUnlocked ? (
                             <View style={styles.playIconCircle}>
-                                <Play color="rgba(255,255,255,0.12)" size={30} fill="rgba(255,255,255,0.12)" />
+                                <Play color="rgba(33,24,50,0.16)" size={30} fill="rgba(33,24,50,0.16)" />
                             </View>
                         ) : (
                             <>
@@ -474,6 +470,8 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
         marginBottom: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(33,24,50,0.08)',
     },
     thumbnailGradient: {
         flex: 1,

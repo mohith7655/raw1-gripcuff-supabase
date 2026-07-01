@@ -98,10 +98,18 @@ const EXERCISE_DATA_RAW: Record<string, DummyVideo[]> = {
     ],
 };
 
+// Stable difficulty per position so the S/M/C indicator shows on every card
+// (the raw exercise data doesn't carry a difficulty).
+const DIFFS: NonNullable<DummyVideo['difficulty']>[] = ['Beginner', 'Intermediate', 'Advanced'];
+
 const EXERCISE_DATA: Record<string, DummyVideo[]> = Object.fromEntries(
     Object.entries(EXERCISE_DATA_RAW).map(([key, videos]) => [
         key,
-        videos.map((video) => ({ ...video, videoUrl: EXERCISE_LIBRARY_VIDEO_URL })),
+        videos.map((video, i) => ({
+            ...video,
+            videoUrl: EXERCISE_LIBRARY_VIDEO_URL,
+            difficulty: video.difficulty ?? DIFFS[i % DIFFS.length],
+        })),
     ])
 ) as Record<string, DummyVideo[]>;
 

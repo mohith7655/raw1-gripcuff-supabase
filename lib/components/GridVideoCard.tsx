@@ -9,8 +9,6 @@ import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { useVideoViews, formatViews } from '../services/videoViews.service';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
 
-const THUMBNAIL_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
-
 export const GridVideoCard = ({
     video,
     index,
@@ -24,7 +22,6 @@ export const GridVideoCard = ({
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const fav = isFavorite(video.id);
     const views = useVideoViews(video.id != null ? String(video.id) : null);
-    const bgColor = THUMBNAIL_COLORS[index % THUMBNAIL_COLORS.length];
 
     const handleFavoritePress = () => {
         Animated.sequence([
@@ -49,7 +46,7 @@ export const GridVideoCard = ({
             activeOpacity={0.8}
             onPress={onPress}
         >
-            <View style={[styles.thumbnail, { backgroundColor: bgColor }]}>
+            <View style={styles.thumbnail}>
                 {(video as any).youtubeId && (
                     <Image
                         source={{ uri: `https://img.youtube.com/vi/${(video as any).youtubeId}/hqdefault.jpg` }}
@@ -58,10 +55,10 @@ export const GridVideoCard = ({
                     />
                 )}
                 <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                    <Raw1Logo fontSize={12} transparent />
+                    <Raw1Logo fontSize={12} />
                 </View>
                 <View style={styles.playIconContainer}>
-                    <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
+                    <Play color="rgba(33,24,50,0.14)" size={28} fill="rgba(33,24,50,0.14)" />
                 </View>
                 <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>{video.duration}</Text>
@@ -93,6 +90,9 @@ const styles = StyleSheet.create({
         width: '100%',
         aspectRatio: 16 / 9,
         borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: 'rgba(33,24,50,0.08)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 6,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
     },
     durationText: {
-        color: '#D8D8E4',
+        color: '#7A7C90',
         fontSize: 10,
         fontWeight: '700',
     },

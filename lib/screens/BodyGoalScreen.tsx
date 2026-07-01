@@ -113,6 +113,8 @@ export const BodyGoalScreen = () => {
             conditions={profile?.bodyConditions}
             extraMuscles={goalHL.muscles}
             extraGroupColors={goalHL.colors}
+            goals={goals}
+            onGoalsChange={setGoals}
             canvasHeight={canvasHeight}
             saving={savingBody}
             onSave={saveBody}
@@ -131,7 +133,7 @@ export const BodyGoalScreen = () => {
             gender={profile?.gender}
             heightCm={profile?.heightCm}
             weightKg={profile?.weightKg}
-            goals={profile?.goals}
+            goals={goals}
             hideModel
             onChange={setGoals}
             canvasHeight={canvasHeight}

@@ -63,12 +63,13 @@ const CARD_H = 168;
 const GRAD_START = { x: 0.29, y: 0.05 };
 const GRAD_END = { x: 0.71, y: 0.95 };
 
-// Left card — "Challenge Lobby". Static orange gradient, avatars + VS badge.
+// Left card — "Challenge Lobby". Static rose/crimson gradient (head-to-head),
+// avatars + VS badge — distinct from the indigo Workout-with-Friend card.
 function ChallengeCard({ onPress, avatarUri }: { onPress?: () => void; avatarUri?: string | null }) {
   return (
     <View style={[styles.cardShadow, styles.cardShadowOrange]}>
       <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-        <LinearGradient colors={['#F25912', '#C7400A', '#8F2D05']} start={GRAD_START} end={GRAD_END} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['#E11D48', '#B21236', '#7E0C26']} start={GRAD_START} end={GRAD_END} style={StyleSheet.absoluteFill} />
 
         <View style={styles.avatarRow}>
           <View style={styles.avatarBubble}>
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     elevation: 8,
   },
-  cardShadowOrange: { shadowColor: '#F25912' },
+  cardShadowOrange: { shadowColor: '#E11D48' },
   cardShadowIndigo: { shadowColor: '#4C4E78' },
   card: {
     height: CARD_H,

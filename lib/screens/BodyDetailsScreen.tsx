@@ -1,9 +1,10 @@
 /**
  * BodyDetailsScreen — fields-based editor for injuries & goals (NO 3D model).
  *
- * The "view all" counterpart to the 3D BodyGoalScreen: everything is editable
- * with plain controls (chips / segmented pickers / steppers), so you can quickly
- * adjust your body metrics, injuries and goals without the figure.
+ * Reserved for the WORKOUTS context (editing goals / injuries / tightness while
+ * setting up a workout): everything is editable with plain controls (chips /
+ * segmented pickers / steppers), no figure. Profile body-editing goes through
+ * the 3D model editor (BodyGoalScreen) instead — tap the figure to add markers.
  */
 import React, { useState } from 'react';
 import {

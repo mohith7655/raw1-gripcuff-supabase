@@ -9,11 +9,18 @@
  *     so the UI can deep-link (muscle_growth / stretching / injury_rehab /
  *     athletic / gripcuff).
  *
- * Results are cached in localStorage keyed by a hash of the inputs, so we only
- * spend a token when the body data actually changes.
+ * The OpenAI key stays server-side: this talks to the `body-insights` Netlify
+ * function (which holds OPENAI_API_KEY), NEVER OpenAI directly — same pattern as
+ * profileSummary.service. Results are cached in localStorage keyed by a hash of
+ * the inputs, so we only spend a token when the body data actually changes.
  */
-import { OPENAI_API_KEY, OPENAI_API_BASE } from '../core/config/api_keys';
 import { BodyCondition, GoalEntry } from '../models/User';
+
+// Absolute base URL (the deployed Netlify site) so it works from the local Expo
+// dev server and native too — a relative `/.netlify/...` path only resolves when
+// served by Netlify itself.
+const APP_WEB_BASE_URL = (process.env.EXPO_PUBLIC_APP_WEB_URL || 'https://raw1-supabase.netlify.app').replace(/\/+$/, '');
+const INSIGHTS_ENDPOINT = `${APP_WEB_BASE_URL}/.netlify/functions/body-insights`;
 
 export type RecoCategory =
   | 'muscle_growth'
@@ -43,10 +50,6 @@ export interface BodyAIInput {
 }
 
 const CACHE_PREFIX = 'body_ai_v1_';
-const VALID_CATS: RecoCategory[] = ['muscle_growth', 'stretching', 'injury_rehab', 'athletic', 'gripcuff'];
-
-const bmiOf = (h?: number | null, w?: number | null) =>
-  h && w ? +(w / Math.pow(h / 100, 2)).toFixed(1) : null;
 
 // Stable, compact key for the inputs that actually affect the result.
 function inputKey(i: BodyAIInput): string {
@@ -79,33 +82,11 @@ function writeCache(key: string, val: BodyInsights) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
 }
 
-function describe(i: BodyAIInput): string {
-  const bmi = bmiOf(i.heightCm, i.weightKg);
-  const conds = (i.conditions ?? []).length
-    ? (i.conditions ?? []).map((c) => `${c.type} at ${c.part}${c.side && c.side !== 'both' ? ` (${c.side})` : ''}`).join(', ')
-    : 'none reported';
-  const goals = (i.goals ?? []).length
-    ? (i.goals ?? []).map((g) => {
-        if (g.type === 'weight_loss') return `lose ${g.kg ?? 0}kg`;
-        const parts = (g.muscles ?? g.areas ?? []).join(', ');
-        return `${g.type.replace('_', ' ')}${parts ? ` (${parts})` : ''}`;
-      }).join('; ')
-    : 'none set';
-  return [
-    `Gender: ${i.gender || 'unspecified'}`,
-    `Age: ${i.age ?? 'unknown'}`,
-    `Height: ${i.heightCm ?? 'unknown'} cm`,
-    `Weight: ${i.weightKg ?? 'unknown'} kg`,
-    `BMI: ${bmi ?? 'unknown'}`,
-    `Injuries / tightness: ${conds}`,
-    `Goals: ${goals}`,
-  ].join('\n');
-}
-
 /**
  * Returns the body insight + recommendations, served from cache when the inputs
- * are unchanged. Returns null when the API key is missing or the call fails (the
- * UI should hide the section gracefully).
+ * are unchanged. The OpenAI call happens server-side in the `body-insights`
+ * Netlify function. Returns null when the call fails or there's nothing to say
+ * (the UI should hide the section gracefully).
  */
 export async function getBodyInsights(input: BodyAIInput, opts?: { force?: boolean }): Promise<BodyInsights | null> {
   // Need at least height + weight to say anything meaningful.
@@ -116,54 +97,23 @@ export async function getBodyInsights(input: BodyAIInput, opts?: { force?: boole
     const cached = readCache(key);
     if (cached) return cached;
   }
-  if (!OPENAI_API_KEY) return null;
-
-  const prompt = `You are a supportive, knowledgeable fitness & physiotherapy coach.
-Here is a user's body profile:
-${describe(input)}
-
-Return STRICT JSON (no markdown, no code fences) with this exact shape:
-{
-  "insight": "2-3 warm, plain-language sentences on what's going on with this body right now — call out BMI/weight context, how their injuries/tightness affect training, and whether their goals fit their current state. Be encouraging, not alarming. No medical diagnosis.",
-  "recommendations": [
-    { "title": "a specific EXERCISE or movement focus (e.g. 'Core Stability Exercises', 'Hip Mobility Drills') — NOT a full workout program or plan", "reason": "one sentence why, tied to their goals/injuries", "category": "one of: muscle_growth | stretching | injury_rehab | athletic | gripcuff" }
-  ]
-}
-Give 3-4 recommendations. Recommend individual EXERCISES / movement focuses only — never multi-week programs or plans. If they reported injuries/tightness, at least one MUST be injury_rehab or stretching exercises for the affected area. Map grip/forearm/wrist focus to "gripcuff".`;
 
   try {
-    const res = await fetch(`${OPENAI_API_BASE}/chat/completions`, {
+    const res = await fetch(INSIGHTS_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You output only valid JSON. You are a fitness & physio coach.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.6,
-        max_tokens: 700,
-        response_format: { type: 'json_object' },
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input }),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return null;
+    const parsed = await res.json();
 
-    const match = content.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(match ? match[0] : content);
-
-    const insight = typeof parsed.insight === 'string' ? parsed.insight.trim() : '';
-    const recommendations: BodyRecommendation[] = Array.isArray(parsed.recommendations)
+    const insight = typeof parsed?.insight === 'string' ? parsed.insight.trim() : '';
+    const recommendations: BodyRecommendation[] = Array.isArray(parsed?.recommendations)
       ? parsed.recommendations
           .map((r: any) => ({
             title: String(r?.title ?? '').trim(),
             reason: String(r?.reason ?? '').trim(),
-            category: (VALID_CATS.includes(r?.category) ? r.category : 'muscle_growth') as RecoCategory,
+            category: r?.category as RecoCategory,
           }))
           .filter((r: BodyRecommendation) => r.title)
           .slice(0, 4)

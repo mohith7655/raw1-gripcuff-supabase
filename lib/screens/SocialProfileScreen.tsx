@@ -60,10 +60,9 @@ import { User } from '../models/User';
 import { SocialProfile, HOBBY_META, CONNECTION_GOAL_META, CHALLENGE_EXERCISE_META } from '../models/SocialProfile';
 import { RelationshipStatus } from '../models/Friend';
 import { ProfileCard } from '../components/profile/ProfileCard';
-import { ProfilePreviewSheet, PreviewUser } from '../components/social/ProfilePreviewSheet';
 import { genderMeta as genderMetaOf, appActiveLabel, computeHeats, ActivityHeats, isInactiveSince } from '../utils/activityHeat';
 import { loadActivityMap } from '../services/activityMap.service';
-import { ActivityMap } from '../components/profile/ActivityMap';
+import { SocialWorkoutHeatmap } from '../components/social/SocialWorkoutHeatmap';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import { ThermometerHeat } from '../components/profile/ThermometerHeat';
@@ -248,7 +247,6 @@ export function SocialProfileScreen() {
   const [fullscreenIdx, setFullscreenIdx] = useState<number | null>(null);
   const [connections, setConnections] = useState<User[]>([]);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
-  const [connPreview, setConnPreview] = useState<PreviewUser | null>(null);
   const [heats, setHeats] = useState<ActivityHeats | null>(null);
   // Per-connection social/workout heat, loaded lazily when the list opens.
   const [connHeats, setConnHeats] = useState<Record<string, ActivityHeats>>({});
@@ -700,8 +698,6 @@ export function SocialProfileScreen() {
               </View>
             </View>
 
-          </View>
-
           {/* ── OPEN TO CHALLENGE — directly above the time stats ────────────── */}
           {/* Own profile: tap the stripe to edit. Other profiles: tap a chip to
               schedule a head-to-head challenge with this person on that exercise. */}
@@ -766,6 +762,7 @@ export function SocialProfileScreen() {
               <Text style={s.timeStatLabel}>LIFETIME</Text>
             </View>
           </View>
+          </View>
 
           {/* ── ACTIVITY HINT (last online · usually replies in …) ──────────── */}
           {lastSeen && (
@@ -811,11 +808,14 @@ export function SocialProfileScreen() {
             </ProfileCard>
           )}
 
-          {/* ── ACTIVITY MAP — GitHub-style heatmap of workouts / co-workouts /
-                challenges, with days since last workout ───────────────────── */}
+          {/* ── ACTIVITY — same "social vs workout" heatmap shown on Home ───── */}
           {!!uid && (
             <ProfileCard>
-              <ActivityMap uid={uid} lastWorkoutDate={streakData?.lastWorkoutDate} />
+              <Text style={s.cardTitle}>Are you being social or working out?</Text>
+              <Text style={{ color: '#7A7C90', fontSize: 12.5, marginTop: 2, marginBottom: 12 }}>
+                Recent workout, social &amp; challenge activity
+              </Text>
+              <SocialWorkoutHeatmap uid={uid} />
             </ProfileCard>
           )}
 
@@ -1285,21 +1285,6 @@ export function SocialProfileScreen() {
         </View>
       </Modal>
 
-      {/* ── Connection short-profile preview ─────────────────────────────────── */}
-      <ProfilePreviewSheet
-        user={connPreview}
-        visible={!!connPreview}
-        onClose={() => setConnPreview(null)}
-        onViewProfile={(u) => { setConnPreview(null); (navigation as any).push('SocialProfileScreen', { uid: u }); }}
-        onMessage={(u) => {
-          setConnPreview(null);
-          navigation.navigate('ChatRoom', {
-            friendUid: u.uid,
-            friendName: u.fullName || u.username,
-            friendAvatar: u.avatarUrl,
-          });
-        }}
-      />
 
       {/* ── Schedule a challenge with this person on a tapped exercise ────────── */}
       {canChallenge && (
@@ -1368,7 +1353,18 @@ const s = StyleSheet.create({
   // Hero
   hero: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    // White profile card — matches the section cards below / the private profile.
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#211832',
+    shadowOpacity: 0.12,
+    shadowRadius: 34,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   heroRow: {
     flexDirection: 'row',
@@ -1784,7 +1780,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
+    alignSelf: 'stretch',
     marginTop: 4,
     marginBottom: 2,
   },
@@ -1827,7 +1824,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
+    alignSelf: 'stretch',
   },
   timeStatItem: {
     alignItems: 'center',

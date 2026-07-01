@@ -13,16 +13,18 @@ import {
     Animated,
     PanResponder,
     Dimensions,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Send, CircleUserRound } from 'lucide-react-native';
+import { Send, CircleUserRound, Dumbbell, Swords } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatMessage } from '../models/Chat';
 import { TierAvatar } from '../components/profile/TierAvatar';
+import { ScheduleChallengeModal } from '../components/ScheduleChallengeModal';
 
 type RouteParams = {
     friendUid: string;
@@ -44,7 +46,32 @@ export const ChatRoomScreen = () => {
     const [text, setText] = useState('');
     const [sending, setSending] = useState(false);
     const [ready, setReady] = useState(false);
+    // "+" action menu (invite to workout / challenge this friend) + challenge sheet.
+    const [actionsOpen, setActionsOpen] = useState(false);
+    const [challengeOpen, setChallengeOpen] = useState(false);
+    const firstName = friendName?.split(' ')[0] || friendName;
     const listRef = useRef<FlatList>(null);
+
+    // Invite this friend to a co-workout — opens the flow with them preselected.
+    const openWorkout = () => {
+        setActionsOpen(false);
+        navigation.navigate('WorkoutWithFriendFlow', {
+            inviteFlowState: {
+                selectedFriend: {
+                    uid: friendUid,
+                    fullName: friendName,
+                    username: friendName,
+                    profileImageUrl: friendAvatar,
+                },
+            },
+        });
+    };
+
+    // Challenge this friend head-to-head (defaults to the flagship Squats duel).
+    const openChallenge = () => {
+        setActionsOpen(false);
+        setChallengeOpen(true);
+    };
 
     // Drag-down-to-close: the header/grabber acts as a drag handle.
     // (The message FlatList consumes its own vertical scroll, so we don't
@@ -237,6 +264,13 @@ export const ChatRoomScreen = () => {
 
                 {/* Input Bar */}
                 <View style={styles.inputBar}>
+                    <TouchableOpacity
+                        style={styles.attachButton}
+                        onPress={() => setActionsOpen(true)}
+                        activeOpacity={0.7}
+                    >
+                        <Swords color={AppTheme.primaryColor} size={20} />
+                    </TouchableOpacity>
                     <TextInput
                         style={styles.input}
                         value={text}
@@ -262,6 +296,51 @@ export const ChatRoomScreen = () => {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* "+" action menu — invite this friend to a workout or a challenge */}
+            <Modal
+                visible={actionsOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setActionsOpen(false)}
+            >
+                <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setActionsOpen(false)}>
+                    <TouchableOpacity activeOpacity={1} style={styles.sheet} onPress={() => {}}>
+                        <View style={styles.sheetHandle} />
+                        <Text style={styles.sheetTitle}>Train with {firstName}</Text>
+
+                        <TouchableOpacity style={styles.sheetRow} activeOpacity={0.85} onPress={openWorkout}>
+                            <View style={[styles.sheetIcon, { backgroundColor: 'rgba(22,163,74,0.12)' }]}>
+                                <Dumbbell size={20} color="#16a34a" />
+                            </View>
+                            <View style={styles.flex}>
+                                <Text style={styles.sheetRowTitle}>Workout together</Text>
+                                <Text style={styles.sheetRowSub}>Invite {firstName} to a co-workout session</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.sheetRow} activeOpacity={0.85} onPress={openChallenge}>
+                            <View style={[styles.sheetIcon, { backgroundColor: 'rgba(225,29,72,0.12)' }]}>
+                                <Swords size={20} color="#E11D48" />
+                            </View>
+                            <View style={styles.flex}>
+                                <Text style={styles.sheetRowTitle}>Challenge</Text>
+                                <Text style={styles.sheetRowSub}>Squats · head-to-head duel</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Schedule a head-to-head challenge with this friend */}
+            <ScheduleChallengeModal
+                visible={challengeOpen}
+                opponentUid={friendUid}
+                opponentName={friendName}
+                opponentAvatar={friendAvatar}
+                exerciseName="Squats"
+                onClose={() => setChallengeOpen(false)}
+            />
           </SafeAreaView>
         </Animated.View>
     );
@@ -383,4 +462,36 @@ const styles = StyleSheet.create({
     sendButtonDisabled: {
         backgroundColor: 'rgba(242,89,18,0.35)',
     },
+    attachButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: 'rgba(242,89,18,0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    // "+" action sheet
+    sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+    sheet: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
+        paddingHorizontal: 18,
+        paddingTop: 10,
+        paddingBottom: 28,
+    },
+    sheetHandle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: '#D8D8E4', marginBottom: 12 },
+    sheetTitle: { color: '#211832', fontSize: 16, fontWeight: '800', marginBottom: 8 },
+    sheetRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(33,24,50,0.06)',
+    },
+    sheetIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    sheetRowTitle: { color: '#211832', fontSize: 15, fontWeight: '700' },
+    sheetRowSub: { color: AppTheme.textGrey, fontSize: 12.5, marginTop: 2 },
 });

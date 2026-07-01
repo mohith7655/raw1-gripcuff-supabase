@@ -74,6 +74,7 @@ import { ProfileCard } from '../components/profile/ProfileCard';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
 import BodyVisualizer from '../components/profile/BodyVisualizer';
 import GoalVisualizer from '../components/profile/GoalVisualizer';
+import { SocialWorkoutHeatmap } from '../components/social/SocialWorkoutHeatmap';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Fire glow badge wrapper (streak only) ─────────────────────────────────────
@@ -721,6 +722,7 @@ export const ProfileScreen = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                   <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
                     <View style={{ backgroundColor: '#211832', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Users size={13} color="#fff" strokeWidth={2.4} />
                       <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
                       <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
                     </View>
@@ -1102,35 +1104,11 @@ export const ProfileScreen = () => {
             </View>
           </ProfileCard>
 
-          {/* ── ACTIVITY TIME ────────────────────────────────────────────────── */}
+          {/* ── ACTIVITY — social / workout / challenge heat map (same as Home) ── */}
           <ProfileCard isPrivate={isSectionPrivate('activity')} onToggleVisibility={() => toggleSection('activity')}>
-            <View style={s.activityTimeRow}>
-              <View style={s.activityTimeItem}>
-                <Text style={s.activityTimeValue}>
-                  {(() => {
-                    const sec = profile?.watchedSeconds ?? 0;
-                    if (sec < 60) return sec > 0 ? `${sec}s` : '0m';
-                    const h = Math.floor(sec / 3600);
-                    const m = Math.floor((sec % 3600) / 60);
-                    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                  })()}
-                </Text>
-                <Text style={s.activityTimeLabel}>Watch Time</Text>
-              </View>
-              <View style={s.activityTimeDivider} />
-              <View style={s.activityTimeItem}>
-                <Text style={s.activityTimeValue}>
-                  {(() => {
-                    const sec = (profile as any)?.workoutSeconds ?? 0;
-                    if (sec < 60) return sec > 0 ? `${sec}s` : '0m';
-                    const h = Math.floor(sec / 3600);
-                    const m = Math.floor((sec % 3600) / 60);
-                    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                  })()}
-                </Text>
-                <Text style={s.activityTimeLabel}>Workout Time</Text>
-              </View>
-            </View>
+            <Text style={s.cardTitle}>Are you being social or working out?</Text>
+            <Text style={[s.bodyText, { marginTop: 2, marginBottom: 12 }]}>Your recent workout, social &amp; challenge activity</Text>
+            {supabaseUserId && <SocialWorkoutHeatmap uid={supabaseUserId} />}
           </ProfileCard>
 
           {/* ── BADGES ──────────────────────────────────────────────────────── */}
@@ -1538,7 +1516,18 @@ const s = StyleSheet.create({
   // Hero
   hero: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    // White profile card — matches the other profile section cards / Social feed.
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#211832',
+    shadowOpacity: 0.12,
+    shadowRadius: 34,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   heroRow: {
     flexDirection: 'row',
@@ -1915,34 +1904,6 @@ const s = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
-  },
-  activityTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  activityTimeItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  activityTimeValue: {
-    color: '#211832',
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  activityTimeLabel: {
-    color: C.muted,
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  activityTimeDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: 'rgba(33,24,50,0.08)',
   },
   viewAllLink: {
     color: C.orange,

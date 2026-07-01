@@ -189,33 +189,32 @@ export function GlassPill({ radius = 999, ...rest }: GlassSurfaceProps) {
  */
 export function GlassSheen({
   radius = 20,
-  intensity = Glass.blurIntensity,
-  edge = false,
   style,
 }: {
   radius?: number;
+  /** Kept for API compatibility — no longer used (flat white surface). */
   intensity?: number;
-  /** Paint the luminous inner rim + top specular line (off by default). */
   edge?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const useBlur = isBlurEnabled();
+  // Home & profile section cards now use a flat WHITE surface (matching the
+  // Social feed cards) instead of the frosted-blur glass material. The card's
+  // own soft shadow supplies the depth; this just paints the white fill + a
+  // luminous 1px edge behind the content.
   return (
     <View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }, style]}
-    >
-      <GlassBlurLayer intensity={intensity} enabled={useBlur} />
-      <LinearGradient
-        colors={Glass.sheen as unknown as string[]}
-        locations={Glass.sheenLocations as unknown as number[]}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      {edge && <View style={[styles.innerRim, { borderRadius: Math.max(0, radius - 1) }]} />}
-      {edge && <View style={styles.highlight} />}
-    </View>
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          borderRadius: radius,
+          backgroundColor: 'rgba(255,255,255,0.62)',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.9)',
+        },
+        style,
+      ]}
+    />
   );
 }
 

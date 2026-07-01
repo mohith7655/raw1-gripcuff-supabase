@@ -702,6 +702,8 @@ const SECTIONS = [
   { id: 'athletic', label: 'Athletic Performance', icon: '🏃' },
 ];
 
+// Each exercise category renders as its own plain white card section so the
+// groups read as distinct sets of exercises.
 const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; icon: string }[] = [
   { key: 'Gripcuff', label: 'Gripcuff Training', mappingKey: 'gripcuff', icon: '🤜' },
   { key: 'MuscleGrowth', label: 'Muscle Growth', mappingKey: 'muscle', icon: '🏋️' },
@@ -957,9 +959,12 @@ const VideoContent = ({
           };
 
           return (
-            <View key={section.key} style={styles.categorySection}>
+            <View key={section.key} style={[styles.categorySection, styles.categoryCard]}>
               <View style={styles.categorySectionHeader}>
-                <Text style={styles.categorySectionTitle}>{section.label}</Text>
+                <View style={styles.categoryTitleRow}>
+                  <Text style={styles.categoryIconText}>{section.icon}</Text>
+                  <Text style={styles.categorySectionTitle}>{section.label}</Text>
+                </View>
                 <View style={styles.categoryHeaderActions}>
                   {onHideSection && (
                     <TouchableOpacity
@@ -1145,22 +1150,8 @@ const VideoTile = ({
     });
   };
 
-  // Muted earthy / slate thumbnail gradients (Ash & Midnight)
-  const gradients = [
-    ['#8B7355', '#6B5B45'],   // tan / brown
-    ['#7A8A8A', '#5A6A6A'],   // slate green-grey
-    ['#4A5568', '#2D3748'],   // slate-blue
-    ['#6B4226', '#4A2E1A'],   // brown
-    ['#2A2A3E', '#1A1A2E'],   // dark navy
-    ['#0D2137', '#1A3A5C'],   // deep blue
-    ['#C4B8A8', '#A09488'],   // beige
-    ['#3B1F0B', '#5C3319'],   // dark amber
-  ];
-
-  let finalColors = gradients[index % gradients.length];
-  if (video.color) {
-    finalColors = [video.color, video.color];
-  }
+  // Uniform white thumbnail surface for every video.
+  const finalColors = ['#FFFFFF', '#FFFFFF'];
 
   return (
     <TouchableOpacity style={styles.videoCard} onPress={onPress}>
@@ -1185,7 +1176,7 @@ const VideoTile = ({
           {video.isCompleted ? (
             <Check color="#fff" size={14} />
           ) : (
-            <Play color="rgba(255,255,255,0.12)" size={28} fill="rgba(255,255,255,0.12)" />
+            <Play color="rgba(33,24,50,0.14)" size={28} fill="rgba(33,24,50,0.14)" />
           )}
         </View>
 
@@ -1198,7 +1189,7 @@ const VideoTile = ({
 
         {/* RAW1 logo watermark */}
         <View style={{ position: 'absolute', top: 6, left: 6 }}>
-          <Raw1Logo fontSize={12} transparent />
+          <Raw1Logo fontSize={12} />
         </View>
 
         {/* Completion Checkbox - Tappable independently */}
@@ -1423,6 +1414,23 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     marginBottom: 28,
+  },
+  // Per-category card band — a plain white surface so each exercise category
+  // reads as its own distinct section (no colour accents).
+  categoryCard: {
+    marginBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 18,
+    backgroundColor: AppTheme.cardColor,
+  },
+  categoryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+  },
+  categoryIconText: {
+    fontSize: 15,
   },
   categorySectionHeader: {
     flexDirection: 'row',
@@ -1663,6 +1671,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.08)',
   },
   centerIcon: {
     width: 32,
@@ -1679,7 +1689,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   durationText: {
-    color: '#D8D8E4',
+    color: '#7A7C90',
     fontSize: 11,
     fontWeight: '700' as any,
     letterSpacing: 0.3,

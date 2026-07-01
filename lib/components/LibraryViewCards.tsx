@@ -87,8 +87,9 @@ function getDisplayTitle(video: Video): string {
         : video.title;
 }
 
-function getColors(video: Video, index: number): [string, string] {
-    return video.color ? [video.color, video.color] : GRADIENTS[index % GRADIENTS.length];
+// All video thumbnails render as a uniform white card surface.
+function getColors(_video: Video, _index: number): [string, string] {
+    return ['#FFFFFF', '#FFFFFF'];
 }
 
 // Multi-column card for grid / compact / dense views
@@ -127,16 +128,16 @@ export function MultiColVideoCard({
                 colors={colors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 9, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
+                style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 9, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(33,24,50,0.08)' }}
             >
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="rgba(255,255,255,0.12)" size={playSize} fill="rgba(255,255,255,0.12)" />
+                    <Play color="rgba(33,24,50,0.14)" size={playSize} fill="rgba(33,24,50,0.14)" />
                 </View>
                 <View style={{ position: 'absolute', top: 4, left: 4 }}>
-                    <Raw1Logo fontSize={10} transparent />
+                    <Raw1Logo fontSize={10} />
                 </View>
                 <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
-                    <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
+                    <Text style={{ color: '#7A7C90', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
             </LinearGradient>
 
@@ -190,16 +191,16 @@ export function ListVideoCard({
                 colors={colors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{ width: 78, height: 54, borderRadius: 8, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 }}
+                style={{ width: 78, height: 54, borderRadius: 8, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0, borderWidth: 1, borderColor: 'rgba(33,24,50,0.08)' }}
             >
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Play color="rgba(255,255,255,0.12)" size={22} fill="rgba(255,255,255,0.12)" />
+                    <Play color="rgba(33,24,50,0.14)" size={22} fill="rgba(33,24,50,0.14)" />
                 </View>
                 <View style={{ position: 'absolute', top: 3, left: 3 }}>
-                    <Raw1Logo fontSize={9} transparent />
+                    <Raw1Logo fontSize={9} />
                 </View>
                 <View style={{ position: 'absolute', bottom: 4, right: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
-                    <Text style={{ color: '#D8D8E4', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
+                    <Text style={{ color: '#7A7C90', fontSize: 8, fontWeight: '700' }}>{durationLabel}</Text>
                 </View>
             </LinearGradient>
 

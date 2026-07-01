@@ -87,6 +87,7 @@ import { ChatFriendProfileScreen } from './screens/ChatFriendProfileScreen';
 import { SocialProfileScreen } from './screens/SocialProfileScreen';
 import { EditSocialProfileScreen } from './screens/EditSocialProfileScreen';
 import { BodyDetailsScreen } from './screens/BodyDetailsScreen';
+import { BodyGoalScreen } from './screens/BodyGoalScreen';
 import { CommunityScreen } from './screens/CommunityScreen';
 import { BadgesScreen } from './screens/BadgesScreen';
 import { QRCodeScreen } from './screens/QRCodeScreen';
@@ -521,12 +522,14 @@ function AppStack({
         {/* ── Social Profile System ── */}
         <Stack.Screen name="SocialProfileScreen" component={SocialProfileScreen} />
         <Stack.Screen name="EditSocialProfileScreen" component={EditSocialProfileScreen} />
-        {/* Single fields-based editor for injuries & goals (no 3D). All legacy
-            routes funnel here so there's ONE editor type everywhere. */}
+        {/* Body & goals editing everywhere in the profile funnels to the 3D
+            model editor — tap the figure to add an injury / tightness / goal.
+            The fields-based chip form (BodyDetailsScreen) is reserved for the
+            workouts context (editing goals / injuries / tightness there). */}
         <Stack.Screen name="BodyDetails" component={BodyDetailsScreen} />
-        <Stack.Screen name="BodyGoals" component={BodyDetailsScreen} />
-        <Stack.Screen name="HowILookNow" component={BodyDetailsScreen} />
-        <Stack.Screen name="Goals" component={BodyDetailsScreen} />
+        <Stack.Screen name="BodyGoals" component={BodyGoalScreen} />
+        <Stack.Screen name="HowILookNow" component={BodyGoalScreen} />
+        <Stack.Screen name="Goals" component={BodyGoalScreen} />
         <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} />
         <Stack.Screen name="QRProfileScreen" component={QRProfileScreen} />
         <Stack.Screen name="LookingToMeetEditScreen" component={LookingToMeetEditScreen} />

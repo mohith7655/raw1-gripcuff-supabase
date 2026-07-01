@@ -246,6 +246,15 @@ export default function GoalVisualizer({
   );
   // Mirror the working list up to the parent so a shared body model can paint it.
   useEffect(() => { onChange?.(list); }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Stay in sync when goals are edited elsewhere (e.g. added from the shared body
+  // model's tap popup) — the parent owns the goal list and passes it back down.
+  // Signature-guarded so our own onChange round-trip doesn't cause a loop.
+  const goalsSig = useMemo(() => JSON.stringify(goals ?? []), [goals]);
+  useEffect(() => {
+    const incoming = goals ?? [];
+    if (!incoming.length) return; // ignore empty external state (keep default goal)
+    setList(prev => (JSON.stringify(prev) === goalsSig ? prev : incoming));
+  }, [goalsSig]); // eslint-disable-line react-hooks/exhaustive-deps
   const [activeIndex, setActiveIndex] = useState(0);
   const [stageW, setStageW] = useState(0);
   // 3D model view (editable mode): front/back lets hotspots align with the body.

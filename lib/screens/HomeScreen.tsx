@@ -37,6 +37,7 @@ import {
   Star,
   Swords,
   Play,
+  Sparkles,
 } from 'lucide-react-native';
 import { Raw1Logo } from '../raw1_logo';
 import { AccessBadge } from '../components/AccessBadge';
@@ -60,6 +61,7 @@ import { TierAvatar } from '../components/profile/TierAvatar';
 import BodyGoalComparison from '../components/profile/BodyGoalComparison';
 import { tierLevel } from '../components/profile/TierBars';
 import { useRecommendations } from '../hooks/useRecommendations';
+import { useBodyInsights } from '../hooks/useBodyInsights';
 import { RecommendedProgram } from '../services/recommendation.service';
 import { LiveSessionService, LiveSession } from '../services/liveSession.service';
 import { Ionicons } from '@expo/vector-icons';
@@ -399,6 +401,36 @@ const HomeScreenInner = () => {
 
   // Personalized recommendations
   const { sections: recSections, loading: recLoading } = useRecommendations(supabaseUserId);
+
+  // AI recommendations — picked from the user's goals, injuries & body data
+  // (replaces the Gripcuff card in the AI Personal Trainer mode).
+  const { insights: bodyInsights, loading: aiLoading } = useBodyInsights({
+    gender: profile?.gender,
+    age: profile?.age,
+    heightCm: profile?.heightCm,
+    weightKg: profile?.weightKg,
+    conditions: profile?.bodyConditions,
+    goals: profile?.goals,
+  });
+  const aiRecos = bodyInsights?.recommendations ?? [];
+  const RECO_CAT: Record<string, { key: string; label: string }> = {
+    muscle_growth: { key: 'MuscleGrowth', label: 'Muscle Growth' },
+    stretching: { key: 'Stretching', label: 'Stretching' },
+    injury_rehab: { key: 'InjuryRehab', label: 'Injury Rehab' },
+    athletic: { key: 'AthleticPerformance', label: 'Athletic Performance' },
+  };
+  const RECO_META: Record<string, { color: string; emoji: string }> = {
+    muscle_growth: { color: '#66BB6A', emoji: '💪' },
+    stretching:    { color: '#4FC3F7', emoji: '🧘' },
+    injury_rehab:  { color: '#f44336', emoji: '🩹' },
+    athletic:      { color: '#D4A600', emoji: '⚡' },
+    gripcuff:      { color: '#F25912', emoji: '🤜' },
+  };
+  const openReco = (category: string) => {
+    if (category === 'gripcuff') { navigation.navigate('GripCuffVideos'); return; }
+    const c = RECO_CAT[category] ?? RECO_CAT.muscle_growth;
+    navigation.navigate('CategoryVideos', { categoryKey: c.key, categoryLabel: c.label });
+  };
 
   // Unread chat messages count + conversations
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -937,6 +969,7 @@ const HomeScreenInner = () => {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                     <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
                       <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', borderWidth: 1.5, borderColor: 'rgba(76,78,120,0.55)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Users size={13} color="#211832" strokeWidth={2.4} />
                         <Text style={{ color: '#211832', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
                         <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
                         {/* Connects temperature — gauge sits INSIDE the pill. */}
@@ -945,10 +978,10 @@ const HomeScreenInner = () => {
                     </TouchableOpacity>
                     {/* Workout pill — dumbbell + total workouts + temperature. */}
                     {homeHeats && (
-                      <View style={{ backgroundColor: 'rgba(242,89,18,0.1)', borderWidth: 1.5, borderColor: 'rgba(242,89,18,0.55)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Dumbbell size={13} color={homeHeats.workout.color} strokeWidth={2.4} />
-                        <Text style={{ color: homeHeats.workout.color, fontSize: 13, fontWeight: '800' }}>{profile?.totalWatchSessions ?? 0}</Text>
-                        <Text style={{ color: homeHeats.workout.color, fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>WORKOUTS</Text>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Dumbbell size={13} color="#211832" strokeWidth={2.4} />
+                        <Text style={{ color: '#211832', fontSize: 13, fontWeight: '800' }}>{profile?.totalWatchSessions ?? 0}</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>WORKOUTS</Text>
                         {/* Workout temperature — gauge sits INSIDE the pill. */}
                         <ThermometerHeat heat={homeHeats.workout} size={18} />
                       </View>
@@ -1029,63 +1062,61 @@ const HomeScreenInner = () => {
 
               </View>
 
-              {/* Gripcuff Training Progress Card — directly below the profile */}
+              {/* AI Recommendations — picked from goals, injuries & body data */}
               <View style={styles.gripCuffCard}>
                 <GlassSheen radius={20} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  {/* Left: title + badge + buttons */}
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <Text style={styles.gripCuffTitle}>Gripcuff Training</Text>
-                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 }}>
-                        <Text style={{ color: '#4C4E78', fontSize: 10, fontWeight: '700' }}>
-                          {accessType ? accessType.replace(/_access$/, '').toUpperCase() : 'STARTER'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <TouchableOpacity
-                        onPress={() => setShowTiersModal(true)}
-                        style={{ backgroundColor: '#F25912', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 }}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Upgrade</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={{ borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
-                        onPress={() => navigation.navigate('GripCuffVideos')}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600' }}>Get Started</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 }}>
+                  <Sparkles size={16} color="#F25912" />
+                  <Text style={styles.gripCuffTitle}>AI Recommendations</Text>
+                </View>
+                <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '500', marginBottom: 12 }}>
+                  Picked by AI from your goals, injuries &amp; body
+                </Text>
 
-                  {/* Right: compact bar chart — fills up to current gripCuffLevel */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5 }}>
-                    {[1, 2, 3, 4].map((lvl) => {
-                      const isCurrent = lvl === gripCuffLevel;
-                      const isFilled  = lvl <= gripCuffLevel;
-                      const barHeight = lvl * 8 + 8;
+                {aiRecos.length === 0 ? (
+                  aiLoading ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+                      <ActivityIndicator size="small" color="#F25912" />
+                      <Text style={{ color: '#7A7C90', fontSize: 13 }}>Reading your body data…</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => navigation.navigate('BodyGoals')} activeOpacity={0.8}>
+                      <Text style={{ color: '#7A7C90', fontSize: 13, lineHeight: 18 }}>
+                        Add your goals &amp; body details to get personalized picks →
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
+                    {aiRecos.map((r, i) => {
+                      const meta = RECO_META[r.category] ?? RECO_META.muscle_growth;
                       return (
-                        <View key={lvl} style={{ alignItems: 'center', gap: 3 }}>
-                          <View
-                            style={{
-                              width: 20,
-                              height: barHeight,
-                              borderRadius: 4,
-                              backgroundColor: isFilled ? '#F25912' : 'rgba(33,24,50,0.1)',
-                              opacity: isCurrent ? 1 : isFilled ? 0.55 : 1,
-                            }}
-                          />
-                          <Text style={{ color: isCurrent ? '#F25912' : isFilled ? 'rgba(242,89,18,0.5)' : '#D8D8E4', fontSize: 9, fontWeight: isCurrent ? '700' : '500' }}>
-                            {lvl}
-                          </Text>
-                        </View>
+                        <TouchableOpacity
+                          key={`${r.category}-${i}`}
+                          activeOpacity={0.85}
+                          onPress={() => openReco(r.category)}
+                          style={{
+                            width: 210,
+                            backgroundColor: 'rgba(255,255,255,0.62)',
+                            borderRadius: 14,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.9)',
+                            padding: 12,
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${meta.color}22` }}>
+                              <Text style={{ fontSize: 16 }}>{meta.emoji}</Text>
+                            </View>
+                            <Text style={{ flex: 1, color: '#211832', fontSize: 13.5, fontWeight: '800' }} numberOfLines={2}>{r.title}</Text>
+                          </View>
+                          <Text style={{ color: '#7A7C90', fontSize: 12, lineHeight: 16, fontWeight: '500' }} numberOfLines={3}>{r.reason}</Text>
+                          <Text style={{ color: meta.color, fontSize: 12, fontWeight: '700', marginTop: 8 }}>Explore ›</Text>
+                        </TouchableOpacity>
                       );
                     })}
-                  </View>
-                </View>
+                  </ScrollView>
+                )}
               </View>
 
               {/* Unified streak + leaderboard */}
@@ -1561,8 +1592,8 @@ const HomeScreenInner = () => {
             age={profile?.age}
             goals={profile?.goals}
             conditions={profile?.bodyConditions}
-            onPressNow={() => navigation.navigate('BodyDetails')}
-            onPressGoal={() => navigation.navigate('BodyDetails')}
+            onPressNow={() => navigation.navigate('HowILookNow')}
+            onPressGoal={() => navigation.navigate('Goals')}
           />
 
           {/* ── Are you being social or working out? — my own heat map ──────── */}
