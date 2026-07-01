@@ -44,6 +44,8 @@ import { supabase } from '../../core/config/supabase';
 import { ChatService } from '../../services/chat.service';
 import { ChatConversation } from '../../models/Chat';
 import { ChallengeSessionService, PreviousChallenge, ScheduledChallenge } from '../../services/challengeSession.service';
+import { NotificationService } from '../../services/notification.service';
+import { fetchAgoraToken } from '../../services/agora/AgoraTokenService';
 import { NotificationCenter } from '../NotificationCenter';
 import { getProgramsByCategory } from '../../data/preRecordedPrograms';
 
@@ -205,6 +207,8 @@ export function SocialActivity() {
   // pre-send video picker), plus an in-flight flag while the invite is created.
   const [quickFriend, setQuickFriend] = useState<typeof friends[number] | null>(null);
   const [sendingInstant, setSendingInstant] = useState(false);
+  // Instant challenge quick-send: uid of the friend currently being challenged.
+  const [challengingUid, setChallengingUid] = useState<string | null>(null);
 
   // Load prefs once we know the user.
   useEffect(() => { setPrefs(loadPrefs(supabaseUserId)); }, [supabaseUserId]);
@@ -496,6 +500,50 @@ export function SocialActivity() {
     }
   }, [quickFriend, sendInstantWorkout]);
 
+  // Instant head-to-head challenge — tap a friend to create the session, notify
+  // them, and jump straight into the room (no scheduling). Defaults to a 1-min
+  // Squats duel; the friend gets the accept popup via the App-level listener.
+  const startInstantChallenge = useCallback(async (f: typeof friends[number]) => {
+    if (!supabaseUserId || challengingUid) return;
+    setChallengingUid(f.uid);
+    const exerciseName = 'Squats';
+    const durationSeconds = 60;
+    const myName = user?.displayName || user?.email?.split('@')[0] || 'Someone';
+    try {
+      const session = await ChallengeSessionService.create({
+        hostId: supabaseUserId,
+        guestId: f.uid,
+        exerciseName,
+        durationSeconds,
+      });
+      const token = await fetchAgoraToken(session.channelName, 0).catch(() => '');
+      await NotificationService.insert({
+        toUid: f.uid,
+        fromUid: supabaseUserId,
+        fromName: myName,
+        type: 'challenge_invite',
+        title: '💪 Exercise Challenge!',
+        body: `${myName} challenged you to ${durationSeconds / 60} min of ${exerciseName}!`,
+        sessionId: session.id,
+      }).catch(() => {});
+      navigation.navigate('ChallengeVideoRoom', {
+        channelName: session.channelName,
+        opponentName: f.fullName || f.username || 'Opponent',
+        opponentUid: f.uid,
+        token,
+        challengeSessionId: session.id,
+        exerciseName,
+        workoutDurationSecs: durationSeconds,
+        isHost: true,
+        myUid: supabaseUserId,
+      });
+    } catch (e) {
+      console.warn('[SocialActivity] instant challenge failed', e);
+    } finally {
+      setChallengingUid(null);
+    }
+  }, [supabaseUserId, challengingUid, user, navigation]);
+
   const renderRequestRow = (id: string, otherUid: string, kind: 'incoming' | 'outgoing') => {
     const prof = reqProfiles[otherUid];
     const name = prof?.name ?? 'Athlete';
@@ -728,16 +776,60 @@ export function SocialActivity() {
         </>
       )}
 
-      {/* Challenges tab — invite a friend to a head-to-head challenge. */}
+      {/* Challenges tab — tap a friend to send an INSTANT head-to-head challenge. */}
       {filter === 'challenges' && (
-        <TouchableOpacity
-          style={[s.ctaBtn, { backgroundColor: ORANGE }]}
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('ChallengeLobbyScreen')}
-        >
-          <Swords size={18} color="#fff" />
-          <Text style={s.ctaBtnText}>Invite a friend to challenge</Text>
-        </TouchableOpacity>
+        <>
+          {friends.length > 0 && (
+            <View style={s.friendsStrip}>
+              <Text style={s.friendsStripLabel}>Challenge now — tap a friend</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.friendsRow}
+              >
+                {friends.map((f) => (
+                  <TouchableOpacity
+                    key={f.uid}
+                    style={[s.friendChip, !!challengingUid && challengingUid !== f.uid && { opacity: 0.5 }]}
+                    activeOpacity={0.8}
+                    onPress={() => startInstantChallenge(f)}
+                    disabled={!!challengingUid}
+                  >
+                    <View>
+                      {f.profileImageUrl ? (
+                        <Image source={{ uri: f.profileImageUrl }} style={s.friendAvatar} />
+                      ) : (
+                        <View style={[s.friendAvatar, s.friendAvatarFallback]}>
+                          <Text style={s.friendAvatarLetter}>
+                            {(f.fullName || f.username || '?').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={[s.friendChipBadge, { backgroundColor: C_CHALLENGES }]}>
+                        {challengingUid === f.uid ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Swords size={10} color="#fff" />
+                        )}
+                      </View>
+                    </View>
+                    <Text style={s.friendName} numberOfLines={1}>
+                      {(f.fullName || f.username || 'Friend').split(' ')[0]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+          <TouchableOpacity
+            style={[s.ctaBtn, { backgroundColor: ORANGE }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('ChallengeLobbyScreen')}
+          >
+            <Swords size={18} color="#fff" />
+            <Text style={s.ctaBtnText}>Invite a friend to challenge</Text>
+          </TouchableOpacity>
+        </>
       )}
 
       {filter === 'notifications' ? (
