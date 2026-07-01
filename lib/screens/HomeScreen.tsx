@@ -38,7 +38,9 @@ import {
   Swords,
   Play,
   Sparkles,
+  Pencil,
 } from 'lucide-react-native';
+import MuscleVisualizer from '../components/MuscleVisualizer';
 import { Raw1Logo } from '../raw1_logo';
 import { AccessBadge } from '../components/AccessBadge';
 import { useAuth } from '../providers/AuthContext';
@@ -413,6 +415,13 @@ const HomeScreenInner = () => {
     goals: profile?.goals,
   });
   const aiRecos = bodyInsights?.recommendations ?? [];
+  // Girth for the tiny 3D body preview — from the user's BMI (matches BodyGoalComparison).
+  const bodyModelGirth = (() => {
+    const hM = (profile?.heightCm ?? 170) / 100;
+    const w = profile?.weightKg ?? 70;
+    const bmi = w / (hM * hM);
+    return Math.max(0.86, Math.min(1.34, 1 + (bmi - 22) * 0.022));
+  })();
   const RECO_CAT: Record<string, { key: string; label: string }> = {
     muscle_growth: { key: 'MuscleGrowth', label: 'Muscle Growth' },
     stretching: { key: 'Stretching', label: 'Stretching' },
@@ -1065,13 +1074,39 @@ const HomeScreenInner = () => {
               {/* AI Recommendations — picked from goals, injuries & body data */}
               <View style={styles.gripCuffCard}>
                 <GlassSheen radius={20} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 }}>
-                  <Sparkles size={16} color="#F25912" />
-                  <Text style={styles.gripCuffTitle}>AI Recommendations</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 }}>
+                      <Sparkles size={16} color="#F25912" />
+                      <Text style={styles.gripCuffTitle}>Your Body Recommendations</Text>
+                    </View>
+                    <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '500' }}>
+                      Picked by AI from your goals, injuries &amp; body
+                    </Text>
+                  </View>
+
+                  {/* Tiny 3D body model — tap to open the full-screen editor */}
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('BodyGoals')}
+                    activeOpacity={0.85}
+                    style={{ alignItems: 'center' }}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <View style={{ width: 50, height: 68, borderRadius: 10, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.5)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' }}>
+                      <MuscleVisualizer
+                        gender={profile?.gender === 'female' ? 'female' : 'male'}
+                        view="front"
+                        hideControls
+                        height={68}
+                        girthScale={bodyModelGirth}
+                      />
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 3 }}>
+                      <Pencil size={9} color="#F25912" />
+                      <Text style={{ color: '#F25912', fontSize: 10, fontWeight: '700' }}>Edit</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
-                <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '500', marginBottom: 12 }}>
-                  Picked by AI from your goals, injuries &amp; body
-                </Text>
 
                 {aiRecos.length === 0 ? (
                   aiLoading ? (
