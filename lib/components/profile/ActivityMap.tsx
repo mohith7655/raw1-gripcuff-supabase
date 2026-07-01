@@ -22,8 +22,9 @@ const SHADES: Record<ActivityKind, string[]> = {
   solo:      ['#9be9a8', '#40c463', '#30a14e', '#216e39'], // GitHub greens
   friend:    ['#B7BCDE', '#7E83BA', '#565A93', '#393C66'], // indigo
   challenge: ['#FBC9A8', '#F59A5C', '#F2712B', '#B83C06'], // orange
+  social:    ['#B7BCDE', '#7E83BA', '#565A93', '#393C66'], // indigo (social interactions)
 };
-const KIND_LABEL: Record<ActivityKind, string> = { solo: 'Workout', friend: 'With friend', challenge: 'Challenge' };
+const KIND_LABEL: Record<ActivityKind, string> = { solo: 'Workout', friend: 'With friend', challenge: 'Challenge', social: 'Social' };
 const PRIORITY: ActivityKind[] = ['challenge', 'friend', 'solo']; // most notable wins the cell hue
 
 const WEEKS = 18;        // weeks shown at once

@@ -666,7 +666,7 @@ export function SocialProfileScreen() {
                     <Text style={s.connectsCount}>{connections.length}</Text>
                     <Text style={s.connectsLabel}>CONNECTS</Text>
                     {/* Connects temperature — gauge sits INSIDE the pill. */}
-                    {heats && <ThermometerHeat heat={heats.social} size={18} />}
+                    {heats && <ThermometerHeat heat={heats.social} size={13} />}
                   </TouchableOpacity>
                   {/* Workout pill — dumbbell + total workout count + temperature. */}
                   {heats && (
@@ -675,7 +675,7 @@ export function SocialProfileScreen() {
                       <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
                       <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
                       {/* Workout temperature — gauge sits INSIDE the pill. */}
-                      <ThermometerHeat heat={heats.workout} size={18} />
+                      <ThermometerHeat heat={heats.workout} size={13} />
                     </View>
                   )}
                 </View>
@@ -1403,9 +1403,9 @@ const s = StyleSheet.create({
   connectsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 5,
     marginTop: 6,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
   },
   genderPill: {
     width: 26,
@@ -1419,28 +1419,28 @@ const s = StyleSheet.create({
   connectsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 7,
     backgroundColor: 'rgba(76,78,120,0.1)',
     borderWidth: 1.5,
     borderColor: 'rgba(76,78,120,0.55)',
   },
-  connectsCount: { color: C.text, fontSize: 13, fontWeight: '700' },
-  connectsLabel: { color: C.muted, fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
+  connectsCount: { color: C.text, fontSize: 11, fontWeight: '700' },
+  connectsLabel: { color: C.muted, fontSize: 8, fontWeight: '700', letterSpacing: 0.2 },
   workoutPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 7,
     borderWidth: 1.5,
     borderColor: 'rgba(242,89,18,0.55)',
   },
-  workoutPillCount: { fontSize: 13, fontWeight: '800' },
-  workoutPillText: { fontSize: 9, fontWeight: '600', letterSpacing: 0.4 },
+  workoutPillCount: { fontSize: 11, fontWeight: '800' },
+  workoutPillText: { fontSize: 8, fontWeight: '700', letterSpacing: 0.2 },
   connOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   connSheet: {
     maxHeight: '75%',

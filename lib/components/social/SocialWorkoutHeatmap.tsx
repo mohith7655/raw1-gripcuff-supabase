@@ -44,7 +44,8 @@ export function SocialWorkoutHeatmap({ uid }: { uid: string }) {
       const dt = new Date(today); dt.setDate(today.getDate() - i);
       const e = byDay[keyOf(dt)];
       const active = !!(e && e.active);
-      const social = !!(e && e.kinds.has('friend'));
+      // Social = trained with a friend OR any social interaction (chat / invite).
+      const social = !!(e && (e.kinds.has('friend') || e.kinds.has('social')));
       const challenge = !!(e && e.kinds.has('challenge'));
       // Challenge / social days are always "active"; floor the level at 1 so the
       // cell is visible even when the day logged no watch-minutes.

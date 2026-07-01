@@ -3,13 +3,24 @@
  * body profile, served from cache when inputs are unchanged (see bodyAI.service).
  */
 import { useEffect, useState } from 'react';
-import { BodyAIInput, BodyInsights, getBodyInsights } from '../services/bodyAI.service';
+import {
+  BodyAIInput,
+  BodyInsights,
+  getBodyInsights,
+  getBodyInsightsVersion,
+  subscribeBodyInsights,
+} from '../services/bodyAI.service';
 
 export function useBodyInsights(input: BodyAIInput) {
   const [insights, setInsights] = useState<BodyInsights | null>(null);
   const [loading, setLoading] = useState(false);
+  // Bumped when body data is saved anywhere (see invalidateBodyInsights) so the
+  // recommendations recalibrate against the latest 3D-model state.
+  const [version, setVersion] = useState(getBodyInsightsVersion);
 
-  // Re-run only when the meaningful inputs change.
+  useEffect(() => subscribeBodyInsights(() => setVersion(getBodyInsightsVersion())), []);
+
+  // Re-run when the meaningful inputs change OR a recalibration is requested.
   const dep = JSON.stringify({
     g: input.gender, a: input.age, h: input.heightCm, w: input.weightKg,
     c: input.conditions, go: input.goals,
@@ -24,7 +35,7 @@ export function useBodyInsights(input: BodyAIInput) {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dep]);
+  }, [dep, version]);
 
   return { insights, loading };
 }

@@ -80,11 +80,15 @@ export function computeHeats(map: ActivityMapData, windowDays = 30): ActivityHea
   let lastChallenge: string | null = null;
 
   for (const [key, day] of Object.entries(map.byDay)) {
-    if (!day.active) continue;
     if (daysAgo(key) > windowDays) continue;
-    workoutDays += 1;
-    if (!lastWorkout || key > lastWorkout) lastWorkout = key;
-    if (day.kinds.has('friend') || day.kinds.has('challenge')) {
+    // Workout heat — days you actually trained.
+    if (day.active) {
+      workoutDays += 1;
+      if (!lastWorkout || key > lastWorkout) lastWorkout = key;
+    }
+    // Social heat — training WITH others OR any social interaction (chats,
+    // workout invites, challenges). Counted even on days with no workout.
+    if (day.kinds.has('friend') || day.kinds.has('challenge') || day.kinds.has('social')) {
       socialDays += 1;
       if (!lastSocial || key > lastSocial) lastSocial = key;
     }

@@ -68,6 +68,42 @@ function inputKey(i: BodyAIInput): string {
   return CACHE_PREFIX + (h >>> 0).toString(36);
 }
 
+// ── Recalibration signal ───────────────────────────────────────────────────
+// Bumped whenever the user's body data (metrics / injuries / goals) is saved so
+// every mounted useBodyInsights re-runs and the AI recommendations recalibrate
+// against the new 3D-model state instead of serving a stale cached result.
+let insightsVersion = 0;
+const versionListeners = new Set<() => void>();
+
+/** Current recalibration version — include in effect deps to react to saves. */
+export function getBodyInsightsVersion(): number {
+  return insightsVersion;
+}
+
+/** Subscribe to recalibration bumps. Returns an unsubscribe fn. */
+export function subscribeBodyInsights(cb: () => void): () => void {
+  versionListeners.add(cb);
+  return () => versionListeners.delete(cb);
+}
+
+/**
+ * Clear cached insights and notify subscribers. Call after body data is saved
+ * (metrics, injuries, or goals) so the AI recommendations are recomputed fresh.
+ */
+export function invalidateBodyInsights(): void {
+  insightsVersion += 1;
+  if (typeof localStorage !== 'undefined') {
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith(CACHE_PREFIX))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {}
+  }
+  versionListeners.forEach((cb) => {
+    try { cb(); } catch {}
+  });
+}
+
 function readCache(key: string): BodyInsights | null {
   if (typeof localStorage === 'undefined') return null;
   try {

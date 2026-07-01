@@ -5,6 +5,13 @@ import { WatchTrackingService } from '../services/watchTracking.service';
 import { DailyActivityService } from '../services/dailyActivity.service';
 import { User } from '../models/User';
 import { useAuth } from './AuthContext';
+import { invalidateBodyInsights } from '../services/bodyAI.service';
+
+// Fields that feed the AI body insights / recommendations — saving any of them
+// (e.g. body parts / injuries / goals on the 3D model) triggers a recalibration.
+const BODY_AI_FIELDS: (keyof User)[] = [
+  'gender', 'age', 'heightCm', 'weightKg', 'bodyConditions', 'goals',
+];
 
 export type AppMode = 'ai' | 'coaching';
 
@@ -243,6 +250,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       await UserService.updateProfile(uid, data);
       const latest = await UserService.getProfile(uid);
       setProfile(latest);
+      // Recalibrate AI recommendations when body data (metrics / injuries /
+      // goals) was part of this save — e.g. body parts changed on the 3D model.
+      if (BODY_AI_FIELDS.some((f) => f in data)) {
+        invalidateBodyInsights();
+      }
     } catch (err) {
       const errorMessage = (err as Error).message;
       setError(errorMessage);

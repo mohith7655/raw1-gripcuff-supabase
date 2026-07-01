@@ -11,9 +11,15 @@ type Props = {
 
 const TYPE_COLOR: Record<string, string> = {
   workout_invite: '#F25912',
+  session_invite: '#F25912',
+  challenge_invite: '#EF4444',
+  video_invite: '#8B5CF6',
   friend_request: '#4FC3F7',
   chat_message: '#22C55E',
+  message: '#22C55E',
   stranger_invite: '#EAB308',
+  social_notification: '#A78BFA',
+  workout_reminder: '#F25912',
   system: '#A78BFA',
 };
 
@@ -119,12 +125,18 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     borderRadius: 14,
     borderWidth: 1,
-    backgroundColor: 'rgba(20,33,56,0.92)',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    // Soft floating shadow — the light card no longer relies on a dark bg.
+    shadowColor: '#211832',
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   iconWrap: {
     width: 30,
@@ -148,7 +160,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   body: {
-    color: '#A8B6C9',
+    color: '#7A7C90',
     fontSize: 12,
     lineHeight: 16,
   },

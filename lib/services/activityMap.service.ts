@@ -7,13 +7,19 @@
  * activity TYPE:
  *   • workout_activity.metadata.sourceType / workout_type → solo | friend | daily-challenge
  *   • challenge_sessions (head-to-head) → challenge
+ *   • social interactions (chats sent, workout invites) → social
  *
  * Reports the last active day so the UI can show "N days since last workout".
+ *
+ * NOTE on `active`: it means "worked out that day" and drives the Workout row +
+ * "days since last workout". Pure social interactions (a chat, an invite) do NOT
+ * set `active` — they only add the 'social' kind so they light the Social row and
+ * raise social heat without faking a workout.
  */
 import { supabase } from '../core/config/supabase';
 import { ChallengeSessionService } from './challengeSession.service';
 
-export type ActivityKind = 'solo' | 'friend' | 'challenge';
+export type ActivityKind = 'solo' | 'friend' | 'challenge' | 'social';
 
 export interface DayActivity {
   minutes: number;
@@ -80,7 +86,8 @@ export async function loadActivityMap(uid: string, days = 126): Promise<Activity
     });
   } catch {}
 
-  // 3) Head-to-head challenges.
+  // 3) Head-to-head challenges (includes challenge invites — a sent/received
+  //    invite creates a challenge_sessions row).
   try {
     const challenges = await ChallengeSessionService.loadPreviousForUser(uid);
     challenges.forEach((c) => {
@@ -91,6 +98,36 @@ export async function loadActivityMap(uid: string, days = 126): Promise<Activity
       e.active = true;
       e.kinds.add('challenge');
     });
+  } catch {}
+
+  // 4) Social interactions — being social without necessarily working out.
+  //    These add the 'social' kind only (NOT `active`), so they raise social
+  //    heat + light the Social row without inflating workout stats.
+  const markSocial = (iso: string | null | undefined) => {
+    if (!iso) return;
+    const t = new Date(iso);
+    if (isNaN(t.getTime()) || t.getTime() < since.getTime()) return;
+    ensure(dayKey(t)).kinds.add('social');
+  };
+
+  // 4a) Chat messages the user sent to friends.
+  try {
+    const { data } = await supabase
+      .from('messages')
+      .select('created_at')
+      .eq('sender_id', uid)
+      .gte('created_at', sinceISO);
+    (data ?? []).forEach((r: any) => markSocial(r.created_at));
+  } catch {}
+
+  // 4b) Workout invites the user sent (scheduled co-workout sessions they host).
+  try {
+    const { data } = await supabase
+      .from('scheduled_sessions')
+      .select('created_at')
+      .eq('host_user_id', uid)
+      .gte('created_at', sinceISO);
+    (data ?? []).forEach((r: any) => markSocial(r.created_at));
   } catch {}
 
   let lastActiveDate: string | null = null;

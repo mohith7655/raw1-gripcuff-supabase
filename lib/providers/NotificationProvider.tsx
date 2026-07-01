@@ -148,11 +148,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const handleBannerPress = useCallback((notification: AppNotification) => {
     if (!navigationRef.isReady()) return;
-    if (notification.type === 'chat_message') {
+    if (notification.type === 'chat_message' || notification.type === 'message') {
       navigationRef.navigate('ChatInbox');
     } else if (notification.type === 'friend_request') {
       navigationRef.navigate('FriendsScreen');
-    } else if (notification.type === 'workout_invite') {
+    } else if (
+      notification.type === 'workout_invite' ||
+      notification.type === 'session_invite' ||
+      notification.type === 'challenge_invite' ||
+      notification.type === 'video_invite'
+    ) {
       navigationRef.navigate('UpcomingSessionsScreen');
     }
   }, []);
