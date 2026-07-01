@@ -47,11 +47,15 @@ export const SyncedVideoPlayerScreen = () => {
     const player = useVideoPlayer(null);
 
     const sourceVideo = useMemo(() => {
-        const fallbackUrl = gripCuffVideos.find(v => v.videoUrl)?.videoUrl;
+        // Always resolve to a playable URL. The instant co-workout invite passes a
+        // pre-recorded PROGRAM video id that isn't in the library lists, and
+        // gripCuffVideos may not be loaded yet — so fall back to the guaranteed
+        // premade workout URL instead of leaving the player with no source
+        // ("Video not found").
+        const fallbackUrl = gripCuffVideos.find(v => v.videoUrl)?.videoUrl || PREMADE_WORKOUT_VIDEO_URL;
         const found = [...gripCuffVideos, ...trainerVideos, ...allVideos].find(v => v.id === videoId);
         if (found) return { ...found, videoUrl: found.videoUrl || fallbackUrl };
-        if (fallbackUrl) return { id: videoId, title: videoTitle, videoUrl: fallbackUrl } as any;
-        return null;
+        return { id: videoId, title: videoTitle, videoUrl: fallbackUrl } as any;
     }, [videoId, gripCuffVideos.length, trainerVideos.length, allVideos.length]);
 
     const [isPlaying, setIsPlaying] = useState(false);
