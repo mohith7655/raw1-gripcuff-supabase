@@ -670,10 +670,10 @@ export function SocialProfileScreen() {
                   </TouchableOpacity>
                   {/* Workout pill — dumbbell + total workout count + temperature. */}
                   {heats && (
-                    <View style={[s.workoutPill, { backgroundColor: 'rgba(242,89,18,0.1)' }]}>
-                      <Dumbbell size={13} color={heats.workout.color} strokeWidth={2.4} />
-                      <Text style={[s.workoutPillCount, { color: heats.workout.color }]}>{videosWatched}</Text>
-                      <Text style={[s.workoutPillText, { color: heats.workout.color }]}>WORKOUTS</Text>
+                    <View style={s.workoutPill}>
+                      <Dumbbell size={13} color={C.text} strokeWidth={2.4} />
+                      <Text style={s.workoutPillCount}>{videosWatched}</Text>
+                      <Text style={s.workoutPillText}>WORKOUTS</Text>
                       {/* Workout temperature — gauge sits INSIDE the pill. */}
                       <ThermometerHeat heat={heats.workout} size={13} />
                     </View>
@@ -1424,8 +1424,6 @@ const s = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 7,
     backgroundColor: 'rgba(76,78,120,0.1)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(76,78,120,0.55)',
   },
   connectsCount: { color: C.text, fontSize: 11, fontWeight: '700' },
   connectsLabel: { color: C.muted, fontSize: 8, fontWeight: '700', letterSpacing: 0.2 },
@@ -1436,11 +1434,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: 'rgba(242,89,18,0.55)',
+    backgroundColor: 'rgba(76,78,120,0.1)',
   },
-  workoutPillCount: { fontSize: 11, fontWeight: '800' },
-  workoutPillText: { fontSize: 8, fontWeight: '700', letterSpacing: 0.2 },
+  workoutPillCount: { color: C.text, fontSize: 11, fontWeight: '800' },
+  workoutPillText: { color: C.muted, fontSize: 8, fontWeight: '700', letterSpacing: 0.2 },
   connOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   connSheet: {
     maxHeight: '75%',
@@ -1800,13 +1797,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(242,89,18,0.28)',
     backgroundColor: 'rgba(242,89,18,0.10)',
   },
   // Stronger fill signals these chips are tappable (schedule a challenge).
   challengeChipTappable: {
-    borderColor: 'rgba(242,89,18,0.5)',
     backgroundColor: 'rgba(242,89,18,0.16)',
   },
   challengeChipText: {

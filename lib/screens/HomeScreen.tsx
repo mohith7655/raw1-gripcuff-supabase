@@ -977,7 +977,7 @@ const HomeScreenInner = () => {
                   {/* Connects + Workouts — one compact line, full wording always visible */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, flexWrap: 'nowrap' }}>
                     <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
-                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', borderWidth: 1.5, borderColor: 'rgba(76,78,120,0.55)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Users size={11} color="#211832" strokeWidth={2.4} />
                         <Text style={{ color: '#211832', fontSize: 11, fontWeight: '700' }}>{friends.length}</Text>
                         <Text style={{ color: '#7A7C90', fontSize: 8, fontWeight: '700', letterSpacing: 0.2 }}>CONNECTS</Text>
