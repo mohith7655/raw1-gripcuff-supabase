@@ -24,7 +24,11 @@ import { useUser } from '../providers/UserContext';
 import { ChatService, getChatId } from '../services/chat.service';
 import { ChatMessage } from '../models/Chat';
 import { TierAvatar } from '../components/profile/TierAvatar';
-import { ScheduleChallengeModal } from '../components/ScheduleChallengeModal';
+import { useWorkoutSession } from '../providers/WorkoutSessionContext';
+import { ChallengeSessionService } from '../services/challengeSession.service';
+import { NotificationService } from '../services/notification.service';
+import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
+import { getProgramsByCategory } from '../data/preRecordedPrograms';
 
 type RouteParams = {
     friendUid: string;
@@ -46,31 +50,72 @@ export const ChatRoomScreen = () => {
     const [text, setText] = useState('');
     const [sending, setSending] = useState(false);
     const [ready, setReady] = useState(false);
-    // "+" action menu (invite to workout / challenge this friend) + challenge sheet.
+    // "+" action menu (invite to workout / challenge this friend).
     const [actionsOpen, setActionsOpen] = useState(false);
-    const [challengeOpen, setChallengeOpen] = useState(false);
+    const [challengeBusy, setChallengeBusy] = useState(false);
     const firstName = friendName?.split(' ')[0] || friendName;
     const listRef = useRef<FlatList>(null);
 
-    // Invite this friend to a co-workout — opens the flow with them preselected.
-    const openWorkout = () => {
+    const { sendInstantWorkout } = useWorkoutSession();
+
+    // Instant co-workout — fire an immediate invite with a sensible default
+    // workout (no scheduling). The sender's 30s waiting screen is owned by
+    // WorkoutSessionContext; both users are pulled in on accept.
+    const openWorkout = async () => {
         setActionsOpen(false);
-        navigation.navigate('WorkoutWithFriendFlow', {
-            inviteFlowState: {
-                selectedFriend: {
-                    uid: friendUid,
-                    fullName: friendName,
-                    username: friendName,
-                    profileImageUrl: friendAvatar,
-                },
-            },
-        });
+        if (!supabaseUserId) return;
+        const p = getProgramsByCategory('MuscleGrowth')[0];
+        const v = p?.videos?.[0];
+        if (!v) return;
+        try {
+            await sendInstantWorkout(friendUid, friendName, friendAvatar, v.id, `${p.title} - ${v.title}`);
+        } catch (e) {
+            console.warn('[Chat] instant workout failed', e);
+        }
     };
 
-    // Challenge this friend head-to-head (defaults to the flagship Squats duel).
-    const openChallenge = () => {
+    // Instant head-to-head challenge — create the session, notify the friend,
+    // and jump straight into the room (no time picker). Defaults to a 1-min
+    // Squats duel; the friend gets the accept popup via the App-level listener.
+    const openChallenge = async () => {
         setActionsOpen(false);
-        setChallengeOpen(true);
+        if (!supabaseUserId || challengeBusy) return;
+        setChallengeBusy(true);
+        const exerciseName = 'Squats';
+        const durationSeconds = 60;
+        try {
+            const session = await ChallengeSessionService.create({
+                hostId: supabaseUserId,
+                guestId: friendUid,
+                exerciseName,
+                durationSeconds,
+            });
+            const token = await fetchAgoraToken(session.channelName, 0).catch(() => '');
+            await NotificationService.insert({
+                toUid: friendUid,
+                fromUid: supabaseUserId,
+                fromName: senderName,
+                type: 'challenge_invite',
+                title: '💪 Exercise Challenge!',
+                body: `${senderName} challenged you to ${durationSeconds / 60} min of ${exerciseName}!`,
+                sessionId: session.id,
+            }).catch(() => {});
+            navigation.navigate('ChallengeVideoRoom', {
+                channelName: session.channelName,
+                opponentName: friendName,
+                opponentUid: friendUid,
+                token,
+                challengeSessionId: session.id,
+                exerciseName,
+                workoutDurationSecs: durationSeconds,
+                isHost: true,
+                myUid: supabaseUserId,
+            });
+        } catch (e) {
+            console.warn('[Chat] instant challenge failed', e);
+        } finally {
+            setChallengeBusy(false);
+        }
     };
 
     // Drag-down-to-close: the header/grabber acts as a drag handle.
@@ -316,32 +361,23 @@ export const ChatRoomScreen = () => {
                             </View>
                             <View style={styles.flex}>
                                 <Text style={styles.sheetRowTitle}>Workout together</Text>
-                                <Text style={styles.sheetRowSub}>Invite {firstName} to a co-workout session</Text>
+                                <Text style={styles.sheetRowSub}>Start an instant co-workout with {firstName} now</Text>
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.sheetRow} activeOpacity={0.85} onPress={openChallenge}>
+                        <TouchableOpacity style={styles.sheetRow} activeOpacity={0.85} onPress={openChallenge} disabled={challengeBusy}>
                             <View style={[styles.sheetIcon, { backgroundColor: 'rgba(225,29,72,0.12)' }]}>
                                 <Swords size={20} color="#E11D48" />
                             </View>
                             <View style={styles.flex}>
                                 <Text style={styles.sheetRowTitle}>Challenge</Text>
-                                <Text style={styles.sheetRowSub}>Squats · head-to-head duel</Text>
+                                <Text style={styles.sheetRowSub}>Instant Squats head-to-head — start now</Text>
                             </View>
+                            {challengeBusy && <ActivityIndicator color="#E11D48" size="small" />}
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
-
-            {/* Schedule a head-to-head challenge with this friend */}
-            <ScheduleChallengeModal
-                visible={challengeOpen}
-                opponentUid={friendUid}
-                opponentName={friendName}
-                opponentAvatar={friendAvatar}
-                exerciseName="Squats"
-                onClose={() => setChallengeOpen(false)}
-            />
           </SafeAreaView>
         </Animated.View>
     );

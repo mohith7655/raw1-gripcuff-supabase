@@ -11,10 +11,11 @@ import { InviteWaitingModal, IncomingInviteModal } from '../components/InstantWo
 import { navigationRef } from '../core/navigation';
 
 // How long an instant invite stays live before it auto-expires / auto-declines.
-const INSTANT_TTL_MS = 30_000;
+const INSTANT_TTL_MS = 60_000;
 // Only invites created within this window are treated as a live "instant" ping
 // worth popping the receiver modal for (avoids popping stale/scheduled rows).
-const INSTANT_FRESH_MS = 45_000;
+// Must stay >= the TTL so a still-live invite is never treated as stale.
+const INSTANT_FRESH_MS = 75_000;
 
 export interface CreateSessionExtras {
     inviteType?: 'instant' | 'scheduled';
@@ -416,15 +417,47 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     // Sender: auto-expire (cancel) the invite if unaccepted within the TTL.
     useEffect(() => {
         if (!instantOutgoing) return;
-        const to = setTimeout(() => {
+        const to = setTimeout(async () => {
             const o = instantOutgoingRef.current;
-            if (o) {
+            if (!o) return;
+            // Re-check acceptance right at the deadline before cancelling — the
+            // guest may have accepted just now. If loadAll detects it, it clears
+            // instantOutgoing (and navigates the host), so we skip the cancel.
+            if (supabaseUserId) await loadAll(supabaseUserId).catch(() => {});
+            const stillWaiting = instantOutgoingRef.current;
+            if (stillWaiting && stillWaiting.sessionId === o.sessionId) {
                 cancelSession(o.sessionId).catch(() => {});
                 setInstantOutgoing(null);
             }
         }, Math.max(0, instantOutgoing.expiresAt - Date.now()));
         return () => clearTimeout(to);
     }, [instantOutgoing?.sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Sender fallback: while waiting on an instant invite, poll for acceptance.
+    // Realtime UPDATEs can be missed when the sender's tab is backgrounded /
+    // the socket drops (seen as "realtime: CLOSED"), so we actively re-run
+    // loadAll — its pending→accepted diff then navigates the host into the
+    // session even without the realtime push. Also refresh the moment the tab
+    // regains focus so a returning user is pulled in immediately.
+    useEffect(() => {
+        if (!instantOutgoing || !supabaseUserId) return;
+        const uid = supabaseUserId;
+        const iv = setInterval(() => { loadAll(uid).catch(() => {}); }, 2000);
+        const onVisible = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+                loadAll(uid).catch(() => {});
+            }
+        };
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', onVisible);
+        }
+        return () => {
+            clearInterval(iv);
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', onVisible);
+            }
+        };
+    }, [instantOutgoing?.sessionId, supabaseUserId, loadAll]);
 
     // Receiver: auto-decline if not acted on within the TTL.
     useEffect(() => {
