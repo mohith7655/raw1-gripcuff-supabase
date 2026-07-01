@@ -1071,6 +1071,65 @@ const HomeScreenInner = () => {
 
               </View>
 
+              {/* Gripcuff Training Progress Card — level + upgrade, directly below the profile */}
+              <View style={styles.gripCuffCard}>
+                <GlassSheen radius={20} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  {/* Left: title + badge + buttons */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <Text style={styles.gripCuffTitle}>Gripcuff Training</Text>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 }}>
+                        <Text style={{ color: '#4C4E78', fontSize: 10, fontWeight: '700' }}>
+                          {accessType ? accessType.replace(/_access$/, '').toUpperCase() : 'STARTER'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => setShowTiersModal(true)}
+                        style={{ backgroundColor: '#F25912', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Upgrade</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ borderWidth: 1, borderColor: 'rgba(33,24,50,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
+                        onPress={() => navigation.navigate('GripCuffVideos')}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '600' }}>Get Started</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Right: compact bar chart — fills up to current gripCuffLevel */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5 }}>
+                    {[1, 2, 3, 4].map((lvl) => {
+                      const isCurrent = lvl === gripCuffLevel;
+                      const isFilled  = lvl <= gripCuffLevel;
+                      const barHeight = lvl * 8 + 8;
+                      return (
+                        <View key={lvl} style={{ alignItems: 'center', gap: 3 }}>
+                          <View
+                            style={{
+                              width: 20,
+                              height: barHeight,
+                              borderRadius: 4,
+                              backgroundColor: isFilled ? '#F25912' : 'rgba(33,24,50,0.1)',
+                              opacity: isCurrent ? 1 : isFilled ? 0.55 : 1,
+                            }}
+                          />
+                          <Text style={{ color: isCurrent ? '#F25912' : isFilled ? 'rgba(242,89,18,0.5)' : '#D8D8E4', fontSize: 9, fontWeight: isCurrent ? '700' : '500' }}>
+                            {lvl}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+
               {/* AI Recommendations — picked from goals, injuries & body data */}
               <View style={styles.gripCuffCard}>
                 <GlassSheen radius={20} />

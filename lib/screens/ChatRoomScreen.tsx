@@ -264,13 +264,6 @@ export const ChatRoomScreen = () => {
 
                 {/* Input Bar */}
                 <View style={styles.inputBar}>
-                    <TouchableOpacity
-                        style={styles.attachButton}
-                        onPress={() => setActionsOpen(true)}
-                        activeOpacity={0.7}
-                    >
-                        <Swords color={AppTheme.primaryColor} size={20} />
-                    </TouchableOpacity>
                     <TextInput
                         style={styles.input}
                         value={text}
@@ -282,6 +275,14 @@ export const ChatRoomScreen = () => {
                         returnKeyType="default"
                         onSubmitEditing={handleSend}
                     />
+                    {/* Challenge / workout actions — right side, next to Send */}
+                    <TouchableOpacity
+                        style={styles.attachButton}
+                        onPress={() => setActionsOpen(true)}
+                        activeOpacity={0.7}
+                    >
+                        <Swords color={AppTheme.primaryColor} size={20} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
                         onPress={handleSend}

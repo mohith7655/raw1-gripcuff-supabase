@@ -707,7 +707,6 @@ const SECTIONS = [
 // Icons + colors mirror the Workouts category rows so exercises and workouts
 // read as the same set of categories.
 const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; iconName: any; color: string }[] = [
-  { key: 'Gripcuff', label: 'Gripcuff Training', mappingKey: 'gripcuff', iconName: 'arm-flex', color: '#F25912' },
   { key: 'MuscleGrowth', label: 'Muscle Growth', mappingKey: 'muscle', iconName: 'weight-lifter', color: '#66BB6A' },
   { key: 'Stretching', label: 'Stretching', mappingKey: 'stretching', iconName: 'yoga', color: '#4FC3F7' },
   { key: 'AthleticPerformance', label: 'Athletic Performance', mappingKey: 'athletic', iconName: 'run-fast', color: '#D4A600' },
@@ -1417,15 +1416,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
   },
   categorySection: {
-    marginBottom: 28,
+    marginBottom: 8,
   },
-  // Per-category card band — a plain white surface so each exercise category
-  // reads as its own distinct section (no colour accents).
+  // Per-category group — transparent (no white band) and condensed so the
+  // exercise categories read as compact sections over the ambient background.
   categoryCard: {
-    marginBottom: 16,
-    paddingTop: 16,
-    paddingBottom: 18,
-    backgroundColor: AppTheme.cardColor,
+    marginBottom: 8,
+    paddingTop: 6,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
   },
   categoryTitleRow: {
     flexDirection: 'row',
