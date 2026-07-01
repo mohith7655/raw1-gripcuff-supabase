@@ -704,12 +704,14 @@ const SECTIONS = [
 
 // Each exercise category renders as its own plain white card section so the
 // groups read as distinct sets of exercises.
-const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; icon: string }[] = [
-  { key: 'Gripcuff', label: 'Gripcuff Training', mappingKey: 'gripcuff', icon: '🤜' },
-  { key: 'MuscleGrowth', label: 'Muscle Growth', mappingKey: 'muscle', icon: '🏋️' },
-  { key: 'Stretching', label: 'Stretching', mappingKey: 'stretching', icon: '🧘' },
-  { key: 'AthleticPerformance', label: 'Athletic Performance', mappingKey: 'athletic', icon: '🏃' },
-  { key: 'InjuryRehab', label: 'Injury Rehab', mappingKey: 'rehab', icon: '🩹' },
+// Icons + colors mirror the Workouts category rows so exercises and workouts
+// read as the same set of categories.
+const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; iconName: any; color: string }[] = [
+  { key: 'Gripcuff', label: 'Gripcuff Training', mappingKey: 'gripcuff', iconName: 'arm-flex', color: '#F25912' },
+  { key: 'MuscleGrowth', label: 'Muscle Growth', mappingKey: 'muscle', iconName: 'weight-lifter', color: '#66BB6A' },
+  { key: 'Stretching', label: 'Stretching', mappingKey: 'stretching', iconName: 'yoga', color: '#4FC3F7' },
+  { key: 'AthleticPerformance', label: 'Athletic Performance', mappingKey: 'athletic', iconName: 'run-fast', color: '#D4A600' },
+  { key: 'InjuryRehab', label: 'Injury Rehab', mappingKey: 'rehab', iconName: 'human-cane', color: '#f44336' },
 ];
 
 // ── Shared Video Content ──
@@ -962,7 +964,9 @@ const VideoContent = ({
             <View key={section.key} style={[styles.categorySection, styles.categoryCard]}>
               <View style={styles.categorySectionHeader}>
                 <View style={styles.categoryTitleRow}>
-                  <Text style={styles.categoryIconText}>{section.icon}</Text>
+                  <View style={[styles.categoryIconBadge, { backgroundColor: `${section.color}20` }]}>
+                    <MaterialCommunityIcons name={section.iconName} color={section.color} size={18} />
+                  </View>
                   <Text style={styles.categorySectionTitle}>{section.label}</Text>
                 </View>
                 <View style={styles.categoryHeaderActions}>
@@ -1429,8 +1433,12 @@ const styles = StyleSheet.create({
     gap: 8,
     flexShrink: 1,
   },
-  categoryIconText: {
-    fontSize: 15,
+  categoryIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categorySectionHeader: {
     flexDirection: 'row',

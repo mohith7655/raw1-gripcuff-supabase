@@ -965,25 +965,25 @@ const HomeScreenInner = () => {
                       )}
                     </View>
                   </View>
-                  {/* Connects + Workouts — same row */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                    <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7}>
-                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', borderWidth: 1.5, borderColor: 'rgba(76,78,120,0.55)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  {/* Connects + Workouts — always one line (no wrap) */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'nowrap' }}>
+                    <TouchableOpacity onPress={() => navigation.navigate('FriendsScreen')} activeOpacity={0.7} style={{ flexShrink: 1 }}>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', borderWidth: 1.5, borderColor: 'rgba(76,78,120,0.55)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Users size={13} color="#211832" strokeWidth={2.4} />
                         <Text style={{ color: '#211832', fontSize: 13, fontWeight: '700' }}>{friends.length}</Text>
-                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>CONNECTS</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }} numberOfLines={1}>CONNECTS</Text>
                         {/* Connects temperature — gauge sits INSIDE the pill. */}
-                        {homeHeats && <ThermometerHeat heat={homeHeats.social} size={18} />}
+                        {homeHeats && <ThermometerHeat heat={homeHeats.social} size={16} />}
                       </View>
                     </TouchableOpacity>
                     {/* Workout pill — dumbbell + total workouts + temperature. */}
                     {homeHeats && (
-                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View style={{ backgroundColor: 'rgba(76,78,120,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}>
                         <Dumbbell size={13} color="#211832" strokeWidth={2.4} />
                         <Text style={{ color: '#211832', fontSize: 13, fontWeight: '800' }}>{profile?.totalWatchSessions ?? 0}</Text>
-                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }}>WORKOUTS</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 9, fontWeight: '600', letterSpacing: 0.4 }} numberOfLines={1}>WORKOUTS</Text>
                         {/* Workout temperature — gauge sits INSIDE the pill. */}
-                        <ThermometerHeat heat={homeHeats.workout} size={18} />
+                        <ThermometerHeat heat={homeHeats.workout} size={16} />
                       </View>
                     )}
                   </View>

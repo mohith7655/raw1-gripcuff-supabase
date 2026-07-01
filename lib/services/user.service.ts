@@ -229,32 +229,37 @@ export class UserService {
       throw new Error(error.message);
     }
 
-    if (data.username !== undefined || data.fullName !== undefined || data.profileImageUrl !== undefined || data.age !== undefined || data.gender !== undefined || data.dateOfBirth !== undefined || data.phone !== undefined || data.currentStreak !== undefined || data.bestStreak !== undefined || data.completedWorkouts !== undefined || data.heightCm !== undefined || data.weightKg !== undefined || data.bodyConditions !== undefined || data.bodyGoal !== undefined || data.injuryArea !== undefined || data.injuryAreas !== undefined || data.injurySide !== undefined || data.weightLossKg !== undefined || data.targetMuscles !== undefined || data.goals !== undefined) {
-      const { error: profileSyncErr } = await supabase
-        .from('profiles')
-        .upsert({
-          id: uid,
-          username: data.username ?? undefined,
-          full_name: data.fullName ?? undefined,
-          avatar_url: data.profileImageUrl ?? undefined,
-          age: data.age ?? undefined,
-          gender: data.gender ?? undefined,
-          date_of_birth: data.dateOfBirth ?? undefined,
-          phone: data.phone ?? undefined,
-          current_streak: data.currentStreak ?? undefined,
-          best_streak: data.bestStreak ?? undefined,
-          completed_workouts: data.completedWorkouts ?? undefined,
-          height_cm: data.heightCm ?? undefined,
-          weight_kg: data.weightKg ?? undefined,
-          body_conditions: data.bodyConditions ?? undefined,
-          body_goal: data.bodyGoal ?? undefined,
-          injury_area: data.injuryArea ?? undefined,
-          injury_areas: data.injuryAreas ?? undefined,
-          injury_side: data.injurySide ?? undefined,
-          weight_loss_kg: data.weightLossKg ?? undefined,
-          target_muscles: data.targetMuscles ?? undefined,
-          goals: data.goals ?? undefined,
-        }, { onConflict: 'id' });
+    // Mirror a subset of fields into the public `profiles` table. Only include
+    // keys that were actually provided so we never overwrite columns with nulls.
+    const profilePayload: Record<string, any> = {};
+    if (data.username !== undefined) profilePayload.username = data.username ?? null;
+    if (data.fullName !== undefined) profilePayload.full_name = data.fullName ?? null;
+    if (data.profileImageUrl !== undefined) profilePayload.avatar_url = data.profileImageUrl ?? null;
+    if (data.age !== undefined) profilePayload.age = data.age ?? null;
+    if (data.gender !== undefined) profilePayload.gender = data.gender ?? null;
+    if (data.dateOfBirth !== undefined) profilePayload.date_of_birth = data.dateOfBirth ?? null;
+    if (data.phone !== undefined) profilePayload.phone = data.phone ?? null;
+    if (data.currentStreak !== undefined) profilePayload.current_streak = data.currentStreak ?? null;
+    if (data.bestStreak !== undefined) profilePayload.best_streak = data.bestStreak ?? null;
+    if (data.completedWorkouts !== undefined) profilePayload.completed_workouts = data.completedWorkouts ?? null;
+    if (data.heightCm !== undefined) profilePayload.height_cm = data.heightCm ?? null;
+    if (data.weightKg !== undefined) profilePayload.weight_kg = data.weightKg ?? null;
+    if (data.bodyConditions !== undefined) profilePayload.body_conditions = data.bodyConditions ?? null;
+    if (data.bodyGoal !== undefined) profilePayload.body_goal = data.bodyGoal ?? null;
+    if (data.injuryArea !== undefined) profilePayload.injury_area = data.injuryArea ?? null;
+    if (data.injuryAreas !== undefined) profilePayload.injury_areas = data.injuryAreas ?? null;
+    if (data.injurySide !== undefined) profilePayload.injury_side = data.injurySide ?? null;
+    if (data.weightLossKg !== undefined) profilePayload.weight_loss_kg = data.weightLossKg ?? null;
+    if (data.targetMuscles !== undefined) profilePayload.target_muscles = data.targetMuscles ?? null;
+    if (data.goals !== undefined) profilePayload.goals = data.goals ?? null;
+
+    if (Object.keys(profilePayload).length > 0) {
+      // Upsert only when a username is present (required NOT NULL for inserts).
+      // Otherwise the profiles row already exists — update it in place so we
+      // don't trip the username NOT NULL constraint on the insert tuple.
+      const { error: profileSyncErr } = data.username
+        ? await supabase.from('profiles').upsert({ id: uid, ...profilePayload }, { onConflict: 'id' })
+        : await supabase.from('profiles').update(profilePayload).eq('id', uid);
       if (profileSyncErr) {
         console.warn('[UserService] profile mirror sync failed:', profileSyncErr.message);
       }
