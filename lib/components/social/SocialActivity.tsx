@@ -187,7 +187,7 @@ export function SocialActivity() {
   const preview = useProfilePreview();
   const { supabaseUserId, user } = useAuth();
   const { friends, incomingRequests, outgoingRequests, acceptRequest, declineRequest } = useFriend();
-  const { completedSessions, pendingInvites, upcomingSessions, sendInstantWorkout } = useWorkoutSession();
+  const { completedSessions, pendingInvites, upcomingSessions, sendInstantWorkout, refreshSessions } = useWorkoutSession();
 
   const [prefs, setPrefs] = useState<Record<ActivityCategory, boolean>>(() => DEFAULT_PREFS);
   const [customizing, setCustomizing] = useState(false);
@@ -213,20 +213,30 @@ export function SocialActivity() {
   // Load prefs once we know the user.
   useEffect(() => { setPrefs(loadPrefs(supabaseUserId)); }, [supabaseUserId]);
 
-  // Challenge history.
-  useEffect(() => {
-    if (!supabaseUserId) { setChallenges([]); return; }
-    let alive = true;
+  // Challenge history — loadable so we can refresh it (mount + on screen focus).
+  const loadChallenges = useCallback(() => {
+    if (!supabaseUserId) { setChallenges([]); setScheduledChallenges([]); return; }
     setLoadingChallenges(true);
     ChallengeSessionService.loadPreviousForUser(supabaseUserId)
-      .then((rows) => { if (alive) setChallenges(rows); })
-      .catch(() => { if (alive) setChallenges([]); })
-      .finally(() => { if (alive) setLoadingChallenges(false); });
+      .then(setChallenges)
+      .catch(() => setChallenges([]))
+      .finally(() => setLoadingChallenges(false));
     ChallengeSessionService.loadScheduledForUser(supabaseUserId)
-      .then((rows) => { if (alive) setScheduledChallenges(rows); })
-      .catch(() => { if (alive) setScheduledChallenges([]); });
-    return () => { alive = false; };
+      .then(setScheduledChallenges)
+      .catch(() => setScheduledChallenges([]));
   }, [supabaseUserId]);
+
+  useEffect(() => { loadChallenges(); }, [loadChallenges]);
+
+  // Refresh challenge + co-workout history whenever the Activity screen regains
+  // focus (e.g. returning from a challenge room or a co-workout) so a session
+  // that just finished shows up in history without needing a full remount.
+  useFocusEffect(
+    useCallback(() => {
+      loadChallenges();
+      refreshSessions?.();
+    }, [loadChallenges, refreshSessions])
+  );
 
   // Resolve profiles for both incoming (sender) and outgoing (recipient) friend
   // requests — requests carry only uids.
