@@ -9,6 +9,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, Image as RNImage, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, G, Image as SvgImage, Line, Text as SvgText } from 'react-native-svg';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GoalEntry, GoalType } from '../../models/User';
 import MuscleVisualizer from '../MuscleVisualizer';
 import { loadUnits, fmtWeight, isWeightLb, toFeetInches } from '../../utils/units';
@@ -96,11 +97,13 @@ const C = {
   rule:       'rgba(33,24,50,0.10)',
 };
 
-const TYPE_META: Record<GoalType, { label: string; emoji: string; color: string; soft: string; noun: string }> = {
-  muscle_growth: { label: 'Muscle Growth', emoji: '🏋️', color: C.green,  soft: 'rgba(22,163,74,0.12)',  noun: 'muscles' },
-  weight_loss:   { label: 'Weight Loss',   emoji: '🔥', color: C.yellow, soft: 'rgba(212,166,0,0.14)',  noun: '' },
-  injury_rehab:  { label: 'Injury Rehab',  emoji: '🩹', color: C.red,    soft: 'rgba(220,38,38,0.12)',  noun: 'body parts' },
-  stretching:    { label: 'Stretching',    emoji: '🧘', color: C.blue,   soft: 'rgba(37,99,235,0.12)',  noun: 'body parts' },
+// Icons are MaterialCommunityIcons names, matching the Workouts category rows
+// (weight-lifter / human-cane / yoga); weight loss keeps a fire icon.
+const TYPE_META: Record<GoalType, { label: string; icon: string; color: string; soft: string; noun: string }> = {
+  muscle_growth: { label: 'Muscle Growth', icon: 'weight-lifter', color: C.green,  soft: 'rgba(22,163,74,0.12)',  noun: 'muscles' },
+  weight_loss:   { label: 'Weight Loss',   icon: 'fire',          color: C.yellow, soft: 'rgba(212,166,0,0.14)',  noun: '' },
+  injury_rehab:  { label: 'Injury Rehab',  icon: 'human-cane',    color: C.red,    soft: 'rgba(220,38,38,0.12)',  noun: 'body parts' },
+  stretching:    { label: 'Stretching',    icon: 'yoga',          color: C.blue,   soft: 'rgba(37,99,235,0.12)',  noun: 'body parts' },
 };
 const TYPE_ORDER: GoalType[] = ['muscle_growth', 'weight_loss', 'injury_rehab', 'stretching'];
 
@@ -177,6 +180,23 @@ export function goalHighlights(goals: GoalEntry[] | null | undefined): {
   return { muscles: groups, colors };
 }
 
+// One summary line per goal for the combined Help-with / Goals table
+// (BodyGoalScreen). Weight loss reads as a signed weight; part goals list their
+// selected landmark labels.
+export interface GoalRow { icon: string; color: string; label: string; focus: string; }
+export function goalRows(goals: GoalEntry[] | null | undefined): GoalRow[] {
+  const units = loadUnits();
+  return (goals ?? []).map(g => {
+    const meta = TYPE_META[g.type];
+    if (g.type === 'weight_loss') {
+      return { icon: meta.icon, color: meta.color, label: meta.label, focus: `−${fmtWeight(g.kg ?? 0, units)}` };
+    }
+    const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
+    const focus = keys.map(k => keyLabel(lmList(g.type), k)).join(', ');
+    return { icon: meta.icon, color: meta.color, label: meta.label, focus };
+  });
+}
+
 // ── Canvas geometry ───────────────────────────────────────────────────────────
 const VB_W = 300, VB_H = 360, GROUND = 338, TOP_PAD = 16, HEIGHT_MAX = 215;
 const PX_PER_CM = (GROUND - TOP_PAD) / HEIGHT_MAX;
@@ -239,6 +259,8 @@ interface Props {
   hideModel?: boolean;
   /** Fires with the current goal list whenever it changes (for the shared model). */
   onChange?: (goals: GoalEntry[]) => void;
+  /** Hide the built-in Save button (a parent owns a shared Save for body + goals). */
+  hideSave?: boolean;
 }
 
 const newGoal = (type: GoalType): GoalEntry =>
@@ -249,7 +271,7 @@ const newGoal = (type: GoalType): GoalEntry =>
 // ── Component ───────────────────────────────────────────────────────────────
 export default function GoalVisualizer({
   name, gender, heightCm, weightKg, goals, onSave, saving = false, canvasHeight = 320, editable = true,
-  showSummary = true, hideModel = false, onChange,
+  showSummary = true, hideModel = false, onChange, hideSave = false,
 }: Props) {
   const [list, setList] = useState<GoalEntry[]>(
     goals && goals.length ? goals : [newGoal('muscle_growth')],
@@ -266,9 +288,9 @@ export default function GoalVisualizer({
     setList(prev => (JSON.stringify(prev) === goalsSig ? prev : incoming));
   }, [goalsSig]); // eslint-disable-line react-hooks/exhaustive-deps
   const [activeIndex, setActiveIndex] = useState(0);
+  // Row-per-type builder (hideModel mode): which type's part picker is open.
+  const [expandedType, setExpandedType] = useState<GoalType | null>(null);
   const [stageW, setStageW] = useState(0);
-  // 3D model view (editable mode): front/back lets hotspots align with the body.
-  const [modelView, setModelView] = useState<'front' | 'back'>('front');
   // Part-first guided picker: tap a body part → choose side → choose goal type.
   const [picker, setPicker] = useState<
     { base: string; label: string; both: boolean; xf: number; y: number; side: InjurySide | null } | null
@@ -302,6 +324,39 @@ export default function GoalVisualizer({
       : [...cur, key];
     update(i, muscle ? { muscles: next } : { areas: next });
   };
+
+  // ── Row-per-type builder helpers (hideModel mode) ──────────────────────────
+  // One goal per type: toggling a part upserts the goal, and clearing its last
+  // part drops it, so `list` stays in lock-step with what the table shows.
+  const togglePartForType = (t: GoalType, key: string) => {
+    setList(prev => {
+      const next = [...prev];
+      const muscle = t === 'muscle_growth';
+      const idx = next.findIndex(g => g.type === t);
+      if (idx === -1) {
+        next.push(muscle ? { type: t, muscles: [key] } : { type: t, areas: [key], side: 'both' });
+        return next;
+      }
+      const g = next[idx];
+      const cur = (muscle ? g.muscles : g.areas) ?? [];
+      const has = cur.includes(key);
+      const updated = has ? cur.filter(x => x !== key)
+        : muscle && cur.length >= MAX_MUSCLES ? cur
+        : [...cur, key];
+      if (updated.length === 0) next.splice(idx, 1);
+      else next[idx] = muscle ? { ...g, muscles: updated } : { ...g, areas: updated };
+      return next;
+    });
+  };
+  // Upsert the weight-loss target (creates the goal on first change).
+  const setKg = (kg: number) => setList(prev => {
+    const next = [...prev];
+    const idx = next.findIndex(g => g.type === 'weight_loss');
+    if (idx === -1) next.push({ type: 'weight_loss', kg });
+    else next[idx] = { ...next[idx], kg };
+    return next;
+  });
+  const removeType = (t: GoalType) => setList(prev => prev.filter(g => g.type !== t));
 
   const female = gender === 'female';
   const src = female ? GIRL_IMG : BOY_IMG;
@@ -414,10 +469,10 @@ export default function GoalVisualizer({
 
   const summary = list.map(g => {
     const meta = TYPE_META[g.type];
-    if (g.type === 'weight_loss') return `${meta.emoji} Lose ${fmtWeight(g.kg ?? 0, units)}`;
+    if (g.type === 'weight_loss') return { icon: meta.icon, color: meta.color, text: `Lose ${fmtWeight(g.kg ?? 0, units)}` };
     const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
     const labels = keys.map(k => keyLabel(lmList(g.type), k)).join(', ');
-    return `${meta.emoji} ${meta.label}${labels ? `: ${labels}` : ''}`;
+    return { icon: meta.icon, color: meta.color, text: `${meta.label}${labels ? `: ${labels}` : ''}` };
   });
 
   const activeGoal = list[activeIndex];
@@ -553,7 +608,7 @@ export default function GoalVisualizer({
                   activeOpacity={0.85}
                   onPress={() => commitPart(t)}
                 >
-                  <Text style={st.popTypeEmoji}>{tm.emoji}</Text>
+                  <MaterialCommunityIcons name={tm.icon as any} size={15} color={tm.color} />
                   <Text style={st.popTypeText} numberOfLines={1}>{tm.label}</Text>
                 </TouchableOpacity>
               );
@@ -581,22 +636,6 @@ export default function GoalVisualizer({
             paints goals instead) ──────────────────────────────────────── */}
       {editable && !hideModel && (
         <>
-          {/* Front / Back toggle — outside the model */}
-          <View style={st.viewToggle}>
-            {(['front', 'back'] as const).map(v => (
-              <TouchableOpacity
-                key={v}
-                style={[st.viewBtn, modelView === v && st.viewBtnActive]}
-                onPress={() => setModelView(v)}
-                activeOpacity={0.85}
-              >
-                <Text style={[st.viewBtnText, modelView === v && st.viewBtnTextActive]}>
-                  {v === 'front' ? 'Front' : 'Back'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
           {/* Wrapper keeps the popover visible even though the stage clips its content. */}
           <View style={st.modelWrap}>
             <View style={[st.stage, { padding: 0 }]} onLayout={e => setStageW(e.nativeEvent.layout.width)}>
@@ -604,7 +643,7 @@ export default function GoalVisualizer({
                 gender={female ? 'female' : 'male'}
                 targetedMuscles={highlightMuscles}
                 groupColors={groupColors}
-                view={modelView}
+                view="front"
                 height={canvasHeight}
                 hideControls
                 onPartSelect={handlePartSelect}
@@ -684,12 +723,102 @@ export default function GoalVisualizer({
         <View style={st.summaryWrap}>
           {summary.length === 0
             ? <Text style={st.summaryEmpty}>Tap Edit to set your goals</Text>
-            : summary.map((line, i) => <Text key={i} style={st.summaryLine}>{line}</Text>)}
+            : summary.map((line, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <MaterialCommunityIcons name={line.icon as any} size={14} color={line.color} />
+                  <Text style={st.summaryLine}>{line.text}</Text>
+                </View>
+              ))}
         </View>
       )}
 
-      {/* ── Goal builder ───────────────────────────────────────────────── */}
-      {editable && (
+      {/* ── Goal builder — table of one row per goal type (hideModel) ──────── */}
+      {editable && hideModel && (
+        <View style={st.gtable}>
+          {TYPE_ORDER.map((t, ri) => {
+            const meta = TYPE_META[t];
+            const goal = list.find(g => g.type === t);
+            const keys = t === 'weight_loss' ? []
+              : t === 'muscle_growth' ? (goal?.muscles ?? []) : (goal?.areas ?? []);
+            const active = t === 'weight_loss' ? !!goal : keys.length > 0;
+            const expanded = expandedType === t;
+            const last = ri === TYPE_ORDER.length - 1;
+            const focusText = t === 'weight_loss'
+              ? (goal ? `− ${fmtWeight(goal.kg ?? 0, units)}` : 'Tap to set')
+              : (keys.length ? keys.map(k => keyLabel(lmList(t), k)).join(', ') : 'Tap to pick');
+            return (
+              <View key={t} style={!last && st.gRowDivider}>
+                <TouchableOpacity
+                  style={st.gRow}
+                  activeOpacity={0.7}
+                  onPress={() => setExpandedType(expanded ? null : t)}
+                >
+                  <View style={st.gTypeCell}>
+                    <MaterialCommunityIcons name={meta.icon as any} size={16} color={meta.color} style={{ marginRight: 7 }} />
+                    <Text style={[st.gTypeText, { color: active ? meta.color : C.muted }]} numberOfLines={1}>{meta.label}</Text>
+                  </View>
+                  <Text
+                    style={[st.gFocus, { color: active ? C.text : C.muted, fontStyle: active ? 'normal' : 'italic' }]}
+                    numberOfLines={1}
+                  >
+                    {focusText}
+                  </Text>
+                  <Text style={[st.gChevron, expanded && st.gChevronOpen]}>▸</Text>
+                </TouchableOpacity>
+
+                {/* Expander — part chips (part goals) or kg control (weight loss) */}
+                {expanded && t !== 'weight_loss' && (
+                  <View style={st.gExpand}>
+                    <View style={st.tagRow}>
+                      {partsForType(t).map(lm => {
+                        const on = keys.includes(lm.key);
+                        return (
+                          <TouchableOpacity
+                            key={lm.key}
+                            style={[st.tag, on
+                              ? { borderColor: meta.color, backgroundColor: meta.soft }
+                              : { borderColor: 'rgba(33,24,50,0.12)' }]}
+                            onPress={() => togglePartForType(t, lm.key)}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={[st.tagText, { color: on ? meta.color : C.muted }]}>{lm.label}</Text>
+                            {on && <Text style={[st.tagX, { color: meta.color }]}> ✓</Text>}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    {t === 'muscle_growth' && <Text style={st.gHint}>Pick up to {MAX_MUSCLES}</Text>}
+                  </View>
+                )}
+
+                {expanded && t === 'weight_loss' && (
+                  <View style={st.gExpand}>
+                    <View style={st.compareRow}>
+                      <Compare label="Current" value={fmtWeight(curWeight, units)} />
+                      <Text style={st.arrow}>→</Text>
+                      <Compare label="Target" value={fmtWeight(Math.max(35, curWeight - (goal?.kg ?? 0)), units)} accent />
+                      <View style={st.deltaPill}><Text style={st.deltaText}>−{fmtWeight(goal?.kg ?? 0, units)}</Text></View>
+                    </View>
+                    <View style={st.sliderHead}>
+                      <Text style={st.qLabel}>{isWeightLb(units) ? 'Lb to lose' : 'Kg to lose'}</Text>
+                      <Text style={st.sliderValue}>{fmtWeight(goal?.kg ?? 0, units)}</Text>
+                    </View>
+                    <Slider min={1} max={maxLose} step={1} value={goal?.kg ?? 1} color={C.orange} onChange={setKg} />
+                    {goal && (
+                      <TouchableOpacity onPress={() => removeType('weight_loss')} activeOpacity={0.8}>
+                        <Text style={st.gRemove}>Remove weight-loss target</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ── Goal builder — stepped cards (tap-the-model / default) ─────────── */}
+      {editable && !hideModel && (
         <>
           {list.map((goal, i) => {
             const meta = TYPE_META[goal.type];
@@ -707,15 +836,22 @@ export default function GoalVisualizer({
                   )}
                 </TouchableOpacity>
 
-                {/* Step 1 — type */}
-                <View style={st.typeGrid}>
+                {/* Step 1 — type. Flowing pill chips, matching the Help-With and
+                    Pick-body-parts chip style. */}
+                <View style={st.tagRow}>
                   {TYPE_ORDER.map(t => {
                     const on = goal.type === t; const tm = TYPE_META[t];
                     return (
-                      <TouchableOpacity key={t} activeOpacity={0.85} onPress={() => setType(i, t)}
-                        style={[st.typeBtn, on && { borderColor: tm.color, backgroundColor: tm.soft }]}>
-                        <Text style={st.typeEmoji}>{tm.emoji}</Text>
-                        <Text style={[st.typeText, on && { color: C.text, fontWeight: '800' }]}>{tm.label}</Text>
+                      <TouchableOpacity
+                        key={t}
+                        activeOpacity={0.85}
+                        onPress={() => setType(i, t)}
+                        style={[st.tag, on
+                          ? { borderColor: tm.color, backgroundColor: tm.soft }
+                          : { borderColor: 'rgba(33,24,50,0.12)' }]}
+                      >
+                        <MaterialCommunityIcons name={tm.icon as any} size={14} color={tm.color} style={{ marginRight: 5 }} />
+                        <Text style={[st.tagText, { color: on ? C.text : C.muted, fontWeight: on ? '800' : '700' }]}>{tm.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -808,7 +944,7 @@ export default function GoalVisualizer({
             <Text style={st.addBtnText}>＋ Add another goal</Text>
           </TouchableOpacity>
 
-          {onSave && (
+          {onSave && !hideSave && (
             <TouchableOpacity style={[st.saveBtn, saving && { opacity: 0.6 }]} activeOpacity={0.85} disabled={saving} onPress={handleSave}>
               {saving ? <ActivityIndicator color="#fff" /> : <Text style={st.saveBtnText}>Save Goals</Text>}
             </TouchableOpacity>
@@ -891,8 +1027,21 @@ const st = StyleSheet.create({
   summaryLine: { color: C.text, fontSize: 14, fontWeight: '600' },
   summaryEmpty: { color: C.muted, fontSize: 14 },
 
-  qCard: { marginTop: 14, backgroundColor: C.cardBg, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 14 },
-  qHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  // Row-per-type goal table (hideModel) — matches the summary table's frame.
+  gtable: { backgroundColor: C.cardBg, borderRadius: 12, borderWidth: 1, borderColor: C.border, overflow: 'hidden', marginTop: 4 },
+  gRowDivider: { borderBottomWidth: 1, borderBottomColor: C.border },
+  gRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 13, paddingHorizontal: 12 },
+  gTypeCell: { flexDirection: 'row', alignItems: 'center', width: 130 },
+  gTypeText: { fontSize: 13, fontWeight: '800', flexShrink: 1 },
+  gFocus: { flex: 1, fontSize: 13, fontWeight: '600', paddingRight: 8 },
+  gChevron: { color: C.muted, fontSize: 14, fontWeight: '900', width: 16, textAlign: 'center' },
+  gChevronOpen: { transform: [{ rotate: '90deg' }] },
+  gExpand: { paddingHorizontal: 12, paddingBottom: 13, paddingTop: 0 },
+  gHint: { color: C.muted, fontSize: 11, fontWeight: '600', marginTop: 8 },
+  gRemove: { color: C.red, fontSize: 12, fontWeight: '700', marginTop: 12 },
+
+  qCard: { marginTop: 10, backgroundColor: C.cardBg, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 11 },
+  qHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   qNum: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   qNumText: { color: '#fff', fontSize: 13, fontWeight: '800' },
   qTitle: { flex: 1, color: C.text, fontSize: 15, fontWeight: '800' },
@@ -900,15 +1049,16 @@ const st = StyleSheet.create({
   qLabel: { color: C.text, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
 
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  typeBtn: { width: '48%', paddingVertical: 12, borderRadius: 12, backgroundColor: C.canvas, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', gap: 3 },
+  // Compact 2×2 — icon beside the label (single row) so each button is short.
+  typeBtn: { width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, backgroundColor: C.canvas, borderWidth: 1.5, borderColor: C.border },
   typeEmoji: { fontSize: 20 },
-  typeText: { color: C.muted, fontSize: 12, fontWeight: '600' },
+  typeText: { color: C.muted, fontSize: 11, fontWeight: '600' },
 
-  detail: { marginTop: 14 },
+  detail: { marginTop: 10 },
   tapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   tapHint: { color: C.muted, fontSize: 12, marginTop: 8, fontWeight: '600' },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20, borderWidth: 1.5 },
   tagText: { color: C.muted, fontSize: 13, fontWeight: '700' },
   tagX: { fontSize: 12, fontWeight: '900' },
 

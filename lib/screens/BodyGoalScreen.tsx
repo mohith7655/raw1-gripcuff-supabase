@@ -1,17 +1,17 @@
 /**
  * BodyGoalScreen — combined "My Body & Goals" editor (all-in-one, no toggle).
  *
- * Merges what used to be two separate screens (HowILookNow + Goals) into ONE
- * scrollable section:
- *   • Look & Injuries — gender / height / weight / age + injury & tightness
- *                       markers placed on the 3D figure (BodyVisualizer)
- *   • Goals           — body-transformation goals previewed on the figure
- *                       (GoalVisualizer)
- * Each part has its own Save (they persist different profile fields). Saving
- * does NOT leave the screen, so you can edit both in one visit.
+ * One scrollable page:
+ *   • My Body          — gender / height / weight / age + injury & tightness
+ *                        markers placed on the 3D figure (BodyVisualizer). Goal
+ *                        targets are painted on the same model.
+ *   • Help With & Goals — everything you're working on (conditions + goals) read
+ *                        back as ONE table, with the goal builder kept below for
+ *                        adding/editing. A single Save persists body + goals.
  */
 import React, { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
@@ -23,16 +23,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { AmbientBackground } from '../components/theme';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
-import BodyVisualizer, { BodyMetrics } from '../components/profile/BodyVisualizer';
-import GoalVisualizer, { GoalData, goalHighlights } from '../components/profile/GoalVisualizer';
+import BodyVisualizer, { BodyMetrics, conditionRows } from '../components/profile/BodyVisualizer';
+import GoalVisualizer, { goalHighlights, goalRows } from '../components/profile/GoalVisualizer';
 import { GoalEntry } from '../models/User';
 
-const C = { text: '#211832', muted: '#7A7C90' };
+const C = { text: '#211832', muted: '#7A7C90', border: 'rgba(33,24,50,0.08)', cardBg: '#F8F8FC', orange: '#F25912' };
 
 export const BodyGoalScreen = () => {
   const navigation = useNavigation<any>();
@@ -40,44 +41,61 @@ export const BodyGoalScreen = () => {
   const { profile, updateProfile } = useUser();
   const { height } = useWindowDimensions();
 
-  const [savingBody, setSavingBody] = useState(false);
-  const [savingGoal, setSavingGoal] = useState(false);
-  // Live goal list (mirrored from the goal builder) so the SINGLE body model can
-  // paint goal targets alongside injuries.
+  const [saving, setSaving] = useState(false);
+  // Body metrics (incl. conditions) and goals are lifted here so the single body
+  // model, the combined table and the goal builder all read/write the same state.
+  const [metrics, setMetrics] = useState<BodyMetrics>(() => ({
+    gender: profile?.gender === 'female' ? 'female' : 'male',
+    heightCm: profile?.heightCm ?? 170,
+    weightKg: profile?.weightKg ?? 70,
+    age: profile?.age ?? 25,
+    conditions: profile?.bodyConditions ?? [],
+  }));
   const [goals, setGoals] = useState<GoalEntry[]>(() => profile?.goals ?? []);
   const goalHL = useMemo(() => goalHighlights(goals), [goals]);
 
   const canvasHeight = Math.round(Math.min(500, Math.max(330, height * 0.44)));
 
-  const saveBody = async (m: BodyMetrics) => {
+  // Combined Help-with / Goals rows — conditions first, then goals, each row
+  // knowing how to remove itself from the right source list. Empty part-goals
+  // (e.g. the builder's blank default card) are skipped; removal keeps the
+  // original goal index so it targets the right entry.
+  const rows = useMemo(() => [
+    ...conditionRows(metrics.conditions).map((r, i) => ({
+      ...r,
+      remove: () => setMetrics(m => ({ ...m, conditions: m.conditions.filter((_, idx) => idx !== i) })),
+    })),
+    ...goalRows(goals)
+      .map((r, i) => ({ r, i }))
+      .filter(({ r }) => !!r.focus)
+      .map(({ r, i }) => ({
+        ...r,
+        remove: () => setGoals(g => g.filter((_, idx) => idx !== i)),
+      })),
+  ], [metrics.conditions, goals]);
+
+  const save = async () => {
     if (!supabaseUserId) return;
-    setSavingBody(true);
+    setSaving(true);
     try {
       await updateProfile(supabaseUserId, {
-        gender: m.gender,
-        age: Math.round(m.age),
-        heightCm: Math.round(m.heightCm),
-        weightKg: Math.round(m.weightKg),
-        bodyConditions: m.conditions,
+        gender: metrics.gender,
+        age: Math.round(metrics.age),
+        heightCm: Math.round(metrics.heightCm),
+        weightKg: Math.round(metrics.weightKg),
+        bodyConditions: metrics.conditions,
+        // Drop blank part-goals (e.g. the builder's untouched default card).
+        goals: goals.filter(g =>
+          g.type === 'weight_loss'
+            ? (g.kg ?? 0) > 0
+            : ((g.type === 'muscle_growth' ? g.muscles : g.areas)?.length ?? 0) > 0,
+        ),
       });
     } catch (err) {
-      console.warn('Failed to save body metrics', err);
+      console.warn('Failed to save body & goals', err);
       Alert.alert('Could not save', 'Please try again.');
     } finally {
-      setSavingBody(false);
-    }
-  };
-
-  const saveGoal = async (data: GoalData) => {
-    if (!supabaseUserId) return;
-    setSavingGoal(true);
-    try {
-      await updateProfile(supabaseUserId, { goals: data.goals });
-    } catch (err) {
-      console.warn('Failed to save goal', err);
-      Alert.alert('Could not save', 'Please try again.');
-    } finally {
-      setSavingGoal(false);
+      setSaving(false);
     }
   };
 
@@ -101,8 +119,8 @@ export const BodyGoalScreen = () => {
           {/* ── ONE body model: look + injuries (tap) + goal targets (painted) ── */}
           <Text style={s.sectionTitle}>My Body</Text>
           <Text style={s.intro}>
-            Set your gender, height, weight and age, and tap the figure to mark injuries or tight
-            areas. Your goal targets are painted on the same model below. Tap Save when it looks right.
+            Set your gender, height, weight and age, and tap the figure to mark injuries, tight areas
+            or goal targets. Everything you pick shows up in the table below.
           </Text>
           <BodyVisualizer
             name={profile?.fullName}
@@ -110,24 +128,60 @@ export const BodyGoalScreen = () => {
             heightCm={profile?.heightCm}
             weightKg={profile?.weightKg}
             age={profile?.age}
-            conditions={profile?.bodyConditions}
+            conditions={metrics.conditions}
             extraMuscles={goalHL.muscles}
             extraGroupColors={goalHL.colors}
             goals={goals}
             onGoalsChange={setGoals}
+            onCommit={setMetrics}
+            hideConditionsBlock
             canvasHeight={canvasHeight}
-            saving={savingBody}
-            onSave={saveBody}
           />
 
           <View style={s.divider} />
 
-          {/* ── Goals (no second figure — picked from lists, shown on the model above) ── */}
-          <Text style={s.sectionTitle}>Goals</Text>
+          {/* ── Help with & Goals — one combined table + the goal builder ────── */}
+          <Text style={s.sectionTitle}>Help With &amp; Goals</Text>
           <Text style={s.intro}>
-            Choose what you're working toward and pick the muscles or body parts from the lists —
-            they're highlighted on the model above. Add as many goals as you like.
+            Everything you're working toward in one place. Tap the figure above to add injuries, tight
+            areas or muscle targets — or use the builder below. Tap ✕ to remove a row.
           </Text>
+
+          {/* Combined table */}
+          <View style={s.table}>
+            <View style={[s.tr, s.trHead]}>
+              <Text style={[s.th, s.colType]}>Type</Text>
+              <Text style={[s.th, s.colFocus]}>Focus</Text>
+              <View style={s.colX} />
+            </View>
+            {rows.length === 0 ? (
+              <View style={s.tr}>
+                <Text style={s.tableEmpty}>
+                  Nothing yet — tap the figure or add a goal below.
+                </Text>
+              </View>
+            ) : (
+              rows.map((r, i) => (
+                <View key={i} style={[s.tr, i === rows.length - 1 && s.trLast]}>
+                  <View style={[s.colType, s.typeCell]}>
+                    <MaterialCommunityIcons name={r.icon as any} size={15} color={r.color} style={{ marginRight: 6 }} />
+                    <Text style={[s.typeText, { color: r.color }]} numberOfLines={1}>{r.label}</Text>
+                  </View>
+                  <Text style={[s.td, s.colFocus]} numberOfLines={2}>{r.focus || '—'}</Text>
+                  <TouchableOpacity
+                    style={s.colX}
+                    onPress={r.remove}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={s.xText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </View>
+
+          {/* Goal builder (no second figure — goals paint on the model above) */}
           <GoalVisualizer
             name={profile?.fullName}
             gender={profile?.gender}
@@ -135,11 +189,20 @@ export const BodyGoalScreen = () => {
             weightKg={profile?.weightKg}
             goals={goals}
             hideModel
+            hideSave
             onChange={setGoals}
             canvasHeight={canvasHeight}
-            saving={savingGoal}
-            onSave={saveGoal}
           />
+
+          {/* ── One Save for body + goals ─────────────────────────────────── */}
+          <TouchableOpacity
+            style={[s.saveBtn, saving && { opacity: 0.6 }]}
+            activeOpacity={0.85}
+            disabled={saving}
+            onPress={save}
+          >
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.saveBtnText}>Save</Text>}
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </AmbientBackground>
@@ -162,8 +225,47 @@ const s = StyleSheet.create({
 
   content: { padding: 16, paddingBottom: Platform.OS === 'web' ? 40 : 24 },
   sectionTitle: { color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 6 },
-  intro: { color: C.muted, fontSize: 14, lineHeight: 20, marginBottom: 16 },
-  divider: { height: 1, backgroundColor: 'rgba(33,24,50,0.06)', marginVertical: 24 },
+  intro: { color: C.muted, fontSize: 14, lineHeight: 20, marginBottom: 12 },
+  divider: { height: 1, backgroundColor: 'rgba(33,24,50,0.06)', marginVertical: 16 },
+
+  // Combined Help-with / Goals table
+  table: {
+    backgroundColor: C.cardBg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  tr: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  trHead: { backgroundColor: 'rgba(33,24,50,0.03)' },
+  trLast: { borderBottomWidth: 0 },
+  th: { color: C.muted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  td: { color: C.text, fontSize: 13, fontWeight: '600' },
+  colType: { width: 130 },
+  colFocus: { flex: 1, paddingRight: 8 },
+  colX: { width: 24, alignItems: 'center', justifyContent: 'center' },
+  typeCell: { flexDirection: 'row', alignItems: 'center' },
+  typeText: { fontSize: 13, fontWeight: '800', flexShrink: 1 },
+  xText: { color: C.muted, fontSize: 14, fontWeight: '900' },
+  tableEmpty: { color: C.muted, fontSize: 13, fontStyle: 'italic' },
+
+  saveBtn: {
+    marginTop: 20,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: C.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
 });
 
 export default BodyGoalScreen;

@@ -15,9 +15,10 @@
  * card. Values are seeded from the parent and committed back on release / tap via
  * `onCommit`, so the parent owns persistence.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Settings } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MuscleVisualizer from '../MuscleVisualizer';
 import { BodyCondition, BodyConditionType, GoalEntry, GoalType } from '../../models/User';
 import {
@@ -84,6 +85,11 @@ interface Props {
   goals?: GoalEntry[] | null;
   /** Fired when a goal is added from the model popup (parent owns goal state). */
   onGoalsChange?: (goals: GoalEntry[]) => void;
+  /** Hides the built-in "Help with" chip list — used when a parent renders the
+   *  conditions in a shared table instead (BodyGoalScreen). Conditions stay
+   *  editable on the model; `conditions` is treated as controlled so external
+   *  removes reflect on the figure. */
+  hideConditionsBlock?: boolean;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -160,10 +166,12 @@ const GROUP_TO_PART: Record<string, string> = {
   Ankle: 'ankle', Elbow: 'elbow', Wrist: 'wrist', Arms: 'elbow', Back: 'upper_back',
 };
 
-const COND_META: Record<BodyConditionType, { label: string; emoji: string; color: string; soft: string }> = {
-  tightness: { label: 'Tightness', emoji: '🟡', color: '#d4a600', soft: 'rgba(212,166,0,0.16)' },
-  pain:      { label: 'Pain',      emoji: '😣', color: '#ea580c', soft: 'rgba(234,88,12,0.14)' },
-  injury:    { label: 'Injury',    emoji: '🩹', color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
+// Icons are MaterialCommunityIcons names, matching the Workouts category rows
+// (tightness → the stretching/yoga icon; injury → a bandage).
+const COND_META: Record<BodyConditionType, { label: string; icon: string; color: string; soft: string }> = {
+  tightness: { label: 'Tightness', icon: 'yoga',                color: '#d4a600', soft: 'rgba(212,166,0,0.16)' },
+  pain:      { label: 'Pain',      icon: 'emoticon-sad-outline', color: '#ea580c', soft: 'rgba(234,88,12,0.14)' },
+  injury:    { label: 'Injury',    icon: 'bandage',             color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
 };
 const COND_ORDER: BodyConditionType[] = ['tightness', 'pain', 'injury'];
 
@@ -171,10 +179,11 @@ const COND_ORDER: BodyConditionType[] = ['tightness', 'pain', 'injury'];
 // Body-part goals the popup can add (weight-loss isn't part-based). Colours /
 // keys mirror GoalVisualizer so the two editors stay consistent.
 type PartGoalType = 'muscle_growth' | 'injury_rehab' | 'stretching';
-const GOAL_META: Record<PartGoalType, { label: string; emoji: string; color: string; soft: string }> = {
-  muscle_growth: { label: 'Muscle Growth', emoji: '🏋️', color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
-  injury_rehab:  { label: 'Injury Rehab',  emoji: '🩹', color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
-  stretching:    { label: 'Stretching',    emoji: '🧘', color: '#2563eb', soft: 'rgba(37,99,235,0.12)' },
+// Icons mirror the Workouts category rows (weight-lifter / human-cane / yoga).
+const GOAL_META: Record<PartGoalType, { label: string; icon: string; color: string; soft: string }> = {
+  muscle_growth: { label: 'Muscle Growth', icon: 'weight-lifter', color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
+  injury_rehab:  { label: 'Injury Rehab',  icon: 'human-cane',    color: '#dc2626', soft: 'rgba(220,38,38,0.12)' },
+  stretching:    { label: 'Stretching',    icon: 'yoga',          color: '#2563eb', soft: 'rgba(37,99,235,0.12)' },
 };
 const GOAL_ORDER: PartGoalType[] = ['muscle_growth', 'injury_rehab', 'stretching'];
 const MAX_GOAL_MUSCLES = 3;
@@ -207,6 +216,16 @@ const condLabel = (c: BodyCondition) =>
   `${sideText(c.side)}${PART_LABEL[c.part] ?? c.part}`;
 // A condition is identified by part + side (so left & right knee can differ).
 const condId = (part: string, side?: Side) => `${part}::${side ?? 'both'}`;
+
+// ── Shared summary rows ───────────────────────────────────────────────────────
+// A single line for the combined Help-with / Goals table (BodyGoalScreen).
+export interface SummaryRow { icon: string; color: string; label: string; focus: string; }
+export function conditionRows(conditions?: BodyCondition[] | null): SummaryRow[] {
+  return (conditions ?? []).map(c => {
+    const meta = COND_META[c.type];
+    return { icon: meta.icon, color: meta.color, label: meta.label, focus: condLabel(c) };
+  });
+}
 
 // ── Slider ──────────────────────────────────────────────────────────────────
 function Slider({
@@ -278,7 +297,7 @@ function VerticalSlider({
 // ── Component ───────────────────────────────────────────────────────────────
 export default function BodyVisualizer({
   name, gender, heightCm, weightKg, age, conditions, onCommit, onSave, saving = false,
-  editable = true, canvasHeight = 300, extraMuscles, extraGroupColors, goals, onGoalsChange,
+  editable = true, canvasHeight = 300, extraMuscles, extraGroupColors, goals, onGoalsChange, hideConditionsBlock,
 }: Props) {
   const [m, setM] = useState<BodyMetrics>({
     gender: gender === 'female' ? 'female' : 'male',
@@ -294,7 +313,6 @@ export default function BodyVisualizer({
   const pickUnits = (u: UnitSystem) => { setUnits(u); saveUnits(u); setUnitMenuOpen(false); };
 
   // Body-condition picker UI state.
-  const [modelView, setModelView] = useState<'front' | 'back'>('front');
   const [stageW, setStageW] = useState(0);
   const [picker, setPicker] = useState<
     { base: string; label: string; both: boolean; xf: number; y: number; side: Side | null } | null
@@ -306,6 +324,14 @@ export default function BodyVisualizer({
     setM(next);
     onCommit?.(next);
   };
+
+  // Treat `conditions` as controlled: when a parent edits them (e.g. removes a
+  // row from the shared Help-with/Goals table), mirror the change back into the
+  // figure. Signature-guarded so our own onCommit round-trip doesn't loop.
+  const condSig = useMemo(() => JSON.stringify(conditions ?? []), [conditions]);
+  useEffect(() => {
+    setM(prev => (JSON.stringify(prev.conditions) === condSig ? prev : { ...prev, conditions: conditions ?? [] }));
+  }, [condSig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const bmi = m.weightKg / Math.pow(m.heightCm / 100, 2);
   const heightScale = useMemo(() => heightScaleOf(m), [m]);
@@ -441,7 +467,7 @@ export default function BodyVisualizer({
                   activeOpacity={0.85}
                   onPress={() => commitCondition(t)}
                 >
-                  <Text style={s.popTypeEmoji}>{tm.emoji}</Text>
+                  <MaterialCommunityIcons name={tm.icon as any} size={15} color={tm.color} />
                   <Text style={s.popTypeText} numberOfLines={1}>{tm.label}</Text>
                 </TouchableOpacity>
               );
@@ -459,7 +485,7 @@ export default function BodyVisualizer({
                       activeOpacity={0.85}
                       onPress={() => commitGoal(t)}
                     >
-                      <Text style={s.popTypeEmoji}>{gm.emoji}</Text>
+                      <MaterialCommunityIcons name={gm.icon as any} size={15} color={gm.color} />
                       <Text style={s.popTypeText} numberOfLines={1}>{gm.label}</Text>
                     </TouchableOpacity>
                   );
@@ -485,24 +511,6 @@ export default function BodyVisualizer({
 
   return (
     <View>
-      {/* ── Front / Back toggle (drives the figure + which parts are tappable) ── */}
-      {editable && (
-        <View style={s.viewToggle}>
-          {(['front', 'back'] as const).map(v => (
-            <TouchableOpacity
-              key={v}
-              style={[s.viewBtn, modelView === v && s.viewBtnActive]}
-              onPress={() => { setModelView(v); setPicker(null); }}
-              activeOpacity={0.85}
-            >
-              <Text style={[s.viewBtnText, modelView === v && s.viewBtnTextActive]}>
-                {v === 'front' ? 'Front' : 'Back'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
       {/* ── Stage: vertical height slider (left) + morphing 3D figure ──────── */}
       <View style={s.stageRow}>
         {editable && (
@@ -523,7 +531,7 @@ export default function BodyVisualizer({
             Tightness / injury parts are painted via targetedMuscles + colours. */}
         <MuscleVisualizer
           gender={m.gender}
-          view={editable ? modelView : 'front'}
+          view="front"
           hideControls
           height={canvasHeight}
           heightScale={heightScale}
@@ -655,32 +663,37 @@ export default function BodyVisualizer({
             onChange={v => set({ age: v })} onCommit={() => commit({ age: m.age })}
           />
 
-          {/* Tightness / injury chips */}
-          <View style={s.condBlock}>
-            <Text style={s.ctrlLabel}>Help with</Text>
-            {m.conditions.length === 0 ? (
-              <Text style={s.condEmpty}>Tap the figure above to flag a tight or injured part.</Text>
-            ) : (
-              <View style={s.tagRow}>
-                {m.conditions.map((c, i) => {
-                  const meta = COND_META[c.type];
-                  return (
-                    <TouchableOpacity
-                      key={`${condId(c.part, c.side)}-${i}`}
-                      style={[s.tag, { borderColor: meta.color, backgroundColor: meta.soft }]}
-                      onPress={() => commit({ conditions: m.conditions.filter((_, idx) => idx !== i) })}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[s.tagText, { color: meta.color }]}>
-                        {meta.emoji} {condLabel(c)} · {meta.label}
-                      </Text>
-                      <Text style={[s.tagX, { color: meta.color }]}> ✕</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </View>
+        </View>
+      )}
+
+      {/* ── Help with — removable condition chips (hidden when a parent renders
+            them in a shared Help-with/Goals table instead). ──────────────── */}
+      {editable && !hideConditionsBlock && (
+        <View style={s.condBlock}>
+          <Text style={s.ctrlLabel}>Help with</Text>
+          {m.conditions.length === 0 ? (
+            <Text style={s.condEmpty}>Tap the figure to flag a tight or injured part.</Text>
+          ) : (
+            <View style={s.tagRow}>
+              {m.conditions.map((c, i) => {
+                const meta = COND_META[c.type];
+                return (
+                  <TouchableOpacity
+                    key={`${condId(c.part, c.side)}-${i}`}
+                    style={[s.tag, { borderColor: meta.color, backgroundColor: meta.soft }]}
+                    onPress={() => commit({ conditions: m.conditions.filter((_, idx) => idx !== i) })}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialCommunityIcons name={meta.icon as any} size={13} color={meta.color} style={{ marginRight: 4 }} />
+                    <Text style={[s.tagText, { color: meta.color }]}>
+                      {condLabel(c)} · {meta.label}
+                    </Text>
+                    <Text style={[s.tagX, { color: meta.color }]}> ✕</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
       )}
 
@@ -690,9 +703,12 @@ export default function BodyVisualizer({
           {m.conditions.map((c, i) => {
             const meta = COND_META[c.type];
             return (
-              <Text key={i} style={[s.condSummaryLine, { color: meta.color }]}>
-                {meta.emoji} {meta.label}: {condLabel(c)}
-              </Text>
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name={meta.icon as any} size={14} color={meta.color} style={{ marginRight: 5 }} />
+                <Text style={[s.condSummaryLine, { color: meta.color }]}>
+                  {meta.label}: {condLabel(c)}
+                </Text>
+              </View>
             );
           })}
         </View>
@@ -877,10 +893,10 @@ const s = StyleSheet.create({
   popRemoveText: { color: '#dc2626', fontSize: 11, fontWeight: '800' },
 
   // Condition chips / summary
-  condBlock: { marginTop: 16 },
+  condBlock: { marginTop: 12 },
   condEmpty: { color: C.muted, fontSize: 13, marginTop: 8, lineHeight: 18 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20, borderWidth: 1.5 },
   tagText: { fontSize: 13, fontWeight: '700' },
   tagX: { fontSize: 12, fontWeight: '900' },
   condSummary: { marginTop: 12, gap: 4 },

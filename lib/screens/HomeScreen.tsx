@@ -246,6 +246,46 @@ function formatChallengeDate(iso: string): string {
   return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+// ── Gripcuff membership comparison (Excel-style: frozen feature column + frozen
+//    tier header; tier columns scroll horizontally, benefits build to the right).
+const CMP_TIERS = [
+  { name: 'STARTER',    price: 'Free', color: '#7dd3fc' },
+  { name: 'LIFTER',     price: 'Paid', color: '#1d4ed8' },
+  { name: 'TRAINER',    price: 'Paid', color: '#F25912' },
+  { name: 'INFLUENCER', price: 'Paid', color: '#F25912' },
+];
+type CmpRow = { section: string } | { label: string; cells: boolean[] };
+// Cells align to CMP_TIERS order. Earning starts at Lifter (referral rewards)
+// and climbs to Influencer brand partnerships.
+const CMP_ROWS: CmpRow[] = [
+  { section: 'Training & Content' },
+  { label: 'Intro video',           cells: [true,  true,  true,  true ] },
+  { label: 'Full video library',    cells: [false, true,  true,  true ] },
+  { label: 'Structured programs',   cells: [false, true,  true,  true ] },
+  { label: 'Live workout sessions', cells: [false, true,  true,  true ] },
+  { label: 'Progress tracking',     cells: [true,  true,  true,  true ] },
+  { label: 'Advanced analytics',    cells: [false, true,  true,  true ] },
+  { label: 'Community access',      cells: [true,  true,  true,  true ] },
+  { section: 'Creator Tools' },
+  { label: 'Upload your videos',    cells: [false, false, true,  true ] },
+  { label: 'Client management',     cells: [false, false, true,  true ] },
+  { label: 'Creator profile badge', cells: [false, false, true,  true ] },
+  { label: 'Featured on homepage',  cells: [false, false, false, true ] },
+  { label: 'Custom profile banner', cells: [false, false, false, true ] },
+  { label: 'Priority support',      cells: [false, false, false, true ] },
+  { section: 'Earn Money' },
+  { label: 'Referral rewards',      cells: [false, true,  true,  true ] },
+  { label: 'Revenue share',         cells: [false, false, true,  true ] },
+  { label: 'Affiliate commission',  cells: [false, false, false, true ] },
+  { label: 'Brand partnerships',    cells: [false, false, false, true ] },
+];
+const CMP_LEFT_W = 150;
+const CMP_COL_W  = 96;
+const CMP_ROW_H  = 44;
+const CMP_SEC_H  = 34;
+const CMP_HEAD_H = 62;
+const CMP_WIN_H  = Dimensions.get('window').height;
+
 const HomeScreenInner = () => {
   const navigation = useNavigation<any>();
   const tabBar = useTabBarVisibility();
@@ -750,6 +790,8 @@ const HomeScreenInner = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showTiersModal, setShowTiersModal] = useState(false);
+  // Frozen tier header is driven horizontally by the body scroll (kept in sync).
+  const cmpHeaderRef = useRef<ScrollView>(null);
   const [earnedBadges, setEarnedBadges] = useState<{ emoji: string; name: string; level: number; label: string }[]>([]);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
 
@@ -1122,7 +1164,7 @@ const HomeScreenInner = () => {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 }}>
                       <Sparkles size={16} color="#F25912" />
-                      <Text style={styles.gripCuffTitle}>Your Body Recommendations</Text>
+                      <Text style={styles.gripCuffTitle}>{firstName}'s Fitness Recommendations</Text>
                     </View>
                     <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '500' }}>
                       Picked by AI from your goals, injuries &amp; body
@@ -2090,116 +2132,80 @@ const HomeScreenInner = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Horizontal tier cards */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={272}
-              decelerationRate="fast"
-              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 12 }}
-            >
-              {[
-                {
-                  name: 'STARTER', color: '#7dd3fc', price: 'Free',
-                  desc: 'Get started with Gripcuff basics.',
-                  inherited: [],
-                  newFeatures: ['1 free intro video', 'Progress tracking', 'Community access'],
-                  locked: ['Full video library', 'Live sessions', 'Upload videos'],
-                },
-                {
-                  name: 'LIFTER', color: '#1d4ed8', price: 'Paid',
-                  desc: 'Unlock the full training library.',
-                  inherited: ['Progress tracking', 'Community access'],
-                  newFeatures: ['Full video library', 'Structured programs', 'Progress analytics', 'Live workout sessions'],
-                  locked: ['Upload videos', 'Client tools', 'Revenue sharing'],
-                },
-                {
-                  name: 'TRAINER', color: '#F25912', price: 'Paid',
-                  desc: 'Build your brand and upload content.',
-                  inherited: ['Full video library', 'Live sessions', 'Analytics'],
-                  newFeatures: ['Upload custom videos', 'Client management', 'Trainer profile badge', 'Revenue sharing'],
-                  locked: ['Featured placement', 'Affiliate commission', 'Brand partnerships'],
-                },
-                {
-                  name: 'INFLUENCER', color: '#F25912', price: 'Paid',
-                  desc: 'The ultimate tier for creators.',
-                  inherited: ['Upload videos', 'Client tools', 'Revenue sharing'],
-                  newFeatures: ['Featured homepage placement', 'Affiliate commission', 'Priority support', 'Brand partnerships', 'Custom profile banner'],
-                  locked: [],
-                },
-              ].map((tier, idx) => (
-                <View key={tier.name} style={{
-                  width: 260,
-                  backgroundColor: 'rgba(255,255,255,0.62)',
-                  borderRadius: 18,
-                  borderWidth: 1,
-                  borderColor: tier.color + '44',
-                  overflow: 'hidden',
-                }}>
-                  {/* Colored header strip */}
-                  <View style={{ backgroundColor: tier.color + '22', borderBottomWidth: 1, borderBottomColor: tier.color + '44', paddingHorizontal: 16, paddingVertical: 14 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <View style={{ backgroundColor: tier.color, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.8 }}>{tier.name}</Text>
-                      </View>
-                      <View style={{ backgroundColor: tier.color + '33', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                        <Text style={{ color: tier.color, fontSize: 12, fontWeight: '700' }}>{tier.price}</Text>
-                      </View>
-                    </View>
-                    <Text style={{ color: '#7A7C90', fontSize: 12, lineHeight: 17 }}>{tier.desc}</Text>
+            {/* Excel-style comparison — frozen feature column + frozen tier
+                header; the tier columns scroll horizontally. */}
+            <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 }}>
+              <View style={{ borderRadius: 14, borderWidth: 1, borderColor: 'rgba(33,24,50,0.10)', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+                {/* Frozen top: corner + horizontally-synced tier header */}
+                <View style={{ flexDirection: 'row' }}>
+                  <View style={{ width: CMP_LEFT_W, height: CMP_HEAD_H, justifyContent: 'flex-end', paddingHorizontal: 12, paddingBottom: 10, backgroundColor: '#F8F8FC', borderRightWidth: 1, borderRightColor: 'rgba(33,24,50,0.12)' }}>
+                    <Text style={{ color: '#7A7C90', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>What you get</Text>
                   </View>
-
-                  {/* Features */}
-                  <View style={{ padding: 14, gap: 0 }}>
-                    {/* Inherited from previous */}
-                    {tier.inherited.length > 0 && (
-                      <>
-                        <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' }}>Included from before</Text>
-                        {tier.inherited.map(f => (
-                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                            <Text style={{ color: 'rgba(33,24,50,0.35)', fontSize: 13 }}>✓</Text>
-                            <Text style={{ color: 'rgba(33,24,50,0.45)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
-                          </View>
-                        ))}
-                        <View style={{ height: 1, backgroundColor: tier.color + '22', marginVertical: 8 }} />
-                      </>
-                    )}
-
-                    {/* New in this tier */}
-                    <Text style={{ color: tier.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' }}>
-                      {idx === 0 ? 'What you get' : `New in ${tier.name}`}
-                    </Text>
-                    {tier.newFeatures.map(f => (
-                      <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-                        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: tier.color + '33', alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ color: tier.color, fontSize: 10, fontWeight: '800' }}>✓</Text>
+                  <ScrollView ref={cmpHeaderRef} horizontal scrollEnabled={false} showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                    {CMP_TIERS.map(t => (
+                      <View key={t.name} style={{ width: CMP_COL_W, height: CMP_HEAD_H, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F8FC', borderLeftWidth: 1, borderLeftColor: 'rgba(33,24,50,0.06)' }}>
+                        <View style={{ backgroundColor: t.color, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 }}>
+                          <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>{t.name}</Text>
                         </View>
-                        <Text style={{ color: '#211832', fontSize: 12, fontWeight: '600', flex: 1 }}>{f}</Text>
+                        <Text style={{ color: '#7A7C90', fontSize: 10, fontWeight: '700', marginTop: 5 }}>{t.price}</Text>
                       </View>
                     ))}
-
-                    {/* Locked in this tier */}
-                    {tier.locked.length > 0 && (
-                      <>
-                        <View style={{ height: 1, backgroundColor: '#D8D8E4', marginVertical: 8 }} />
-                        {tier.locked.map(f => (
-                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                            <Text style={{ color: 'rgba(200,60,60,0.5)', fontSize: 13 }}>✗</Text>
-                            <Text style={{ color: 'rgba(33,24,50,0.35)', fontSize: 12, fontWeight: '500' }}>{f}</Text>
-                          </View>
-                        ))}
-                      </>
-                    )}
-                  </View>
+                  </ScrollView>
                 </View>
-              ))}
-            </ScrollView>
 
-            {/* Dot indicators */}
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, marginBottom: 14 }}>
-              {['#7dd3fc','#1d4ed8','#F25912','#F25912'].map((c, i) => (
-                <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c + '88' }} />
-              ))}
+                {/* Body: vertical scroll; left labels frozen, cells scroll horizontally */}
+                <ScrollView style={{ maxHeight: CMP_WIN_H * 0.44 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  <View style={{ flexDirection: 'row' }}>
+                    {/* Frozen left feature column */}
+                    <View style={{ width: CMP_LEFT_W }}>
+                      {CMP_ROWS.map((r, i) => (
+                        'section' in r ? (
+                          <View key={i} style={{ height: CMP_SEC_H, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: '#E7E7F0', borderRightWidth: 1, borderRightColor: 'rgba(33,24,50,0.12)' }}>
+                            <Text style={{ color: '#4C4E78', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.section}</Text>
+                          </View>
+                        ) : (
+                          <View key={i} style={{ height: CMP_ROW_H, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: '#F8F8FC', borderTopWidth: 1, borderTopColor: 'rgba(33,24,50,0.06)', borderRightWidth: 1, borderRightColor: 'rgba(33,24,50,0.12)' }}>
+                            <Text numberOfLines={2} style={{ color: '#211832', fontSize: 12.5, fontWeight: '600' }}>{r.label}</Text>
+                          </View>
+                        )
+                      ))}
+                    </View>
+
+                    {/* Scrollable tier cells (drives the header scroll) */}
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      scrollEventThrottle={16}
+                      style={{ flex: 1 }}
+                      onScroll={e => cmpHeaderRef.current?.scrollTo({ x: e.nativeEvent.contentOffset.x, animated: false })}
+                    >
+                      <View>
+                        {CMP_ROWS.map((r, i) => (
+                          'section' in r ? (
+                            <View key={i} style={{ width: CMP_COL_W * CMP_TIERS.length, height: CMP_SEC_H, backgroundColor: '#E7E7F0' }} />
+                          ) : (
+                            <View key={i} style={{ flexDirection: 'row' }}>
+                              {r.cells.map((on, ci) => (
+                                <View
+                                  key={ci}
+                                  style={[
+                                    { width: CMP_COL_W, height: CMP_ROW_H, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: 'rgba(33,24,50,0.06)', borderLeftWidth: 1, borderLeftColor: 'rgba(33,24,50,0.06)' },
+                                    ci === CMP_TIERS.length - 1 && { backgroundColor: 'rgba(242,89,18,0.06)' },
+                                  ]}
+                                >
+                                  {on
+                                    ? <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+                                    : <Text style={{ color: '#C4C6D4', fontSize: 16, fontWeight: '700' }}>–</Text>}
+                                </View>
+                              ))}
+                            </View>
+                          )
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                </ScrollView>
+              </View>
             </View>
 
             <TouchableOpacity
