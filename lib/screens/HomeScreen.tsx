@@ -757,6 +757,7 @@ const HomeScreenInner = () => {
   const isCoaching = appMode === 'coaching';
 
   const displayName = profile?.fullName || email?.split('@')[0] || 'Guest';
+  const firstName = displayName.trim().split(/\s+/)[0] || displayName;
   // Gender icon shown right after the name (matches the profile screens).
   const homeGenderKey = (profile?.gender || '').toLowerCase();
   const homeGenderMeta =
@@ -1140,6 +1141,7 @@ const HomeScreenInner = () => {
                         gender={profile?.gender === 'female' ? 'female' : 'male'}
                         view="front"
                         hideControls
+                        controls={false}
                         height={68}
                         girthScale={bodyModelGirth}
                       />
@@ -1678,7 +1680,7 @@ const HomeScreenInner = () => {
           {supabaseUserId && (
             <View style={styles.heatCard}>
               <GlassSheen radius={20} />
-              <Text style={styles.heatTitle}>Are you being social or working out?</Text>
+              <Text style={styles.heatTitle}>{firstName}'s Activity</Text>
               <Text style={styles.heatSub}>Your recent workout, social & challenge activity</Text>
               <View style={{ marginTop: 14 }}>
                 <SocialWorkoutHeatmap uid={supabaseUserId} />

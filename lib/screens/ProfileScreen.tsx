@@ -1106,7 +1106,7 @@ export const ProfileScreen = () => {
 
           {/* ── ACTIVITY — social / workout / challenge heat map (same as Home) ── */}
           <ProfileCard isPrivate={isSectionPrivate('activity')} onToggleVisibility={() => toggleSection('activity')}>
-            <Text style={s.cardTitle}>Are you being social or working out?</Text>
+            <Text style={s.cardTitle}>{firstName}'s Activity</Text>
             <Text style={[s.bodyText, { marginTop: 2, marginBottom: 12 }]}>Your recent workout, social &amp; challenge activity</Text>
             {supabaseUserId && <SocialWorkoutHeatmap uid={supabaseUserId} />}
           </ProfileCard>

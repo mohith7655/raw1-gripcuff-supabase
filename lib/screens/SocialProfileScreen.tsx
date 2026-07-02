@@ -811,7 +811,7 @@ export function SocialProfileScreen() {
           {/* ── ACTIVITY — same "social vs workout" heatmap shown on Home ───── */}
           {!!uid && (
             <ProfileCard>
-              <Text style={s.cardTitle}>Are you being social or working out?</Text>
+              <Text style={s.cardTitle}>{firstName}'s Activity</Text>
               <Text style={{ color: '#7A7C90', fontSize: 12.5, marginTop: 2, marginBottom: 12 }}>
                 Recent workout, social &amp; challenge activity
               </Text>

@@ -151,6 +151,15 @@ const PART_LABEL: Record<string, string> = (() => {
   return m;
 })();
 
+// MuscleVisualizer bone/region group (returned by a 3D raycast tap) → the body
+// part key used here. A few groups collapse (Back → upper back; Arms → elbow) —
+// the picker still lets the user refine side / type afterward.
+const GROUP_TO_PART: Record<string, string> = {
+  Shoulders: 'shoulders', Chest: 'chest', Abs: 'abs', Glutes: 'glutes',
+  Quads: 'quads', Calves: 'calves', Neck: 'neck', Hip: 'hip', Knee: 'knee',
+  Ankle: 'ankle', Elbow: 'elbow', Wrist: 'wrist', Arms: 'elbow', Back: 'upper_back',
+};
+
 const COND_META: Record<BodyConditionType, { label: string; emoji: string; color: string; soft: string }> = {
   tightness: { label: 'Tightness', emoji: '🟡', color: '#d4a600', soft: 'rgba(212,166,0,0.16)' },
   pain:      { label: 'Pain',      emoji: '😣', color: '#ea580c', soft: 'rgba(234,88,12,0.14)' },
@@ -372,60 +381,32 @@ export default function BodyVisualizer({
     setPicker(null);
   };
 
-  // Tap anywhere on the model → nearest body part → open the guided picker.
-  const handleModelTap = (e: GestureResponderEvent) => {
-    if (!stageW) return;
-    const fx = clamp(e.nativeEvent.locationX / stageW, 0, 1);
-    const fy = clamp(e.nativeEvent.locationY / canvasHeight, 0, 1);
-    let best: { h: Hotspot; hx: number } | null = null;
-    let bestD = Infinity;
-    for (const h of BODY_PARTS[modelView]) {
-      const xs = h.both ? [0.5 + h.x, 0.5 - h.x] : [0.5];
-      for (const hx of xs) {
-        const d = Math.hypot(hx - fx, h.y - fy);
-        if (d < bestD) { bestD = d; best = { h, hx }; }
-      }
-    }
-    if (!best || bestD > 0.2) return; // tapped empty space (head, off-body)
-    setPicker({ base: best.h.key, label: best.h.label, both: best.h.both, xf: best.hx, y: best.h.y, side: null });
+  // 3D raycast tap on the model → { group, side } → open the guided picker. The
+  // detected anatomical side pre-fills the picker, so it jumps straight to the
+  // tightness / injury / goal choices (the user can still change side).
+  const handlePartSelect = (group: string, side: 'left' | 'right' | null) => {
+    const base = GROUP_TO_PART[group];
+    if (!base) return;
+    const meta = [...BODY_PARTS.front, ...BODY_PARTS.back].find(h => h.key === base);
+    const both = meta?.both ?? false;
+    const resolvedSide: Side = both ? (side === 'left' || side === 'right' ? side : 'both') : 'both';
+    setPicker({ base, label: meta?.label ?? base, both, xf: 0.5, y: 0.5, side: resolvedSide });
   };
 
-  // Coloured part labels for any part already flagged (no visible dots).
-  const renderHotspots = () => (
-    <>
-      {BODY_PARTS[modelView].map(h => {
-        const cond = conditionOn(h.key);
-        if (!cond || picker?.base === h.key) return null;
-        const xf = h.both ? 0.5 + h.x : 0.5;
-        return (
-          <Text
-            key={h.key}
-            style={[s.hsLabel, { left: `${xf * 100}%`, top: `${h.y * 100}%` }]}
-            pointerEvents="none"
-          >
-            {COND_META[cond.type].emoji} {h.label}
-          </Text>
-        );
-      })}
-    </>
-  );
-
-  // Compact inline mini-menu anchored at the tapped dot.
-  const POP_W = 140;
+  // Picker card — pinned to the bottom-centre of the stage. The 3D camera can be
+  // freely rotated / zoomed / panned, so a fixed anchor stays put and legible
+  // rather than chasing a body point that keeps moving.
+  const POP_W = 180;
   const renderPicker = () => {
     if (!picker || !stageW) return null;
-    const dotX = picker.xf * stageW;
-    const dotY = picker.y * canvasHeight;
-    const left = clamp(dotX - POP_W / 2, 4, Math.max(4, stageW - POP_W - 4));
-    const below = picker.y < 0.28; // float above the dot unless near the top
+    const left = clamp(stageW / 2 - POP_W / 2, 4, Math.max(4, stageW - POP_W - 4));
     const showType = !picker.both || picker.side !== null;
     const isSelected = !!conditionOn(picker.base);
     return (
       <View
         style={[
           s.pop,
-          { width: POP_W, left },
-          below ? { top: dotY + 12 } : { bottom: canvasHeight - dotY + 12 },
+          { width: POP_W, left, bottom: 12 },
         ]}
       >
         <View style={s.popHead}>
@@ -549,22 +530,15 @@ export default function BodyVisualizer({
           girthScale={girthScale}
           targetedMuscles={[...(extraMuscles ?? []), ...highlightMuscles]}
           groupColors={{ ...(extraGroupColors ?? {}), ...groupColors }}
+          onPartSelect={editable ? handlePartSelect : undefined}
           overlay={
             <>
-              {editable && (
-                <View
-                  style={StyleSheet.absoluteFill}
-                  onStartShouldSetResponder={() => true}
-                  onResponderRelease={handleModelTap}
-                />
-              )}
               <View style={s.figLabel} pointerEvents="none">
                 <Text style={s.figLabelName}>{name || 'Me'}</Text>
                 <Text style={s.figLabelSub}>
                   {`${fmtHeight(m.heightCm, units)} · ${fmtWeight(m.weightKg, units)}`}
                 </Text>
               </View>
-              {renderHotspots()}
             </>
           }
         />
@@ -608,7 +582,7 @@ export default function BodyVisualizer({
 
       {editable && (
         <Text style={s.pickHint}>
-          Tap a body part → pick a side → mark Tightness, Pain or Injury.
+          Drag to rotate · pinch to zoom · tap a body part to mark Tightness, Pain or Injury.
         </Text>
       )}
 

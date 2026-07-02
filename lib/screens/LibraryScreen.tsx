@@ -300,7 +300,8 @@ export const LibraryScreen = () => {
 
   return (
     <AmbientBackground>
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    {/* Exercises tab sits on a plain white background; Workouts keeps the ambient mesh. */}
+    <SafeAreaView style={[styles.safeArea, subTab === 'all' && { backgroundColor: '#FFFFFF' }]} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
@@ -1101,6 +1102,10 @@ const VideoContent = ({
   );
 };
 
+// Thumbnail surface palette — cycled by card position so the Exercises library
+// reads with the same coloured tiles across every category row.
+const THUMB_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
+
 // ── Video Tile Component ──
 const VideoTile = ({
   video,
@@ -1153,8 +1158,9 @@ const VideoTile = ({
     });
   };
 
-  // Uniform white thumbnail surface for every video.
-  const finalColors = ['#FFFFFF', '#FFFFFF'];
+  // Coloured thumbnail surface, cycled by position (matches the Exercises look).
+  const thumbColor = THUMB_COLORS[index % THUMB_COLORS.length];
+  const finalColors = [thumbColor, thumbColor];
 
   return (
     <TouchableOpacity style={styles.videoCard} onPress={onPress}>
@@ -1179,7 +1185,7 @@ const VideoTile = ({
           {video.isCompleted ? (
             <Check color="#fff" size={14} />
           ) : (
-            <Play color="rgba(33,24,50,0.14)" size={28} fill="rgba(33,24,50,0.14)" />
+            <Play color="rgba(255,255,255,0.4)" size={28} fill="rgba(255,255,255,0.4)" />
           )}
         </View>
 
@@ -1192,7 +1198,7 @@ const VideoTile = ({
 
         {/* RAW1 logo watermark */}
         <View style={{ position: 'absolute', top: 6, left: 6 }}>
-          <Raw1Logo fontSize={12} />
+          <Raw1Logo fontSize={12} transparent />
         </View>
 
         {/* Completion Checkbox - Tappable independently */}
@@ -1696,7 +1702,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   durationText: {
-    color: '#7A7C90',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700' as any,
     letterSpacing: 0.3,

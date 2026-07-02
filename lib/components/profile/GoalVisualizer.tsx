@@ -52,6 +52,16 @@ const HL_MAP: Record<string, string> = {
   ankle: 'Ankle', upper_back: 'Back', lower_back: 'Back',
 };
 
+// MuscleVisualizer bone/region group (returned by a 3D raycast tap) → the body
+// part key used here (must exist in BODY_PARTS). Elbow collapses to Arms; Back to
+// upper back — the picker still lets the user pick side + goal type afterward.
+const GROUP_TO_PART: Record<string, string> = {
+  Shoulders: 'shoulders', Chest: 'chest', Arms: 'arms', Elbow: 'arms',
+  Wrist: 'wrist', Abs: 'abs', Back: 'upper_back', Glutes: 'glutes',
+  Quads: 'quads', Calves: 'calves', Neck: 'neck', Hip: 'hip',
+  Knee: 'knee', Ankle: 'ankle',
+};
+
 // Selections store side-aware keys: `base` (single) or `base::left` / `base::right`.
 const SIDE_SEP = '::';
 const sideKey = (base: string, side: 'left' | 'right' | 'single') =>
@@ -485,63 +495,31 @@ export default function GoalVisualizer({
     setPicker(null);
   };
 
-  // Tap anywhere on the model → nearest body part → open the guided picker.
-  const handleModelTap = (e: GestureResponderEvent) => {
-    if (!stageW) return;
-    const fx = clamp(e.nativeEvent.locationX / stageW, 0, 1);
-    const fy = clamp(e.nativeEvent.locationY / canvasHeight, 0, 1);
-    let best: { h: Hotspot; hx: number } | null = null;
-    let bestD = Infinity;
-    for (const h of BODY_PARTS[modelView]) {
-      const xs = h.both ? [0.5 + h.x, 0.5 - h.x] : [0.5];
-      for (const hx of xs) {
-        const d = Math.hypot(hx - fx, h.y - fy);
-        if (d < bestD) { bestD = d; best = { h, hx }; }
-      }
-    }
-    if (!best || bestD > 0.2) return; // tapped empty space (head, off-body)
-    setPicker({ base: best.h.key, label: best.h.label, both: best.h.both, xf: best.hx, y: best.h.y, side: null });
+  // 3D raycast tap on the model → { group, side } → open the guided picker with
+  // the detected anatomical side pre-filled (jumps straight to goal-type choices).
+  const handlePartSelect = (group: string, side: 'left' | 'right' | null) => {
+    const base = GROUP_TO_PART[group];
+    if (!base) return;
+    const meta = [...BODY_PARTS.front, ...BODY_PARTS.back].find(h => h.key === base);
+    const both = meta?.both ?? false;
+    const resolvedSide: InjurySide = both ? (side === 'left' || side === 'right' ? side : 'both') : 'both';
+    setPicker({ base, label: meta?.label ?? base, both, xf: 0.5, y: 0.5, side: resolvedSide });
   };
 
-  // No visible dots — just the coloured name labels for parts already selected.
-  const renderHotspots = () => (
-    <>
-      {BODY_PARTS[modelView].map(h => {
-        const owner = ownerOf(h.key);
-        if (!owner || picker?.base === h.key) return null;
-        const xf = h.both ? 0.5 + h.x : 0.5;
-        return (
-          <Text
-            key={h.key}
-            // White text reads on any highlight colour (green/red/blue); the dark
-            // outline keeps it legible on the light-blue unselected body too.
-            style={[st.hsLabel, { left: `${xf * 100}%`, top: `${h.y * 100}%` }]}
-            pointerEvents="none"
-          >
-            {h.label}
-          </Text>
-        );
-      })}
-    </>
-  );
-
-  // Small inline mini-menu anchored at the tapped dot (sized like the body labels).
-  const POP_W = 132;
+  // Picker card — pinned to the bottom-centre of the stage. The 3D camera moves
+  // freely (rotate / zoom / pan), so a fixed anchor stays legible instead of
+  // chasing a body point that keeps moving.
+  const POP_W = 180;
   const renderPicker = () => {
     if (!picker || !stageW) return null;
-    const dotX = picker.xf * stageW;
-    const dotY = picker.y * canvasHeight;
-    const left = clamp(dotX - POP_W / 2, 4, Math.max(4, stageW - POP_W - 4));
-    // Prefer floating above the dot so the menu never covers the goal cards below.
-    const below = picker.y < 0.28;
+    const left = clamp(stageW / 2 - POP_W / 2, 4, Math.max(4, stageW - POP_W - 4));
     const showType = !picker.both || picker.side !== null;
     const isSelected = !!ownerOf(picker.base);
     return (
       <View
         style={[
           st.pop,
-          { width: POP_W, left },
-          below ? { top: dotY + 12 } : { bottom: canvasHeight - dotY + 12 },
+          { width: POP_W, left, bottom: 12 },
         ]}
       >
         <View style={st.popHead}>
@@ -629,20 +607,12 @@ export default function GoalVisualizer({
                 view={modelView}
                 height={canvasHeight}
                 hideControls
+                onPartSelect={handlePartSelect}
                 overlay={
-                  <>
-                    {/* Invisible tap layer — tap the body directly to open the picker. */}
-                    <View
-                      style={StyleSheet.absoluteFill}
-                      onStartShouldSetResponder={() => true}
-                      onResponderRelease={handleModelTap}
-                    />
-                    <View style={st.hsTitle} pointerEvents="none">
-                      <Text style={st.hsTitleName}>{name || 'Me'}</Text>
-                      <Text style={st.hsTitleSub}>My Goals</Text>
-                    </View>
-                    {renderHotspots()}
-                  </>
+                  <View style={st.hsTitle} pointerEvents="none">
+                    <Text style={st.hsTitleName}>{name || 'Me'}</Text>
+                    <Text style={st.hsTitleSub}>My Goals</Text>
+                  </View>
                 }
               />
             </View>
@@ -650,7 +620,7 @@ export default function GoalVisualizer({
           </View>
 
           <Text style={st.pickHint}>
-            Tap a body part → pick a side → choose Muscle Growth, Injury Rehab or Stretching.
+            Drag to rotate · pinch to zoom · tap a body part to choose Muscle Growth, Injury Rehab or Stretching.
           </Text>
         </>
       )}

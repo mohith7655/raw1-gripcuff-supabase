@@ -228,6 +228,7 @@ export default function BodyGoalComparison({
           gender={modelGender}
           view="front"
           hideControls
+          controls={false}
           height={FIG_H}
           girthScale={nowGirth}
           targetedMuscles={targeted}
