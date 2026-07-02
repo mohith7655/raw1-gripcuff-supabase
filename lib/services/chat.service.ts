@@ -96,25 +96,33 @@ export class ChatService {
             if (changed) callback(currentMessages);
         };
 
-        // Initial fetch — 100 messages ascending so oldest is at top
+        // Fetch the latest messages (ascending so oldest is at top). Used for the
+        // initial load AND as a polling fallback below.
+        const fetchMessages = (isInitial: boolean) =>
+            supabase
+                .from('messages')
+                .select('*')
+                .eq('chat_id', chatId)
+                .order('created_at', { ascending: true })
+                .limit(100)
+                .then(({ data, error: fetchErr }) => {
+                    if (cancelled) return;
+                    if (fetchErr) {
+                        if (isInitial) { console.warn('[ChatService] initial fetch failed:', fetchErr.message); callback([]); }
+                        return;
+                    }
+                    addMessages((data ?? []).map(rowToMessage));
+                });
+
+        // Initial fetch.
         console.log('[ChatService] fetching messages for chatId:', chatId);
-        supabase
-            .from('messages')
-            .select('*')
-            .eq('chat_id', chatId)
-            .order('created_at', { ascending: true })
-            .limit(100)
-            .then(({ data, error: fetchErr }) => {
-                if (cancelled) return;
-                if (fetchErr) {
-                    console.warn('[ChatService] initial fetch failed:', fetchErr.message);
-                    callback([]);
-                    return;
-                }
-                const rows = (data ?? []).map(rowToMessage);
-                console.log('[ChatService] fetched', rows.length, 'messages for', chatId);
-                addMessages(rows);
-            });
+        fetchMessages(true);
+
+        // Polling fallback — realtime web sockets drop frequently (esp. on web /
+        // backgrounded tabs), so the recipient can miss the INSERT event and get
+        // only the notification. Re-poll every few seconds; addMessages dedupes by
+        // id, so this is a no-op when realtime already delivered the message.
+        const pollTimer = setInterval(() => { if (!cancelled) fetchMessages(false); }, 4000);
 
         // Realtime subscription — fires for every INSERT on this chat_id.
         // Requires the messages table to be in the supabase_realtime publication
@@ -150,6 +158,7 @@ export class ChatService {
 
         return () => {
             cancelled = true;
+            clearInterval(pollTimer);
             console.log('[ChatService] unsubscribing channel for', chatId);
             supabase.removeChannel(channel);
         };
