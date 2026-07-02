@@ -34,7 +34,6 @@ import { Video, VideoType, SubTab } from '../models/Video';
 import { ExploreCoaches } from './ExploreCoaches';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
-import { GridVideoCard } from '../components/GridVideoCard';
 import { VideoViewsLabel } from '../components/VideoViewsLabel';
 import { VideoEngagementIcons } from '../components/VideoCardBits';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
@@ -268,6 +267,7 @@ export const LibraryScreen = () => {
     goals: profile?.goals,
   });
   const aiRecos = bodyInsights?.recommendations ?? [];
+  const firstName = (profile?.fullName ?? '').trim().split(/\s+/)[0] || 'Your';
   // Recommendations open EXERCISE videos (CategoryVideos = EXERCISE_DATA), never
   // workout programs. gripcuff has its own exercise library.
   const RECO_CAT: Record<string, { key: string; label: string }> = {
@@ -452,42 +452,27 @@ export const LibraryScreen = () => {
         <View style={{ marginBottom: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 16, marginBottom: 4 }}>
             <Sparkles size={16} color="#F25912" />
-            <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>Recommended for you</Text>
+            <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>{firstName}'s Recommended Exercises</Text>
           </View>
           <Text style={{ color: '#7A7C90', fontSize: 12.5, fontWeight: '500', paddingHorizontal: 16, marginBottom: 12 }}>
             Picked by AI from your goals, injuries & body
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-            {aiRecos.map((r, i) => {
-              const meta = RECO_META[r.category] ?? RECO_META.muscle_growth;
-              return (
-                <TouchableOpacity
-                  key={`${r.category}-${i}`}
-                  activeOpacity={0.85}
-                  onPress={() => openReco(r.category)}
-                  style={{
-                    width: 220,
-                    backgroundColor: 'rgba(255,255,255,0.62)',
-                    borderRadius: 18,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.9)',
-                    padding: 14,
-                    shadowColor: '#2A2342', shadowOpacity: 0.1, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 5,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${meta.color}22` }}>
-                      <Text style={{ fontSize: 17 }}>{meta.emoji}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#211832', fontSize: 14, fontWeight: '800' }} numberOfLines={2}>{r.title}</Text>
-                    </View>
-                  </View>
-                  <Text style={{ color: '#7A7C90', fontSize: 12.5, lineHeight: 17, fontWeight: '500' }} numberOfLines={3}>{r.reason}</Text>
-                  <Text style={{ color: meta.color, fontSize: 12, fontWeight: '700', marginTop: 10 }}>Explore ›</Text>
-                </TouchableOpacity>
-              );
-            })}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+            {aiRecos.map((r, i) => (
+              // Coloured video thumbnail card (same tile as the exercise sections).
+              <VideoTile
+                key={`${r.category}-${i}`}
+                video={{
+                    id: `airec-${r.category}-${i}`,
+                    title: r.title,
+                    duration: '',
+                    category: RECO_CAT[r.category]?.key,
+                } as any}
+                index={i}
+                showCheckbox={false}
+                onPress={() => openReco(r.category)}
+              />
+            ))}
           </ScrollView>
         </View>
       )}
@@ -712,6 +697,7 @@ const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; iconN
   { key: 'Stretching', label: 'Stretching', mappingKey: 'stretching', iconName: 'yoga', color: '#4FC3F7' },
   { key: 'AthleticPerformance', label: 'Athletic Performance', mappingKey: 'athletic', iconName: 'run-fast', color: '#D4A600' },
   { key: 'InjuryRehab', label: 'Injury Rehab', mappingKey: 'rehab', iconName: 'human-cane', color: '#f44336' },
+  { key: 'GeneralHealth', label: 'General Health', mappingKey: 'general', iconName: 'heart-pulse', color: '#26A69A' },
 ];
 
 // ── Shared Video Content ──
@@ -1190,11 +1176,13 @@ const VideoTile = ({
         </View>
 
         {/* Duration Badge */}
-        <View style={styles.durationBadge}>
-          <Text style={styles.durationText}>
-            {durationLabel}
-          </Text>
-        </View>
+        {durationSeconds > 0 && (
+          <View style={styles.durationBadge}>
+            <Text style={styles.durationText}>
+              {durationLabel}
+            </Text>
+          </View>
+        )}
 
         {/* RAW1 logo watermark */}
         <View style={{ position: 'absolute', top: 6, left: 6 }}>
@@ -1669,23 +1657,24 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignContent: 'flex-start',
   },
+  // Glassy card wrapping thumbnail + details, matching Home's Recently Watched /
+  // Favorites cards (thumbnail on top, details inside a white glassy panel).
   videoCard: {
     width: 170,
-    backgroundColor: 'transparent',
-    borderRadius: 14,
-    overflow: 'visible',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderRadius: 12,
+    overflow: 'hidden',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(33,24,50,0.06)',
   },
   videoThumbnail: {
-    width: 170,
-    height: 140,
-    borderRadius: 14,
+    width: '100%',
+    height: 110,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    borderWidth: 1,
-    borderColor: 'rgba(33,24,50,0.08)',
   },
   centerIcon: {
     width: 32,
@@ -1728,13 +1717,12 @@ const styles = StyleSheet.create({
     borderColor: AppTheme.primaryColor,
   },
   videoInfo: {
-    paddingTop: 8,
-    paddingHorizontal: 2,
+    padding: 10,
   },
   videoTitle: {
     fontSize: FontSizes.small,
     fontWeight: FontWeights.semibold as any,
-    color: AppTheme.textWhite,
+    color: '#211832',
     marginBottom: 4,
   },
   videoTitleCompleted: {

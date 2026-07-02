@@ -55,6 +55,7 @@ const CATEGORY_ICON: Record<string, string> = {
   HIIT: 'fire',
   Challenge: 'sword-cross',
   Tutorial: 'school',
+  GeneralHealth: 'heart-pulse',
 };
 
 export function categoryIconName(cat?: string | null): string {
@@ -76,6 +77,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   HIIT: '#FB8C00',
   Challenge: '#EC407A',
   Tutorial: '#90A4AE',
+  GeneralHealth: '#26A69A',
 };
 
 export function categoryColor(cat?: string | null): string {

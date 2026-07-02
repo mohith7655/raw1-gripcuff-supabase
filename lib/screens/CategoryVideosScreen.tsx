@@ -96,6 +96,18 @@ const EXERCISE_DATA_RAW: Record<string, DummyVideo[]> = {
         { id: 'ir11', title: 'Prone Hip Extension', duration: '4:00' },
         { id: 'ir12', title: 'Pallof Press Core', duration: '3:30' },
     ],
+    GeneralHealth: [
+        { id: 'gh1', title: 'One Leg Balance', duration: '3:00' },
+        { id: 'gh2', title: 'Heel-to-Toe Walk', duration: '3:30' },
+        { id: 'gh3', title: 'Standing Balance Reach', duration: '3:00' },
+        { id: 'gh4', title: 'Chair Sit-to-Stand', duration: '4:00' },
+        { id: 'gh5', title: 'Posture Reset Drill', duration: '3:30' },
+        { id: 'gh6', title: 'Deep Breathing Reset', duration: '4:00' },
+        { id: 'gh7', title: 'Wall Angels', duration: '3:00' },
+        { id: 'gh8', title: 'Marching in Place', duration: '3:30' },
+        { id: 'gh9', title: 'Ankle Mobility Circles', duration: '2:30' },
+        { id: 'gh10', title: 'Gentle Neck Mobility', duration: '3:00' },
+    ],
 };
 
 // Stable difficulty per position so the S/M/C indicator shows on every card

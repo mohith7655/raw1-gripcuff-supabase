@@ -83,19 +83,20 @@ export const GridVideoCard = ({
 };
 
 const styles = StyleSheet.create({
+    // Glassy card wrapping the whole tile (thumbnail + details), matching the
+    // Home screen's Recently Watched / Favorites cards.
     cardContainer: {
         flex: 1,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: 'rgba(255,255,255,0.62)',
     },
     thumbnail: {
         width: '100%',
         aspectRatio: 16 / 9,
-        borderRadius: 12,
         backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: 'rgba(33,24,50,0.08)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 6,
         overflow: 'hidden',
     },
     playIconContainer: {
@@ -115,26 +116,26 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     infoContainer: {
-        paddingHorizontal: 4,
+        padding: 8,
     },
     titleRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: 6,
-        marginTop: 8,
+        gap: 5,
     },
     videoTitle: {
         flex: 1,
         color: '#211832',
-        fontSize: 12,
-        lineHeight: 16,
+        fontSize: 11,
+        fontWeight: '600',
+        lineHeight: 15,
     },
     diffDot: {
-        marginTop: 4,
+        marginTop: 3,
     },
     videoViews: {
         color: '#7A7C90',
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '600',
         marginTop: 3,
     },

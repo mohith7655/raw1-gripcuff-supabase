@@ -891,12 +891,12 @@ const HomeScreenInner = () => {
         onScroll={tabBar?.onScroll}
         scrollEventThrottle={16}
       >
-        {/* Header */}
+        {/* Header — RAW1 logo centered (equal side cells keep it dead-center),
+            matching the Library and Feed headers. */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Raw1Logo fontSize={22} />
-          </View>
-          <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{ flex: 1 }} />
+          <Raw1Logo fontSize={22} centerAlign />
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <AccessBadge />
           </View>
         </View>
