@@ -160,6 +160,11 @@ export class NotificationService {
   // Non-fatal — in-app realtime banners cover the foreground case regardless.
 
   private static async sendWebPush(payload: NotificationInsertPayload): Promise<void> {
+    // Web push is only usable when a VAPID public key is configured — without it
+    // no browser can subscribe, so the send-web-push function has nothing to
+    // deliver (and currently 500s when unconfigured). Skip the call entirely.
+    if (!process.env.EXPO_PUBLIC_VAPID_PUBLIC_KEY) return;
+
     const base = (process.env.EXPO_PUBLIC_APP_WEB_URL || '').replace(/\/+$/, '');
     const url = `${base}/.netlify/functions/send-web-push`;
 
