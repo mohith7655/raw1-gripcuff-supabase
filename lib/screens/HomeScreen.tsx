@@ -856,22 +856,6 @@ const HomeScreenInner = () => {
           <View style={{ flex: 1, alignItems: 'center' }}>
             <AccessBadge />
           </View>
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => setNotificationModalVisible(true)}
-            activeOpacity={0.8}
-          >
-            <View>
-              <Bell color="#4C4E78" size={26} />
-              {totalNotificationsBadge > 0 && (
-                <View style={styles.bellBadge}>
-                  <Text style={styles.bellBadgeText}>
-                    {totalNotificationsBadge > 99 ? '99+' : totalNotificationsBadge}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
         </View>
 
         {/* ── Mode Toggle ── */}

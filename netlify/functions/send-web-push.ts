@@ -44,13 +44,17 @@ export const handler = async (event: any): Promise<any> => {
     const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:raman@raw1.us';
 
     if (!supabaseUrl || !serviceKey || !vapidPublic || !vapidPrivate) {
-        console.error('[send-web-push] Missing env vars', {
+        // Web push is an optional, best-effort channel. When the VAPID / service
+        // env vars aren't configured, treat it as a no-op (nothing to deliver)
+        // rather than a 500 — the caller fires this for every notification and a
+        // 500 would spam the client console. In-app realtime banners still work.
+        console.warn('[send-web-push] not configured — skipping', {
             hasSupabaseUrl: !!supabaseUrl,
             hasServiceKey: !!serviceKey,
             hasVapidPublic: !!vapidPublic,
             hasVapidPrivate: !!vapidPrivate,
         });
-        return json(500, { error: 'Server configuration error' });
+        return json(200, { delivered: 0, removed: 0, skipped: 'not_configured' });
     }
 
     let toUid: string, title: string, body: string, data: any;
