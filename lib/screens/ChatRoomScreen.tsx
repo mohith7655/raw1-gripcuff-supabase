@@ -36,6 +36,11 @@ type RouteParams = {
     friendAvatar?: string;
 };
 
+// A single entry in the merged chat/challenge timeline.
+type TimelineItem =
+    | { kind: 'message'; id: string; at: number; msg: ChatMessage }
+    | { kind: 'challenge'; id: string; at: number; ch: PreviousChallenge };
+
 export const ChatRoomScreen = () => {
     const navigation = useNavigation<any>();
     const route = useRoute();
@@ -231,70 +236,77 @@ export const ChatRoomScreen = () => {
         return `${secs}s`;
     };
 
-    // Head-to-head challenge history strip, rendered above the messages.
-    const renderHistory = () => {
-        if (history.length === 0) return null;
+    // Merge messages + past challenges into one chronological timeline so each
+    // challenge appears inline between the messages at the time it happened.
+    const timeline = React.useMemo<TimelineItem[]>(() => {
+        const items: TimelineItem[] = [];
+        for (const m of messages) {
+            items.push({ kind: 'message', id: `m-${m.id}`, at: m.createdAt ? m.createdAt.getTime() : 0, msg: m });
+        }
+        for (const c of history) {
+            items.push({ kind: 'challenge', id: `c-${c.id}`, at: new Date(c.createdAt).getTime(), ch: c });
+        }
+        // Stable sort by time; challenges tie-break before a message at the same ms.
+        items.sort((a, b) => (a.at - b.at) || (a.kind === b.kind ? 0 : a.kind === 'challenge' ? -1 : 1));
+        return items;
+    }, [messages, history]);
+
+    const renderChallengeCard = (c: PreviousChallenge) => {
+        const d = new Date(c.createdAt);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        const reps = c.feedback?.reps ?? null;
+        const winnerId = c.feedback?.winnerId ?? null;
+        const outcome = winnerId
+            ? (winnerId === supabaseUserId ? 'You won' : `${firstName} won`)
+            : null;
+        const iWon = winnerId === supabaseUserId;
         return (
-            <View style={styles.historyWrap}>
-                <Text style={styles.historyHeading}>Challenge history</Text>
-                {history.map((c) => {
-                    const d = new Date(c.createdAt);
-                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                    const reps = c.feedback?.reps ?? null;
-                    const winnerId = c.feedback?.winnerId ?? null;
-                    const outcome = winnerId
-                        ? (winnerId === supabaseUserId ? 'You won' : `${firstName} won`)
-                        : null;
-                    const iWon = winnerId === supabaseUserId;
-                    return (
-                        <View key={c.id} style={styles.histCard}>
-                            <View style={styles.histIcon}>
-                                <Swords size={18} color={AppTheme.primaryColor} />
-                            </View>
-                            <View style={styles.flex}>
-                                <Text style={styles.histTitle}>{c.exerciseName} challenge</Text>
-                                <View style={styles.histMetaRow}>
-                                    <Text style={styles.histMeta}>{dateStr} · {timeStr}</Text>
-                                    <View style={styles.histDot} />
-                                    <Timer size={12} color={AppTheme.textGrey} />
-                                    <Text style={styles.histMeta}>{formatDuration(c.durationSeconds)}</Text>
-                                    {reps != null && (
-                                        <>
-                                            <View style={styles.histDot} />
-                                            <Text style={styles.histMeta}>{reps} reps</Text>
-                                        </>
-                                    )}
-                                </View>
-                            </View>
-                            {outcome && (
-                                <View style={[styles.histBadge, iWon ? styles.histBadgeWin : styles.histBadgeLoss]}>
-                                    {iWon && <Trophy size={12} color="#B8860B" />}
-                                    <Text style={[styles.histBadgeText, iWon ? styles.histBadgeTextWin : styles.histBadgeTextLoss]}>
-                                        {outcome}
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
-                    );
-                })}
+            <View style={styles.histCard}>
+                <View style={styles.histIcon}>
+                    <Swords size={18} color={AppTheme.primaryColor} />
+                </View>
+                <View style={styles.flex}>
+                    <Text style={styles.histTitle}>{c.exerciseName} challenge</Text>
+                    <View style={styles.histMetaRow}>
+                        <Text style={styles.histMeta}>{dateStr} · {timeStr}</Text>
+                        <View style={styles.histDot} />
+                        <Timer size={12} color={AppTheme.textGrey} />
+                        <Text style={styles.histMeta}>{formatDuration(c.durationSeconds)}</Text>
+                        {reps != null && (
+                            <>
+                                <View style={styles.histDot} />
+                                <Text style={styles.histMeta}>{reps} reps</Text>
+                            </>
+                        )}
+                    </View>
+                </View>
+                {outcome && (
+                    <View style={[styles.histBadge, iWon ? styles.histBadgeWin : styles.histBadgeLoss]}>
+                        {iWon && <Trophy size={12} color="#B8860B" />}
+                        <Text style={[styles.histBadgeText, iWon ? styles.histBadgeTextWin : styles.histBadgeTextLoss]}>
+                            {outcome}
+                        </Text>
+                    </View>
+                )}
             </View>
         );
     };
 
-    const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
-        const isMe = item.senderId === supabaseUserId;
-        const prevMsg = messages[index - 1];
+    const renderTimelineItem = ({ item, index }: { item: TimelineItem; index: number }) => {
+        if (item.kind === 'challenge') return renderChallengeCard(item.ch);
+
+        const msg = item.msg;
+        const isMe = msg.senderId === supabaseUserId;
+        const prev = timeline[index - 1];
         const showTimestamp =
-            !prevMsg ||
-            (item.createdAt &&
-                prevMsg.createdAt &&
-                item.createdAt.getTime() - prevMsg.createdAt.getTime() > 5 * 60 * 1000);
+            !prev ||
+            (!!item.at && !!prev.at && item.at - prev.at > 5 * 60 * 1000);
 
         return (
             <View>
-                {showTimestamp && item.createdAt && (
-                    <Text style={styles.timestamp}>{formatTime(item.createdAt)}</Text>
+                {showTimestamp && msg.createdAt && (
+                    <Text style={styles.timestamp}>{formatTime(msg.createdAt)}</Text>
                 )}
                 <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowThem]}>
                     {!isMe && (
@@ -314,7 +326,7 @@ export const ChatRoomScreen = () => {
                     )}
                     <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
                         <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextThem]}>
-                            {item.text}
+                            {msg.text}
                         </Text>
                     </View>
                 </View>
@@ -371,13 +383,12 @@ export const ChatRoomScreen = () => {
                 ) : (
                     <FlatList
                         ref={listRef}
-                        data={messages}
-                        keyExtractor={(m) => m.id}
-                        renderItem={renderMessage}
+                        data={timeline}
+                        keyExtractor={(it) => it.id}
+                        renderItem={renderTimelineItem}
                         contentContainerStyle={styles.messagesContent}
                         showsVerticalScrollIndicator={false}
                         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-                        ListHeaderComponent={renderHistory()}
                         ListEmptyComponent={
                             <View style={styles.emptyChat}>
                                 <Text style={styles.emptyChatText}>No messages yet. Say hi!</Text>
@@ -542,17 +553,7 @@ const styles = StyleSheet.create({
     bubbleTextMe: { color: '#211832' },
     bubbleTextThem: { color: '#211832' },
 
-    // Challenge history strip (chat header)
-    historyWrap: { marginBottom: 14 },
-    historyHeading: {
-        color: AppTheme.textGrey,
-        fontSize: 11,
-        fontWeight: '800',
-        letterSpacing: 1,
-        textTransform: 'uppercase',
-        marginBottom: 8,
-        marginLeft: 2,
-    },
+    // Inline challenge card (woven into the message timeline)
     histCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -561,7 +562,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         paddingVertical: 12,
         paddingHorizontal: 14,
-        marginBottom: 8,
+        marginVertical: 8,
         borderWidth: 1,
         borderColor: 'rgba(33,24,50,0.07)',
     },
