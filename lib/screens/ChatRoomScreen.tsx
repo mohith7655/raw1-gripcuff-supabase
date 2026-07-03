@@ -3,7 +3,7 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
+    ScrollView,
     TextInput,
     TouchableOpacity,
     KeyboardAvoidingView,
@@ -62,7 +62,7 @@ export const ChatRoomScreen = () => {
     // the messages so the two of you can see your head-to-head record.
     const [history, setHistory] = useState<PreviousChallenge[]>([]);
     const firstName = friendName?.split(' ')[0] || friendName;
-    const listRef = useRef<FlatList>(null);
+    const listRef = useRef<ScrollView>(null);
 
     // Scroll the list to the newest item. A single scrollToEnd can fire before the
     // taller challenge cards finish laying out (esp. iOS Safari web) and land short,
@@ -409,20 +409,29 @@ export const ChatRoomScreen = () => {
                         <ActivityIndicator color={AppTheme.primaryColor} size="large" />
                     </View>
                 ) : (
-                    <FlatList
+                    // Plain ScrollView (not FlatList): the timeline is small, and
+                    // FlatList virtualization + scrollToEnd is unreliable on web with
+                    // mixed-height challenge cards — items in the tail could stay
+                    // unmounted/off-screen. Rendering every item guarantees the newest
+                    // message/challenge is always present and reachable.
+                    <ScrollView
                         ref={listRef}
-                        data={timeline}
-                        keyExtractor={(it) => it.id}
-                        renderItem={renderTimelineItem}
                         contentContainerStyle={styles.messagesContent}
                         showsVerticalScrollIndicator={false}
                         onContentSizeChange={scrollToBottom}
-                        ListEmptyComponent={
+                    >
+                        {timeline.length === 0 ? (
                             <View style={styles.emptyChat}>
                                 <Text style={styles.emptyChatText}>No messages yet. Say hi!</Text>
                             </View>
-                        }
-                    />
+                        ) : (
+                            timeline.map((item, index) => (
+                                <React.Fragment key={item.id}>
+                                    {renderTimelineItem({ item, index })}
+                                </React.Fragment>
+                            ))
+                        )}
+                    </ScrollView>
                 )}
 
                 {/* Input Bar */}
