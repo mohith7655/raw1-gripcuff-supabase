@@ -96,14 +96,17 @@ export class ChatService {
             if (changed) callback(currentMessages);
         };
 
-        // Fetch the latest messages (ascending so oldest is at top). Used for the
-        // initial load AND as a polling fallback below.
+        // Fetch the *newest* 100 messages. NOTE: this must order DESCENDING —
+        // `ascending + limit` returns the OLDEST 100, so in a conversation with
+        // more than 100 messages the most recent ones would never load (they'd
+        // only appear via realtime, and be missing entirely on a fresh open).
+        // We reverse the batch back to ascending (oldest-first) for consumers.
         const fetchMessages = (isInitial: boolean) =>
             supabase
                 .from('messages')
                 .select('*')
                 .eq('chat_id', chatId)
-                .order('created_at', { ascending: true })
+                .order('created_at', { ascending: false })
                 .limit(100)
                 .then(({ data, error: fetchErr }) => {
                     if (cancelled) return;
@@ -111,7 +114,8 @@ export class ChatService {
                         if (isInitial) { console.warn('[ChatService] initial fetch failed:', fetchErr.message); callback([]); }
                         return;
                     }
-                    addMessages((data ?? []).map(rowToMessage));
+                    const ascending = (data ?? []).slice().reverse().map(rowToMessage);
+                    addMessages(ascending);
                 });
 
         // Initial fetch.

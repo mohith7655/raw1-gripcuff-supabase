@@ -271,15 +271,6 @@ export const ChatRoomScreen = () => {
         scrollToBottom();
     }, [timeline.length, scrollToBottom]);
 
-    // Dev aid: log the tail of the merged order so we can confirm just-sent
-    // messages land at the bottom (and aren't mis-sorted behind a challenge).
-    if (__DEV__ && timeline.length > 0) {
-        const tail = timeline.slice(-4).map((it) =>
-            `${it.kind === 'message' ? `msg:${it.msg.text.slice(0, 8)}` : `ch:${it.ch.exerciseName}`}@${new Date(it.at).toLocaleTimeString()}`,
-        );
-        console.log('[Timeline] tail', tail);
-    }
-
     const renderChallengeCard = (c: PreviousChallenge) => {
         const d = new Date(c.createdAt);
         const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
