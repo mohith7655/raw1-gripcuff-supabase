@@ -64,6 +64,15 @@ export const ChatRoomScreen = () => {
     const firstName = friendName?.split(' ')[0] || friendName;
     const listRef = useRef<FlatList>(null);
 
+    // Scroll the list to the newest item. A single scrollToEnd can fire before the
+    // taller challenge cards finish laying out (esp. iOS Safari web) and land short,
+    // hiding just-sent messages — so retry over a few frames until layout settles.
+    const scrollToBottom = React.useCallback(() => {
+        [0, 60, 180, 400].forEach((d) =>
+            setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), d),
+        );
+    }, []);
+
     const { sendInstantWorkout } = useWorkoutSession();
 
     // Instant co-workout — fire an immediate invite with a sensible default
@@ -212,7 +221,7 @@ export const ChatRoomScreen = () => {
                     const alreadyIn = prev.some(m => m.id === sent.id);
                     return alreadyIn ? prev : [...prev, sent];
                 });
-                setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+                scrollToBottom();
             }
         } catch (e) {
             console.warn('Failed to send message:', e);
@@ -255,14 +264,21 @@ export const ChatRoomScreen = () => {
         return items;
     }, [messages, history]);
 
-    // Keep the view pinned to the newest item. The plain onContentSizeChange
-    // scroll can fire before the (taller) challenge cards finish laying out and
-    // land short, hiding the tail — so re-scroll once the item count settles.
+    // Keep the view pinned to the newest item whenever the item count changes
+    // (new message arrives, or the challenge history finishes loading).
     useEffect(() => {
         if (timeline.length === 0) return;
-        const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 150);
-        return () => clearTimeout(t);
-    }, [timeline.length]);
+        scrollToBottom();
+    }, [timeline.length, scrollToBottom]);
+
+    // Dev aid: log the tail of the merged order so we can confirm just-sent
+    // messages land at the bottom (and aren't mis-sorted behind a challenge).
+    if (__DEV__ && timeline.length > 0) {
+        const tail = timeline.slice(-4).map((it) =>
+            `${it.kind === 'message' ? `msg:${it.msg.text.slice(0, 8)}` : `ch:${it.ch.exerciseName}`}@${new Date(it.at).toLocaleTimeString()}`,
+        );
+        console.log('[Timeline] tail', tail);
+    }
 
     const renderChallengeCard = (c: PreviousChallenge) => {
         const d = new Date(c.createdAt);
@@ -409,7 +425,7 @@ export const ChatRoomScreen = () => {
                         renderItem={renderTimelineItem}
                         contentContainerStyle={styles.messagesContent}
                         showsVerticalScrollIndicator={false}
-                        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+                        onContentSizeChange={scrollToBottom}
                         ListEmptyComponent={
                             <View style={styles.emptyChat}>
                                 <Text style={styles.emptyChatText}>No messages yet. Say hi!</Text>
