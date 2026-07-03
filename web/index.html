@@ -27,12 +27,20 @@
         height: 100%;
         background-color: #EEEEF2;
         color-scheme: light;
+        /* Kill the mobile-browser rubber-band / pull-to-refresh bounce that
+           otherwise drags a full-screen View (e.g. the challenge room) and
+           reveals the grey page background behind it on swipe-down. */
+        overscroll-behavior: none;
       }
       body {
-        height: 100%;
+        /* Pin the body so a touch-drag can never scroll/bounce the document.
+           overflow:hidden alone does NOT stop overscroll bounce on iOS/mobile. */
+        position: fixed;
+        inset: 0;
         margin: 0;
         padding: 0;
         overflow: hidden;
+        overscroll-behavior: none;
         background-color: #EEEEF2;
         /* Sharper font rendering to match native */
         -webkit-font-smoothing: antialiased;
@@ -42,6 +50,7 @@
         display: flex;
         height: 100%;
         flex: 1;
+        overflow: hidden;
         background-color: #EEEEF2;
       }
     </style>

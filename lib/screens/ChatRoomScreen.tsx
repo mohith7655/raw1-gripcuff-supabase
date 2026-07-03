@@ -16,8 +16,8 @@ import {
     Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { Send, CircleUserRound, Dumbbell, Swords } from 'lucide-react-native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { Send, CircleUserRound, Dumbbell, Swords, Trophy, Timer } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
@@ -25,7 +25,7 @@ import { ChatService, getChatId } from '../services/chat.service';
 import { ChatMessage } from '../models/Chat';
 import { TierAvatar } from '../components/profile/TierAvatar';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
-import { ChallengeSessionService } from '../services/challengeSession.service';
+import { ChallengeSessionService, PreviousChallenge } from '../services/challengeSession.service';
 import { NotificationService } from '../services/notification.service';
 import { fetchAgoraToken } from '../services/agora/AgoraTokenService';
 import { getProgramsByCategory } from '../data/preRecordedPrograms';
@@ -53,6 +53,9 @@ export const ChatRoomScreen = () => {
     // "+" action menu (invite to workout / challenge this friend).
     const [actionsOpen, setActionsOpen] = useState(false);
     const [challengeBusy, setChallengeBusy] = useState(false);
+    // Past challenges played against THIS friend — shown as a history strip above
+    // the messages so the two of you can see your head-to-head record.
+    const [history, setHistory] = useState<PreviousChallenge[]>([]);
     const firstName = friendName?.split(' ')[0] || friendName;
     const listRef = useRef<FlatList>(null);
 
@@ -172,6 +175,22 @@ export const ChatRoomScreen = () => {
         }
     }, [chatId, ready, supabaseUserId]);
 
+    // Load the head-to-head challenge history with this friend. Refreshed on focus
+    // so it updates after returning from a just-finished challenge.
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!supabaseUserId) return;
+            let cancelled = false;
+            ChallengeSessionService.loadPreviousForUser(supabaseUserId)
+                .then((all) => {
+                    if (cancelled) return;
+                    setHistory(all.filter((c) => c.opponentUid === friendUid));
+                })
+                .catch((e) => console.warn('[Chat] challenge history load failed', e));
+            return () => { cancelled = true; };
+        }, [supabaseUserId, friendUid]),
+    );
+
     const handleSend = async () => {
         if (!text.trim() || sending) return;
         if (!supabaseUserId) return;
@@ -202,6 +221,65 @@ export const ChatRoomScreen = () => {
         if (!ts) return '';
         const date: Date = ts.toDate ? ts.toDate() : new Date(ts);
         return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    };
+
+    const formatDuration = (secs: number): string => {
+        if (secs >= 60) {
+            const m = Math.round(secs / 60);
+            return `${m} min`;
+        }
+        return `${secs}s`;
+    };
+
+    // Head-to-head challenge history strip, rendered above the messages.
+    const renderHistory = () => {
+        if (history.length === 0) return null;
+        return (
+            <View style={styles.historyWrap}>
+                <Text style={styles.historyHeading}>Challenge history</Text>
+                {history.map((c) => {
+                    const d = new Date(c.createdAt);
+                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const reps = c.feedback?.reps ?? null;
+                    const winnerId = c.feedback?.winnerId ?? null;
+                    const outcome = winnerId
+                        ? (winnerId === supabaseUserId ? 'You won' : `${firstName} won`)
+                        : null;
+                    const iWon = winnerId === supabaseUserId;
+                    return (
+                        <View key={c.id} style={styles.histCard}>
+                            <View style={styles.histIcon}>
+                                <Swords size={18} color={AppTheme.primaryColor} />
+                            </View>
+                            <View style={styles.flex}>
+                                <Text style={styles.histTitle}>{c.exerciseName} challenge</Text>
+                                <View style={styles.histMetaRow}>
+                                    <Text style={styles.histMeta}>{dateStr} · {timeStr}</Text>
+                                    <View style={styles.histDot} />
+                                    <Timer size={12} color={AppTheme.textGrey} />
+                                    <Text style={styles.histMeta}>{formatDuration(c.durationSeconds)}</Text>
+                                    {reps != null && (
+                                        <>
+                                            <View style={styles.histDot} />
+                                            <Text style={styles.histMeta}>{reps} reps</Text>
+                                        </>
+                                    )}
+                                </View>
+                            </View>
+                            {outcome && (
+                                <View style={[styles.histBadge, iWon ? styles.histBadgeWin : styles.histBadgeLoss]}>
+                                    {iWon && <Trophy size={12} color="#B8860B" />}
+                                    <Text style={[styles.histBadgeText, iWon ? styles.histBadgeTextWin : styles.histBadgeTextLoss]}>
+                                        {outcome}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    );
+                })}
+            </View>
+        );
     };
 
     const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
@@ -299,6 +377,7 @@ export const ChatRoomScreen = () => {
                         contentContainerStyle={styles.messagesContent}
                         showsVerticalScrollIndicator={false}
                         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+                        ListHeaderComponent={renderHistory()}
                         ListEmptyComponent={
                             <View style={styles.emptyChat}>
                                 <Text style={styles.emptyChatText}>No messages yet. Say hi!</Text>
@@ -462,6 +541,48 @@ const styles = StyleSheet.create({
     bubbleText: { fontSize: FontSizes.body, lineHeight: 20 },
     bubbleTextMe: { color: '#211832' },
     bubbleTextThem: { color: '#211832' },
+
+    // Challenge history strip (chat header)
+    historyWrap: { marginBottom: 14 },
+    historyHeading: {
+        color: AppTheme.textGrey,
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        marginLeft: 2,
+    },
+    histCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: AppTheme.cardColor,
+        borderRadius: 14,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(33,24,50,0.07)',
+    },
+    histIcon: {
+        width: 38, height: 38, borderRadius: 12,
+        backgroundColor: 'rgba(242,89,18,0.1)',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    histTitle: { color: '#211832', fontSize: 14.5, fontWeight: '700', textTransform: 'capitalize' },
+    histMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' },
+    histMeta: { color: AppTheme.textGrey, fontSize: 12 },
+    histDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(33,24,50,0.25)' },
+    histBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+    },
+    histBadgeWin: { backgroundColor: 'rgba(184,134,11,0.14)' },
+    histBadgeLoss: { backgroundColor: 'rgba(33,24,50,0.06)' },
+    histBadgeText: { fontSize: 11.5, fontWeight: '800' },
+    histBadgeTextWin: { color: '#B8860B' },
+    histBadgeTextLoss: { color: AppTheme.textGrey },
 
     emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
     emptyChatText: { color: AppTheme.textGrey, fontSize: FontSizes.body },

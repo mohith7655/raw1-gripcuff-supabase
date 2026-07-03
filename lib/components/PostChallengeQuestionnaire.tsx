@@ -6,6 +6,10 @@ import { Star } from 'lucide-react-native';
 
 const ORANGE = '#F25912';
 const ACCENT = '#F25912';
+const INDIGO = '#4C4E78';        // brand — used for the CTA + selection highlight
+const TEXT = '#211832';          // primary text on the light sheet
+const MUTED = 'rgba(33,24,50,0.5)';   // secondary text
+const HAIRLINE = 'rgba(33,24,50,0.12)';
 
 export interface PostChallengeAnswers {
     feeling: number;       // 1–5
@@ -32,7 +36,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
                     <TouchableOpacity key={n} onPress={() => onChange(n)} activeOpacity={0.7} style={st.starBtn}>
                         <Star
                             size={30}
-                            color={active ? ORANGE : 'rgba(150,180,210,0.35)'}
+                            color={active ? ORANGE : 'rgba(33,24,50,0.22)'}
                             fill={active ? ORANGE : 'transparent'}
                         />
                     </TouchableOpacity>
@@ -89,7 +93,7 @@ export function PostChallengeQuestionnaire({
                                 onChangeText={(t) => setRepsText(t.replace(/[^0-9]/g, '').slice(0, 4))}
                                 keyboardType="number-pad"
                                 placeholder="e.g. 20"
-                                placeholderTextColor="rgba(150,180,210,0.4)"
+                                placeholderTextColor="rgba(33,24,50,0.35)"
                                 maxLength={4}
                             />
                         </View>
@@ -124,7 +128,7 @@ export function PostChallengeQuestionnaire({
                             disabled={!complete || submitting}
                         >
                             {submitting
-                                ? <ActivityIndicator color="#211832" size="small" />
+                                ? <ActivityIndicator color="#fff" size="small" />
                                 : <Text style={st.submitText}>Submit</Text>}
                         </TouchableOpacity>
 
@@ -148,40 +152,43 @@ const st = StyleSheet.create({
         borderTopWidth: 1, borderTopColor: 'rgba(242,89,18,0.25)',
     },
     kicker: { color: ORANGE, fontSize: 12, fontWeight: '800', letterSpacing: 1.5 },
-    title: { color: '#211832', fontSize: 24, fontWeight: '800', marginTop: 4 },
-    subtitle: { color: 'rgba(150,180,210,0.6)', fontSize: 13, marginTop: 2, marginBottom: 4 },
+    title: { color: TEXT, fontSize: 24, fontWeight: '800', marginTop: 4 },
+    subtitle: { color: MUTED, fontSize: 13, marginTop: 2, marginBottom: 4 },
 
     qBlock: { marginTop: 22 },
-    qLabel: { color: '#e6eefc', fontSize: 15, fontWeight: '600', marginBottom: 12 },
+    qLabel: { color: TEXT, fontSize: 15, fontWeight: '600', marginBottom: 12 },
 
     starRow: { flexDirection: 'row', gap: 8 },
     starBtn: { padding: 2 },
 
     repsInput: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderWidth: 1, borderColor: 'rgba(33,24,50,0.12)',
+        backgroundColor: '#fff',
+        borderWidth: 1, borderColor: HAIRLINE,
         borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
-        color: '#211832', fontSize: 18, fontWeight: '700',
-    },
+        color: TEXT, fontSize: 18, fontWeight: '700',
+        // web only (ignored on native): keep the focus ring on-brand instead of
+        // inheriting the OS accent colour (which renders orange on some systems).
+        outlineColor: INDIGO, outlineWidth: 1,
+    } as any,
 
     winnerRow: { flexDirection: 'row', gap: 12 },
     winnerPill: {
         flex: 1, paddingVertical: 14, borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderWidth: 1, borderColor: 'rgba(33,24,50,0.1)',
+        backgroundColor: '#fff',
+        borderWidth: 1, borderColor: HAIRLINE,
         alignItems: 'center',
     },
-    winnerPillActive: { backgroundColor: 'rgba(242,89,18,0.18)', borderColor: ORANGE },
-    winnerText: { color: 'rgba(200,220,240,0.7)', fontSize: 15, fontWeight: '700' },
-    winnerTextActive: { color: '#211832' },
+    winnerPillActive: { backgroundColor: 'rgba(76,78,120,0.12)', borderColor: INDIGO },
+    winnerText: { color: MUTED, fontSize: 15, fontWeight: '700' },
+    winnerTextActive: { color: INDIGO },
 
     submitBtn: {
-        marginTop: 28, backgroundColor: ORANGE, borderRadius: 16,
+        marginTop: 28, backgroundColor: INDIGO, borderRadius: 16,
         paddingVertical: 16, alignItems: 'center',
     },
-    submitBtnDisabled: { backgroundColor: 'rgba(242,89,18,0.3)' },
-    submitText: { color: '#211832', fontSize: 17, fontWeight: '800' },
+    submitBtnDisabled: { backgroundColor: 'rgba(76,78,120,0.35)' },
+    submitText: { color: '#fff', fontSize: 17, fontWeight: '800' },
 
     skipBtn: { marginTop: 12, alignItems: 'center', paddingVertical: 8 },
-    skipText: { color: 'rgba(150,180,210,0.55)', fontSize: 14, fontWeight: '600' },
+    skipText: { color: MUTED, fontSize: 14, fontWeight: '600' },
 });
