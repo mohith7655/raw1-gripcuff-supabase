@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { Send, CircleUserRound, Dumbbell, Swords, Trophy, Timer } from 'lucide-react-native';
+import { Send, CircleUserRound, Dumbbell, Swords, Trophy, Timer, WifiOff } from 'lucide-react-native';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
@@ -239,17 +239,30 @@ export const ChatRoomScreen = () => {
     // Merge messages + past challenges into one chronological timeline so each
     // challenge appears inline between the messages at the time it happened.
     const timeline = React.useMemo<TimelineItem[]>(() => {
+        const ms = (d: Date | string | null | undefined): number => {
+            const t = d ? new Date(d).getTime() : 0;
+            return Number.isFinite(t) ? t : 0; // never let an unparseable date poison the sort
+        };
         const items: TimelineItem[] = [];
         for (const m of messages) {
-            items.push({ kind: 'message', id: `m-${m.id}`, at: m.createdAt ? m.createdAt.getTime() : 0, msg: m });
+            items.push({ kind: 'message', id: `m-${m.id}`, at: ms(m.createdAt), msg: m });
         }
         for (const c of history) {
-            items.push({ kind: 'challenge', id: `c-${c.id}`, at: new Date(c.createdAt).getTime(), ch: c });
+            items.push({ kind: 'challenge', id: `c-${c.id}`, at: ms(c.createdAt), ch: c });
         }
         // Stable sort by time; challenges tie-break before a message at the same ms.
         items.sort((a, b) => (a.at - b.at) || (a.kind === b.kind ? 0 : a.kind === 'challenge' ? -1 : 1));
         return items;
     }, [messages, history]);
+
+    // Keep the view pinned to the newest item. The plain onContentSizeChange
+    // scroll can fire before the (taller) challenge cards finish laying out and
+    // land short, hiding the tail — so re-scroll once the item count settles.
+    useEffect(() => {
+        if (timeline.length === 0) return;
+        const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 150);
+        return () => clearTimeout(t);
+    }, [timeline.length]);
 
     const renderChallengeCard = (c: PreviousChallenge) => {
         const d = new Date(c.createdAt);
@@ -257,12 +270,15 @@ export const ChatRoomScreen = () => {
         const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         const reps = c.feedback?.reps ?? null;
         const winnerId = c.feedback?.winnerId ?? null;
+        // A challenge that started but never reached 'completed' was abandoned —
+        // one of the two dropped out before the session ended.
+        const incomplete = c.status !== 'completed';
         const outcome = winnerId
             ? (winnerId === supabaseUserId ? 'You won' : `${firstName} won`)
             : null;
         const iWon = winnerId === supabaseUserId;
         return (
-            <View style={styles.histCard}>
+            <View style={[styles.histCard, incomplete && styles.histCardIncomplete]}>
                 <View style={styles.histIcon}>
                     <Swords size={18} color={AppTheme.primaryColor} />
                 </View>
@@ -281,14 +297,19 @@ export const ChatRoomScreen = () => {
                         )}
                     </View>
                 </View>
-                {outcome && (
+                {incomplete ? (
+                    <View style={[styles.histBadge, styles.histBadgeIncomplete]}>
+                        <WifiOff size={12} color="#B45309" />
+                        <Text style={[styles.histBadgeText, styles.histBadgeTextIncomplete]}>Disconnected</Text>
+                    </View>
+                ) : outcome ? (
                     <View style={[styles.histBadge, iWon ? styles.histBadgeWin : styles.histBadgeLoss]}>
                         {iWon && <Trophy size={12} color="#B8860B" />}
                         <Text style={[styles.histBadgeText, iWon ? styles.histBadgeTextWin : styles.histBadgeTextLoss]}>
                             {outcome}
                         </Text>
                     </View>
-                )}
+                ) : null}
             </View>
         );
     };
@@ -566,6 +587,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(33,24,50,0.07)',
     },
+    histCardIncomplete: {
+        borderStyle: 'dashed',
+        borderColor: 'rgba(180,83,9,0.35)',
+    },
     histIcon: {
         width: 38, height: 38, borderRadius: 12,
         backgroundColor: 'rgba(242,89,18,0.1)',
@@ -581,9 +606,11 @@ const styles = StyleSheet.create({
     },
     histBadgeWin: { backgroundColor: 'rgba(184,134,11,0.14)' },
     histBadgeLoss: { backgroundColor: 'rgba(33,24,50,0.06)' },
+    histBadgeIncomplete: { backgroundColor: 'rgba(180,83,9,0.12)' },
     histBadgeText: { fontSize: 11.5, fontWeight: '800' },
     histBadgeTextWin: { color: '#B8860B' },
     histBadgeTextLoss: { color: AppTheme.textGrey },
+    histBadgeTextIncomplete: { color: '#B45309' },
 
     emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
     emptyChatText: { color: AppTheme.textGrey, fontSize: FontSizes.body },
