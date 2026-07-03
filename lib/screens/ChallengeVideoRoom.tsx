@@ -468,7 +468,19 @@ export const ChallengeVideoRoom: React.FC = () => {
 
     // ── Render ────────────────────────────────────────────────────────
     return (
-        <View style={[st.root, Platform.OS === 'web' && { height: winHeight }]}>
+        <View
+            style={[
+                st.root,
+                // On web, lock out ALL browser touch-panning on this screen so a
+                // swipe-down can't drag/overscroll the room and flash the page
+                // background (the "white screen" glitch). touch-action:none still
+                // allows taps, so the controls + red hang-up button work; the
+                // questionnaire renders in a Modal portal so its scroll is unaffected.
+                // The only way out of the room stays the red disconnect button.
+                Platform.OS === 'web' &&
+                    ({ height: winHeight, touchAction: 'none', overscrollBehavior: 'none' } as any),
+            ]}
+        >
             {/* Live video layer — opponent fills the screen, local camera as PiP */}
             <ChallengeVideoStage
                 remoteUid={remoteUids[0]}
