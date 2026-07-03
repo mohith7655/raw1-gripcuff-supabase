@@ -30,7 +30,7 @@ import { AmbientBackground } from '../components/theme';
 import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import BodyVisualizer, { BodyMetrics, conditionRows } from '../components/profile/BodyVisualizer';
-import GoalVisualizer, { goalHighlights, goalRows } from '../components/profile/GoalVisualizer';
+import GoalVisualizer, { goalHighlights } from '../components/profile/GoalVisualizer';
 import { GoalEntry } from '../models/User';
 
 const C = { text: '#211832', muted: '#7A7C90', border: 'rgba(33,24,50,0.08)', cardBg: '#F8F8FC', orange: '#F25912' };
@@ -56,23 +56,15 @@ export const BodyGoalScreen = () => {
 
   const canvasHeight = Math.round(Math.min(500, Math.max(330, height * 0.44)));
 
-  // Combined Help-with / Goals rows — conditions first, then goals, each row
-  // knowing how to remove itself from the right source list. Empty part-goals
-  // (e.g. the builder's blank default card) are skipped; removal keeps the
-  // original goal index so it targets the right entry.
-  const rows = useMemo(() => [
-    ...conditionRows(metrics.conditions).map((r, i) => ({
+  // Body-condition rows for the top of the combined table (injuries / tight
+  // areas placed on the figure). Goals live in the goal builder rendered right
+  // below inside the same table card, so they're not duplicated here.
+  const conditions = useMemo(() =>
+    conditionRows(metrics.conditions).map((r, i) => ({
       ...r,
       remove: () => setMetrics(m => ({ ...m, conditions: m.conditions.filter((_, idx) => idx !== i) })),
     })),
-    ...goalRows(goals)
-      .map((r, i) => ({ r, i }))
-      .filter(({ r }) => !!r.focus)
-      .map(({ r, i }) => ({
-        ...r,
-        remove: () => setGoals(g => g.filter((_, idx) => idx !== i)),
-      })),
-  ], [metrics.conditions, goals]);
+  [metrics.conditions]);
 
   const save = async () => {
     if (!supabaseUserId) return;
@@ -143,56 +135,52 @@ export const BodyGoalScreen = () => {
           {/* ── Help with & Goals — one combined table + the goal builder ────── */}
           <Text style={s.sectionTitle}>Help With &amp; Goals</Text>
           <Text style={s.intro}>
-            Everything you're working toward in one place. Tap the figure above to add injuries, tight
-            areas or muscle targets — or use the builder below. Tap ✕ to remove a row.
+            Everything you're working toward in one place. Tap the figure above to mark injuries and
+            tight areas, and add or edit goals right in the table below. Tap ✕ to remove a row.
           </Text>
 
-          {/* Combined table */}
+          {/* One combined table: body conditions on top, then the goal builder
+              (active goals + "Add a goal") rendered inside the same card so it
+              all reads as a single list — no duplicated goal rows. */}
           <View style={s.table}>
             <View style={[s.tr, s.trHead]}>
               <Text style={[s.th, s.colType]}>Type</Text>
               <Text style={[s.th, s.colFocus]}>Focus</Text>
               <View style={s.colX} />
             </View>
-            {rows.length === 0 ? (
-              <View style={s.tr}>
-                <Text style={s.tableEmpty}>
-                  Nothing yet — tap the figure or add a goal below.
-                </Text>
-              </View>
-            ) : (
-              rows.map((r, i) => (
-                <View key={i} style={[s.tr, i === rows.length - 1 && s.trLast]}>
-                  <View style={[s.colType, s.typeCell]}>
-                    <MaterialCommunityIcons name={r.icon as any} size={15} color={r.color} style={{ marginRight: 6 }} />
-                    <Text style={[s.typeText, { color: r.color }]} numberOfLines={1}>{r.label}</Text>
-                  </View>
-                  <Text style={[s.td, s.colFocus]} numberOfLines={2}>{r.focus || '—'}</Text>
-                  <TouchableOpacity
-                    style={s.colX}
-                    onPress={r.remove}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={s.xText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </View>
 
-          {/* Goal builder (no second figure — goals paint on the model above) */}
-          <GoalVisualizer
-            name={profile?.fullName}
-            gender={profile?.gender}
-            heightCm={profile?.heightCm}
-            weightKg={profile?.weightKg}
-            goals={goals}
-            hideModel
-            hideSave
-            onChange={setGoals}
-            canvasHeight={canvasHeight}
-          />
+            {conditions.map((r, i) => (
+              <View key={i} style={s.tr}>
+                <View style={[s.colType, s.typeCell]}>
+                  <MaterialCommunityIcons name={r.icon as any} size={15} color={r.color} style={{ marginRight: 6 }} />
+                  <Text style={[s.typeText, { color: r.color }]} numberOfLines={1}>{r.label}</Text>
+                </View>
+                <Text style={[s.td, s.colFocus]} numberOfLines={2}>{r.focus || '—'}</Text>
+                <TouchableOpacity
+                  style={s.colX}
+                  onPress={r.remove}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.xText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            {/* Goal builder — active goals as expandable rows + add (no 2nd figure;
+                goals paint on the body model above). */}
+            <GoalVisualizer
+              name={profile?.fullName}
+              gender={profile?.gender}
+              heightCm={profile?.heightCm}
+              weightKg={profile?.weightKg}
+              goals={goals}
+              hideModel
+              hideSave
+              onChange={setGoals}
+              canvasHeight={canvasHeight}
+            />
+          </View>
 
           {/* ── One Save for body + goals ─────────────────────────────────── */}
           <TouchableOpacity
@@ -246,16 +234,14 @@ const s = StyleSheet.create({
     borderBottomColor: C.border,
   },
   trHead: { backgroundColor: 'rgba(33,24,50,0.03)' },
-  trLast: { borderBottomWidth: 0 },
   th: { color: C.muted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   td: { color: C.text, fontSize: 13, fontWeight: '600' },
-  colType: { width: 130 },
+  colType: { width: 150 },
   colFocus: { flex: 1, paddingRight: 8 },
   colX: { width: 24, alignItems: 'center', justifyContent: 'center' },
   typeCell: { flexDirection: 'row', alignItems: 'center' },
   typeText: { fontSize: 13, fontWeight: '800', flexShrink: 1 },
   xText: { color: C.muted, fontSize: 14, fontWeight: '900' },
-  tableEmpty: { color: C.muted, fontSize: 13, fontStyle: 'italic' },
 
   saveBtn: {
     marginTop: 20,

@@ -1,10 +1,11 @@
 /**
  * Shared video-card bits so every thumbnail across the app shows difficulty and
  * category the same way:
- *   • DifficultyDot     — a bare coloured dot (🟢/🟡/🔴 → green/amber/red) shown
- *                          right after the title (no text label).
- *   • ThumbnailCategory — the video's category pinned to the thumbnail's
- *                          bottom-left.
+ *   • DifficultyDot     — a bare coloured letter (S/M/C → green/amber/red) for
+ *                          the difficulty; rendered inside ThumbnailCategory.
+ *   • ThumbnailCategory — the category pictogram, then the difficulty letter,
+ *                          then the setup-time hourglass, in a meta row below
+ *                          the card's title.
  */
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
@@ -123,19 +124,22 @@ export function SetupTimeIcon({
   return <MaterialCommunityIcons name={meta.icon as any} color={meta.color} size={size} />;
 }
 
-// Category pictogram + setup-time hourglass, shown inline right below a video
-// card's title (no longer overlaid on the thumbnail). `style` lets callers tweak
+// Category pictogram + difficulty letter + setup-time hourglass, shown inline
+// right below a video card's title (no longer overlaid on the thumbnail). The
+// difficulty (S/M/C) sits right after the category. `style` lets callers tweak
 // spacing for their card layout.
 export function ThumbnailCategory({
   category, difficulty, style,
 }: { category?: string | null; difficulty?: string | null; style?: StyleProp<ViewStyle> }) {
   const level = setupLevelFor(category, difficulty);
-  if (!category && !level) return null;
+  const hasDiff = !!difficultyLetter(difficulty);
+  if (!category && !level && !hasDiff) return null;
   return (
     <View style={[s.metaRow, style]}>
       {category ? (
         <MaterialCommunityIcons name={categoryIconName(category) as any} color={categoryColor(category)} size={14} />
       ) : null}
+      <DifficultyDot difficulty={difficulty} />
       {level ? (
         <MaterialCommunityIcons name={SETUP_DISPLAY[level].icon as any} color={SETUP_DISPLAY[level].color} size={14} />
       ) : null}

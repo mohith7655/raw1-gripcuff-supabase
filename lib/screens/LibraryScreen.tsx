@@ -26,7 +26,7 @@ import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
 import { useBodyInsights } from '../hooks/useBodyInsights';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
-import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
+import { ThumbnailCategory } from '../components/VideoCardBits';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -173,7 +173,8 @@ const WorkoutsTabContent = () => {
           <CategoryRow title="Muscle Growth" subtitle="Hypertrophy focused programs" iconName="weight-lifter" color="#66BB6A" onPress={() => navigation.navigate('MuscleGrowth', { allowInvite: true })} />
           <CategoryRow title="Stretching" subtitle="Improve flexibility & range of motion" iconName="yoga" color="#4FC3F7" onPress={() => navigation.navigate('Stretching', { allowInvite: true })} />
           <CategoryRow title="Athletic Performance" subtitle="Speed, power & agility training" iconName="run-fast" color="#D4A600" onPress={() => navigation.navigate('AthleticPerformance', { allowInvite: true })} />
-          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" iconName="human-cane" color="#f44336" last onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+          <CategoryRow title="Injury Rehab" subtitle="Safe recovery & rehabilitation" iconName="human-cane" color="#f44336" onPress={() => navigation.navigate('InjuryRehab', { allowInvite: true })} />
+          <CategoryRow title="General Health" subtitle="Balance, posture & everyday wellness" iconName="heart-pulse" color="#26A69A" last onPress={() => navigation.navigate('CategoryVideos', { categoryKey: 'GeneralHealth', categoryLabel: 'General Health' })} />
         </View>
 
       </ScrollView>
@@ -300,8 +301,9 @@ export const LibraryScreen = () => {
 
   return (
     <AmbientBackground>
-    {/* Exercises tab sits on a plain white background; Workouts keeps the ambient mesh. */}
-    <SafeAreaView style={[styles.safeArea, subTab === 'all' && { backgroundColor: '#FFFFFF' }]} edges={['top']}>
+    {/* Both tabs sit on the ambient mesh (glass look, matching Home). Video cards
+        keep a solid-white surface so their titles + icons stay crisp. */}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
@@ -950,7 +952,7 @@ const VideoContent = ({
             <View key={section.key} style={[styles.categorySection, styles.categoryCard]}>
               <View style={styles.categorySectionHeader}>
                 <View style={styles.categoryTitleRow}>
-                  <View style={[styles.categoryIconBadge, { backgroundColor: `${section.color}20` }]}>
+                  <View style={styles.categoryIconBadge}>
                     <MaterialCommunityIcons name={section.iconName} color={section.color} size={18} />
                   </View>
                   <Text style={styles.categorySectionTitle}>{section.label}</Text>
@@ -1222,19 +1224,15 @@ const VideoTile = ({
 
       {/* Text Info */}
       <View style={styles.videoInfo}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingRight: 8 }}>
-          <Text
-            style={[
-              styles.videoTitle,
-              { flex: 1 },
-              video.isCompleted && styles.videoTitleCompleted,
-            ]}
-            numberOfLines={1}
-          >
-            {displayTitle}
-          </Text>
-          <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 4 }} />
-        </View>
+        <Text
+          style={[
+            styles.videoTitle,
+            video.isCompleted && styles.videoTitleCompleted,
+          ]}
+          numberOfLines={1}
+        >
+          {displayTitle}
+        </Text>
         <ThumbnailCategory category={video.category} difficulty={video.difficulty} />
         <VideoViewsLabel videoId={video.id} />
         <VideoEngagementIcons videoId={video.id} />
@@ -1432,6 +1430,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#000000',
   },
   categorySectionHeader: {
     flexDirection: 'row',
@@ -1658,15 +1657,21 @@ const styles = StyleSheet.create({
     alignContent: 'flex-start',
   },
   // Glassy card wrapping thumbnail + details, matching Home's Recently Watched /
-  // Favorites cards (thumbnail on top, details inside a white glassy panel).
+  // Exercise cards — solid-white surface so the title + icons stay crisp over the
+  // ambient mesh (thumbnail sits on top; details on the white panel below).
   videoCard: {
     width: 170,
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow: 'hidden',
     marginRight: 12,
     borderWidth: 1,
     borderColor: 'rgba(33,24,50,0.06)',
+    shadowColor: '#211832',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   videoThumbnail: {
     width: '100%',

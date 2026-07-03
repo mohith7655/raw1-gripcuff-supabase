@@ -4,7 +4,7 @@ import { Play } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
-import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
+import { ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
 import { useFavorites, FavoriteVideo } from '../hooks/useFavorites';
 import { useVideoViews, formatViews } from '../services/videoViews.service';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS } from '../constants/theme';
@@ -66,12 +66,9 @@ export const GridVideoCard = ({
             </View>
 
             <View style={styles.infoContainer}>
-                <View style={styles.titleRow}>
-                    <Text style={styles.videoTitle} numberOfLines={2}>
-                        {video.title}
-                    </Text>
-                    <DifficultyDot difficulty={(video as any).difficulty} style={styles.diffDot} />
-                </View>
+                <Text style={styles.videoTitle} numberOfLines={2}>
+                    {video.title}
+                </Text>
                 <ThumbnailCategory category={(video as any).category} difficulty={(video as any).difficulty} />
                 {!!views && (
                     <Text style={styles.videoViews}>{formatViews(views)} views</Text>
@@ -118,20 +115,11 @@ const styles = StyleSheet.create({
     infoContainer: {
         padding: 8,
     },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 5,
-    },
     videoTitle: {
-        flex: 1,
         color: '#211832',
         fontSize: 11,
         fontWeight: '600',
         lineHeight: 15,
-    },
-    diffDot: {
-        marginTop: 3,
     },
     videoViews: {
         color: '#7A7C90',

@@ -76,6 +76,14 @@ const keyLabel = (lists: Landmark[], k: string): string => {
   const lbl = lists.find(l => l.key === base)?.label ?? base;
   return side ? `${side === 'left' ? 'Left' : 'Right'} ${lbl}` : lbl;
 };
+// Goals are part-based: collapse side variants to their base, de-duplicated in
+// order, so a part can never repeat (elbow / elbow::left / elbow::right → elbow).
+const uniqueBases = (keys: string[]): string[] => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const k of keys) { const b = parseKey(k).base; if (!seen.has(b)) { seen.add(b); out.push(b); } }
+  return out;
+};
 
 export type { GoalEntry, GoalType };
 export type InjurySide = 'left' | 'right' | 'both';
@@ -192,7 +200,7 @@ export function goalRows(goals: GoalEntry[] | null | undefined): GoalRow[] {
       return { icon: meta.icon, color: meta.color, label: meta.label, focus: `−${fmtWeight(g.kg ?? 0, units)}` };
     }
     const keys = g.type === 'muscle_growth' ? (g.muscles ?? []) : (g.areas ?? []);
-    const focus = keys.map(k => keyLabel(lmList(g.type), k)).join(', ');
+    const focus = uniqueBases(keys).map(b => keyLabel(lmList(g.type), b)).join(', ');
     return { icon: meta.icon, color: meta.color, label: meta.label, focus };
   });
 }
@@ -290,6 +298,8 @@ export default function GoalVisualizer({
   const [activeIndex, setActiveIndex] = useState(0);
   // Row-per-type builder (hideModel mode): which type's part picker is open.
   const [expandedType, setExpandedType] = useState<GoalType | null>(null);
+  // Whether the "Add a goal" type chooser is open (hideModel mode).
+  const [adding, setAdding] = useState(false);
   const [stageW, setStageW] = useState(0);
   // Part-first guided picker: tap a body part → choose side → choose goal type.
   const [picker, setPicker] = useState<
@@ -339,9 +349,11 @@ export default function GoalVisualizer({
       }
       const g = next[idx];
       const cur = (muscle ? g.muscles : g.areas) ?? [];
-      const has = cur.includes(key);
-      const updated = has ? cur.filter(x => x !== key)
-        : muscle && cur.length >= MAX_MUSCLES ? cur
+      // Base-aware: a part counts as present if any side variant of it exists;
+      // toggling off removes every variant, toggling on adds the bare key.
+      const has = cur.some(k => parseKey(k).base === key);
+      const updated = has ? cur.filter(k => parseKey(k).base !== key)
+        : muscle && uniqueBases(cur).length >= MAX_MUSCLES ? cur
         : [...cur, key];
       if (updated.length === 0) next.splice(idx, 1);
       else next[idx] = muscle ? { ...g, muscles: updated } : { ...g, areas: updated };
@@ -732,90 +744,142 @@ export default function GoalVisualizer({
         </View>
       )}
 
-      {/* ── Goal builder — table of one row per goal type (hideModel) ──────── */}
-      {editable && hideModel && (
-        <View style={st.gtable}>
-          {TYPE_ORDER.map((t, ri) => {
-            const meta = TYPE_META[t];
-            const goal = list.find(g => g.type === t);
-            const keys = t === 'weight_loss' ? []
-              : t === 'muscle_growth' ? (goal?.muscles ?? []) : (goal?.areas ?? []);
-            const active = t === 'weight_loss' ? !!goal : keys.length > 0;
-            const expanded = expandedType === t;
-            const last = ri === TYPE_ORDER.length - 1;
-            const focusText = t === 'weight_loss'
-              ? (goal ? `− ${fmtWeight(goal.kg ?? 0, units)}` : 'Tap to set')
-              : (keys.length ? keys.map(k => keyLabel(lmList(t), k)).join(', ') : 'Tap to pick');
-            return (
-              <View key={t} style={!last && st.gRowDivider}>
-                <TouchableOpacity
-                  style={st.gRow}
-                  activeOpacity={0.7}
-                  onPress={() => setExpandedType(expanded ? null : t)}
-                >
-                  <View style={st.gTypeCell}>
-                    <MaterialCommunityIcons name={meta.icon as any} size={16} color={meta.color} style={{ marginRight: 7 }} />
-                    <Text style={[st.gTypeText, { color: active ? meta.color : C.muted }]} numberOfLines={1}>{meta.label}</Text>
+      {/* ── Goal builder (hideModel) — active goals as expandable rows + an
+          "Add a goal" chooser. Rendered *inside* the Help-With table on
+          BodyGoalScreen so conditions and goals read as one list, so there's no
+          card frame here and inactive types are hidden until added. ─────────── */}
+      {editable && hideModel && (() => {
+        const isActive = (t: GoalType) => {
+          const g = list.find(x => x.type === t);
+          if (!g) return false;
+          return t === 'weight_loss'
+            ? (g.kg ?? 0) > 0
+            : ((t === 'muscle_growth' ? g.muscles : g.areas)?.length ?? 0) > 0;
+        };
+        const activeTypes = TYPE_ORDER.filter(isActive);
+        // A type mid-add: expanded for editing but not yet active. Shown as a
+        // provisional row until the user picks a part / weight (or collapses it).
+        const pending = expandedType && !activeTypes.includes(expandedType) ? expandedType : null;
+        const rowTypes: GoalType[] = pending ? [...activeTypes, pending] : activeTypes;
+        const inactiveTypes = TYPE_ORDER.filter(t => !activeTypes.includes(t) && t !== pending);
+        const showAdd = inactiveTypes.length > 0;
+        return (
+          <>
+            {rowTypes.map((t, ri) => {
+              const meta = TYPE_META[t];
+              const goal = list.find(g => g.type === t);
+              const keys = t === 'weight_loss' ? []
+                : t === 'muscle_growth' ? (goal?.muscles ?? []) : (goal?.areas ?? []);
+              const active = activeTypes.includes(t);
+              const expanded = expandedType === t;
+              const lastRow = ri === rowTypes.length - 1 && !showAdd;
+              const focusText = t === 'weight_loss'
+                ? (active ? `− ${fmtWeight(goal?.kg ?? 0, units)}` : 'Tap to set')
+                : (keys.length ? uniqueBases(keys).map(b => keyLabel(lmList(t), b)).join(', ') : 'Tap to pick');
+              return (
+                <View key={t} style={!lastRow && st.gRowDivider}>
+                  <View style={st.gRow}>
+                    <TouchableOpacity
+                      style={st.gRowMain}
+                      activeOpacity={0.7}
+                      onPress={() => setExpandedType(expanded ? null : t)}
+                    >
+                      <View style={st.gTypeCell}>
+                        <MaterialCommunityIcons name={meta.icon as any} size={16} color={meta.color} style={{ marginRight: 7 }} />
+                        <Text style={[st.gTypeText, { color: active ? meta.color : C.muted }]} numberOfLines={1}>{meta.label}</Text>
+                        <Text style={st.gGoalTag}> (goal)</Text>
+                      </View>
+                      <Text
+                        style={[st.gFocus, { color: active ? C.text : C.muted, fontStyle: active ? 'normal' : 'italic' }]}
+                        numberOfLines={1}
+                      >
+                        {focusText}
+                      </Text>
+                      <Text style={[st.gChevron, expanded && st.gChevronOpen]}>▸</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={st.gxCol}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      onPress={() => { removeType(t); if (expandedType === t) setExpandedType(null); }}
+                    >
+                      <Text style={st.gxText}>✕</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text
-                    style={[st.gFocus, { color: active ? C.text : C.muted, fontStyle: active ? 'normal' : 'italic' }]}
-                    numberOfLines={1}
-                  >
-                    {focusText}
-                  </Text>
-                  <Text style={[st.gChevron, expanded && st.gChevronOpen]}>▸</Text>
+
+                  {/* Expander — part chips (part goals) or kg control (weight loss) */}
+                  {expanded && t !== 'weight_loss' && (
+                    <View style={st.gExpand}>
+                      <View style={st.tagRow}>
+                        {partsForType(t).map(lm => {
+                          const on = keys.some(k => parseKey(k).base === lm.key);
+                          return (
+                            <TouchableOpacity
+                              key={lm.key}
+                              style={[st.tag, on
+                                ? { borderColor: meta.color, backgroundColor: meta.soft }
+                                : { borderColor: 'rgba(33,24,50,0.12)' }]}
+                              onPress={() => togglePartForType(t, lm.key)}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[st.tagText, { color: on ? meta.color : C.muted }]}>{lm.label}</Text>
+                              {on && <Text style={[st.tagX, { color: meta.color }]}> ✓</Text>}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      {t === 'muscle_growth' && <Text style={st.gHint}>Pick up to {MAX_MUSCLES}</Text>}
+                    </View>
+                  )}
+
+                  {expanded && t === 'weight_loss' && (
+                    <View style={st.gExpand}>
+                      <View style={st.compareRow}>
+                        <Compare label="Current" value={fmtWeight(curWeight, units)} />
+                        <Text style={st.arrow}>→</Text>
+                        <Compare label="Target" value={fmtWeight(Math.max(35, curWeight - (goal?.kg ?? 0)), units)} accent />
+                        <View style={st.deltaPill}><Text style={st.deltaText}>−{fmtWeight(goal?.kg ?? 0, units)}</Text></View>
+                      </View>
+                      <View style={st.sliderHead}>
+                        <Text style={st.qLabel}>{isWeightLb(units) ? 'Lb to lose' : 'Kg to lose'}</Text>
+                        <Text style={st.sliderValue}>{fmtWeight(goal?.kg ?? 0, units)}</Text>
+                      </View>
+                      <Slider min={1} max={maxLose} step={1} value={goal?.kg ?? 1} color={C.orange} onChange={setKg} />
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            {showAdd && (
+              <View>
+                <TouchableOpacity style={st.gAddRow} activeOpacity={0.7} onPress={() => setAdding(a => !a)}>
+                  <Text style={[st.gAddPlus, adding && st.gChevronOpen]}>＋</Text>
+                  <Text style={st.gAddText}>Add a goal</Text>
                 </TouchableOpacity>
-
-                {/* Expander — part chips (part goals) or kg control (weight loss) */}
-                {expanded && t !== 'weight_loss' && (
-                  <View style={st.gExpand}>
-                    <View style={st.tagRow}>
-                      {partsForType(t).map(lm => {
-                        const on = keys.includes(lm.key);
-                        return (
-                          <TouchableOpacity
-                            key={lm.key}
-                            style={[st.tag, on
-                              ? { borderColor: meta.color, backgroundColor: meta.soft }
-                              : { borderColor: 'rgba(33,24,50,0.12)' }]}
-                            onPress={() => togglePartForType(t, lm.key)}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={[st.tagText, { color: on ? meta.color : C.muted }]}>{lm.label}</Text>
-                            {on && <Text style={[st.tagX, { color: meta.color }]}> ✓</Text>}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                    {t === 'muscle_growth' && <Text style={st.gHint}>Pick up to {MAX_MUSCLES}</Text>}
-                  </View>
-                )}
-
-                {expanded && t === 'weight_loss' && (
-                  <View style={st.gExpand}>
-                    <View style={st.compareRow}>
-                      <Compare label="Current" value={fmtWeight(curWeight, units)} />
-                      <Text style={st.arrow}>→</Text>
-                      <Compare label="Target" value={fmtWeight(Math.max(35, curWeight - (goal?.kg ?? 0)), units)} accent />
-                      <View style={st.deltaPill}><Text style={st.deltaText}>−{fmtWeight(goal?.kg ?? 0, units)}</Text></View>
-                    </View>
-                    <View style={st.sliderHead}>
-                      <Text style={st.qLabel}>{isWeightLb(units) ? 'Lb to lose' : 'Kg to lose'}</Text>
-                      <Text style={st.sliderValue}>{fmtWeight(goal?.kg ?? 0, units)}</Text>
-                    </View>
-                    <Slider min={1} max={maxLose} step={1} value={goal?.kg ?? 1} color={C.orange} onChange={setKg} />
-                    {goal && (
-                      <TouchableOpacity onPress={() => removeType('weight_loss')} activeOpacity={0.8}>
-                        <Text style={st.gRemove}>Remove weight-loss target</Text>
-                      </TouchableOpacity>
-                    )}
+                {adding && (
+                  <View style={st.gAddChips}>
+                    {inactiveTypes.map(t => {
+                      const tm = TYPE_META[t];
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          style={[st.tag, { borderColor: 'rgba(33,24,50,0.12)' }]}
+                          activeOpacity={0.85}
+                          onPress={() => { setExpandedType(t); setAdding(false); }}
+                        >
+                          <MaterialCommunityIcons name={tm.icon as any} size={14} color={tm.color} style={{ marginRight: 5 }} />
+                          <Text style={[st.tagText, { color: tm.color }]}>{tm.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
               </View>
-            );
-          })}
-        </View>
-      )}
+            )}
+          </>
+        );
+      })()}
 
       {/* ── Goal builder — stepped cards (tap-the-model / default) ─────────── */}
       {editable && !hideModel && (
@@ -1028,17 +1092,24 @@ const st = StyleSheet.create({
   summaryEmpty: { color: C.muted, fontSize: 14 },
 
   // Row-per-type goal table (hideModel) — matches the summary table's frame.
-  gtable: { backgroundColor: C.cardBg, borderRadius: 12, borderWidth: 1, borderColor: C.border, overflow: 'hidden', marginTop: 4 },
   gRowDivider: { borderBottomWidth: 1, borderBottomColor: C.border },
   gRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 13, paddingHorizontal: 12 },
-  gTypeCell: { flexDirection: 'row', alignItems: 'center', width: 130 },
+  gRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  gTypeCell: { flexDirection: 'row', alignItems: 'center', width: 150 },
   gTypeText: { fontSize: 13, fontWeight: '800', flexShrink: 1 },
+  gGoalTag: { color: C.muted, fontSize: 11, fontWeight: '700' },
   gFocus: { flex: 1, fontSize: 13, fontWeight: '600', paddingRight: 8 },
   gChevron: { color: C.muted, fontSize: 14, fontWeight: '900', width: 16, textAlign: 'center' },
   gChevronOpen: { transform: [{ rotate: '90deg' }] },
+  gxCol: { width: 24, alignItems: 'center', justifyContent: 'center', marginLeft: 2 },
+  gxText: { color: C.muted, fontSize: 14, fontWeight: '900' },
   gExpand: { paddingHorizontal: 12, paddingBottom: 13, paddingTop: 0 },
   gHint: { color: C.muted, fontSize: 11, fontWeight: '600', marginTop: 8 },
   gRemove: { color: C.red, fontSize: 12, fontWeight: '700', marginTop: 12 },
+  gAddRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12 },
+  gAddPlus: { color: C.orange, fontSize: 15, fontWeight: '900', marginRight: 7 },
+  gAddText: { color: C.orange, fontSize: 13, fontWeight: '800' },
+  gAddChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, paddingBottom: 12 },
 
   qCard: { marginTop: 10, backgroundColor: C.cardBg, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 11 },
   qHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },

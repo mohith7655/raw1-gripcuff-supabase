@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Raw1Logo } from '../raw1_logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppTheme } from '../core/theme/app_theme';
-import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
+import { ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
 import { VideoViewsLabel } from './VideoViewsLabel';
 import { useFavorites } from '../hooks/useFavorites';
 import { Video } from '../models/Video';
@@ -141,11 +141,10 @@ export function MultiColVideoCard({
                 </View>
             </LinearGradient>
 
-            <View style={{ paddingTop: 4, paddingHorizontal: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 5 }}>
-                <Text style={{ flex: 1, color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
+            <View style={{ paddingTop: 4, paddingHorizontal: 1 }}>
+                <Text style={{ color: '#211832', fontSize: 11, fontWeight: '600', lineHeight: 15 }} numberOfLines={2}>
                     {displayTitle}
                 </Text>
-                <DifficultyDot difficulty={video.difficulty} size={8} style={{ marginTop: 3 }} />
             </View>
             <ThumbnailCategory category={video.category} difficulty={video.difficulty} style={{ paddingHorizontal: 1 }} />
             <View style={{ paddingHorizontal: 1, marginTop: 2 }}>
@@ -205,12 +204,9 @@ export function ListVideoCard({
             </LinearGradient>
 
             <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                    <Text style={{ flex: 1, color: '#211832', fontSize: 13, fontWeight: '600', lineHeight: 18 }} numberOfLines={2}>
-                        {displayTitle}
-                    </Text>
-                    <DifficultyDot difficulty={video.difficulty} style={{ marginTop: 5 }} />
-                </View>
+                <Text style={{ color: '#211832', fontSize: 13, fontWeight: '600', lineHeight: 18 }} numberOfLines={2}>
+                    {displayTitle}
+                </Text>
                 <ThumbnailCategory category={video.category} difficulty={video.difficulty} />
                 <Text style={{ color: '#7A7C90', fontSize: 11, marginTop: 2 }}>{durationLabel}</Text>
                 <VideoViewsLabel videoId={video.id} />

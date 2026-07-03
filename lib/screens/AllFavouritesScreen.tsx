@@ -27,7 +27,7 @@ import {
     ListVideoCard,
 } from '../components/LibraryViewCards';
 import { AppTheme } from '../core/theme/app_theme';
-import { DifficultyDot, ThumbnailCategory } from '../components/VideoCardBits';
+import { ThumbnailCategory } from '../components/VideoCardBits';
 import { SCREEN_PADDING } from '../constants/theme';
 import { getAllPrograms, getProgramCategoryKey, PreRecordedProgram } from '../data/preRecordedPrograms';
 
@@ -108,7 +108,6 @@ function WorkoutCard({
                     <Text style={{ flex: 1, color: '#211832', fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
                         {program.title}
                     </Text>
-                    <DifficultyDot difficulty={program.level} style={{ marginTop: 4 }} />
                     <TouchableOpacity onPress={handleHeart} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                             <Ionicons
@@ -159,10 +158,7 @@ function WorkoutListRow({
                 </View>
             </View>
             <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                    <Text style={styles.listTitle} numberOfLines={2}>{program.title}</Text>
-                    <DifficultyDot difficulty={program.level} style={{ marginTop: 5 }} />
-                </View>
+                <Text style={styles.listTitle} numberOfLines={2}>{program.title}</Text>
                 <ThumbnailCategory category={getProgramCategoryKey(program.id)} difficulty={program.level} />
                 <Text style={styles.listSub}>{program.videos.length} videos</Text>
             </View>

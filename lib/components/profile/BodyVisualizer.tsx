@@ -376,18 +376,16 @@ export default function BodyVisualizer({
     setPicker(null);
   };
 
-  // Add a body-part goal straight from the tap popup. Appends the tapped part
-  // (with side) to the goal of the chosen type, creating that goal if needed —
-  // mirrors GoalVisualizer.commitPart so both editors produce identical data.
+  // Add a body-part goal straight from the tap popup. Goals are part-based
+  // (side-agnostic) so a part can't repeat: we add the bare key once and drop any
+  // existing side variants (base::left / base::right) of the same part. This
+  // keeps the shared model in sync with the list builder (which uses bare keys).
   const goalList: GoalEntry[] = Array.isArray(goals) ? goals : [];
+  const baseOfGoalKey = (k: string) => k.split(GOAL_SIDE_SEP)[0];
   const commitGoal = (type: PartGoalType) => {
     if (!picker || !onGoalsChange) return;
     const gk = goalKeyFor(type, picker.base);
     if (!gk) { setPicker(null); return; }
-    const side: Side = !picker.both ? 'both' : (picker.side ?? 'both');
-    const tokens: ('left' | 'right' | 'single')[] =
-      !picker.both ? ['single'] : side === 'both' ? ['left', 'right'] : [side];
-    const newKeys = tokens.map(sd => goalSideKey(gk, sd));
 
     const next = [...goalList];
     let idx = next.findIndex(g => g.type === type);
@@ -397,10 +395,12 @@ export default function BodyVisualizer({
     }
     const g = next[idx];
     if (type === 'muscle_growth') {
-      const merged = Array.from(new Set([...(g.muscles ?? []), ...newKeys])).slice(0, MAX_GOAL_MUSCLES);
+      const kept = (g.muscles ?? []).filter(k => baseOfGoalKey(k) !== gk);
+      const merged = Array.from(new Set([...kept, gk])).slice(0, MAX_GOAL_MUSCLES);
       next[idx] = { ...g, muscles: merged };
     } else {
-      const merged = Array.from(new Set([...(g.areas ?? []), ...newKeys]));
+      const kept = (g.areas ?? []).filter(k => baseOfGoalKey(k) !== gk);
+      const merged = Array.from(new Set([...kept, gk]));
       next[idx] = { ...g, areas: merged };
     }
     onGoalsChange(next);

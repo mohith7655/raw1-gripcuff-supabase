@@ -27,7 +27,8 @@ import {
     ProgramVideo,
 } from '../data/preRecordedPrograms';
 import { useFloatingToggle, FloatingTabToggle } from './FloatingTabToggle';
-import { DifficultyDot, ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
+import { AmbientBackground } from './theme';
+import { ThumbnailCategory, VideoEngagementIcons } from './VideoCardBits';
 import { SubTab } from '../models/Video';
 
 const THUMBNAIL_COLORS = ['#8B7355', '#7A8A8A', '#4A5568', '#6B4226', '#2A2A3E', '#0D2137'];
@@ -202,12 +203,9 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                 </LinearGradient>
 
                 <View style={styles.videoInfo}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={[styles.videoTitle, { flex: 1 }]} numberOfLines={1}>
-                            {video.title}
-                        </Text>
-                        <DifficultyDot difficulty={(video as any).difficulty ?? program.level} size={8} />
-                    </View>
+                    <Text style={styles.videoTitle} numberOfLines={1}>
+                        {video.title}
+                    </Text>
                     <ThumbnailCategory category={categoryKey} difficulty={(video as any).difficulty ?? program.level} />
                     <VideoViewsLabel videoId={video.id} />
                     <VideoEngagementIcons videoId={video.id} />
@@ -294,6 +292,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
 
     return (
         <Animated.View style={[styles.flex, { transform: [{ translateY: dragY }] }]} {...pan.panHandlers}>
+        <AmbientBackground>
         <SafeAreaView style={styles.safeArea}>
             {/* Back button, plus swipe-down-to-go-back when scrolled to the top. */}
             <View style={styles.header}>
@@ -319,6 +318,7 @@ export function ProgramLibraryView({ categoryKey, title }: Props) {
                 translateY={floatTranslateY}
             />
         </SafeAreaView>
+        </AmbientBackground>
         </Animated.View>
     );
 }
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     flex: { flex: 1 },
     safeArea: {
         flex: 1,
-        backgroundColor: AppTheme.background,
+        backgroundColor: 'transparent',
     },
     header: {
         flexDirection: 'row',
@@ -396,13 +396,23 @@ const styles = StyleSheet.create({
         paddingRight: SCREEN_PADDING,
         gap: 12,
     },
+    // Solid-white card so the title + icons stay crisp over the ambient mesh.
     videoCard: {
         width: 160,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(33,24,50,0.06)',
+        shadowColor: '#211832',
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 3,
     },
     videoThumbnail: {
-        width: 160,
+        width: '100%',
         height: 110,
-        borderRadius: 10,
         justifyContent: 'flex-end',
         padding: 8,
     },
@@ -443,7 +453,8 @@ const styles = StyleSheet.create({
         fontWeight: '700' as any,
     },
     videoInfo: {
-        marginTop: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
     },
     titleRow: {
         flexDirection: 'row',
