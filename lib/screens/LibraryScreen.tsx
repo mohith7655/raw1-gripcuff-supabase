@@ -35,7 +35,7 @@ import { ExploreCoaches } from './ExploreCoaches';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFavouritedVideos } from '../hooks/useFavouritedVideos';
 import { VideoViewsLabel } from '../components/VideoViewsLabel';
-import { VideoEngagementIcons } from '../components/VideoCardBits';
+import { VideoEngagementIcons, CategoryGlyph } from '../components/VideoCardBits';
 import { SCREEN_PADDING, CARD_BORDER_RADIUS, CARD_GAP } from '../constants/theme';
 import { getAllPrograms, getProgramByVideoId } from '../data/preRecordedPrograms';
 
@@ -143,7 +143,7 @@ const WorkoutsTabContent = () => {
         onPress={onPress}
       >
         <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-          <MaterialCommunityIcons name={iconName} color={color} size={24} />
+          <CategoryGlyph iconName={iconName} color={color} size={24} />
         </View>
         <View style={{ flex: 1, marginLeft: 14 }}>
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#211832', marginBottom: 1 }}>{title}</Text>
@@ -953,7 +953,7 @@ const VideoContent = ({
               <View style={styles.categorySectionHeader}>
                 <View style={styles.categoryTitleRow}>
                   <View style={styles.categoryIconBadge}>
-                    <MaterialCommunityIcons name={section.iconName} color={section.color} size={18} />
+                    <CategoryGlyph iconName={section.iconName} color={section.color} size={18} />
                   </View>
                   <Text style={styles.categorySectionTitle}>{section.label}</Text>
                 </View>

@@ -10,6 +10,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Heart } from 'lucide-react-native';
 import { difficultyColor, difficultyLetter } from '../core/difficulty';
 import { setupLevelFor, SETUP_DISPLAY } from '../core/setupTime';
 import { useVideoEngagementCounts, formatEngagement } from '../services/videoEngagementCounts.service';
@@ -63,6 +64,33 @@ export function categoryIconName(cat?: string | null): string {
   if (!cat) return 'dumbbell';
   const key = String(cat).replace(/\s+/g, '');
   return CATEGORY_ICON[key] ?? CATEGORY_ICON[String(cat)] ?? 'dumbbell';
+}
+
+/**
+ * General Health glyph: a standing human (MaterialCommunityIcons "human") with a
+ * heart on the figure's chest. MDI has no combined human-with-heart icon, so we
+ * composite one. Used wherever the General Health category shows its icon.
+ */
+export function GeneralHealthIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <MaterialCommunityIcons name="human" color={color} size={size} />
+      <View style={{ position: 'absolute', top: size * 0.3 }}>
+        <Heart color={color} fill="#fff" size={size * 0.36} strokeWidth={2.2} />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Renders a category's icon by its MaterialCommunityIcons name, but swaps in the
+ * composited GeneralHealthIcon for General Health (iconName "heart-pulse").
+ */
+export function CategoryGlyph({
+  iconName, color, size = 24,
+}: { iconName: string; color: string; size?: number }) {
+  if (iconName === 'heart-pulse') return <GeneralHealthIcon color={color} size={size} />;
+  return <MaterialCommunityIcons name={iconName as any} color={color} size={size} />;
 }
 
 /** Category → accent colour, matching the Library/Workouts category rows. */
@@ -137,7 +165,7 @@ export function ThumbnailCategory({
   return (
     <View style={[s.metaRow, style]}>
       {category ? (
-        <MaterialCommunityIcons name={categoryIconName(category) as any} color={categoryColor(category)} size={14} />
+        <CategoryGlyph iconName={categoryIconName(category)} color={categoryColor(category)} size={14} />
       ) : null}
       <DifficultyDot difficulty={difficulty} />
       {level ? (
