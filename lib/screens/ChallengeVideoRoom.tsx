@@ -110,6 +110,20 @@ export const ChallengeVideoRoom: React.FC = () => {
         return unsub;
     }, [navigation]);
 
+    // ── Hard-block browser touch scrolling/dragging on web while the active call
+    // is on. touch-action:none on the container isn't enough on iOS Safari — the
+    // pan is handled higher up — so we preventDefault every touchmove at the
+    // document level, which iOS can't override. Disabled while the post-challenge
+    // questionnaire is up so that modal's ScrollView can still scroll.
+    useEffect(() => {
+        if (Platform.OS !== 'web' || showQuestionnaire) return;
+        const doc: any = typeof document !== 'undefined' ? document : null;
+        if (!doc) return;
+        const block = (e: any) => { e.preventDefault(); };
+        doc.addEventListener('touchmove', block, { passive: false });
+        return () => doc.removeEventListener('touchmove', block);
+    }, [showQuestionnaire]);
+
     // ── Agora voice init (works on native + web via platform-split service) ──
     useEffect(() => {
         let cancelled = false;
