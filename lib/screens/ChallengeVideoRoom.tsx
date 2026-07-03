@@ -92,6 +92,23 @@ export const ChallengeVideoRoom: React.FC = () => {
     const startedRef = useRef(false);
     const phaseRef = useRef<Phase>('waiting');
     phaseRef.current = phase;
+    // The room may only be left via the red "hang up" button (or after the
+    // questionnaire) — set true just before we call goBack() so the beforeRemove
+    // guard below lets that one controlled exit through and blocks swipe/back.
+    const leavingRef = useRef(false);
+
+    // ── Lock the screen so it can only be dismissed via the red "hang up" button
+    // (or the questionnaire), never a swipe-down / back gesture. gestureEnabled is
+    // already off in the navigator, but this guards every removal path — including
+    // web, where the card gesture can still fire — so an in-progress challenge
+    // isn't closed by accident. handleLeave() sets leavingRef before goBack().
+    useEffect(() => {
+        const unsub = navigation.addListener('beforeRemove', (e: any) => {
+            if (leavingRef.current) return; // our own controlled exit
+            e.preventDefault();
+        });
+        return unsub;
+    }, [navigation]);
 
     // ── Agora voice init (works on native + web via platform-split service) ──
     useEffect(() => {
@@ -422,7 +439,19 @@ export const ChallengeVideoRoom: React.FC = () => {
             ChallengeSessionService.cancel(challengeSessionId).catch(() => {});
         }
         AgoraVoice.leaveChannel().catch(() => {});
+        leavingRef.current = true; // allow the beforeRemove guard to release the screen
         navigation.goBack();
+    };
+
+    // Red "hang up" button. If the workout is already under way, treat the tap as
+    // an early finish so the post-challenge questionnaire still appears (instead of
+    // silently bailing). Before it starts (waiting/countdown) it just leaves.
+    const handleEndCall = () => {
+        if (phaseRef.current === 'active') {
+            finishWorkout(true);
+        } else {
+            handleLeave();
+        }
     };
 
     const toggleMute = () => {
@@ -577,7 +606,7 @@ export const ChallengeVideoRoom: React.FC = () => {
                                 : <Mic color="#fff" size={20} />}
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={st.endBtn} onPress={handleLeave} activeOpacity={0.85}>
+                        <TouchableOpacity style={st.endBtn} onPress={handleEndCall} activeOpacity={0.85}>
                             <PhoneOff color="#fff" size={24} />
                         </TouchableOpacity>
 

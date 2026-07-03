@@ -527,9 +527,13 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         declineSession(inc.sessionId).catch(() => {});
     };
 
-    const refreshSessions = async () => {
+    // Memoised so its identity is stable across renders — consumers put it in
+    // useFocusEffect/useEffect dep arrays, and an unstable ref there re-runs those
+    // effects every render (which then call refreshSessions → setState → render …),
+    // an infinite loop that showed up as the Activity/Chats tab constantly reloading.
+    const refreshSessions = useCallback(async () => {
         if (supabaseUserId) await loadAll(supabaseUserId);
-    };
+    }, [supabaseUserId, loadAll]);
 
     return (
         <WorkoutSessionContext.Provider
