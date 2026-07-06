@@ -48,7 +48,7 @@ import { useAuth } from '../providers/AuthContext';
 import { useUser } from '../providers/UserContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
 import { formatDifficulty } from '../core/difficulty';
-import { ThumbnailCategory, VideoEngagementIcons } from '../components/VideoCardBits';
+import { ThumbnailCategory, VideoEngagementIcons, CategoryGlyph, categoryIconName, categoryColor } from '../components/VideoCardBits';
 import { VideoViewsLabel } from '../components/VideoViewsLabel';
 import { useWorkoutSession } from '../providers/WorkoutSessionContext';
 import { AppTheme, CoachingTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
@@ -1184,6 +1184,10 @@ const HomeScreenInner = () => {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
                     {aiRecos.map((r, i) => {
                       const meta = RECO_META[r.category] ?? RECO_META.muscle_growth;
+                      // Use the in-app workout category glyph (same icon as the
+                      // Workouts category rows) instead of an emoji.
+                      const catKey = r.category === 'gripcuff' ? 'Gripcuff' : (RECO_CAT[r.category]?.key ?? 'MuscleGrowth');
+                      const glyphColor = categoryColor(catKey);
                       return (
                         <TouchableOpacity
                           key={`${r.category}-${i}`}
@@ -1199,8 +1203,8 @@ const HomeScreenInner = () => {
                           }}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <View style={{ width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${meta.color}22` }}>
-                              <Text style={{ fontSize: 16 }}>{meta.emoji}</Text>
+                            <View style={{ width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${glyphColor}22` }}>
+                              <CategoryGlyph iconName={categoryIconName(catKey)} color={glyphColor} size={18} />
                             </View>
                             <Text style={{ flex: 1, color: '#211832', fontSize: 13.5, fontWeight: '800' }} numberOfLines={2}>{r.title}</Text>
                           </View>

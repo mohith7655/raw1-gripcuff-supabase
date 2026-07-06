@@ -16,11 +16,12 @@ import {
   Switch,
   Platform,
   LayoutAnimation,
+  TextInput,
 } from 'react-native';
 import { ViewMode, VIEW_MODE_COLS, VIEW_MODE_OPTIONS, ViewModeIcon, MultiColVideoCard, ListVideoCard } from '../components/LibraryViewCards';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AmbientBackground } from '../components/theme';
-import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, PlusCircle, Users, ChevronRight, Search } from 'lucide-react-native';
+import { Check, Play, Lock, Heart, Target, LayoutGrid, Medal, Settings, Sparkles, Dumbbell, PlusCircle, Users, ChevronRight, Search, SlidersHorizontal, Eye, EyeOff } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
@@ -185,6 +186,14 @@ const WorkoutsTabContent = () => {
 export const LibraryScreen = () => {
   const navigation = useNavigation<any>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  // Header search — toggled from the top-right icon; filters video titles.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  // Filter sheet — category hide/unhide, body-part, difficulty, AI-recommended.
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterBodyParts, setFilterBodyParts] = useState<string[]>([]);
+  const [filterDifficulties, setFilterDifficulties] = useState<string[]>([]);
+  const [filterAiOnly, setFilterAiOnly] = useState(false);
 
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
   const [showRecommended, setShowRecommended] = useState(true);
@@ -295,6 +304,25 @@ export const LibraryScreen = () => {
     clearError();
   };
 
+  // ── Filter helpers ──────────────────────────────────────────────────────────
+  // Categories the AI recommended — used by the "AI Recommended" filter.
+  const aiRecoCatKeys = new Set(
+    aiRecos.map(r => RECO_CAT[r.category]?.key).filter(Boolean) as string[]
+  );
+  const hiddenCategoryCount = hiddenSections.filter(
+    id => CATEGORY_SECTIONS.some(s => s.mappingKey === id)
+  ).length;
+  const filtersActive =
+    hiddenCategoryCount + filterBodyParts.length + filterDifficulties.length + (filterAiOnly ? 1 : 0);
+  const toggleInArray = (setter: React.Dispatch<React.SetStateAction<string[]>>, val: string) =>
+    setter(prev => (prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]));
+  const resetFilters = () => {
+    setFilterBodyParts([]);
+    setFilterDifficulties([]);
+    setFilterAiOnly(false);
+    setHiddenSections(prev => prev.filter(id => !CATEGORY_SECTIONS.some(s => s.mappingKey === id)));
+  };
+
   if (appMode === 'coaching') {
     return <ExploreCoaches />;
   }
@@ -311,7 +339,7 @@ export const LibraryScreen = () => {
         onScroll={(e) => { onFloatScroll(e); tabBar?.onScroll(e); }}
         scrollEventThrottle={16}
       >
-      {/* Header — Search · RAW1 (centered) · Settings */}
+      {/* Header — RAW1 · Search (top right) */}
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -319,14 +347,51 @@ export const LibraryScreen = () => {
         paddingHorizontal: 20,
         paddingVertical: 10,
       }}>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-          <Search color="#211832" size={22} />
-        </TouchableOpacity>
         <Raw1Logo fontSize={22} />
-        <TouchableOpacity onPress={() => setShowCustomizeModal(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-          <Settings color="#211832" size={22} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+          <TouchableOpacity
+            onPress={() => setShowFilterModal(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <SlidersHorizontal color="#211832" size={22} />
+            {filtersActive > 0 && (
+              <View style={{ position: 'absolute', top: -5, right: -6, minWidth: 15, height: 15, borderRadius: 8, backgroundColor: '#F25912', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 }}>
+                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>{filtersActive}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSearchOpen(o => { if (o) setSearchQuery(''); return !o; })}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <Search color="#211832" size={22} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Search input — appears under the header when the search icon is tapped. */}
+      {searchOpen && (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.62)', borderWidth: 1, borderColor: '#D8D8E4', borderRadius: 12, paddingHorizontal: 12, height: 42 }}>
+            <Search color="#7A7C90" size={18} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search exercises…"
+              placeholderTextColor="#9A9BAD"
+              autoFocus
+              style={{ flex: 1, color: '#211832', fontSize: 14, padding: 0 }}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={{ color: '#7A7C90', fontSize: 16, fontWeight: '700' }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Exercises / Workouts — compact pill toggle */}
       <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 }}>
@@ -503,7 +568,25 @@ export const LibraryScreen = () => {
 
       {/* Content */}
       <VideoContent
-        videos={[...gripCuffVideos, ...allVideos]}
+        videos={(() => {
+          let all = [...gripCuffVideos, ...allVideos];
+          // ── Search — match the exercise title OR the category name, so searching
+          // a category (e.g. "Muscle Growth") lists every exercise inside it.
+          const q = searchQuery.trim().toLowerCase();
+          if (q) {
+            const qNoSpace = q.replace(/\s+/g, '');
+            all = all.filter(v => {
+              const title = (v.title ?? '').toLowerCase();
+              const catKey = (v.category ?? '').toLowerCase();
+              return title.includes(q) || (!!qNoSpace && catKey.includes(qNoSpace));
+            });
+          }
+          // ── Filters — body part, difficulty, AI-recommended categories. ──
+          if (filterAiOnly) all = all.filter(v => v.category != null && aiRecoCatKeys.has(v.category));
+          if (filterDifficulties.length > 0) all = all.filter(v => v.difficulty != null && filterDifficulties.includes(v.difficulty));
+          if (filterBodyParts.length > 0) all = all.filter(v => matchesBodyParts(v.title ?? '', filterBodyParts));
+          return all;
+        })()}
         completedCount={completedCount}
         total={totalGripCuff}
         progress={progress}
@@ -556,6 +639,113 @@ export const LibraryScreen = () => {
             <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'workouts' ? '#fff' : '#7A7C90' }}>Workouts</Text>
           </TouchableOpacity>
         </View>
+        </View>
+      )}
+
+      {/* Filter Modal — category hide/unhide, body part, difficulty, AI-recommended */}
+      {showFilterModal && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end', zIndex: 999,
+        }}>
+          <View style={{ backgroundColor: '#F8F8FC', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 18, paddingBottom: 34, maxHeight: '86%' }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 }}>
+              <Text style={{ color: '#211832', fontSize: 18, fontWeight: '800' }}>Filters</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                {filtersActive > 0 && (
+                  <TouchableOpacity onPress={resetFilters}>
+                    <Text style={{ color: '#7A7C90', fontSize: 13, fontWeight: '600' }}>Reset</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                  <Text style={{ color: '#F25912', fontSize: 15, fontWeight: '700' }}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110 }}>
+              {/* Categories — show / hide */}
+              <Text style={styles.filterGroupLabel}>CATEGORIES</Text>
+              <Text style={styles.filterGroupHint}>Tap to hide or show a category</Text>
+              <View style={styles.filterChipWrap}>
+                {CATEGORY_SECTIONS.map(section => {
+                  const isHidden = hiddenSections.includes(section.mappingKey);
+                  return (
+                    <TouchableOpacity
+                      key={section.mappingKey}
+                      onPress={() => toggleHiddenSection(section.mappingKey)}
+                      activeOpacity={0.8}
+                      style={[styles.filterChip, !isHidden && { backgroundColor: `${section.color}22`, borderColor: section.color }]}
+                    >
+                      <CategoryGlyph iconName={section.iconName} color={isHidden ? '#9A9BAD' : section.color} size={15} />
+                      <Text style={[styles.filterChipText, { color: isHidden ? '#9A9BAD' : '#211832' }]}>{section.label}</Text>
+                      {isHidden
+                        ? <EyeOff size={13} color="#9A9BAD" />
+                        : <Eye size={13} color={section.color} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Body part */}
+              <Text style={[styles.filterGroupLabel, { marginTop: 20 }]}>BODY PART</Text>
+              <View style={styles.filterChipWrap}>
+                {BODY_PART_FILTERS.map(bp => {
+                  const on = filterBodyParts.includes(bp.key);
+                  return (
+                    <TouchableOpacity
+                      key={bp.key}
+                      onPress={() => toggleInArray(setFilterBodyParts, bp.key)}
+                      activeOpacity={0.8}
+                      style={[styles.filterChip, on && { backgroundColor: 'rgba(76,78,120,0.12)', borderColor: '#4C4E78' }]}
+                    >
+                      <Text style={[styles.filterChipText, { color: on ? '#4C4E78' : '#211832' }]}>{bp.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Difficulty */}
+              <Text style={[styles.filterGroupLabel, { marginTop: 20 }]}>DIFFICULTY</Text>
+              <View style={styles.filterChipWrap}>
+                {DIFFICULTY_FILTERS.map(d => {
+                  const on = filterDifficulties.includes(d.key);
+                  return (
+                    <TouchableOpacity
+                      key={d.key}
+                      onPress={() => toggleInArray(setFilterDifficulties, d.key)}
+                      activeOpacity={0.8}
+                      style={[styles.filterChip, on && { backgroundColor: `${d.color}22`, borderColor: d.color }]}
+                    >
+                      <Text style={[styles.filterChipText, { color: on ? d.color : '#211832', fontWeight: '800' }]}>{d.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* AI Recommended */}
+              <Text style={[styles.filterGroupLabel, { marginTop: 20 }]}>RECOMMENDATIONS</Text>
+              <TouchableOpacity
+                onPress={() => setFilterAiOnly(v => !v)}
+                activeOpacity={0.8}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 }}
+              >
+                <View style={{ width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000000' }}>
+                  <Sparkles size={15} color="#F25912" />
+                </View>
+                <Text style={{ flex: 1, color: '#211832', fontSize: 14, fontWeight: '600' }}>Only AI recommended for me</Text>
+                <View style={{
+                  width: 50, height: 28, borderRadius: 14,
+                  backgroundColor: filterAiOnly ? '#F25912' : '#E4E4EC',
+                  justifyContent: 'center', paddingHorizontal: 3,
+                  alignItems: filterAiOnly ? 'flex-end' : 'flex-start',
+                }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' }} />
+                </View>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
         </View>
       )}
 
@@ -635,32 +825,38 @@ export const LibraryScreen = () => {
               Show or hide sections in your library
             </Text>
 
-            {SECTIONS.map(section => {
-              const isHidden = hiddenSections.includes(section.id);
+            {CATEGORY_SECTIONS.map(section => {
+              const isHidden = hiddenSections.includes(section.mappingKey);
               return (
                 <TouchableOpacity
-                  key={section.id}
+                  key={section.mappingKey}
                   onPress={() => setHiddenSections(prev =>
                     isHidden
-                      ? prev.filter(id => id !== section.id)
-                      : [...prev, section.id]
+                      ? prev.filter(id => id !== section.mappingKey)
+                      : [...prev, section.mappingKey]
                   )}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingVertical: 14,
                     borderBottomWidth: 1,
-                    borderBottomColor: '#F8F8FC',
+                    borderBottomColor: 'rgba(33,24,50,0.06)',
                   }}
                 >
-                  <Text style={{ fontSize: 20, marginRight: 14 }}>
-                    {section.icon}
-                  </Text>
+                  {/* In-app workout category glyph (same icons as the category rows). */}
+                  <View style={{
+                    width: 34, height: 34, borderRadius: 9,
+                    alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: `${section.color}22`, marginRight: 12,
+                    opacity: isHidden ? 0.5 : 1,
+                  }}>
+                    <CategoryGlyph iconName={section.iconName} color={section.color} size={20} />
+                  </View>
                   <Text style={{
                     flex: 1,
-                    color: isHidden ? '#D8D8E4' : '#ffffff',
+                    color: isHidden ? '#B8B9CC' : '#211832',
                     fontSize: 15,
-                    fontWeight: '500',
+                    fontWeight: '600',
                   }}>
                     {section.label}
                   </Text>
@@ -705,13 +901,6 @@ const RECOMMENDED_VIDEOS = [
   { id: 6, title: "Leg Day Volume", duration: "0:10", color: "#8B5CF6" },
 ];
 
-const SECTIONS = [
-  { id: 'recommended', label: 'Recommended', icon: '⭐' },
-  { id: 'muscle', label: 'Muscle Growth', icon: '🏋️' },
-  { id: 'stretching', label: 'Stretching', icon: '🧘' },
-  { id: 'athletic', label: 'Athletic Performance', icon: '🏃' },
-];
-
 // Each exercise category renders as its own plain white card section so the
 // groups read as distinct sets of exercises.
 // Icons + colors mirror the Workouts category rows so exercises and workouts
@@ -723,6 +912,36 @@ const CATEGORY_SECTIONS: { key: string; label: string; mappingKey: string; iconN
   { key: 'InjuryRehab', label: 'Injury Rehab', mappingKey: 'rehab', iconName: 'human-cane', color: '#f44336' },
   { key: 'GeneralHealth', label: 'General Health', mappingKey: 'general', iconName: 'heart-pulse', color: '#26A69A' },
 ];
+
+// ── Filter options ────────────────────────────────────────────────────────────
+// Body-part filters match against exercise titles by keyword.
+const BODY_PART_FILTERS: { key: string; label: string; keywords: string[] }[] = [
+  { key: 'upper',     label: 'Upper Body',    keywords: ['chest', 'back', 'shoulder', 'bicep', 'tricep', 'arm', 'press', 'row', 'pull', 'curl', 'pump'] },
+  { key: 'lower',     label: 'Lower Body',    keywords: ['leg', 'squat', 'glute', 'quad', 'hamstring', 'calf', 'lunge', 'hip'] },
+  { key: 'core',      label: 'Core & Abs',    keywords: ['core', 'ab ', 'abs', 'plank', 'dead bug', 'stabil'] },
+  { key: 'back',      label: 'Back',          keywords: ['back', 'row', 'pull', 'posture', 'spine', 'scapular'] },
+  { key: 'chest',     label: 'Chest',         keywords: ['chest', 'pec', 'bench'] },
+  { key: 'shoulders', label: 'Shoulders',     keywords: ['shoulder', 'scapular', 'rotator', 'lateral raise', 'overhead'] },
+  { key: 'arms',      label: 'Arms',          keywords: ['bicep', 'tricep', 'curl', 'arm', 'forearm', 'wrist', 'grip'] },
+  { key: 'legs',      label: 'Legs',          keywords: ['leg', 'squat', 'quad', 'hamstring', 'calf', 'lunge'] },
+  { key: 'hips',      label: 'Hips & Glutes', keywords: ['hip', 'glute', 'clamshell', 'bridge', 'hinge'] },
+];
+// Difficulty filters: stored value is the model's difficulty; label is the S/M/C wording.
+const DIFFICULTY_FILTERS: { key: string; label: string; color: string }[] = [
+  { key: 'Beginner',     label: 'Simple',  color: '#22C55E' },
+  { key: 'Intermediate', label: 'Medium',  color: '#D4A600' },
+  { key: 'Advanced',     label: 'Complex', color: '#EF4444' },
+];
+// A video matches a set of selected body-part filters if its title hits any of
+// the selected parts' keywords.
+function matchesBodyParts(title: string, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  const t = title.toLowerCase();
+  return selected.some(key => {
+    const bp = BODY_PART_FILTERS.find(b => b.key === key);
+    return bp ? bp.keywords.some(k => t.includes(k)) : false;
+  });
+}
 
 // ── Shared Video Content ──
 const QUIZ_QUESTIONS: { id: number; question: string; options: { label: string; emoji: string; keywords?: string[] }[] }[] = [
@@ -1268,6 +1487,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  // Filter sheet
+  filterGroupLabel: { color: '#7A7C90', fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginBottom: 4 },
+  filterGroupHint: { color: '#9A9BAD', fontSize: 12, marginBottom: 10 },
+  filterChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  filterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: '#EEEEF2', borderWidth: 1, borderColor: '#D8D8E4',
+  },
+  filterChipText: { fontSize: 13, fontWeight: '600' },
   header: {
     paddingHorizontal: SCREEN_PADDING,
     paddingTop: 16,
