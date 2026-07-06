@@ -21,6 +21,7 @@ type DummyVideo = {
     title: string;
     duration: string;
     difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
+    category?: string;
     videoUrl?: string;
 };
 
@@ -119,6 +120,10 @@ const EXERCISE_DATA: Record<string, DummyVideo[]> = Object.fromEntries(
         key,
         videos.map((video, i) => ({
             ...video,
+            // Carry the category so each card shows its category pictogram (glyph)
+            // alongside the difficulty letter + setup-time hourglass, matching the
+            // program "See All" and Favorites cards.
+            category: key,
             videoUrl: EXERCISE_LIBRARY_VIDEO_URL,
             difficulty: video.difficulty ?? DIFFS[i % DIFFS.length],
         })),

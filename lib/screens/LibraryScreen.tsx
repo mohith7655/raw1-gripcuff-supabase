@@ -452,9 +452,28 @@ export const LibraryScreen = () => {
             data. Exercises tab only (not Workouts). ── */}
       {subTab === 'all' && aiRecos.length > 0 && (
         <View style={{ marginBottom: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 16, marginBottom: 4 }}>
-            <Sparkles size={16} color="#F25912" />
-            <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>{firstName}'s Recommended Exercises</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <View style={{ width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000000' }}>
+                <Sparkles size={16} color="#F25912" />
+              </View>
+              <Text style={{ color: '#211832', fontSize: 18, fontWeight: '700' }}>{firstName}'s Recommended</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              {/* Customize the library view (layout + section visibility). */}
+              <TouchableOpacity
+                onPress={() => setShowCustomizeModal(true)}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F8F8FC', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#D8D8E4' }}
+              >
+                <Settings size={13} color="#7A7C90" />
+                <Text style={{ color: '#7A7C90', fontSize: 12, fontWeight: '600' }}>Customize</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('AllRecommendations')} activeOpacity={0.75}>
+                <Text style={{ color: '#F25912', fontSize: 13, fontWeight: '600' }}>See All &gt;</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={{ color: '#7A7C90', fontSize: 12.5, fontWeight: '500', paddingHorizontal: 16, marginBottom: 12 }}>
             Picked by AI from your goals, injuries & body
@@ -469,6 +488,9 @@ export const LibraryScreen = () => {
                     title: r.title,
                     duration: '',
                     category: RECO_CAT[r.category]?.key,
+                    // The AI reco carries no difficulty, so assign a stable one per
+                    // position so each tile shows its S/M/C difficulty letter.
+                    difficulty: (['Beginner', 'Intermediate', 'Advanced'] as const)[i % 3],
                 } as any}
                 index={i}
                 showCheckbox={false}

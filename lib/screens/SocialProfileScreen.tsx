@@ -65,6 +65,7 @@ import { loadActivityMap } from '../services/activityMap.service';
 import { SocialWorkoutHeatmap } from '../components/social/SocialWorkoutHeatmap';
 import { LocationsMap } from '../components/profile/LocationsMap';
 import { TierAvatarRing } from '../components/profile/TierAvatarRing';
+import { GripcuffTiersModal } from '../components/GripcuffTiersModal';
 import { ThermometerHeat } from '../components/profile/ThermometerHeat';
 import { ScheduleChallengeModal } from '../components/ScheduleChallengeModal';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -247,6 +248,7 @@ export function SocialProfileScreen() {
   const [fullscreenIdx, setFullscreenIdx] = useState<number | null>(null);
   const [connections, setConnections] = useState<User[]>([]);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [showTiersModal, setShowTiersModal] = useState(false);
   const [heats, setHeats] = useState<ActivityHeats | null>(null);
   // Per-connection social/workout heat, loaded lazily when the list opens.
   const [connHeats, setConnHeats] = useState<Record<string, ActivityHeats>>({});
@@ -638,6 +640,20 @@ export function SocialProfileScreen() {
                     </LinearGradient>
                   </View>
                 </TierAvatarRing>
+                {/* Upgrade link right below the tier level number — opens the
+                    Gripcuff membership comparison (own profile only). */}
+                {isOwn && (
+                  <TouchableOpacity
+                    onPress={() => setShowTiersModal(true)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 10, right: 10 }}
+                    style={{ marginTop: 6 }}
+                  >
+                    <Text style={{ color: '#F25912', fontSize: 11, fontWeight: '700' }}>
+                      Upgrade
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={s.heroInfoCol}>
@@ -1127,6 +1143,9 @@ export function SocialProfileScreen() {
           </RNAnimated.View>
         )}
       </SafeAreaView>
+
+      {/* ── Gripcuff Memberships comparison ─────────────────────────────── */}
+      <GripcuffTiersModal visible={showTiersModal} onClose={() => setShowTiersModal(false)} />
 
       {/* ── Photo Gallery Modal ─────────────────────────────────────────── */}
       <Modal

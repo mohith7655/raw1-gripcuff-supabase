@@ -273,15 +273,15 @@ function HeatChips({ uid, workoutSessions }: { uid: string; workoutSessions?: nu
     if (!heats) return null;
     return (
         <View style={s.heatRow}>
-            <View style={[s.heatChip, { backgroundColor: heats.social.soft }]}>
-                <Users size={11} color={heats.social.color} strokeWidth={2.4} />
-                <Text style={[s.heatCount, { color: heats.social.color }]}>{connects ?? 0}</Text>
-                <ThermometerHeat heat={heats.social} size={13} />
+            <View style={s.heatChip}>
+                <Users size={11} color={C.textMuted} strokeWidth={2.4} />
+                <Text style={[s.heatCount, { color: C.textMuted }]}>{connects ?? 0}</Text>
+                <ThermometerHeat heat={heats.social} size={13} color={C.textMuted} outline={C.textMuted} />
             </View>
-            <View style={[s.heatChip, { backgroundColor: heats.workout.soft }]}>
-                <Dumbbell size={11} color={heats.workout.color} strokeWidth={2.4} />
-                <Text style={[s.heatCount, { color: heats.workout.color }]}>{workoutSessions ?? 0}</Text>
-                <ThermometerHeat heat={heats.workout} size={13} />
+            <View style={s.heatChip}>
+                <Dumbbell size={11} color={C.textMuted} strokeWidth={2.4} />
+                <Text style={[s.heatCount, { color: C.textMuted }]}>{workoutSessions ?? 0}</Text>
+                <ThermometerHeat heat={heats.workout} size={13} color={C.textMuted} outline={C.textMuted} />
             </View>
         </View>
     );

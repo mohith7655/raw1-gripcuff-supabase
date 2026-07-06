@@ -98,6 +98,7 @@ import { ScannedProfileScreen } from './screens/ScannedProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AllFavouritesScreen } from './screens/AllFavouritesScreen';
 import { AllRecentlyWatchedScreen } from './screens/AllRecentlyWatchedScreen';
+import { AllRecommendationsScreen } from './screens/AllRecommendationsScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { FeedScreen } from './screens/FeedScreen';
 import { ClubsScreen } from './screens/ClubsScreen';
@@ -505,6 +506,7 @@ function AppStack({
         <Stack.Screen name="Recommendation" component={RecommendationScreen} options={{ headerShown: false }} />
         <Stack.Screen name="AllFavourites" component={AllFavouritesScreen} options={{ headerShown: false }} />
         <Stack.Screen name="AllRecentlyWatched" component={AllRecentlyWatchedScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AllRecommendations" component={AllRecommendationsScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="AgoraVideoRoom"
           component={AgoraVideoRoom}
