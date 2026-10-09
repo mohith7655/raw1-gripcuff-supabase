@@ -1,16 +1,21 @@
-// Workout/tutorial videos can be served from public Supabase Storage buckets.
+// Workout/tutorial videos are served from public Supabase Storage buckets.
+// The project URL comes from env (not hardcoded) — Netlify's secret scanner
+// fails the deploy if an env var's value appears in repo source.
 
-export const PREMADE_WORKOUT_VIDEO_URL =
-    'https://dyjfzuzrjgwjmhojhmjj.supabase.co/storage/v1/object/public/Test-videos/Exercise%20Tutorial%20-%20Squat.mp4';
+const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '');
 
-export const EXERCISE_SQUAT_VIDEO_URL =
-    'https://dyjfzuzrjgwjmhojhmjj.supabase.co/storage/v1/object/public/Test-videos/Exercise%20Tutorial%20-%20Squat.mp4';
+const publicVideoUrl = (bucket: string, path: string) =>
+    `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
 
-export const SIGNUP_LOGIN_BG_VIDEO_URL =
-    'https://dyjfzuzrjgwjmhojhmjj.supabase.co/storage/v1/object/public/Test-videos/Exercise%20Tutorial%20-%20Squat.mp4';
+const SQUAT_TUTORIAL_URL = publicVideoUrl('Test-videos', 'Exercise Tutorial - Squat.mp4');
 
-export const WELCOME_BG_VIDEO_URL =
-    'https://dyjfzuzrjgwjmhojhmjj.supabase.co/storage/v1/object/public/Test-videos/Exercise%20Tutorial%20-%20Squat.mp4';
+export const PREMADE_WORKOUT_VIDEO_URL = SQUAT_TUTORIAL_URL;
+
+export const EXERCISE_SQUAT_VIDEO_URL = SQUAT_TUTORIAL_URL;
+
+export const SIGNUP_LOGIN_BG_VIDEO_URL = SQUAT_TUTORIAL_URL;
+
+export const WELCOME_BG_VIDEO_URL = SQUAT_TUTORIAL_URL;
 
 export function getWorkoutVideoUrl(type: 'premade' | 'exercise' | 'signup_login' | 'welcome'): string {
     switch (type) {
