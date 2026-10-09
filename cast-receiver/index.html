@@ -4,14 +4,14 @@
   ─────────────────────────
   This page runs on the Chromecast device (not on the phone). It:
     1. Acts as a standard CAF (Cast Application Framework) media receiver
-       for plain HTTP / HLS video URLs from Firebase Storage.
+       for plain HTTP / HLS video URLs from Supabase Storage.
     2. Listens on a custom namespace for Agora credentials and, when
        received, loads the Agora Web SDK and displays the remote
        participant's video fullscreen.
 
   Deployment
   ──────────
-  Host this file on Firebase Hosting (or any HTTPS static host) and note
+  Host this file on any HTTPS static host (e.g. Netlify) and note
   the URL, e.g. https://raw1.us/cast-receiver/index.html
 
   Registration

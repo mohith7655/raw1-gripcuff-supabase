@@ -15,7 +15,7 @@ interface WebSafeAvatarProps {
 /**
  * Renders a circular avatar image safely on both native and web.
  *
- * On web, React Native Image can hang indefinitely on Firebase Storage URLs
+ * On web, React Native Image can hang indefinitely on remote storage URLs
  * due to CORS/caching quirks, so we use a native <img> tag instead.
  * On native, we use the standard Image component with onLoad/onError handlers.
  *

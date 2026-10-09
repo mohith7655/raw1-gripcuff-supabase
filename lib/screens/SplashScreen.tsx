@@ -12,7 +12,7 @@ export const SplashScreen = ({ navigation }: any) => {
   useEffect(() => {
     if (authLoading) return;
 
-    // Fire profile fetch in background using Supabase user ID (not Firebase UID).
+    // Fire profile fetch in background using the Supabase user ID.
     // The Supabase `users` table is keyed by supabaseUserId.
     if (supabaseUserId) {
       fetchProfile(supabaseUserId).catch((err) =>

@@ -36,8 +36,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [appMode, setAppMode] = useState<AppMode>('ai');
 
-  // Use supabaseUserId (not firebaseUser.uid) — the Supabase `users` table is
-  // keyed by Supabase user ID, not Firebase UID.
+  // The Supabase `users` table is keyed by Supabase user ID.
   const { supabaseUserId } = useAuth();
 
   // Stale-fetch guard: the timestamp when the LATEST fetch STARTED.

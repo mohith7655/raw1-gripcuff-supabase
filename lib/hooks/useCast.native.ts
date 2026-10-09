@@ -75,7 +75,7 @@ export function useCast() {
   // ── Actions ──────────────────────────────────────────────────────────────
 
   /**
-   * Cast a Firebase Storage (or any HTTP/HLS) URL to the connected Chromecast.
+   * Cast a Supabase Storage (or any HTTP/HLS) URL to the connected Chromecast.
    * Call showPicker() first if no session is open.
    */
   const castVideo = useCallback(
@@ -168,7 +168,7 @@ export function useCast() {
             console.error('[useCast] castAgora fallback failed:', fallbackErr);
             CastManager._setState({
               error:
-                'Agora cast failed — register a Custom Cast App ID (see cast-receiver/deploy.sh)',
+                'Agora cast failed — register a Custom Cast App ID (see cast-receiver/index.html)',
             });
           }
         }

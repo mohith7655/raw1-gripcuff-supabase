@@ -11,7 +11,7 @@ Run through these scenarios after every EAS build that touches cast logic.
 
 ---
 
-## A · Firebase video cast on Android (Chromecast)
+## A · Supabase video cast on Android (Chromecast)
 
 1. Open the app → navigate to Library → tap any video
 2. Confirm the `CastButton` (TV icon) appears in the player header
@@ -33,7 +33,7 @@ Run through these scenarios after every EAS build that touches cast logic.
 
 ---
 
-## B · Firebase video cast on iOS (AirPlay)
+## B · Supabase video cast on iOS (AirPlay)
 
 1. Open the app → navigate to Library → tap any video
 2. Swipe down to open iOS Control Center → tap **Screen Mirroring**
@@ -51,7 +51,7 @@ Run through these scenarios after every EAS build that touches cast logic.
 ## C · Agora live call cast (custom receiver)
 
 **Setup:**
-- [ ] `cast-receiver/index.html` deployed (`bash cast-receiver/deploy.sh`)
+- [ ] `cast-receiver/index.html` hosted over HTTPS at `EXPO_PUBLIC_CAST_RECEIVER_URL`
 - [ ] Custom Cast App ID registered and set in `EXPO_PUBLIC_CAST_APP_ID`
 - [ ] Both participants in an active Agora video call
 

@@ -418,7 +418,7 @@ export const SyncedVideoPlayerScreen = () => {
     }, []);
 
 
-    // ── Sync write helpers (no-op stubs — Firebase removed) ──
+    // ── Sync write helpers (no-op stubs) ──
     const updateSyncStateNow = (_playing: boolean, _positionSeconds: number) => {};
 
     const updateSyncState = (_playing: boolean, _positionSeconds: number) => {};

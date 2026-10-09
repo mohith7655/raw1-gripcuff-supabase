@@ -54,7 +54,7 @@ export type RemoteControlBarProps = VideoRemoteProps | AgoraRemoteProps;
 /**
  * Mobile-side control bar displayed when a cast session is active.
  * Shows different controls depending on whether the cast source is a
- * Firebase VOD video or an active Agora live call.
+ * Supabase Storage VOD video or an active Agora live call.
  *
  * Renders nothing on web.
  */

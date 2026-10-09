@@ -61,7 +61,7 @@ export const AGORA_CAST_NAMESPACE = 'urn:x-cast:com.raw1.agora';
 
 /**
  * Default Google Cast receiver — supports plain HTTP/HLS video URLs.
- * Use this for Firebase VOD casting.
+ * Use this for Supabase Storage VOD casting.
  */
 export const DEFAULT_CAST_APP_ID = 'CC1AD845';
 
@@ -76,7 +76,7 @@ export const CUSTOM_CAST_APP_ID: string =
   (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_CAST_APP_ID) ||
   DEFAULT_CAST_APP_ID;
 
-/** URL where cast-receiver/index.html is hosted (Firebase Hosting recommended) */
+/** URL where cast-receiver/index.html is hosted (any HTTPS static host) */
 export const CAST_RECEIVER_URL: string =
   (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_CAST_RECEIVER_URL) ||
   'https://raw1.us/cast-receiver/';
