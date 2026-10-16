@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NotificationBell } from '../components/NotificationBell';
 import { AccessBadge } from '../components/AccessBadge';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -27,6 +27,7 @@ import { useLibrary } from '../providers/LibraryContext';
 import { useUser } from '../providers/UserContext';
 import { useBodyInsights } from '../hooks/useBodyInsights';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
+import { FloatingAboveTabBar } from '../components/FloatingAboveTabBar';
 import { ThumbnailCategory } from '../components/VideoCardBits';
 import { AppTheme, FontSizes, FontWeights } from '../core/theme/app_theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -199,20 +200,6 @@ export const LibraryScreen = () => {
   const [showRecommended, setShowRecommended] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('large');
   const { isFavorite, toggleFavorite } = useFavorites();
-  // Floating Exercises/Workouts toggle — appears bottom-right once the top
-  // toggle is scrolled away AND scrolling has paused; hidden while scrolling.
-  const [floatToggleVisible, setFloatToggleVisible] = useState(false);
-  const floatScrollY = useRef(0);
-  const floatPauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onFloatScroll = (e: any) => {
-    floatScrollY.current = e?.nativeEvent?.contentOffset?.y ?? 0;
-    setFloatToggleVisible(false);
-    if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current);
-    floatPauseTimer.current = setTimeout(() => {
-      if (floatScrollY.current > 120) setFloatToggleVisible(true);
-    }, 350);
-  };
-  useEffect(() => () => { if (floatPauseTimer.current) clearTimeout(floatPauseTimer.current); }, []);
   const tabBar = useTabBarVisibility();
   // Reveal the bottom bar whenever this tab regains focus.
   useFocusEffect(useCallback(() => { tabBar?.show(); }, [tabBar]));
@@ -335,8 +322,8 @@ export const LibraryScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        onScroll={(e) => { onFloatScroll(e); tabBar?.onScroll(e); }}
+        contentContainerStyle={{ paddingBottom: 150 }}
+        onScroll={(e) => tabBar?.onScroll(e)}
         scrollEventThrottle={16}
       >
       {/* Header — RAW1 · Search (top right) */}
@@ -392,28 +379,6 @@ export const LibraryScreen = () => {
           </View>
         </View>
       )}
-
-      {/* Exercises / Workouts — compact pill toggle */}
-      <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', backgroundColor: '#EEEEF2', borderRadius: 100, padding: 2, borderWidth: 1, borderColor: '#D8D8E4' }}>
-          <TouchableOpacity
-            onPress={() => setSubTab('all')}
-            activeOpacity={0.8}
-            style={{ paddingHorizontal: 22, paddingVertical: 6, borderRadius: 100, backgroundColor: subTab === 'all' ? '#211832' : 'transparent' }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'all' ? '#fff' : '#7A7C90' }}>Exercises</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setSubTab('workouts')}
-            activeOpacity={0.8}
-            style={{ paddingHorizontal: 22, paddingVertical: 6, borderRadius: 100, backgroundColor: subTab === 'workouts' ? '#211832' : 'transparent' }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'workouts' ? '#fff' : '#7A7C90' }}>Workouts</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-
 
       {/* Exercises featured hero */}
       {subTab === 'all' && (
@@ -601,16 +566,8 @@ export const LibraryScreen = () => {
       />
       </ScrollView>
 
-      {/* Floating Exercises/Workouts toggle — centered above the nav bar */}
-      {floatToggleVisible && (
-        <View style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 96,
-          alignItems: 'center',
-          zIndex: 90,
-        }} pointerEvents="box-none">
+      {/* Exercises/Workouts toggle — always floating above the nav bar */}
+      <FloatingAboveTabBar>
         <View style={{
           flexDirection: 'row',
           backgroundColor: '#EEEEF2',
@@ -639,8 +596,7 @@ export const LibraryScreen = () => {
             <Text style={{ fontSize: 12, fontWeight: '600', color: subTab === 'workouts' ? '#fff' : '#7A7C90' }}>Workouts</Text>
           </TouchableOpacity>
         </View>
-        </View>
-      )}
+      </FloatingAboveTabBar>
 
       {/* Filter Modal — category hide/unhide, body part, difficulty, AI-recommended */}
       {showFilterModal && (

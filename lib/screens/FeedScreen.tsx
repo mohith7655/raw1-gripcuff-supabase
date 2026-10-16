@@ -24,6 +24,7 @@ import { useNotificationCenter } from '../providers/NotificationProvider';
 import { supabase } from '../core/config/supabase';
 import { useAuth } from '../providers/AuthContext';
 import { useTabBarVisibility } from '../providers/TabBarVisibilityContext';
+import { FloatingAboveTabBar } from '../components/FloatingAboveTabBar';
 import { useFeed } from '../hooks/useFeed';
 import { PostCard } from '../components/feed/PostCard';
 import { CreatePostModal } from '../components/feed/CreatePostModal';
@@ -259,26 +260,7 @@ export function FeedScreen() {
   const ListHeader = (
     <View>
       {/* Gamified Social header — ONE action card at a time, switched via the
-          segmented toggle (Challenge Lobby ↔ Workout with Friend). */}
-      <View style={styles.topToggleWrap}>
-        <View style={styles.topToggle}>
-          {/* Icon always shows; the active segment adds the word beside it. */}
-          <Pressable
-            onPress={() => setTopCard('challenge')}
-            style={[styles.topToggleBtn, topCard === 'challenge' && styles.topToggleBtnActive]}
-          >
-            <Swords size={15} color={topCard === 'challenge' ? '#fff' : '#7A7C90'} />
-            {topCard === 'challenge' && <Text style={styles.topToggleTextActive}>Challenge</Text>}
-          </Pressable>
-          <Pressable
-            onPress={() => setTopCard('friend')}
-            style={[styles.topToggleBtn, topCard === 'friend' && styles.topToggleBtnActive]}
-          >
-            <Users size={15} color={topCard === 'friend' ? '#fff' : '#7A7C90'} />
-            {topCard === 'friend' && <Text style={styles.topToggleTextActive}>Friend</Text>}
-          </Pressable>
-        </View>
-      </View>
+          floating bottom toggle (Challenge Lobby ↔ Workout with Friend). */}
       <View style={styles.cardRow}>
         {topCard === 'challenge' ? (
           <ChallengeCard onPress={() => navigation.navigate('ChallengeLobbyScreen')} avatarUri={user?.profileImageUrl} />
@@ -458,6 +440,27 @@ export function FeedScreen() {
         onDismiss={handleActivationDismiss}
       />
     </SafeAreaView>
+
+    {/* Challenge / Friend toggle — always floating above the nav bar (same pill
+        as the Workouts tab's Exercises/Workouts toggle). */}
+    <FloatingAboveTabBar>
+      <View style={styles.topToggle}>
+        <Pressable
+          onPress={() => setTopCard('challenge')}
+          style={[styles.topToggleBtn, topCard === 'challenge' && styles.topToggleBtnActive]}
+        >
+          <Swords size={13} color={topCard === 'challenge' ? '#fff' : '#7A7C90'} />
+          <Text style={[styles.topToggleText, topCard === 'challenge' && styles.topToggleTextActive]}>Challenge</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setTopCard('friend')}
+          style={[styles.topToggleBtn, topCard === 'friend' && styles.topToggleBtnActive]}
+        >
+          <Users size={13} color={topCard === 'friend' ? '#fff' : '#7A7C90'} />
+          <Text style={[styles.topToggleText, topCard === 'friend' && styles.topToggleTextActive]}>Friend</Text>
+        </Pressable>
+      </View>
+    </FloatingAboveTabBar>
     </AmbientBackground>
   );
 }
@@ -476,7 +479,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: '#211832', fontSize: 18, fontWeight: '800' },
 
-  listContent: { paddingTop: 8, paddingBottom: 120 },
+  listContent: { paddingTop: 8, paddingBottom: 160 },
 
   // Section headers
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -498,28 +501,33 @@ const styles = StyleSheet.create({
     marginHorizontal: SECTION_PAD,
     marginTop: 10,
   },
-  // Challenge ↔ Friend segmented toggle — matches the Activity filter tabs
-  // (glass track, dark #211832 active pill).
-  topToggleWrap: { alignItems: 'center', marginTop: 12 },
+  // Challenge ↔ Friend floating toggle — same pill as the Workouts tab's
+  // Exercises/Workouts toggle (light track, dark #211832 active segment).
   topToggle: {
     flexDirection: 'row',
     padding: 2,
     borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: '#EEEEF2',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: '#D8D8E4',
+    shadowColor: '#211832',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 6,
   },
   topToggleBtn: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 5,
     paddingHorizontal: 16,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topToggleBtnActive: { backgroundColor: '#211832' },
-  topToggleTextActive: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  topToggleText: { color: '#7A7C90', fontSize: 12, fontWeight: '600' },
+  topToggleTextActive: { color: '#fff' },
 
   // How it works (collapsible)
   howHeader: {

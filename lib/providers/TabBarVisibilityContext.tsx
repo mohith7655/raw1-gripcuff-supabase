@@ -15,7 +15,7 @@ import React, { createContext, useContext, useRef, useCallback, useEffect } from
 import { Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 // Far enough to clear the bar height + bottom padding + safe area.
-const HIDE_OFFSET = 130;
+export const HIDE_OFFSET = 130;
 
 type TabBarVisibility = {
   translateY: Animated.Value;
